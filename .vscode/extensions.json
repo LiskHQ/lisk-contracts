@@ -1,0 +1,8 @@
+{
+    // List of extensions which should be recommended for users of this workspace.
+    "recommendations": [
+        "juanblanco.solidity",
+        "robertaachenw.solidity-debugger-pro",
+        "yzhang.markdown-all-in-one",
+    ],
+}
