@@ -14,7 +14,7 @@ contract UUPSProxy is ERC1967Proxy {
 contract L1LiskToken is Initializable, ERC20Upgradeable, OwnableUpgradeable, UUPSUpgradeable {
     string private constant NAME = "Lisk Token";
     string private constant SYMBOL = "LSK";
-    uint256 private constant TOTAL_SUPPLY = 200_000_000;
+    uint256 private constant TOTAL_SUPPLY = 200_000_000 * 10 ** 18; //200 million LSK tokens
 
     constructor() {
         _disableInitializers();

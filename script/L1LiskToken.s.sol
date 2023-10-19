@@ -35,8 +35,9 @@ contract L1LiskTokencript is Script {
 
         assert(keccak256(bytes(wrappedProxy.name())) == keccak256(bytes("Lisk Token")));
         assert(keccak256(bytes(wrappedProxy.symbol())) == keccak256(bytes("LSK")));
-        assert(wrappedProxy.totalSupply() == 200000000);
-        assert(wrappedProxy.balanceOf(vm.addr(deployerPrivateKey)) == 200000000);
+        assert(wrappedProxy.decimals() == 18);
+        assert(wrappedProxy.totalSupply() == 200000000 * 10 ** 18);
+        assert(wrappedProxy.balanceOf(vm.addr(deployerPrivateKey)) == 200000000 * 10 ** 18);
         assert(wrappedProxy.owner() == vm.addr(deployerPrivateKey));
     }
 }

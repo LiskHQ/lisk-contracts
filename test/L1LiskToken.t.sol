@@ -25,8 +25,9 @@ contract L1LiskTokenTest is Test {
     function test_Initialize() public {
         assertEq(wrappedProxy.name(), "Lisk Token");
         assertEq(wrappedProxy.symbol(), "LSK");
-        assertEq(wrappedProxy.totalSupply(), 200000000);
-        assertEq(wrappedProxy.balanceOf(address(this)), 200000000);
+        assertEq(wrappedProxy.decimals(), 18);
+        assertEq(wrappedProxy.totalSupply(), 200000000 * 10 ** 18);
+        assertEq(wrappedProxy.balanceOf(address(this)), 200000000 * 10 ** 18);
         assertEq(wrappedProxy.owner(), address(this));
         assertEq(l1LiskToken.proxiableUUID(), 0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc);
     }
@@ -84,8 +85,9 @@ contract L1LiskTokenTest is Test {
 
         assertEq(wrappedProxy_v2.name(), "Lisk Token");
         assertEq(wrappedProxy_v2.symbol(), "LSK");
-        assertEq(wrappedProxy_v2.totalSupply(), 200000000);
-        assertEq(wrappedProxy_v2.balanceOf(address(this)), 200000000);
+        assertEq(wrappedProxy_v2.decimals(), 18);
+        assertEq(wrappedProxy_v2.totalSupply(), 200000000 * 10 ** 18);
+        assertEq(wrappedProxy_v2.balanceOf(address(this)), 200000000 * 10 ** 18);
         assertEq(wrappedProxy_v2.owner(), address(this));
         assertEq(l1LiskToken_v2.proxiableUUID(), 0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc);
     }
