@@ -23,7 +23,7 @@ contract L1LiskTokenTest is Test {
     }
 
     function test_Initialize() public {
-        assertEq(wrappedProxy.name(), "Lisk Token");
+        assertEq(wrappedProxy.name(), "Lisk");
         assertEq(wrappedProxy.symbol(), "LSK");
         assertEq(wrappedProxy.decimals(), 18);
         assertEq(wrappedProxy.totalSupply(), 200000000 * 10 ** 18);
@@ -83,7 +83,7 @@ contract L1LiskTokenTest is Test {
         // re-wrap the proxy
         L1LiskToken wrappedProxy_v2 = L1LiskToken(address(proxy));
 
-        assertEq(wrappedProxy_v2.name(), "Lisk Token");
+        assertEq(wrappedProxy_v2.name(), "Lisk");
         assertEq(wrappedProxy_v2.symbol(), "LSK");
         assertEq(wrappedProxy_v2.decimals(), 18);
         assertEq(wrappedProxy_v2.totalSupply(), 200000000 * 10 ** 18);
