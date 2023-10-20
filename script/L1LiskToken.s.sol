@@ -2,7 +2,7 @@
 pragma solidity 0.8.21;
 
 import { Script, console2 } from "forge-std/Script.sol";
-import { L1LiskToken, UUPSProxy } from "../src/L1/L1LiskToken.sol";
+import { L1LiskToken, UUPSProxy } from "src/L1/L1LiskToken.sol";
 
 contract L1LiskTokencript is Script {
     function setUp() public { }

@@ -2,7 +2,7 @@
 pragma solidity 0.8.21;
 
 import { Test, console2 } from "forge-std/Test.sol";
-import { L1LiskToken, UUPSProxy } from "../src/L1/L1LiskToken.sol";
+import { L1LiskToken, UUPSProxy } from "src/L1/L1LiskToken.sol";
 
 contract L1LiskTokenTest is Test {
     L1LiskToken public l1LiskToken;
