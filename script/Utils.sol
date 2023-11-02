@@ -7,21 +7,39 @@ import { stdJson } from "forge-std/StdJson.sol";
 contract Utils is Script {
     using stdJson for string;
 
-    struct AddressesConfig {
+    struct L1AddressesConfig {
         address L1LiskToken;
     }
 
-    function readAddressesFile() external view returns (AddressesConfig memory) {
+    struct L2AddressesConfig {
+        address L2LiskToken;
+    }
+
+    function readL1AddressesFile() external view returns (L1AddressesConfig memory) {
         string memory root = vm.projectRoot();
         string memory addressPath = string.concat(root, "/deployment/l1addresses.json");
         string memory addressJson = vm.readFile(addressPath);
         bytes memory addressRaw = vm.parseJson(addressJson);
-        return abi.decode(addressRaw, (AddressesConfig));
+        return abi.decode(addressRaw, (L1AddressesConfig));
     }
 
-    function writeAddressesFile(AddressesConfig memory cfg) external {
+    function writeL1AddressesFile(L1AddressesConfig memory cfg) external {
         string memory json = "";
         string memory finalJson = vm.serializeAddress(json, "L1LiskToken", cfg.L1LiskToken);
         finalJson.write(string.concat("deployment/l1addresses.json"));
+    }
+
+    function readL2AddressesFile() external view returns (L2AddressesConfig memory) {
+        string memory root = vm.projectRoot();
+        string memory addressPath = string.concat(root, "/deployment/l2addresses.json");
+        string memory addressJson = vm.readFile(addressPath);
+        bytes memory addressRaw = vm.parseJson(addressJson);
+        return abi.decode(addressRaw, (L2AddressesConfig));
+    }
+
+    function writeL2AddressesFile(L2AddressesConfig memory cfg) external {
+        string memory json = "";
+        string memory finalJson = vm.serializeAddress(json, "L2LiskToken", cfg.L2LiskToken);
+        finalJson.write(string.concat("deployment/l2addresses.json"));
     }
 }

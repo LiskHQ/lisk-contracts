@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.21;
 
-import { L1LiskToken } from "src/L1/L1LiskToken.sol";
+import { L2LiskToken } from "src/L2/L2LiskToken.sol";
 
 contract L2Claim {
     string private constant NAME = "Claim process";
-    L1LiskToken public immutable l1LiskToken;
+    L2LiskToken public immutable l2LiskToken;
 
-    constructor(address l1TokenAddress) {
-        l1LiskToken = L1LiskToken(l1TokenAddress);
+    constructor(address l2TokenAddress) {
+        l2LiskToken = L2LiskToken(l2TokenAddress);
     }
 
     function name() public pure returns (string memory) {
@@ -17,6 +17,6 @@ contract L2Claim {
 
     function claim() public {
         // send 5 Lisk tokens to the sender
-        l1LiskToken.transfer(msg.sender, 5);
+        l2LiskToken.transfer(msg.sender, 5);
     }
 }
