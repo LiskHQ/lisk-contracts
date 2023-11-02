@@ -47,7 +47,7 @@ contract L1LiskTokenScript is Script {
 
         // write L1LiskToken address to l1addresses.json
         Utils.L1AddressesConfig memory finalCfg;
-        finalCfg.L1LiskToken = address(l1LiskToken);
+        finalCfg.L1LiskToken = address(wrappedProxy);
         utils.writeL1AddressesFile(finalCfg);
     }
 }

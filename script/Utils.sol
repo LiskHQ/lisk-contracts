@@ -12,6 +12,7 @@ contract Utils is Script {
     }
 
     struct L2AddressesConfig {
+        address L2ClaimContract;
         address L2LiskToken;
     }
 
@@ -39,7 +40,8 @@ contract Utils is Script {
 
     function writeL2AddressesFile(L2AddressesConfig memory cfg) external {
         string memory json = "";
-        string memory finalJson = vm.serializeAddress(json, "L2LiskToken", cfg.L2LiskToken);
+        vm.serializeAddress(json, "L2LiskToken", cfg.L2LiskToken);
+        string memory finalJson = vm.serializeAddress(json, "L2ClaimContract", cfg.L2ClaimContract);
         finalJson.write(string.concat("deployment/l2addresses.json"));
     }
 }

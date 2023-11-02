@@ -13,10 +13,11 @@ contract L2ClaimScript is Script {
     }
 
     function run() public {
+        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+
+        // get L2LiskToken contract address
         Utils.L2AddressesConfig memory addressCfg = utils.readL2AddressesFile();
         console2.log("L2 Lisk token address: %s", addressCfg.L2LiskToken);
-
-        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
 
         // deploy L2Claim contract
         vm.startBroadcast(deployerPrivateKey);
@@ -26,5 +27,9 @@ contract L2ClaimScript is Script {
         assert(address(l2Claim) != address(0));
         assert(keccak256(bytes(l2Claim.name())) == keccak256(bytes("Claim process")));
         assert(address(l2Claim.l2LiskToken()) == address(addressCfg.L2LiskToken));
+
+        // write L2ClaimContract address to l2addresses.json
+        addressCfg.L2ClaimContract = address(l2Claim);
+        utils.writeL2AddressesFile(addressCfg);
     }
 }
