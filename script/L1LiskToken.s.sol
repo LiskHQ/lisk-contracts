@@ -3,9 +3,14 @@ pragma solidity 0.8.21;
 
 import { Script, console2 } from "forge-std/Script.sol";
 import { L1LiskToken, UUPSProxy } from "src/L1/L1LiskToken.sol";
+import "script/Utils.sol";
 
 contract L1LiskTokenScript is Script {
-    function setUp() public { }
+    Utils utils;
+
+    function setUp() public {
+        utils = new Utils();
+    }
 
     function run() public {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
@@ -39,5 +44,10 @@ contract L1LiskTokenScript is Script {
         assert(wrappedProxy.totalSupply() == 200000000 * 10 ** 18);
         assert(wrappedProxy.balanceOf(vm.addr(deployerPrivateKey)) == 200000000 * 10 ** 18);
         assert(wrappedProxy.owner() == vm.addr(deployerPrivateKey));
+
+        // write L1LiskToken address to addresses.json
+        Utils.AddressesConfig memory finalCfg;
+        finalCfg.L1LiskToken = address(l1LiskToken);
+        utils.writeAddressesFile(finalCfg);
     }
 }
