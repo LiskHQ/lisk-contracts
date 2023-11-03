@@ -17,6 +17,6 @@ contract L2Claim {
 
     function claim() public {
         // send 5 Lisk tokens to the sender
-        l2LiskToken.transfer(msg.sender, 5);
+        l2LiskToken.transfer(msg.sender, 5 * 10 ** 18);
     }
 }
