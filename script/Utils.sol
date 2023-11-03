@@ -40,8 +40,8 @@ contract Utils is Script {
 
     function writeL2AddressesFile(L2AddressesConfig memory cfg) external {
         string memory json = "";
-        vm.serializeAddress(json, "L2LiskToken", cfg.L2LiskToken);
-        string memory finalJson = vm.serializeAddress(json, "L2ClaimContract", cfg.L2ClaimContract);
+        vm.serializeAddress(json, "L2ClaimContract", cfg.L2ClaimContract);
+        string memory finalJson = vm.serializeAddress(json, "L2LiskToken", cfg.L2LiskToken);
         finalJson.write(string.concat("deployment/l2addresses.json"));
     }
 }
