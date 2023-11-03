@@ -38,7 +38,7 @@ contract L1LiskTokenScript is Script {
         wrappedProxy.initialize();
         vm.stopBroadcast();
 
-        assert(keccak256(bytes(wrappedProxy.name())) == keccak256(bytes("Lisk")));
+        assert(keccak256(bytes(wrappedProxy.name())) == keccak256(bytes("Lost Space Key")));
         assert(keccak256(bytes(wrappedProxy.symbol())) == keccak256(bytes("LSK")));
         assert(wrappedProxy.decimals() == 18);
         assert(wrappedProxy.totalSupply() == 200000000 * 10 ** 18);

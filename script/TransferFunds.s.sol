@@ -37,7 +37,7 @@ contract TransferFundsScript is Script {
         // transfer all Lisk tokens from deployer to a bridged Lisk token contract
         vm.startBroadcast(deployerPrivateKey);
         L1LiskToken l1LiskToken = L1LiskToken(address(addressL1Cfg.L1LiskToken));
-        IL1StandardBridge bridge = IL1StandardBridge(address(0x4200000000000000000000000000000000000010));
+        IL1StandardBridge bridge = IL1StandardBridge(address(0xFBb0621E0B23b5478B630BD55a5f21f67730B0F1));
 
         console2.log(
             "Approving deployers L1 Lisk tokens to be transfered by L1 Standard Bridge: %s",
