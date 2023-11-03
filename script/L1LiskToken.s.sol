@@ -15,6 +15,8 @@ contract L1LiskTokenScript is Script {
     function run() public {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
 
+        console2.log("Deploying L1 Lisk token...");
+
         // deploy L1LiskToken contract
         vm.startBroadcast(deployerPrivateKey);
         L1LiskToken l1LiskToken = new L1LiskToken();
@@ -45,9 +47,12 @@ contract L1LiskTokenScript is Script {
         assert(wrappedProxy.balanceOf(vm.addr(deployerPrivateKey)) == 200000000 * 10 ** 18);
         assert(wrappedProxy.owner() == vm.addr(deployerPrivateKey));
 
+        console2.log("L1 Lisk token successfully deployed!");
+        console2.log("L1 Lisk token address: %s", address(wrappedProxy));
+
         // write L1LiskToken address to l1addresses.json
-        Utils.L1AddressesConfig memory finalCfg;
-        finalCfg.L1LiskToken = address(wrappedProxy);
-        utils.writeL1AddressesFile(finalCfg);
+        Utils.L1AddressesConfig memory l1AddressesConfig;
+        l1AddressesConfig.L1LiskToken = address(wrappedProxy);
+        utils.writeL1AddressesFile(l1AddressesConfig);
     }
 }

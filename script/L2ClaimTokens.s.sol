@@ -19,19 +19,35 @@ contract L2ClaimTokensScript is Script {
         console2.log("Deployer address: %s", vm.addr(deployerPrivateKey));
 
         // get L2Claim contract address
-        Utils.L2AddressesConfig memory addressCfg = utils.readL2AddressesFile();
-        console2.log("L2 Claim contract address: %s", addressCfg.L2ClaimContract);
+        Utils.L2AddressesConfig memory l2AddressesConfig = utils.readL2AddressesFile();
+        console2.log("L2 Claim contract address: %s", l2AddressesConfig.L2ClaimContract);
 
-        // claim 5 Lisk tokens for a demonstration
+        // check L2Claim contract Lisk token balance
+        L2Claim l2Claim = L2Claim(address(l2AddressesConfig.L2ClaimContract));
+        console2.log(
+            "L2 Claim contract Lisk token balance before claim: %s", l2Claim.l2LiskToken().balanceOf(address(l2Claim))
+        );
+
+        // check deployer Lisk token balance
+        console2.log(
+            "Deployer's Lisk token balance before claim: %s",
+            l2Claim.l2LiskToken().balanceOf(vm.addr(deployerPrivateKey))
+        );
+
+        // claim 5 Lisk tokens for a demonstration purpose
         vm.startBroadcast(deployerPrivateKey);
-        L2Claim l2Claim = L2Claim(address(addressCfg.L2ClaimContract));
         l2Claim.claim();
         vm.stopBroadcast();
 
-        // check that deployer has 5 Lisk tokens
-        console2.log("Deployer's Lisk token balance: %s", l2Claim.l2LiskToken().balanceOf(vm.addr(deployerPrivateKey)));
-
         // check that L2Claim contract has less Lisk tokens than before
-        console2.log("L2Claim's Lisk token balance: %s", l2Claim.l2LiskToken().balanceOf(address(l2Claim)));
+        console2.log(
+            "L2 Claim contract Lisk token balance after claim: %s", l2Claim.l2LiskToken().balanceOf(address(l2Claim))
+        );
+
+        // check that deployer has 5 Lisk tokens
+        console2.log(
+            "Deployer's Lisk token balance after claim: %s",
+            l2Claim.l2LiskToken().balanceOf(vm.addr(deployerPrivateKey))
+        );
     }
 }
