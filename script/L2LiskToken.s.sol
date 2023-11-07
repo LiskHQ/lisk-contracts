@@ -31,8 +31,7 @@ contract L2LiskTokenScript is Script {
 
         // deploy L1LiskToken contract
         vm.startBroadcast(deployerPrivateKey);
-        L2LiskToken l2LiskToken =
-            new L2LiskToken(L2_STANDARD_BRIDGE, l1AddressesConfig.L1LiskToken, "Lisk", "LSK", 18);
+        L2LiskToken l2LiskToken = new L2LiskToken(L2_STANDARD_BRIDGE, l1AddressesConfig.L1LiskToken, "Lisk", "LSK", 18);
         vm.stopBroadcast();
 
         assert(address(l2LiskToken) != address(0));
