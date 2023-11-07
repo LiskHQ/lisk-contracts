@@ -5,14 +5,20 @@ import { Script, console2 } from "forge-std/Script.sol";
 import { L2Claim } from "src/L2/L2Claim.sol";
 import "script/Utils.sol";
 
+/// @title L2ClaimScript - L2 Claim contract deployment script
+/// @notice This contract is used to deploy L2 Claim contract and write its address to JSON file.
 contract L2ClaimScript is Script {
+    /// @notice Utils contract which provides functions to read and write JSON files containing L1 and L2 addresses.
     Utils utils;
 
     function setUp() public {
         utils = new Utils();
     }
 
+    /// @notice This function deploys L2 Claim contract and writes its address to JSON file.
     function run() public {
+        // Deployer's private key. Owner of the Claim contract which can perform upgrades. PRIVATE_KEY is set in .env
+        // file.
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
 
         console2.log("Deploying L2 Claim contract...");

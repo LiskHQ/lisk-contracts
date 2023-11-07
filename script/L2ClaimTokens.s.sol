@@ -5,13 +5,17 @@ import { Script, console2 } from "forge-std/Script.sol";
 import { L2Claim } from "src/L2/L2Claim.sol";
 import "script/Utils.sol";
 
+/// @title L2ClaimTokensScript - L2 Claim Lisk tokens script
+/// @notice This contract is used to claim L2 Lisk tokens from the L2 Claim contract for a demonstration purpose.
 contract L2ClaimTokensScript is Script {
+    /// @notice Utils contract which provides functions to read and write JSON files containing L1 and L2 addresses.
     Utils utils;
 
     function setUp() public {
         utils = new Utils();
     }
 
+    /// @notice This function claims L2 Lisk tokens from the L2 Claim contract for a demonstration purpose.
     function run() public {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
 

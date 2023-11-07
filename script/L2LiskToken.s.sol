@@ -5,15 +5,22 @@ import { Script, console2 } from "forge-std/Script.sol";
 import { L2LiskToken } from "src/L2/L2LiskToken.sol";
 import "script/Utils.sol";
 
+/// @title L2LiskTokenScript - L2 Lisk token deployment script
+/// @notice This contract is used to deploy L2 Lisk token contract and write its address to JSON file.
 contract L2LiskTokenScript is Script {
-    address private constant L2_STANDARD_BRIDGE = 0x4200000000000000000000000000000000000010;
+    /// @notice Utils contract which provides functions to read and write JSON files containing L1 and L2 addresses.
     Utils utils;
+
+    /// @notice L2 Standard Bridge address.
+    address private constant L2_STANDARD_BRIDGE = 0x4200000000000000000000000000000000000010;
 
     function setUp() public {
         utils = new Utils();
     }
 
+    /// @notice This function deploys L2 Lisk token contract and writes its address to JSON file.
     function run() public {
+        // Deployer's private key. Owner of the L2 Lisk token. PRIVATE_KEY is set in .env file.
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
 
         console2.log("Deploying L2 Lisk token...");
@@ -25,11 +32,11 @@ contract L2LiskTokenScript is Script {
         // deploy L1LiskToken contract
         vm.startBroadcast(deployerPrivateKey);
         L2LiskToken l2LiskToken =
-            new L2LiskToken(L2_STANDARD_BRIDGE, l1AddressesConfig.L1LiskToken, "Lost Space Key", "LSK", 18);
+            new L2LiskToken(L2_STANDARD_BRIDGE, l1AddressesConfig.L1LiskToken, "Lisk", "LSK", 18);
         vm.stopBroadcast();
 
         assert(address(l2LiskToken) != address(0));
-        assert(keccak256(bytes(l2LiskToken.name())) == keccak256(bytes("Lost Space Key")));
+        assert(keccak256(bytes(l2LiskToken.name())) == keccak256(bytes("Lisk")));
         assert(keccak256(bytes(l2LiskToken.symbol())) == keccak256(bytes("LSK")));
         assert(l2LiskToken.decimals() == 18);
         assert(l2LiskToken.REMOTE_TOKEN() == l1AddressesConfig.L1LiskToken);
