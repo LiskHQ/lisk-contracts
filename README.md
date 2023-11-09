@@ -39,19 +39,19 @@ git submodule update --init --recursive
 
 ## Deployment on Private Test Network
 
-**NOTE**: In a private test network, it's only possible to deploy smart contracts for the **Ethereum L1** network.
+**NOTE**: On a private test network, the deployment of smart contracts is feasible on both L1 and L2 networks. However, the transfer of tokens between these networks is not possible as it requires the operation of the Sequencer.
 
-A private test network is established using the `anvil` tool, and the smart contracts are deployed using the `forge script` tool. To run a private network and deploy the smart contracts, follow these steps:
-1. Create `.env` file and set the vars `PRIVATE_KEY` and `TEST_NETWORK_MNEMONIC`. You can copy and rename the `.env.example` file if the default values provided in `.env.example` are satisfactory.
+A private test L1 and L2 networks are established using the `anvil` tool, and the smart contracts are deployed using the `forge script` tool. To run a private networks and deploy the smart contracts, follow these steps:
+1. Create `.env` file and set the vars `PRIVATE_KEY`, `L1_RPC_URL`, `L1_FORK_RPC_URL`, `L2_RPC_URL`, `L2_FORK_RPC_URL`, `L1_STANDARD_BRIDGE_ADDR` and `TEST_NETWORK_MNEMONIC`. You can copy and rename the `.env.example` file if the default values provided in `.env.example` are satisfactory.
 2. Navigate to the `script` directory.
-3. To create and launch a private test network, execute the script: `./runTestNetwork.sh`
-4. Navigate back to the project root directory.
-5. To deploy `L1LiskToken` smart contract, execute the script: `source .env && forge script --rpc-url=http://localhost:8545 --broadcast --verify -vvvv script/L1LiskToken.s.sol:L1LiskTokenScript`
+3. To create and launch a private test L1 network, execute the script: `./runL1TestNetwork.sh`
+4. To create and launch a private test L2 network, execute the script: `./runL2TestNetwork.sh`
+5. To deploy all smart contracts, execute the script: `./deployContracts.sh`
 
 ## Deployment on Public Test Network
 
-To deploy smart contracts on both L1 and L2 public networks, you will need to provide an URL for a public nodes from a RPC provider, such as Alchemy or Infura. Follow these steps to deploy the smart contracts:
-1. Create `.env` file and set the vars `PRIVATE_KEY`, `L1_RPC_URL`, `L2_RPC_URL` and `L1_STANDARD_BRIDGE_ADDR`. You can copy and rename the `.env.example` file if the default values provided in `.env.example` are satisfactory.
+To deploy smart contracts on both L1 and L2 public networks, you will need to provide an URL for a public nodes from a RPC provider, such as Alchemy or Infura. Additionally, in order to verify smart contracts during the deployment process, it is necessary to provide an Etherscan API key. Follow these steps to deploy the smart contracts:
+1. Create `.env` file and set the vars `PRIVATE_KEY`, `L1_RPC_URL`, `L2_RPC_URL`, `L1_ETHERSCAN_API_KEY`, `L2_ETHERSCAN_API_KEY` and `L1_STANDARD_BRIDGE_ADDR`. You can copy and rename the `.env.example` file if the default values provided in `.env.example` are satisfactory. `L1_ETHERSCAN_API_KEY` and `L2_ETHERSCAN_API_KEY` may be empty to skip smart contracts verification process.
 2. Navigate to the `script` directory.
 3. To deploy all smart contracts, execute the script: `./deployContracts.sh`
    
