@@ -27,6 +27,16 @@ curl -L https://foundry.paradigm.xyz | bash
 
 This will install `Foundryup`, then simply follow the instructions on-screen, which will make the `foundryup` command available in your CLI. Running `foundryup` by itself will install the latest (nightly) precompiled binaries: `forge`, `cast`, `anvil`, and `chisel`.
 
+### Cloning the Lisk Smart Contracts Repository
+To download all the necessary project files and libraries, execute the following commands:
+```shell
+git clone https://github.com/LiskHQ/lisk-contracts.git
+```
+Inside newly created `lisk-contracts` directory:
+```shell
+git submodule update --init --recursive
+```
+
 ## Deployment on Private Test Network
 
 **NOTE**: In a private test network, it's only possible to deploy smart contracts for the **Ethereum L1** network.
