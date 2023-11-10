@@ -47,23 +47,23 @@ contract TransferFundsScript is Script {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         address l1StandardBridge = vm.envAddress("L1_STANDARD_BRIDGE_ADDR");
 
-        console2.log("Transferring Lisk tokens from L1 to L2 Claim contract...");
+        console2.log("Simulation: Transferring Lisk tokens from L1 to L2 Claim contract...");
 
         // get L1LiskToken contract address
         Utils.L1AddressesConfig memory l1AddressesConfig = utils.readL1AddressesFile();
-        console2.log("L1 Lisk token address: %s", l1AddressesConfig.L1LiskToken);
+        console2.log("Simulation: L1 Lisk token address: %s", l1AddressesConfig.L1LiskToken);
 
         // get L2LiskToken and L2Claim contracts addresses
         Utils.L2AddressesConfig memory l2AddressesConfig = utils.readL2AddressesFile();
-        console2.log("L2 Lisk token address: %s", l2AddressesConfig.L2LiskToken);
-        console2.log("L2 Claim contract address: %s", l2AddressesConfig.L2ClaimContract);
+        console2.log("Simulation: L2 Lisk token address: %s", l2AddressesConfig.L2LiskToken);
+        console2.log("Simulation: L2 Claim contract address: %s", l2AddressesConfig.L2ClaimContract);
 
         // get L1LiskToken and L1StandardBridge contracts instances
         L1LiskToken l1LiskToken = L1LiskToken(address(l1AddressesConfig.L1LiskToken));
         IL1StandardBridge bridge = IL1StandardBridge(l1StandardBridge);
 
         console2.log(
-            "Approving L1 Lisk tokens to be transfered by L1 Standard Bridge to the L2 Lisk token contract: %s",
+            "Simulation: Approving L1 Lisk tokens to be transfered by L1 Standard Bridge to the L2 Lisk token contract: %s",
             l1LiskToken.balanceOf(vm.addr(deployerPrivateKey))
         );
         vm.startBroadcast(deployerPrivateKey);
@@ -75,7 +75,7 @@ contract TransferFundsScript is Script {
                 == l1LiskToken.balanceOf(vm.addr(deployerPrivateKey))
         );
 
-        console2.log("Transferring all L1 Lisk tokens to the L2 Claim contract...");
+        console2.log("Simulation: Transferring all L1 Lisk tokens to the L2 Claim contract...");
         vm.startBroadcast(deployerPrivateKey);
         bridge.depositERC20To(
             l1AddressesConfig.L1LiskToken,
@@ -90,6 +90,6 @@ contract TransferFundsScript is Script {
         assert(l1LiskToken.balanceOf(vm.addr(deployerPrivateKey)) == 0);
         assert(l1LiskToken.balanceOf(l1StandardBridge) == 200000000 * 10 ** 18);
 
-        console2.log("L1 Lisk tokens successfully transferred to the L2 Claim contract!");
+        console2.log("Simulation: L1 Lisk tokens successfully transferred to the L2 Claim contract!");
     }
 }

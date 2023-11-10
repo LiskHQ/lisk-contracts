@@ -20,7 +20,7 @@ contract L1LiskTokenScript is Script {
         // Deployer's private key. Owner of the L1 Lisk token. PRIVATE_KEY is set in .env file.
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
 
-        console2.log("Deploying L1 Lisk token...");
+        console2.log("Simulation: Deploying L1 Lisk token...");
 
         // deploy L1LiskToken contract
         vm.startBroadcast(deployerPrivateKey);
@@ -52,8 +52,8 @@ contract L1LiskTokenScript is Script {
         assert(wrappedProxy.balanceOf(vm.addr(deployerPrivateKey)) == 200000000 * 10 ** 18);
         assert(wrappedProxy.owner() == vm.addr(deployerPrivateKey));
 
-        console2.log("L1 Lisk token successfully deployed!");
-        console2.log("L1 Lisk token address: %s", address(wrappedProxy));
+        console2.log("Simulation: L1 Lisk token successfully deployed!");
+        console2.log("Simulation: L1 Lisk token address: %s", address(wrappedProxy));
 
         // write L1LiskToken address to l1addresses.json
         Utils.L1AddressesConfig memory l1AddressesConfig;
