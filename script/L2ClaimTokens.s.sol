@@ -29,7 +29,8 @@ contract L2ClaimTokensScript is Script {
         // check L2Claim contract Lisk token balance
         L2Claim l2Claim = L2Claim(address(l2AddressesConfig.L2ClaimContract));
         console2.log(
-            "Simulation: L2 Claim contract Lisk token balance before claim: %s", l2Claim.l2LiskToken().balanceOf(address(l2Claim))
+            "Simulation: L2 Claim contract Lisk token balance before claim: %s",
+            l2Claim.l2LiskToken().balanceOf(address(l2Claim))
         );
 
         // check deployer Lisk token balance
@@ -45,7 +46,8 @@ contract L2ClaimTokensScript is Script {
 
         // check that L2Claim contract has less Lisk tokens than before
         console2.log(
-            "Simulation: L2 Claim contract Lisk token balance after claim: %s", l2Claim.l2LiskToken().balanceOf(address(l2Claim))
+            "Simulation: L2 Claim contract Lisk token balance after claim: %s",
+            l2Claim.l2LiskToken().balanceOf(address(l2Claim))
         );
 
         // check that deployer has 5 Lisk tokens
