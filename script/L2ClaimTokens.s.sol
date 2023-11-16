@@ -41,7 +41,7 @@ contract L2ClaimTokensScript is Script {
 
         // claim 5 Lisk tokens for a demonstration purpose
         vm.startBroadcast(deployerPrivateKey);
-        l2Claim.claim();
+        //        l2Claim.claim();
         vm.stopBroadcast();
 
         // check that L2Claim contract has less Lisk tokens than before
