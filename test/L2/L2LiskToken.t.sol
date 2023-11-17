@@ -43,14 +43,25 @@ contract L2LiskTokenTest is Test {
 
     function test_Mint() public {
         address alice = vm.addr(3);
+        address bob = vm.addr(4);
 
         vm.prank(bridge);
         l2LiskToken.mint(alice, 100 * 10 ** 18);
         assertEq(l2LiskToken.balanceOf(alice), 100 * 10 ** 18);
+        assertEq(l2LiskToken.balanceOf(bob), 0);
+        assertEq(l2LiskToken.totalSupply(), 100 * 10 ** 18);
 
         vm.prank(bridge);
         l2LiskToken.mint(alice, 50 * 10 ** 18);
         assertEq(l2LiskToken.balanceOf(alice), 150 * 10 ** 18);
+        assertEq(l2LiskToken.balanceOf(bob), 0);
+        assertEq(l2LiskToken.totalSupply(), 150 * 10 ** 18);
+
+        vm.prank(bridge);
+        l2LiskToken.mint(bob, 30 * 10 ** 18);
+        assertEq(l2LiskToken.balanceOf(alice), 150 * 10 ** 18);
+        assertEq(l2LiskToken.balanceOf(bob), 30 * 10 ** 18);
+        assertEq(l2LiskToken.totalSupply(), 180 * 10 ** 18);
     }
 
     function test_MintFail_NotBridge() public {
@@ -65,22 +76,43 @@ contract L2LiskTokenTest is Test {
 
     function test_Burn() public {
         address alice = vm.addr(3);
+        address bob = vm.addr(4);
 
         vm.prank(bridge);
         l2LiskToken.mint(alice, 100 * 10 ** 18);
         assertEq(l2LiskToken.balanceOf(alice), 100 * 10 ** 18);
+        assertEq(l2LiskToken.balanceOf(bob), 0);
+        assertEq(l2LiskToken.totalSupply(), 100 * 10 ** 18);
+
+        vm.prank(bridge);
+        l2LiskToken.mint(bob, 50 * 10 ** 18);
+        assertEq(l2LiskToken.balanceOf(alice), 100 * 10 ** 18);
+        assertEq(l2LiskToken.balanceOf(bob), 50 * 10 ** 18);
+        assertEq(l2LiskToken.totalSupply(), 150 * 10 ** 18);
 
         vm.prank(bridge);
         l2LiskToken.burn(alice, 50 * 10 ** 18);
         assertEq(l2LiskToken.balanceOf(alice), 50 * 10 ** 18);
+        assertEq(l2LiskToken.balanceOf(bob), 50 * 10 ** 18);
+        assertEq(l2LiskToken.totalSupply(), 100 * 10 ** 18);
 
         vm.prank(bridge);
         l2LiskToken.burn(alice, 20 * 10 ** 18);
         assertEq(l2LiskToken.balanceOf(alice), 30 * 10 ** 18);
+        assertEq(l2LiskToken.balanceOf(bob), 50 * 10 ** 18);
+        assertEq(l2LiskToken.totalSupply(), 80 * 10 ** 18);
 
         vm.prank(bridge);
         l2LiskToken.burn(alice, 30 * 10 ** 18);
         assertEq(l2LiskToken.balanceOf(alice), 0);
+        assertEq(l2LiskToken.balanceOf(bob), 50 * 10 ** 18);
+        assertEq(l2LiskToken.totalSupply(), 50 * 10 ** 18);
+
+        vm.prank(bridge);
+        l2LiskToken.burn(bob, 50 * 10 ** 18);
+        assertEq(l2LiskToken.balanceOf(alice), 0);
+        assertEq(l2LiskToken.balanceOf(bob), 0);
+        assertEq(l2LiskToken.totalSupply(), 0);
     }
 
     function test_BurnFail_NotBridge() public {
