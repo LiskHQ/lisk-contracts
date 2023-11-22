@@ -36,8 +36,11 @@ contract L2Claim {
     }
 
     function encodeBytes32Array(bytes32[] calldata _input) internal pure returns (bytes memory data) {
-        for (uint256 i = 0; i < _input.length; i++) {
+        for (uint256 i = 0; i < _input.length;) {
             data = abi.encodePacked(data, _input[i]);
+            unchecked {
+                i++;
+            }
         }
     }
 

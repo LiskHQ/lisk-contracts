@@ -19,6 +19,8 @@ contract Utils is Script {
     struct L2AddressesConfig {
         /// @notice L2 Claim contract address.
         address L2ClaimContract;
+        /// @notice L2 Claim Merkle Root.
+        bytes32 L2ClaimMerkleRoot;
         /// @notice L2 Lisk token address.
         address L2LiskToken;
     }
