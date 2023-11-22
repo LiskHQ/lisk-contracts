@@ -58,10 +58,9 @@ contract L2ClaimTest is Test {
     function setUp() public {
         console.log("L2ClaimTest Address is: %s", address(this));
 
-        string memory root = vm.projectRoot();
-        string memory path = string.concat(root, "/test/L2/data/balances-result-simple.json");
-        json = vm.readFile(path);
-        signatureJson = vm.readFile(string.concat(root, "/test/L2/data/signatures.json"));
+        string memory root = string.concat(vm.projectRoot(), "/lisk-merkle-tree-builder/data/example");
+        json = vm.readFile(string.concat(root, "/balances-result-simple.json"));
+        signatureJson = vm.readFile(string.concat(root, "/signatures.json"));
         MerkleTree memory rawTxDetail = getJSON();
 
         lsk = new MockERC20(10_000_000 * 10 ** 18);
