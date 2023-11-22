@@ -10,9 +10,9 @@ const LSK_MULTIPLIER = 10 ** 8;
 
 const isExample = process.argv[2] === "--example";
 
-const path = isExample ? './data/example' : './data';
+const path = isExample ? './data/example' : './data/mainnet';
 
-const results: {
+const nodes: {
 	lskAddress: string;
 	address: string;
 	balance: number;
@@ -41,7 +41,7 @@ for (const account of data) {
 		  )
 		: solidityPacked(['bytes20', 'uint64', 'uint256'], [address, balanceBeddows, 0]);
 
-	results.push({
+	nodes.push({
 		lskAddress: account.lskAddress,
 		address: '0x' + address.toString('hex'),
 		balance: account.balance,
@@ -54,19 +54,19 @@ for (const account of data) {
 	});
 }
 
-const elements = results.map(result => toBuffer(result.hash));
+const elements = nodes.map(result => toBuffer(result.hash));
 
 const merkleTree = new MerkleTree(elements);
 
-for (const result of results) {
+for (const result of nodes) {
 	result.proof = merkleTree.getHexProof(toBuffer(result.hash));
 }
 
 fs.writeFileSync(
-	`${path}/balances-result.json`,
+	`${path}/merkle-tree-result.json`,
 	JSON.stringify({
 		merkleRoot: '0x' + merkleTree.getRoot().toString('hex'),
-		results,
+		nodes,
 	}),
 	'utf-8',
 );
@@ -74,10 +74,10 @@ fs.writeFileSync(
 if (isExample) {
 	// Create an extra file for Foundry Testing
 	fs.writeFileSync(
-		`${path}/balances-result-simple.json`,
+		`${path}/merkle-tree-result-simple.json`,
 		JSON.stringify({
 			merkleRoot: '0x' + merkleTree.getRoot().toString('hex'),
-			results: results.map(result => ({
+			nodes: nodes.map(result => ({
 				b32Address: result.address,
 				balanceBeddows: result.balanceBeddows,
 				mandatoryKeys: result.mandatoryKeys ?? [],

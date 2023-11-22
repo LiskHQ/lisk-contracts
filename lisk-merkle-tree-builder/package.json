@@ -4,9 +4,10 @@
 	"main": "index.js",
 	"license": "MIT",
 	"scripts": {
-		"sign:": "ts-node data/example/sign.ts",
-		"create-balances:": "ts-node data/example/create-balances.ts",
-		"dev": "ts-node main.ts"
+		"sign-testing": "ts-node data/example/sign.ts",
+		"create-balances-testing": "ts-node data/example/create-balances.ts",
+		"generate-merkle-tree": "ts-node main.ts",
+		"generate-merkle-tree-testing": "ts-node main.ts --example"
 	},
 	"devDependencies": {
 		"@types/node": "^20.9.1",

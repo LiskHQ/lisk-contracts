@@ -24,7 +24,7 @@ interface DevValidator {
 
 interface Balances {
 	merkleRoot: string;
-	results: {
+	nodes: {
 		lskAddress: string
 		address: string
 		balance: number
@@ -39,7 +39,7 @@ interface Balances {
 }
 
 const keys = (JSON.parse(fs.readFileSync('./data/example/dev-validators.json', 'utf-8')) as DevValidator).keys;
-const balances = JSON.parse(fs.readFileSync('./data/example/balances-result.json', 'utf-8')) as Balances;
+const balances = JSON.parse(fs.readFileSync('./data/example/merkle-tree-result.json', 'utf-8')) as Balances;
 
 const signMessage = (message: string, key: Key): string => {
 	return Buffer.from(
@@ -66,7 +66,7 @@ interface Signature {
 
 const signatures: Signature[] = [];
 
-for (const [index, account] of balances.results.entries()) {
+for (const [index, account] of balances.nodes.entries()) {
 	const message =
 		solidityPackedKeccak256(
 			['bytes32', 'address'],

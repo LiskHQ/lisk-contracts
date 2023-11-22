@@ -29,7 +29,7 @@ contract L2ClaimScript is Script {
 
         // deploy L2Claim contract
         vm.startBroadcast(deployerPrivateKey);
-        L2Claim l2Claim = new L2Claim(address(l2AddressesConfig.L2LiskToken), bytes32(0));
+        L2Claim l2Claim = new L2Claim(address(l2AddressesConfig.L2LiskToken), l2AddressesConfig.L2ClaimMerkleRoot);
         vm.stopBroadcast();
 
         assert(address(l2Claim) != address(0));

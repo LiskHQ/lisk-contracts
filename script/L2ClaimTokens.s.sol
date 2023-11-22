@@ -39,11 +39,6 @@ contract L2ClaimTokensScript is Script {
             l2Claim.l2LiskToken().balanceOf(vm.addr(deployerPrivateKey))
         );
 
-        // claim 5 Lisk tokens for a demonstration purpose
-        vm.startBroadcast(deployerPrivateKey);
-        //        l2Claim.claim();
-        vm.stopBroadcast();
-
         // check that L2Claim contract has less Lisk tokens than before
         console2.log(
             "Simulation: L2 Claim contract Lisk token balance after claim: %s",

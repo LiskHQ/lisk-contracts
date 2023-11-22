@@ -19,6 +19,9 @@ struct Signature {
     SigPair[] sigs;
 }
 
+// Limitation of parseJSON, only bytes32 is supported
+// to convert b32Address back to bytes20, shift 96 bits to the left
+// i.e. bytes20(node.b32Address << 96)
 struct Node {
     bytes32 b32Address;
     uint64 balanceBeddows;
@@ -38,11 +41,12 @@ contract L2ClaimTest is Test {
 
     ERC20 public lsk;
     L2Claim public l2Claim;
-    string public json;
+
+    string public merkleTreeJson;
     string public signatureJson;
 
-    function getJSON() internal view returns (MerkleTree memory) {
-        return abi.decode(json.parseRaw("."), (MerkleTree));
+    function getMerkleTree() internal view returns (MerkleTree memory) {
+        return abi.decode(merkleTreeJson.parseRaw("."), (MerkleTree));
     }
 
     function getSignature(uint256 _index) internal view returns (Signature memory) {
@@ -51,6 +55,7 @@ contract L2ClaimTest is Test {
         );
     }
 
+    // Helper function to "invalidate" a proof or sig. (e.g. 0xabcdef -> 0xabcdf0)
     function bytes32AddOne(bytes32 _value) internal pure returns (bytes32) {
         return bytes32(uint256(_value) + 1);
     }
@@ -59,10 +64,14 @@ contract L2ClaimTest is Test {
         console.log("L2ClaimTest Address is: %s", address(this));
 
         string memory root = string.concat(vm.projectRoot(), "/lisk-merkle-tree-builder/data/example");
-        json = vm.readFile(string.concat(root, "/balances-result-simple.json"));
-        signatureJson = vm.readFile(string.concat(root, "/signatures.json"));
-        MerkleTree memory rawTxDetail = getJSON();
 
+        // Read Merkle Tree File
+        merkleTreeJson = vm.readFile(string.concat(root, "/merkle-tree-result-simple.json"));
+
+        // Read Pre-signed Signatures, for testing purpose
+        signatureJson = vm.readFile(string.concat(root, "/signatures.json"));
+
+        MerkleTree memory rawTxDetail = getMerkleTree();
         lsk = new MockERC20(10_000_000 * 10 ** 18);
         l2Claim = new L2Claim(address(lsk), rawTxDetail.merkleRoot);
         lsk.transfer(address(l2Claim), lsk.balanceOf(address(this)));
@@ -73,7 +82,7 @@ contract L2ClaimTest is Test {
 
     function test_claimRegularAccount_RevertWhenInvalidProof() public {
         uint256 accountIndex = 0;
-        Node memory node = getJSON().node[accountIndex];
+        Node memory node = getMerkleTree().node[accountIndex];
         Signature memory signature = getSignature(accountIndex);
 
         node.proof[0] = bytes32AddOne(node.proof[0]);
@@ -90,7 +99,7 @@ contract L2ClaimTest is Test {
 
     function test_claimRegularAccount_RevertWhenValidProofInvalidSig() public {
         uint256 accountIndex = 0;
-        Node memory node = getJSON().node[accountIndex];
+        Node memory node = getMerkleTree().node[accountIndex];
         Signature memory signature = getSignature(accountIndex);
 
         vm.expectRevert();
@@ -114,7 +123,7 @@ contract L2ClaimTest is Test {
 
     function testFuzz_claimRegularAccount_SuccessClaim(uint8 _accountIndex) public {
         vm.assume(_accountIndex < 50);
-        Node memory node = getJSON().node[_accountIndex];
+        Node memory node = getMerkleTree().node[_accountIndex];
         Signature memory signature = getSignature(_accountIndex);
 
         l2Claim.claimRegularAccount(
@@ -138,7 +147,7 @@ contract L2ClaimTest is Test {
     // Multisig settings refers to: lisk-merkle-tree-builder/data/example/create-balances.ts
     function test_claimMultisigAccount_RevertWhenIncorrectProof() public {
         uint256 accountIndex = 50;
-        Node memory node = getJSON().node[accountIndex];
+        Node memory node = getMerkleTree().node[accountIndex];
         Signature memory signature = getSignature(accountIndex);
 
         ED25519Signature[] memory ed25519Signatures = new ED25519Signature[](node.numberOfSignatures);
@@ -162,7 +171,7 @@ contract L2ClaimTest is Test {
 
     function test_claimMultisigAccount_RevertWhenValidProofInvalidSig() public {
         uint256 accountIndex = 50;
-        Node memory node = getJSON().node[accountIndex];
+        Node memory node = getMerkleTree().node[accountIndex];
         Signature memory signature = getSignature(accountIndex);
 
         ED25519Signature[] memory ed25519Signatures = new ED25519Signature[](node.numberOfSignatures);
@@ -186,7 +195,7 @@ contract L2ClaimTest is Test {
 
     function test_claimMultisigAccount_RevertWhenValidProofInsufficientSig() public {
         uint256 accountIndex = 50;
-        Node memory node = getJSON().node[accountIndex];
+        Node memory node = getMerkleTree().node[accountIndex];
         Signature memory signature = getSignature(accountIndex);
 
         ED25519Signature[] memory ed25519Signatures = new ED25519Signature[](node.numberOfSignatures);
@@ -209,7 +218,7 @@ contract L2ClaimTest is Test {
 
     function test_claimMultisigAccount_SuccessClaim_3M() public {
         uint256 accountIndex = 50;
-        Node memory node = getJSON().node[accountIndex];
+        Node memory node = getMerkleTree().node[accountIndex];
         Signature memory signature = getSignature(accountIndex);
 
         ED25519Signature[] memory ed25519Signatures = new ED25519Signature[](node.numberOfSignatures);
@@ -230,7 +239,7 @@ contract L2ClaimTest is Test {
 
     function test_claimMultisigAccount_SuccessClaim_1M_2O() public {
         uint256 accountIndex = 51;
-        Node memory node = getJSON().node[accountIndex];
+        Node memory node = getMerkleTree().node[accountIndex];
         Signature memory signature = getSignature(accountIndex);
 
         ED25519Signature[] memory ed25519Signatures =
@@ -254,7 +263,7 @@ contract L2ClaimTest is Test {
 
     function test_claimMultisigAccount_SuccessClaim_3M_3O() public {
         uint256 accountIndex = 52;
-        Node memory node = getJSON().node[accountIndex];
+        Node memory node = getMerkleTree().node[accountIndex];
         Signature memory signature = getSignature(accountIndex);
 
         ED25519Signature[] memory ed25519Signatures =
@@ -278,7 +287,7 @@ contract L2ClaimTest is Test {
 
     function test_claimMultisigAccount_SuccessClaim_64M() public {
         uint256 accountIndex = 53;
-        Node memory node = getJSON().node[accountIndex];
+        Node memory node = getMerkleTree().node[accountIndex];
         Signature memory signature = getSignature(accountIndex);
 
         ED25519Signature[] memory ed25519Signatures =

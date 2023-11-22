@@ -1,6 +1,6 @@
 {
   "merkleRoot": "0xb4c0f1fabd26b14be3e90cdd2ed1e51ada22fce88f94b7b2d22b4f8c9373330a",
-  "results": [
+  "nodes": [
     {
       "b32Address": "0x72138032496ae80d1a4abdf6d4e541b40113e0de",
       "balanceBeddows": 55484318,
