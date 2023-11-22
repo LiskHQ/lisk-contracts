@@ -33,7 +33,7 @@ contract L2ClaimScript is Script {
         vm.stopBroadcast();
 
         assert(address(l2Claim) != address(0));
-       assert(address(l2Claim.l2LiskToken()) == address(l2AddressesConfig.L2LiskToken));
+        assert(address(l2Claim.l2LiskToken()) == address(l2AddressesConfig.L2LiskToken));
 
         console2.log("Simulation: L2 Claim contract successfully deployed!");
         console2.log("Simulation: L2 Claim contract address: %s", address(l2Claim));
