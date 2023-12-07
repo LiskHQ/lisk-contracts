@@ -62,13 +62,13 @@ contract L2Claim {
         bytes20 _lskAddress,
         uint64 _amount,
         bytes32[] calldata _proof,
-        bytes32 _node,
+        bytes32 _leaf,
         address _recipient
     )
         internal
     {
         require(!claimed[_lskAddress], "Already Claimed");
-        require(MerkleProof.verify(_proof, merkleRoot, _node), "Invalid Proof");
+        require(MerkleProof.verify(_proof, merkleRoot, _leaf), "Invalid Proof");
 
         l2LiskToken.transfer(_recipient, _amount * LSK_MULTIPLIER);
 
@@ -77,7 +77,7 @@ contract L2Claim {
     }
 
     /// @notice Claim LSK from a regular account.
-    /// @param _proof       Array of hashes that proves existence of the node.
+    /// @param _proof       Array of hashes that proves existence of the leaf.
     /// @param _pubKey      Public Key of LSK Address.
     /// @param _amount      Amount of LSK (In Beddows).
     /// @param _recipient   Destination address at L2 Chain.
@@ -92,15 +92,15 @@ contract L2Claim {
         external
     {
         bytes20 lskAddress = bytes20(sha256(abi.encode(_pubKey)));
-        bytes32 node = doubleKeccak256(abi.encode(lskAddress, _amount, uint32(0), new bytes32[](0), new bytes32[](0)));
+        bytes32 leaf = doubleKeccak256(abi.encode(lskAddress, _amount, uint32(0), new bytes32[](0), new bytes32[](0)));
 
-        verifySignature(_pubKey, _sig.r, _sig.s, keccak256(abi.encode(node, _recipient)));
+        verifySignature(_pubKey, _sig.r, _sig.s, keccak256(abi.encode(leaf, _recipient)));
 
-        claim(lskAddress, _amount, _proof, node, _recipient);
+        claim(lskAddress, _amount, _proof, leaf, _recipient);
     }
 
     /// @notice Claim LSK from a multisig account.
-    /// @param _proof       Array of hashes that proves existence of the node.
+    /// @param _proof       Array of hashes that proves existence of the leaf.
     /// @param _lskAddress  LSK Address in bytes format.
     /// @param _amount      Amount of LSK (In Beddows).
     /// @param _keys        Structs of Mandatory Keys and Optional Keys.
@@ -128,11 +128,11 @@ contract L2Claim {
             numberOfSignatures++;
         }
 
-        bytes32 node = doubleKeccak256(
+        bytes32 leaf = doubleKeccak256(
             abi.encode(_lskAddress, _amount, numberOfSignatures, _keys.mandatoryKeys, _keys.optionalKeys)
         );
 
-        bytes32 message = keccak256(abi.encode(node, _recipient));
+        bytes32 message = keccak256(abi.encode(leaf, _recipient));
 
         for (uint256 i = 0; i < _keys.mandatoryKeys.length; i++) {
             verifySignature(_keys.mandatoryKeys[i], _sigs[i].r, _sigs[i].s, message);
@@ -150,6 +150,6 @@ contract L2Claim {
             );
         }
 
-        claim(_lskAddress, _amount, _proof, node, _recipient);
+        claim(_lskAddress, _amount, _proof, leaf, _recipient);
     }
 }

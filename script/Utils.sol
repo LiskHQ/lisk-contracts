@@ -25,9 +25,9 @@ contract Utils is Script {
 
     // Limitation of parseJSON, only bytes32 is supported
     // to convert b32Address back to bytes20, shift 96 bits to the left
-    // i.e. bytes20(node.b32Address << 96)
-    /// @notice This struct is store merkleTree node.
-    struct MerkleTreeNode {
+    // i.e. bytes20(leaf.b32Address << 96)
+    /// @notice This struct is store merkleTree leaf.
+    struct MerkleTreeLeaf {
         bytes32 b32Address;
         uint64 balanceBeddows;
         bytes32[] mandatoryKeys;
@@ -38,8 +38,8 @@ contract Utils is Script {
 
     /// @notice This struct is used to read MerkleTree from JSON file.
     struct MerkleTree {
+        MerkleTreeLeaf[] leaf;
         bytes32 merkleRoot;
-        MerkleTreeNode[] node;
     }
 
     /// @notice This function reads L1 addresses from JSON file.
