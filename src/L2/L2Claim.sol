@@ -16,7 +16,7 @@ struct ED25519Signature {
 }
 
 contract L2Claim {
-    event LSKClaimed(bytes20 lskAddress, uint256 amount);
+    event LSKClaimed(bytes20 lskAddress, address recipient, uint256 amount);
 
     uint256 public constant LSK_MULTIPLIER = 10 ** 10;
 
@@ -35,13 +35,8 @@ contract L2Claim {
         require(Ed25519.check(_pubKey, _r, _s, _message, bytes9(0)), "Invalid Signature");
     }
 
-    function encodeBytes32Array(bytes32[] calldata _input) internal pure returns (bytes memory data) {
-        for (uint256 i = 0; i < _input.length;) {
-            data = abi.encodePacked(data, _input[i]);
-            unchecked {
-                i++;
-            }
-        }
+    function doubleKeccak256(bytes memory _message) internal pure returns (bytes32) {
+        return keccak256(bytes.concat(keccak256(_message)));
     }
 
     function claim(
@@ -59,7 +54,7 @@ contract L2Claim {
         l2LiskToken.transfer(_recipient, _amount * LSK_MULTIPLIER);
 
         claimed[_lskAddress] = true;
-        emit LSKClaimed(_lskAddress, _amount);
+        emit LSKClaimed(_lskAddress, _recipient, _amount);
     }
 
     function claimRegularAccount(
@@ -72,9 +67,9 @@ contract L2Claim {
         external
     {
         bytes20 lskAddress = bytes20(sha256(abi.encode(_pubKey)));
-        bytes32 node = keccak256(abi.encodePacked(lskAddress, _amount, uint256(0)));
+        bytes32 node = doubleKeccak256(abi.encode(lskAddress, _amount, uint32(0), new bytes32[](0), new bytes32[](0)));
 
-        verifySignature(_pubKey, _sig.r, _sig.s, keccak256(abi.encodePacked(node, _recipient)));
+        verifySignature(_pubKey, _sig.r, _sig.s, keccak256(abi.encode(node, _recipient)));
 
         claim(lskAddress, _amount, _proof, node, _recipient);
     }
@@ -89,8 +84,10 @@ contract L2Claim {
     )
         external
     {
+        require(_sigs.length == _keys.optionalKeys.length + _keys.mandatoryKeys.length, "Invalid Signature Length");
+
         // If numberOfSignatures passes MerkleProof in later stage, that means this value is correct.
-        uint256 numberOfSignatures = _keys.mandatoryKeys.length;
+        uint32 numberOfSignatures = uint32(_keys.mandatoryKeys.length);
 
         for (uint256 i = 0; i < _keys.optionalKeys.length; i++) {
             if (_sigs[i + _keys.mandatoryKeys.length].r == bytes32(0)) {
@@ -99,17 +96,11 @@ contract L2Claim {
             numberOfSignatures++;
         }
 
-        bytes32 node = keccak256(
-            abi.encodePacked(
-                _lskAddress,
-                _amount,
-                numberOfSignatures,
-                encodeBytes32Array(_keys.mandatoryKeys),
-                encodeBytes32Array(_keys.optionalKeys)
-            )
+        bytes32 node = doubleKeccak256(
+            abi.encode(_lskAddress, _amount, numberOfSignatures, _keys.mandatoryKeys, _keys.optionalKeys)
         );
 
-        bytes32 message = keccak256(abi.encodePacked(node, _recipient));
+        bytes32 message = keccak256(abi.encode(node, _recipient));
 
         for (uint256 i = 0; i < _keys.mandatoryKeys.length; i++) {
             verifySignature(_keys.mandatoryKeys[i], _sigs[i].r, _sigs[i].s, message);
