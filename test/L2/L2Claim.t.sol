@@ -216,6 +216,52 @@ contract L2ClaimTest is Test {
         );
     }
 
+    function test_claimMultisigAccount_RevertWhenSigLengthLongerThanManKeysAndOpKeys() public {
+        uint256 accountIndex = 50;
+        Node memory node = getMerkleTree().node[accountIndex];
+        Signature memory signature = getSignature(accountIndex);
+
+        ED25519Signature[] memory ed25519Signatures = new ED25519Signature[](node.numberOfSignatures + 1);
+
+        for (uint256 i; i < node.numberOfSignatures; i++) {
+            ed25519Signatures[i] = ED25519Signature(signature.sigs[i].r, signature.sigs[i].s);
+        }
+
+        vm.expectRevert("Invalid Signature Length");
+        l2Claim.claimMultisigAccount(
+            node.proof,
+            bytes20(node.b32Address << 96),
+            node.balanceBeddows,
+            MultisigKeys(node.mandatoryKeys, node.optionalKeys),
+            address(this),
+            ed25519Signatures
+        );
+    }
+
+    // numberOfSignatures are calculated by number of non-empty signatures, hence providing more signature than needed would result in sig error
+    function test_claimMultisigAccount_RevertWhenSigOversupplied() public {
+        uint256 accountIndex = 51;
+        Node memory node = getMerkleTree().node[accountIndex];
+        Signature memory signature = getSignature(accountIndex);
+
+        ED25519Signature[] memory ed25519Signatures =
+                    new ED25519Signature[](node.mandatoryKeys.length + node.optionalKeys.length);
+
+        for (uint256 i; i < ed25519Signatures.length; i++) {
+            ed25519Signatures[i] = ED25519Signature(signature.sigs[i].r, signature.sigs[i].s);
+        }
+
+        vm.expectRevert("Invalid Signature");
+        l2Claim.claimMultisigAccount(
+            node.proof,
+            bytes20(node.b32Address << 96),
+            node.balanceBeddows,
+            MultisigKeys(node.mandatoryKeys, node.optionalKeys),
+            address(this),
+            ed25519Signatures
+        );
+    }
+
     function test_claimMultisigAccount_SuccessClaim_3M() public {
         uint256 accountIndex = 50;
         Node memory node = getMerkleTree().node[accountIndex];
@@ -235,6 +281,7 @@ contract L2ClaimTest is Test {
             address(this),
             ed25519Signatures
         );
+        assertEq(lsk.balanceOf(address(this)), node.balanceBeddows * l2Claim.LSK_MULTIPLIER());
     }
 
     function test_claimMultisigAccount_SuccessClaim_1M_2O() public {
@@ -259,6 +306,8 @@ contract L2ClaimTest is Test {
             address(this),
             ed25519Signatures
         );
+
+        assertEq(lsk.balanceOf(address(this)), node.balanceBeddows * l2Claim.LSK_MULTIPLIER());
     }
 
     function test_claimMultisigAccount_SuccessClaim_3M_3O() public {
@@ -283,6 +332,8 @@ contract L2ClaimTest is Test {
             address(this),
             ed25519Signatures
         );
+
+        assertEq(lsk.balanceOf(address(this)), node.balanceBeddows * l2Claim.LSK_MULTIPLIER());
     }
 
     function test_claimMultisigAccount_SuccessClaim_64M() public {
@@ -305,6 +356,8 @@ contract L2ClaimTest is Test {
             address(this),
             ed25519Signatures
         );
+
+        assertEq(lsk.balanceOf(address(this)), node.balanceBeddows * l2Claim.LSK_MULTIPLIER());
     }
 
     function test_claimMultisigAccount_RevertWhenAlreadyClaimed() public {
