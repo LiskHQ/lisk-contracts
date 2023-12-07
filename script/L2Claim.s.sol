@@ -25,15 +25,17 @@ contract L2ClaimScript is Script {
 
         // get L2LiskToken contract address
         Utils.L2AddressesConfig memory l2AddressesConfig = utils.readL2AddressesFile();
+        Utils.MerkleTree memory merkleTree = utils.readMerkleTreeFile();
         console2.log("Simulation: L2 Lisk token address: %s", l2AddressesConfig.L2LiskToken);
 
         // deploy L2Claim contract
         vm.startBroadcast(deployerPrivateKey);
-        L2Claim l2Claim = new L2Claim(address(l2AddressesConfig.L2LiskToken), l2AddressesConfig.L2ClaimMerkleRoot);
+        L2Claim l2Claim = new L2Claim(address(l2AddressesConfig.L2LiskToken), merkleTree.merkleRoot);
         vm.stopBroadcast();
 
         assert(address(l2Claim) != address(0));
         assert(address(l2Claim.l2LiskToken()) == address(l2AddressesConfig.L2LiskToken));
+        assert(l2Claim.merkleRoot() == merkleTree.merkleRoot);
 
         console2.log("Simulation: L2 Claim contract successfully deployed!");
         console2.log("Simulation: L2 Claim contract address: %s", address(l2Claim));

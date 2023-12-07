@@ -19,10 +19,27 @@ contract Utils is Script {
     struct L2AddressesConfig {
         /// @notice L2 Claim contract address.
         address L2ClaimContract;
-        /// @notice L2 Claim Merkle Root.
-        bytes32 L2ClaimMerkleRoot;
         /// @notice L2 Lisk token address.
         address L2LiskToken;
+    }
+
+    // Limitation of parseJSON, only bytes32 is supported
+    // to convert b32Address back to bytes20, shift 96 bits to the left
+    // i.e. bytes20(node.b32Address << 96)
+    /// @notice This struct is store merkleTree node.
+    struct MerkleTreeNode {
+        bytes32 b32Address;
+        uint64 balanceBeddows;
+        bytes32[] mandatoryKeys;
+        uint256 numberOfSignatures;
+        bytes32[] optionalKeys;
+        bytes32[] proof;
+    }
+
+    /// @notice This struct is used to read MerkleTree from JSON file.
+    struct MerkleTree {
+        bytes32 merkleRoot;
+        MerkleTreeNode[] node;
     }
 
     /// @notice This function reads L1 addresses from JSON file.
@@ -51,6 +68,16 @@ contract Utils is Script {
         string memory addressJson = vm.readFile(addressPath);
         bytes memory addressRaw = vm.parseJson(addressJson);
         return abi.decode(addressRaw, (L2AddressesConfig));
+    }
+
+    /// @notice This function reads MerkleTree from JSON file.
+    /// @return L2ClaimConfig struct containing merkle root.
+    function readMerkleTreeFile() external view returns (MerkleTree memory) {
+        string memory root = vm.projectRoot();
+        string memory addressPath = string.concat(root, "/deployment/merkleTree.json");
+        string memory addressJson = vm.readFile(addressPath);
+        bytes memory addressRaw = vm.parseJson(addressJson);
+        return abi.decode(addressRaw, (MerkleTree));
     }
 
     /// @notice This function writes L2 addresses to JSON file.
