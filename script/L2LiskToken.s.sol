@@ -31,13 +31,14 @@ contract L2LiskTokenScript is Script {
 
         // deploy L2LiskToken contract
         vm.startBroadcast(deployerPrivateKey);
-        L2LiskToken l2LiskToken = new L2LiskToken(L2_STANDARD_BRIDGE, l1AddressesConfig.L1LiskToken, "Lisk", "LSK", 18);
+        L2LiskToken l2LiskToken = new L2LiskToken(L2_STANDARD_BRIDGE, l1AddressesConfig.L1LiskToken);
         vm.stopBroadcast();
 
         assert(address(l2LiskToken) != address(0));
         assert(keccak256(bytes(l2LiskToken.name())) == keccak256(bytes("Lisk")));
         assert(keccak256(bytes(l2LiskToken.symbol())) == keccak256(bytes("LSK")));
         assert(l2LiskToken.decimals() == 18);
+        assert(l2LiskToken.totalSupply() == 0);
         assert(l2LiskToken.REMOTE_TOKEN() == l1AddressesConfig.L1LiskToken);
         assert(l2LiskToken.BRIDGE() == L2_STANDARD_BRIDGE);
 
