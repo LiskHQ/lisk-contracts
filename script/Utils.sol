@@ -70,16 +70,6 @@ contract Utils is Script {
         return abi.decode(addressRaw, (L2AddressesConfig));
     }
 
-    /// @notice This function reads MerkleTree from JSON file.
-    /// @return L2ClaimConfig struct containing merkle root.
-    function readMerkleTreeFile() external view returns (MerkleTree memory) {
-        string memory root = vm.projectRoot();
-        string memory addressPath = string.concat(root, "/deployment/merkleTree.json");
-        string memory addressJson = vm.readFile(addressPath);
-        bytes memory addressRaw = vm.parseJson(addressJson);
-        return abi.decode(addressRaw, (MerkleTree));
-    }
-
     /// @notice This function writes L2 addresses to JSON file.
     /// @param cfg L2AddressesConfig struct containing L2 addresses which will be written to JSON file.
     function writeL2AddressesFile(L2AddressesConfig memory cfg) external {
@@ -87,5 +77,16 @@ contract Utils is Script {
         vm.serializeAddress(json, "L2ClaimContract", cfg.L2ClaimContract);
         string memory finalJson = vm.serializeAddress(json, "L2LiskToken", cfg.L2LiskToken);
         finalJson.write(string.concat("deployment/l2addresses.json"));
+    }
+
+
+    /// @notice This function reads MerkleTree from JSON file.
+    /// @return L2ClaimConfig struct containing merkle root.
+    function readMerkleTreeFile() external view returns (MerkleTree memory) {
+        string memory root = vm.projectRoot();
+        string memory addressPath = string.concat(root, "/script/merkleTree.json");
+        string memory addressJson = vm.readFile(addressPath);
+        bytes memory addressRaw = vm.parseJson(addressJson);
+        return abi.decode(addressRaw, (MerkleTree));
     }
 }
