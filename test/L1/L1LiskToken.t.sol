@@ -20,5 +20,6 @@ contract L1LiskTokenTest is Test {
         assertEq(l1LiskToken.symbol(), SYMBOL);
         assertEq(l1LiskToken.totalSupply(), TOTAL_SUPPLY);
         assertEq(l1LiskToken.balanceOf(address(this)), TOTAL_SUPPLY);
+        assertEq(l1LiskToken.owner(), address(this));
     }
 }
