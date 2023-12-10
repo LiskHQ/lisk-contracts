@@ -9,6 +9,8 @@ contract L1LiskTokenTest is Test {
     event BurnerAdded(address indexed account);
     event BurnerRemoved(address indexed account);
 
+    event Transfer(address indexed from, address indexed to, uint256 value);
+
     string private constant NAME = "Lisk";
     string private constant SYMBOL = "LSK";
     uint256 private constant TOTAL_SUPPLY = 200_000_000 * 10 ** 18; //200 million LSK tokens
@@ -59,5 +61,27 @@ contract L1LiskTokenTest is Test {
 
         l1LiskToken.renounceBurner(alice);
         assertFalse(l1LiskToken.isBurner(alice));
+    }
+
+    function test_onlyBurnerWithSufficientBalanceBurnsToken() public {
+        address alice = address(0x1);
+        uint256 amountToBurn = 1000000;
+        vm.prank(alice);
+        vm.expectRevert(Unauthorized.selector);
+        l1LiskToken.burn(amountToBurn);
+
+        l1LiskToken.addBurner(alice);
+
+        vm.prank(alice);
+        vm.expectRevert();
+        l1LiskToken.burn(amountToBurn);
+
+        l1LiskToken.transfer(alice, amountToBurn * 2);
+        vm.prank(alice);
+        vm.expectEmit(true, true, false, true, address(l1LiskToken));
+        emit Transfer(alice, address(0), amountToBurn);
+        l1LiskToken.burn(amountToBurn);
+
+        assertEq(l1LiskToken.totalSupply(), TOTAL_SUPPLY - amountToBurn);
     }
 }

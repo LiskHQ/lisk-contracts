@@ -21,4 +21,8 @@ contract L1LiskToken is ERC20, Ownable, BurnerRole {
     function renounceBurner(address account) public override onlyOwner {
         _removeBurner(account);
     }
+
+    function burn(uint256 value) public onlyBurner {
+        _burn(_msgSender(), value);
+    }
 }
