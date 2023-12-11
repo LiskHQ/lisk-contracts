@@ -3,7 +3,6 @@ pragma solidity 0.8.21;
 
 import { Test, console2 } from "forge-std/Test.sol";
 import { BurnerRole } from "src/access/roles/BurnerRole.sol";
-import { Unauthorized } from "src/utils/Errors.sol";
 
 contract BurnerRoleMock is BurnerRole {
     uint8 private _value;
@@ -53,7 +52,7 @@ contract BurnerRoleTest is Test {
     function test_onlyBurner() public {
         address alice = address(0x1);
 
-        vm.expectRevert(Unauthorized.selector);
+        vm.expectRevert(abi.encodeWithSelector(BurnerRole.UnauthorizedBurnerAccount.selector, address(this)));
         burnerRole.setValue(10);
 
         burnerRole.addBurner(alice);

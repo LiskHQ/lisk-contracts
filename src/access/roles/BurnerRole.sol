@@ -3,10 +3,11 @@ pragma solidity 0.8.21;
 
 import { Roles } from "@hiddentao/contracts/access/Roles.sol";
 import { Context } from "@openzeppelin/contracts/utils/Context.sol";
-import { Unauthorized } from "../../utils/Errors.sol";
 
 contract BurnerRole is Context {
     using Roles for Roles.Role;
+
+    error UnauthorizedBurnerAccount(address account);
 
     event BurnerAdded(address indexed account);
     event BurnerRemoved(address indexed account);
@@ -27,7 +28,7 @@ contract BurnerRole is Context {
 
     modifier onlyBurner() {
         if (!isBurner(_msgSender())) {
-            revert Unauthorized();
+            revert UnauthorizedBurnerAccount(_msgSender());
         }
         _;
     }
