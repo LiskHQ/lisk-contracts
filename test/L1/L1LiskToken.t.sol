@@ -3,7 +3,6 @@ pragma solidity 0.8.21;
 
 import { Test, console2 } from "forge-std/Test.sol";
 import { L1LiskToken } from "src/L1/L1LiskToken.sol";
-import { BurnerRole } from "src/access/roles/BurnerRole.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 
 contract L1LiskTokenTest is Test {
@@ -68,7 +67,7 @@ contract L1LiskTokenTest is Test {
         address alice = address(0x1);
         uint256 amountToBurn = 1000000;
         vm.prank(alice);
-        vm.expectRevert(abi.encodeWithSelector(BurnerRole.UnauthorizedBurnerAccount.selector, alice));
+        vm.expectRevert(abi.encodeWithSelector(L1LiskToken.UnauthorizedBurnerAccount.selector, alice));
         l1LiskToken.burn(amountToBurn);
 
         l1LiskToken.addBurner(alice);
