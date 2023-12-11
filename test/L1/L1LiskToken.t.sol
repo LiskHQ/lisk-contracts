@@ -3,7 +3,9 @@ pragma solidity 0.8.21;
 
 import { Test, console2 } from "forge-std/Test.sol";
 import { L1LiskToken } from "src/L1/L1LiskToken.sol";
+import { BurnerRole } from "src/access/roles/BurnerRole.sol";
 import { Unauthorized } from "src/utils/Errors.sol";
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 
 contract L1LiskTokenTest is Test {
     event BurnerAdded(address indexed account);
@@ -48,10 +50,10 @@ contract L1LiskTokenTest is Test {
 
         vm.startPrank(alice);
 
-        vm.expectRevert(Unauthorized.selector);
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, alice));
         l1LiskToken.addBurner(alice);
 
-        vm.expectRevert(Unauthorized.selector);
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, alice));
         l1LiskToken.renounceBurner(alice);
 
         vm.stopPrank();
