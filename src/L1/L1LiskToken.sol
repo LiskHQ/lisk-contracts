@@ -2,11 +2,12 @@
 pragma solidity 0.8.21;
 
 import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import { ERC20Burnable } from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 import { ERC20Permit } from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { Roles } from "@hiddentao/contracts/access/Roles.sol";
 
-contract L1LiskToken is ERC20, ERC20Permit, Ownable {
+contract L1LiskToken is ERC20Burnable, ERC20Permit, Ownable {
     using Roles for Roles.Role;
 
     error UnauthorizedBurnerAccount(address account);
@@ -36,8 +37,12 @@ contract L1LiskToken is ERC20, ERC20Permit, Ownable {
         _removeBurner(account);
     }
 
-    function burn(uint256 value) public onlyBurner {
-        _burn(_msgSender(), value);
+    function burn(uint256 value) public override onlyBurner {
+        super.burn(value);
+    }
+
+    function burnFrom(address account, uint256 value) public override onlyBurner {
+        super.burnFrom(account, value);
     }
 
     modifier onlyBurner() {

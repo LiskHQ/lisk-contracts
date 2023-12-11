@@ -4,6 +4,7 @@ pragma solidity 0.8.21;
 import { Test, console2 } from "forge-std/Test.sol";
 import { L1LiskToken } from "src/L1/L1LiskToken.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { IERC20Errors } from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
 
 contract L1LiskTokenTest is Test {
     event BurnerAdded(address indexed account);
@@ -73,7 +74,7 @@ contract L1LiskTokenTest is Test {
         l1LiskToken.addBurner(alice);
 
         vm.prank(alice);
-        vm.expectRevert();
+        vm.expectRevert(abi.encodeWithSelector(IERC20Errors.ERC20InsufficientBalance.selector, alice, 0, amountToBurn));
         l1LiskToken.burn(amountToBurn);
 
         l1LiskToken.transfer(alice, amountToBurn * 2);
@@ -82,6 +83,29 @@ contract L1LiskTokenTest is Test {
         emit Transfer(alice, address(0), amountToBurn);
         l1LiskToken.burn(amountToBurn);
 
+        assertEq(l1LiskToken.balanceOf(alice), amountToBurn);
+        assertEq(l1LiskToken.totalSupply(), TOTAL_SUPPLY - amountToBurn);
+    }
+
+    function test_onlyBurnerWithSufficientAllowanceBurnsTokensFromAnAccount() public {
+        address alice = address(0x1);
+        uint256 amountToBurn = 1000000;
+        vm.prank(alice);
+        vm.expectRevert(abi.encodeWithSelector(L1LiskToken.UnauthorizedBurnerAccount.selector, alice));
+        l1LiskToken.burnFrom(address(this), amountToBurn);
+
+        l1LiskToken.addBurner(alice);
+        vm.prank(alice);
+        vm.expectRevert(
+            abi.encodeWithSelector(IERC20Errors.ERC20InsufficientAllowance.selector, alice, 0, amountToBurn)
+        );
+        l1LiskToken.burnFrom(address(this), amountToBurn);
+
+        l1LiskToken.approve(alice, amountToBurn);
+        vm.prank(alice);
+        l1LiskToken.burnFrom(address(this), amountToBurn);
+
+        assertEq(l1LiskToken.allowance(address(this), alice), 0);
         assertEq(l1LiskToken.totalSupply(), TOTAL_SUPPLY - amountToBurn);
     }
 }
