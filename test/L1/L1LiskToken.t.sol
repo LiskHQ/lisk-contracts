@@ -6,6 +6,31 @@ import { L1LiskToken } from "src/L1/L1LiskToken.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { IERC20Errors } from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
 
+contract SigUtils {
+    bytes32 internal DOMAIN_SEPARATOR;
+    bytes32 public constant PERMIT_TYPEHASH =
+        keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
+
+    struct Permit {
+        address owner;
+        address spender;
+        uint256 value;
+        uint256 nonce;
+        uint256 deadline;
+    }
+
+    constructor(bytes32 _DOMAIN_SEPARATOR) {
+        DOMAIN_SEPARATOR = _DOMAIN_SEPARATOR;
+    }
+
+    function getPermitDataHash(Permit memory _permit) public view returns (bytes32) {
+        bytes32 permitHash = keccak256(
+            abi.encode(PERMIT_TYPEHASH, _permit.owner, _permit.spender, _permit.value, _permit.nonce, _permit.deadline)
+        );
+        return keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, permitHash));
+    }
+}
+
 contract L1LiskTokenTest is Test {
     event BurnerAdded(address indexed account);
     event BurnerRemoved(address indexed account);
@@ -107,5 +132,22 @@ contract L1LiskTokenTest is Test {
 
         assertEq(l1LiskToken.allowance(address(this), alice), 0);
         assertEq(l1LiskToken.totalSupply(), TOTAL_SUPPLY - amountToBurn);
+    }
+
+    function test_permit() public {
+        uint256 ownerPrivateKey = 0xB0B;
+        uint256 spenderPrivateKey = 0xA11CE;
+        address owner = vm.addr(ownerPrivateKey);
+        address spender = vm.addr(spenderPrivateKey);
+        SigUtils sigUtils = new SigUtils(l1LiskToken.DOMAIN_SEPARATOR());
+        SigUtils.Permit memory permit =
+            SigUtils.Permit({ owner: owner, spender: spender, value: 1000000, nonce: 0, deadline: 1 days });
+        bytes32 digest = sigUtils.getPermitDataHash(permit);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(ownerPrivateKey, digest);
+
+        l1LiskToken.transfer(permit.owner, 2000000);
+        l1LiskToken.permit(permit.owner, permit.spender, permit.value, permit.deadline, v, r, s);
+
+        assertEq(l1LiskToken.allowance(owner, spender), permit.value);
     }
 }
