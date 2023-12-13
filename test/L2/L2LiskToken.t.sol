@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.21;
 
-import { Test, console2 } from "forge-std/Test.sol";
+import { Test, console2, StdCheats } from "forge-std/Test.sol";
 import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import { L2LiskToken, IOptimismMintableERC20 } from "src/L2/L2LiskToken.sol";
 import { SigUtils } from "test/SigUtils.sol";
@@ -24,10 +24,8 @@ contract L2LiskTokenTest is Test {
         l2LiskToken = new L2LiskToken(bridge, remoteToken);
         sigUtils = new SigUtils(l2LiskToken.DOMAIN_SEPARATOR());
 
-        alicePrivateKey = 3;
-        bobPrivateKey = 4;
-        alice = vm.addr(alicePrivateKey);
-        bob = vm.addr(bobPrivateKey);
+        (alice, alicePrivateKey) = makeAddrAndKey("alice");
+        (bob, bobPrivateKey) = makeAddrAndKey("bob");
     }
 
     function test_Initialize() public {
@@ -171,8 +169,13 @@ contract L2LiskTokenTest is Test {
     }
 
     function test_Permit() public {
-        SigUtils.Permit memory permit =
-            SigUtils.Permit({ owner: alice, spender: bob, value: 100 * 10 ** 18, nonce: 0, deadline: 1 days });
+        SigUtils.Permit memory permit = SigUtils.Permit({
+            owner: alice,
+            spender: bob,
+            value: 100 * 10 ** 18,
+            nonce: l2LiskToken.nonces(alice),
+            deadline: 1 days
+        });
 
         bytes32 digest = sigUtils.getTypedDataHash(permit);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(alicePrivateKey, digest);
@@ -234,8 +237,13 @@ contract L2LiskTokenTest is Test {
     }
 
     function test_PermitFail_SignatureReplay() public {
-        SigUtils.Permit memory permit =
-            SigUtils.Permit({ owner: alice, spender: bob, value: 100 * 10 ** 18, nonce: 0, deadline: 1 days });
+        SigUtils.Permit memory permit = SigUtils.Permit({
+            owner: alice,
+            spender: bob,
+            value: 100 * 10 ** 18,
+            nonce: l2LiskToken.nonces(alice),
+            deadline: 1 days
+        });
 
         bytes32 digest = sigUtils.getTypedDataHash(permit);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(alicePrivateKey, digest);
@@ -250,8 +258,13 @@ contract L2LiskTokenTest is Test {
         vm.prank(bridge);
         l2LiskToken.mint(alice, 100 * 10 ** 18);
 
-        SigUtils.Permit memory permit =
-            SigUtils.Permit({ owner: alice, spender: bob, value: 100 * 10 ** 18, nonce: 0, deadline: 1 days });
+        SigUtils.Permit memory permit = SigUtils.Permit({
+            owner: alice,
+            spender: bob,
+            value: 100 * 10 ** 18,
+            nonce: l2LiskToken.nonces(alice),
+            deadline: 1 days
+        });
 
         bytes32 digest = sigUtils.getTypedDataHash(permit);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(alicePrivateKey, digest);
@@ -270,8 +283,13 @@ contract L2LiskTokenTest is Test {
         vm.prank(bridge);
         l2LiskToken.mint(alice, 100 * 10 ** 18);
 
-        SigUtils.Permit memory permit =
-            SigUtils.Permit({ owner: alice, spender: bob, value: type(uint256).max, nonce: 0, deadline: 1 days });
+        SigUtils.Permit memory permit = SigUtils.Permit({
+            owner: alice,
+            spender: bob,
+            value: type(uint256).max,
+            nonce: l2LiskToken.nonces(alice),
+            deadline: 1 days
+        });
 
         bytes32 digest = sigUtils.getTypedDataHash(permit);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(alicePrivateKey, digest);
@@ -294,7 +312,7 @@ contract L2LiskTokenTest is Test {
             owner: alice,
             spender: bob,
             value: 50 * 10 ** 18, // approve only 50 tokens
-            nonce: 0,
+            nonce: l2LiskToken.nonces(alice),
             deadline: 1 days
         });
 
@@ -316,7 +334,7 @@ contract L2LiskTokenTest is Test {
             owner: alice,
             spender: bob,
             value: 101 * 10 ** 18, // approve 101 tokens
-            nonce: 0,
+            nonce: l2LiskToken.nonces(alice),
             deadline: 1 days
         });
 
