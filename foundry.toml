@@ -13,7 +13,6 @@ remappings = [
     '@openzeppelin/=lib/openzeppelin-contracts/',
     '@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/',
     'openzeppelin-contracts/=lib/openzeppelin-contracts/',
-    '@hiddentao/=lib/openzeppelin-solidity/',
 ]
 
 [fmt]

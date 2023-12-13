@@ -4,6 +4,7 @@ pragma solidity 0.8.21;
 import { Test, console2 } from "forge-std/Test.sol";
 import { L1LiskToken } from "src/L1/L1LiskToken.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { IAccessControl } from "@openzeppelin/contracts/access/IAccessControl.sol";
 import { IERC20Errors } from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
 
 contract SigUtils {
@@ -32,8 +33,8 @@ contract SigUtils {
 }
 
 contract L1LiskTokenTest is Test {
-    event BurnerAdded(address indexed account);
-    event BurnerRemoved(address indexed account);
+    event RoleGranted(bytes32 indexed role, address indexed account, address indexed sender);
+    event RoleRevoked(bytes32 indexed role, address indexed account, address indexed sender);
 
     event Transfer(address indexed from, address indexed to, uint256 value);
 
@@ -55,20 +56,6 @@ contract L1LiskTokenTest is Test {
         assertEq(l1LiskToken.owner(), address(this));
     }
 
-    function test_addAndRenounceBurner() public {
-        address alice = address(0x1);
-
-        vm.expectEmit(true, false, false, true, address(l1LiskToken));
-        emit BurnerAdded(alice);
-        l1LiskToken.addBurner(alice);
-        assertTrue(l1LiskToken.isBurner(alice));
-
-        vm.expectEmit(true, false, false, true, address(l1LiskToken));
-        emit BurnerRemoved(alice);
-        l1LiskToken.renounceBurner(alice);
-        assertFalse(l1LiskToken.isBurner(alice));
-    }
-
     function test_onlyOwnerAddsOrRenouncesBurner() public {
         address alice = address(0x1);
 
@@ -82,9 +69,14 @@ contract L1LiskTokenTest is Test {
 
         vm.stopPrank();
 
+        vm.expectEmit(true, true, true, true, address(l1LiskToken));
+        emit RoleGranted(l1LiskToken.getBurnerRole(), alice, address(this));
+        (alice);
         l1LiskToken.addBurner(alice);
         assertTrue(l1LiskToken.isBurner(alice));
 
+        vm.expectEmit(true, true, true, true, address(l1LiskToken));
+        emit RoleRevoked(l1LiskToken.getBurnerRole(), alice, address(this));
         l1LiskToken.renounceBurner(alice);
         assertFalse(l1LiskToken.isBurner(alice));
     }
@@ -92,9 +84,14 @@ contract L1LiskTokenTest is Test {
     function test_onlyBurnerWithSufficientBalanceBurnsToken() public {
         address alice = address(0x1);
         uint256 amountToBurn = 1000000;
-        vm.prank(alice);
-        vm.expectRevert(abi.encodeWithSelector(L1LiskToken.UnauthorizedBurnerAccount.selector, alice));
+        vm.startPrank(alice);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IAccessControl.AccessControlUnauthorizedAccount.selector, alice, l1LiskToken.getBurnerRole()
+            )
+        );
         l1LiskToken.burn(amountToBurn);
+        vm.stopPrank();
 
         l1LiskToken.addBurner(alice);
 
@@ -115,9 +112,14 @@ contract L1LiskTokenTest is Test {
     function test_onlyBurnerWithSufficientAllowanceBurnsTokensFromAnAccount() public {
         address alice = address(0x1);
         uint256 amountToBurn = 1000000;
-        vm.prank(alice);
-        vm.expectRevert(abi.encodeWithSelector(L1LiskToken.UnauthorizedBurnerAccount.selector, alice));
+        vm.startPrank(alice);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IAccessControl.AccessControlUnauthorizedAccount.selector, alice, l1LiskToken.getBurnerRole()
+            )
+        );
         l1LiskToken.burnFrom(address(this), amountToBurn);
+        vm.stopPrank();
 
         l1LiskToken.addBurner(alice);
         vm.prank(alice);
