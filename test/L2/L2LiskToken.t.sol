@@ -225,7 +225,7 @@ contract L2LiskTokenTest is Test {
             owner: alice,
             spender: bob,
             value: 100 * 10 ** 18,
-            nonce: 1, // alice nonce stored on-chain is 0
+            nonce: l2LiskToken.nonces(alice) + 1, // alice nonce is 0, but we set it to 1
             deadline: 1 days
         });
 
