@@ -3,7 +3,6 @@ pragma solidity 0.8.21;
 
 import { Test, console2 } from "forge-std/Test.sol";
 import { L1LiskToken } from "src/L1/L1LiskToken.sol";
-import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { IAccessControl } from "@openzeppelin/contracts/access/IAccessControl.sol";
 import { IERC20Errors } from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
 
@@ -61,10 +60,18 @@ contract L1LiskTokenTest is Test {
 
         vm.startPrank(alice);
 
-        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, alice));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IAccessControl.AccessControlUnauthorizedAccount.selector, alice, l1LiskToken.getOwnerRole()
+            )
+        );
         l1LiskToken.addBurner(alice);
 
-        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, alice));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IAccessControl.AccessControlUnauthorizedAccount.selector, alice, l1LiskToken.getOwnerRole()
+            )
+        );
         l1LiskToken.renounceBurner(alice);
 
         vm.stopPrank();
@@ -150,5 +157,11 @@ contract L1LiskTokenTest is Test {
         l1LiskToken.permit(permit.owner, permit.spender, permit.value, permit.deadline, v, r, s);
 
         assertEq(l1LiskToken.allowance(owner, spender), permit.value);
+    }
+
+    function test_ownerIsAdminForOwnerAndBurnerRole() public {
+        bytes32 roleAdmin = bytes32(uint256(uint160(l1LiskToken.owner())));
+        assertEq(roleAdmin, l1LiskToken.getRoleAdmin(l1LiskToken.getOwnerRole()));
+        assertEq(roleAdmin, l1LiskToken.getRoleAdmin(l1LiskToken.getBurnerRole()));
     }
 }

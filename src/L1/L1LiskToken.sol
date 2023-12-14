@@ -4,19 +4,23 @@ pragma solidity 0.8.21;
 import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import { ERC20Burnable } from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 import { ERC20Permit } from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
-import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol";
 
-contract L1LiskToken is ERC20Burnable, AccessControl, ERC20Permit, Ownable {
-    error UnauthorizedBurnerAccount(address account);
-
+contract L1LiskToken is ERC20Burnable, AccessControl, ERC20Permit {
+    bytes32 public constant OWNER_ROLE = keccak256("OWNER_ROLE");
     bytes32 public constant BURNER_ROLE = keccak256("BURNER_ROLE");
 
     string private constant NAME = "Lisk";
     string private constant SYMBOL = "LSK";
     uint256 private constant TOTAL_SUPPLY = 200_000_000 * 10 ** 18; //200 million LSK tokens
+    address private _owner;
 
-    constructor() ERC20(NAME, SYMBOL) ERC20Permit(NAME) Ownable(_msgSender()) {
+    constructor() ERC20(NAME, SYMBOL) ERC20Permit(NAME) {
+        _owner = _msgSender();
+        bytes32 admin = bytes32(uint256(uint160(_owner)));
+        _setRoleAdmin(OWNER_ROLE, admin);
+        _setRoleAdmin(BURNER_ROLE, admin);
+        _grantRole(OWNER_ROLE, _msgSender());
         _mint(_msgSender(), TOTAL_SUPPLY);
     }
 
@@ -24,11 +28,11 @@ contract L1LiskToken is ERC20Burnable, AccessControl, ERC20Permit, Ownable {
         return hasRole(BURNER_ROLE, account);
     }
 
-    function addBurner(address account) public onlyOwner {
+    function addBurner(address account) public onlyRole(OWNER_ROLE) {
         _grantRole(BURNER_ROLE, account);
     }
 
-    function renounceBurner(address account) public onlyOwner {
+    function renounceBurner(address account) public onlyRole(OWNER_ROLE) {
         _revokeRole(BURNER_ROLE, account);
     }
 
@@ -40,7 +44,15 @@ contract L1LiskToken is ERC20Burnable, AccessControl, ERC20Permit, Ownable {
         super.burnFrom(account, value);
     }
 
+    function owner() external view returns (address) {
+        return _owner;
+    }
+
     function getBurnerRole() external pure returns (bytes32) {
         return BURNER_ROLE;
+    }
+
+    function getOwnerRole() external pure returns (bytes32) {
+        return OWNER_ROLE;
     }
 }
