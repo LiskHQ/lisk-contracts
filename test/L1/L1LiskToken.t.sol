@@ -90,6 +90,16 @@ contract L1LiskTokenTest is Test {
         assertFalse(l1LiskToken.isBurner(alice));
     }
 
+    function test_ownerIsNotABurner() public {
+        uint256 amountToBurn = 1000000;
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IAccessControl.AccessControlUnauthorizedAccount.selector, address(this), l1LiskToken.BURNER_ROLE()
+            )
+        );
+        l1LiskToken.burn(amountToBurn);
+    }
+
     function test_onlyBurnerWithSufficientBalanceBurnsToken() public {
         address alice = address(0x1);
         uint256 amountToBurn = 1000000;
@@ -184,7 +194,7 @@ contract L1LiskTokenTest is Test {
         assertTrue(l1LiskToken.hasRole(l1LiskToken.DEFAULT_ADMIN_ROLE(), alice));
     }
 
-    function test_defaultRoleIsRoleAdminForBurnerRole() public {
+    function test_defaultAdminRoleIsRoleAdminForBurnerRole() public {
         assertEq(l1LiskToken.DEFAULT_ADMIN_ROLE(), l1LiskToken.getRoleAdmin(l1LiskToken.BURNER_ROLE()));
     }
 }
