@@ -71,7 +71,6 @@ contract L1LiskTokenTest is Test {
 
         vm.expectEmit(true, true, true, true, address(l1LiskToken));
         emit RoleGranted(l1LiskToken.getBurnerRole(), alice, address(this));
-        (alice);
         l1LiskToken.addBurner(alice);
         assertTrue(l1LiskToken.isBurner(alice));
 
