@@ -33,7 +33,6 @@ contract L1LiskTokenScript is Script {
         assert(l1LiskToken.decimals() == 18);
         assert(l1LiskToken.totalSupply() == 200000000 * 10 ** 18);
         assert(l1LiskToken.balanceOf(vm.addr(deployerPrivateKey)) == 200000000 * 10 ** 18);
-        assert(l1LiskToken.owner() == vm.addr(deployerPrivateKey));
 
         console2.log("Simulation: L1 Lisk token successfully deployed!");
         console2.log("Simulation: L1 Lisk token address: %s", address(l1LiskToken));

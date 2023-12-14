@@ -40,6 +40,7 @@ contract L1LiskTokenTest is Test {
     string private constant NAME = "Lisk";
     string private constant SYMBOL = "LSK";
     uint256 private constant TOTAL_SUPPLY = 200_000_000 * 10 ** 18; //200 million LSK tokens
+    bytes32 private defaultAdminRole = bytes32(0x00);
 
     L1LiskToken l1LiskToken;
 
@@ -52,7 +53,6 @@ contract L1LiskTokenTest is Test {
         assertEq(l1LiskToken.symbol(), SYMBOL);
         assertEq(l1LiskToken.totalSupply(), TOTAL_SUPPLY);
         assertEq(l1LiskToken.balanceOf(address(this)), TOTAL_SUPPLY);
-        assertEq(l1LiskToken.owner(), address(this));
     }
 
     function test_onlyOwnerAddsOrRenouncesBurner() public {
@@ -61,16 +61,12 @@ contract L1LiskTokenTest is Test {
         vm.startPrank(alice);
 
         vm.expectRevert(
-            abi.encodeWithSelector(
-                IAccessControl.AccessControlUnauthorizedAccount.selector, alice, l1LiskToken.getOwnerRole()
-            )
+            abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, alice, defaultAdminRole)
         );
         l1LiskToken.addBurner(alice);
 
         vm.expectRevert(
-            abi.encodeWithSelector(
-                IAccessControl.AccessControlUnauthorizedAccount.selector, alice, l1LiskToken.getOwnerRole()
-            )
+            abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, alice, defaultAdminRole)
         );
         l1LiskToken.renounceBurner(alice);
 
@@ -160,8 +156,8 @@ contract L1LiskTokenTest is Test {
     }
 
     function test_ownerIsAdminForOwnerAndBurnerRole() public {
-        bytes32 roleAdmin = bytes32(uint256(uint160(l1LiskToken.owner())));
-        assertEq(roleAdmin, l1LiskToken.getRoleAdmin(l1LiskToken.getOwnerRole()));
+        bytes32 roleAdmin = bytes32(uint256(uint160(address(this))));
+        assertEq(roleAdmin, l1LiskToken.getRoleAdmin(defaultAdminRole));
         assertEq(roleAdmin, l1LiskToken.getRoleAdmin(l1LiskToken.getBurnerRole()));
     }
 }
