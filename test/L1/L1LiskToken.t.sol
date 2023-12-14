@@ -32,6 +32,7 @@ contract SigUtils {
 }
 
 contract L1LiskTokenTest is Test {
+    event RoleAdminChanged(bytes32 indexed role, bytes32 indexed previousAdminRole, bytes32 indexed newAdminRole);
     event RoleGranted(bytes32 indexed role, address indexed account, address indexed sender);
     event RoleRevoked(bytes32 indexed role, address indexed account, address indexed sender);
 
@@ -153,6 +154,31 @@ contract L1LiskTokenTest is Test {
         l1LiskToken.permit(permit.owner, permit.spender, permit.value, permit.deadline, v, r, s);
 
         assertEq(l1LiskToken.allowance(owner, spender), permit.value);
+    }
+
+    function test_onlyOwnerTransfersTheOwnership() public {
+        address alice = address(0x1);
+        address bob = address(0x2);
+        bytes32 aliceAsRoleAdmin = bytes32(uint256(uint160(alice)));
+        vm.prank(alice);
+        vm.expectRevert(
+            abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, alice, defaultAdminRole)
+        );
+        l1LiskToken.transferOwnership(bob);
+
+        vm.expectEmit(true, true, true, true, address(l1LiskToken));
+        emit RoleAdminChanged(defaultAdminRole, bytes32(uint256(uint160(address(this)))), aliceAsRoleAdmin);
+        vm.expectEmit(true, true, true, true, address(l1LiskToken));
+        emit RoleGranted(defaultAdminRole, alice, address(this));
+        vm.expectEmit(true, true, true, true, address(l1LiskToken));
+        emit RoleRevoked(defaultAdminRole, address(this), address(this));
+        l1LiskToken.transferOwnership(alice);
+
+        assertFalse(l1LiskToken.hasRole(defaultAdminRole, address(this)));
+        assertTrue(l1LiskToken.hasRole(defaultAdminRole, alice));
+
+        assertEq(aliceAsRoleAdmin, l1LiskToken.getRoleAdmin(defaultAdminRole));
+        assertEq(aliceAsRoleAdmin, l1LiskToken.getRoleAdmin(l1LiskToken.getBurnerRole()));
     }
 
     function test_ownerIsAdminForOwnerAndBurnerRole() public {

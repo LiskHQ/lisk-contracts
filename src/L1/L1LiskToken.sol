@@ -21,6 +21,15 @@ contract L1LiskToken is ERC20Burnable, AccessControl, ERC20Permit {
         _mint(_msgSender(), TOTAL_SUPPLY);
     }
 
+    function transferOwnership(address account) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        bytes32 admin = bytes32(uint256(uint160(account)));
+        _setRoleAdmin(DEFAULT_ADMIN_ROLE, admin);
+        _setRoleAdmin(BURNER_ROLE, admin);
+
+        _grantRole(DEFAULT_ADMIN_ROLE, account);
+        _revokeRole(DEFAULT_ADMIN_ROLE, _msgSender());
+    }
+
     function isBurner(address account) public view returns (bool) {
         return hasRole(BURNER_ROLE, account);
     }
