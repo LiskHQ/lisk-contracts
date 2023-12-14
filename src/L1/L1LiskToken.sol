@@ -11,7 +11,7 @@ contract L1LiskToken is ERC20Burnable, AccessControl, ERC20Permit {
 
     string private constant NAME = "Lisk";
     string private constant SYMBOL = "LSK";
-    uint256 private constant TOTAL_SUPPLY = 200_000_000 * 10 ** 18; //200 million LSK tokens
+    uint256 private constant TOTAL_SUPPLY = 300_000_000 * 10 ** 18; //300 million LSK tokens
 
     constructor() ERC20(NAME, SYMBOL) ERC20Permit(NAME) {
         bytes32 admin = bytes32(uint256(uint160(_msgSender())));
