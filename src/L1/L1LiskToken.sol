@@ -7,11 +7,11 @@ import { ERC20Permit } from "@openzeppelin/contracts/token/ERC20/extensions/ERC2
 import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol";
 
 contract L1LiskToken is ERC20Burnable, AccessControl, ERC20Permit {
-    bytes32 public constant BURNER_ROLE = keccak256("BURNER_ROLE");
-
     string private constant NAME = "Lisk";
     string private constant SYMBOL = "LSK";
     uint256 private constant TOTAL_SUPPLY = 300_000_000 * 10 ** 18; //300 million LSK tokens
+
+    bytes32 public constant BURNER_ROLE = keccak256("BURNER_ROLE");
 
     constructor() ERC20(NAME, SYMBOL) ERC20Permit(NAME) {
         bytes32 admin = bytes32(uint256(uint160(_msgSender())));
