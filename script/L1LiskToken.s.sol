@@ -33,7 +33,7 @@ contract L1LiskTokenScript is Script {
         assert(l1LiskToken.decimals() == 18);
         assert(l1LiskToken.totalSupply() == 300000000 * 10 ** 18);
         assert(l1LiskToken.balanceOf(vm.addr(deployerPrivateKey)) == 300000000 * 10 ** 18);
-        assert(l1LiskToken.hasRole(bytes32(0x00), vm.addr(deployerPrivateKey)) == true);
+        assert(l1LiskToken.hasRole(l1LiskToken.DEFAULT_ADMIN_ROLE(), vm.addr(deployerPrivateKey)) == true);
         assert(l1LiskToken.hasRole(l1LiskToken.BURNER_ROLE(), vm.addr(deployerPrivateKey)) == false);
 
         console2.log("Simulation: L1 Lisk token successfully deployed!");

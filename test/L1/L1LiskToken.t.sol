@@ -53,6 +53,9 @@ contract L1LiskTokenTest is Test {
         assertEq(l1LiskToken.symbol(), SYMBOL);
         assertEq(l1LiskToken.totalSupply(), TOTAL_SUPPLY);
         assertEq(l1LiskToken.balanceOf(address(this)), TOTAL_SUPPLY);
+        assertEq(l1LiskToken.decimals(), 18);
+        assertTrue(l1LiskToken.hasRole(l1LiskToken.DEFAULT_ADMIN_ROLE(), address(this)));
+        assertFalse(l1LiskToken.hasRole(l1LiskToken.BURNER_ROLE(), address(this)));
     }
 
     function test_onlyOwnerAddsOrRenouncesBurner() public {
