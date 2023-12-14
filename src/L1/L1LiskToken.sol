@@ -14,11 +14,11 @@ contract L1LiskToken is ERC20Burnable, AccessControl, ERC20Permit {
     bytes32 public constant BURNER_ROLE = keccak256("BURNER_ROLE");
 
     constructor() ERC20(NAME, SYMBOL) ERC20Permit(NAME) {
-        bytes32 admin = bytes32(uint256(uint160(_msgSender())));
+        bytes32 admin = bytes32(uint256(uint160(msg.sender)));
         _setRoleAdmin(DEFAULT_ADMIN_ROLE, admin);
         _setRoleAdmin(BURNER_ROLE, admin);
-        _grantRole(DEFAULT_ADMIN_ROLE, _msgSender());
-        _mint(_msgSender(), TOTAL_SUPPLY);
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _mint(msg.sender, TOTAL_SUPPLY);
     }
 
     function transferOwnership(address account) public onlyRole(DEFAULT_ADMIN_ROLE) {
@@ -27,7 +27,7 @@ contract L1LiskToken is ERC20Burnable, AccessControl, ERC20Permit {
         _setRoleAdmin(BURNER_ROLE, admin);
 
         _grantRole(DEFAULT_ADMIN_ROLE, account);
-        _revokeRole(DEFAULT_ADMIN_ROLE, _msgSender());
+        _revokeRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
 
     function isBurner(address account) public view returns (bool) {
