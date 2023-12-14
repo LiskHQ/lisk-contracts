@@ -38,7 +38,7 @@ contract Utils is Script {
 
     /// @notice This struct is used to read MerkleTree from JSON file.
     struct MerkleTree {
-        MerkleTreeLeaf[] leaf;
+        MerkleTreeLeaf[] leaves;
         bytes32 merkleRoot;
     }
 
@@ -79,12 +79,11 @@ contract Utils is Script {
         finalJson.write(string.concat("deployment/l2addresses.json"));
     }
 
-
     /// @notice This function reads MerkleTree from JSON file.
-    /// @return L2ClaimConfig struct containing merkle root.
+    /// @return MerkleTree struct containing merkle root.
     function readMerkleTreeFile() external view returns (MerkleTree memory) {
         string memory root = vm.projectRoot();
-        string memory addressPath = string.concat(root, "/script/merkleTree.json");
+        string memory addressPath = string.concat(root, "/script/data/devnet/merkleTree.json");
         string memory addressJson = vm.readFile(addressPath);
         bytes memory addressRaw = vm.parseJson(addressJson);
         return abi.decode(addressRaw, (MerkleTree));

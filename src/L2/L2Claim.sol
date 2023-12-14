@@ -18,7 +18,7 @@ struct ED25519Signature {
 }
 
 /// @title L2Claim
-/// @notice L2Claim lets user claim their LSK token from LSK Chain using Merkle Tree method.
+/// @notice L2Claim lets user claim their LSK token from Lisk Chain using Merkle Tree method.
 contract L2Claim {
     /// @notice LSK originally has 8 d.p., L2 LSK has 18.
     uint256 public constant LSK_MULTIPLIER = 10 ** 10;
@@ -26,7 +26,7 @@ contract L2Claim {
     /// @notice address of L2 LSK Token.
     IERC20 public immutable l2LiskToken;
 
-    /// @notice Merkle Tree for the claim.
+    /// @notice Merkle Root for the claim.
     bytes32 public immutable merkleRoot;
 
     // @notice Records claimed addresses (lskAddress => boolean).
@@ -35,29 +35,46 @@ contract L2Claim {
     /// @notice Emitted when an address has claimed the LSK.
     event LSKClaimed(bytes20 lskAddress, address recipient, uint256 amount);
 
-    /// @notice _l2LiskToken    L2 LSK Token Address
-    /// @notice _merkleRoot     Merkle Tree Root
+    /// @notice Constructs the L2Claim contract.
+    /// @param  _l2LiskToken    L2 LSK Token Address
+    /// @param  _merkleRoot     Merkle Tree Root
     constructor(address _l2LiskToken, bytes32 _merkleRoot) {
         l2LiskToken = IERC20(_l2LiskToken);
         merkleRoot = _merkleRoot;
     }
 
     /// @notice Verifies ED25519 Signature, throws error when verification fails.
-    /// @param _pubKey  Public Key of the address in LSK Chain.
-    /// @param _r       r-value of the ED25519 signature.
-    /// @param _s       s-value of the ED25519 signature.
-    /// @param _message Message to be verified.
-    function verifySignature(bytes32 _pubKey, bytes32 _r, bytes32 _s, bytes32 _message) internal pure {
-        require(Ed25519.check(_pubKey, _r, _s, _message, bytes9(0)), "Invalid Signature");
+    /// @param _pubKey          Public Key of the address in Lisk Chain.
+    /// @param _r               r-value of the ED25519 signature.
+    /// @param _s               s-value of the ED25519 signature.
+    /// @param _message         Message to be verified.
+    /// @param _errorMessage    Message the contract should throw, when the check returns false.
+    function verifySignature(
+        bytes32 _pubKey,
+        bytes32 _r,
+        bytes32 _s,
+        bytes32 _message,
+        string memory _errorMessage
+    )
+        internal
+        pure
+    {
+        require(Ed25519.check(_pubKey, _r, _s, _message, bytes9(0)), _errorMessage);
     }
 
     /// @notice Hash a message twice using Keccak-256.
     /// @param  _message Message to be hashed.
+    /// @return double keccak256 hashed bytes32
     function doubleKeccak256(bytes memory _message) internal pure returns (bytes32) {
         return keccak256(bytes.concat(keccak256(_message)));
     }
 
     /// @notice Internal function called by both regular and multisig claims.
+    /// @param _lskAddress  LSK Address in bytes format.
+    /// @param _amount      Amount of LSK (In Beddows [1 LSK = 10**8 Beddow]).
+    /// @param _proof       Array of hashes that proves existence of the leaf.
+    /// @param _leaf        Double-hashed leaf by combining address, amount and signatures.
+    /// @param _recipient   Destination address at L2 Chain.
     function claim(
         bytes20 _lskAddress,
         uint64 _amount,
@@ -78,8 +95,8 @@ contract L2Claim {
 
     /// @notice Claim LSK from a regular account.
     /// @param _proof       Array of hashes that proves existence of the leaf.
-    /// @param _pubKey      Public Key of LSK Address.
-    /// @param _amount      Amount of LSK (In Beddows).
+    /// @param _pubKey      Public Key of the address in Lisk Chain.
+    /// @param _amount      Amount of LSK (In Beddows [1 LSK = 10**8 Beddow]).
     /// @param _recipient   Destination address at L2 Chain.
     /// @param _sig         ED25519 signature pair.
     function claimRegularAccount(
@@ -94,7 +111,7 @@ contract L2Claim {
         bytes20 lskAddress = bytes20(sha256(abi.encode(_pubKey)));
         bytes32 leaf = doubleKeccak256(abi.encode(lskAddress, _amount, uint32(0), new bytes32[](0), new bytes32[](0)));
 
-        verifySignature(_pubKey, _sig.r, _sig.s, keccak256(abi.encode(leaf, _recipient)));
+        verifySignature(_pubKey, _sig.r, _sig.s, keccak256(abi.encode(leaf, _recipient)), "Invalid Signature");
 
         claim(lskAddress, _amount, _proof, leaf, _recipient);
     }
@@ -102,7 +119,7 @@ contract L2Claim {
     /// @notice Claim LSK from a multisig account.
     /// @param _proof       Array of hashes that proves existence of the leaf.
     /// @param _lskAddress  LSK Address in bytes format.
-    /// @param _amount      Amount of LSK (In Beddows).
+    /// @param _amount      Amount of LSK (In Beddows [1 LSK = 10**8 Beddow]).
     /// @param _keys        Structs of Mandatory Keys and Optional Keys.
     /// @param _recipient   Destination address at L2 Chain.
     /// @param _sigs        Array of ED25519 signature pair.
@@ -116,7 +133,10 @@ contract L2Claim {
     )
         external
     {
-        require(_sigs.length == _keys.optionalKeys.length + _keys.mandatoryKeys.length, "Invalid Signature Length");
+        require(
+            _sigs.length == _keys.optionalKeys.length + _keys.mandatoryKeys.length,
+            "Signatures array has invalid length"
+        );
 
         // If numberOfSignatures passes MerkleProof in later stage, that means this value is correct.
         uint32 numberOfSignatures = uint32(_keys.mandatoryKeys.length);
@@ -135,7 +155,9 @@ contract L2Claim {
         bytes32 message = keccak256(abi.encode(leaf, _recipient));
 
         for (uint256 i = 0; i < _keys.mandatoryKeys.length; i++) {
-            verifySignature(_keys.mandatoryKeys[i], _sigs[i].r, _sigs[i].s, message);
+            verifySignature(
+                _keys.mandatoryKeys[i], _sigs[i].r, _sigs[i].s, message, "Invalid signature for mandatoryKey"
+            );
         }
 
         for (uint256 i = 0; i < _keys.optionalKeys.length; i++) {
@@ -146,7 +168,8 @@ contract L2Claim {
                 _keys.optionalKeys[i],
                 _sigs[i + _keys.mandatoryKeys.length].r,
                 _sigs[i + _keys.mandatoryKeys.length].s,
-                message
+                message,
+                "Invalid signature for optionalKey"
             );
         }
 
