@@ -43,8 +43,4 @@ contract L1LiskToken is ERC20Burnable, AccessControl, ERC20Permit {
     function burnFrom(address account, uint256 value) public override onlyRole(BURNER_ROLE) {
         super.burnFrom(account, value);
     }
-
-    function getBurnerRole() external pure returns (bytes32) {
-        return BURNER_ROLE;
-    }
 }

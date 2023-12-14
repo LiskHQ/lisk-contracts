@@ -41,7 +41,6 @@ contract L1LiskTokenTest is Test {
     string private constant NAME = "Lisk";
     string private constant SYMBOL = "LSK";
     uint256 private constant TOTAL_SUPPLY = 300_000_000 * 10 ** 18; //300 million LSK tokens
-    bytes32 private defaultAdminRole = bytes32(0x00);
 
     L1LiskToken l1LiskToken;
 
@@ -62,24 +61,28 @@ contract L1LiskTokenTest is Test {
         vm.startPrank(alice);
 
         vm.expectRevert(
-            abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, alice, defaultAdminRole)
+            abi.encodeWithSelector(
+                IAccessControl.AccessControlUnauthorizedAccount.selector, alice, l1LiskToken.DEFAULT_ADMIN_ROLE()
+            )
         );
         l1LiskToken.addBurner(alice);
 
         vm.expectRevert(
-            abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, alice, defaultAdminRole)
+            abi.encodeWithSelector(
+                IAccessControl.AccessControlUnauthorizedAccount.selector, alice, l1LiskToken.DEFAULT_ADMIN_ROLE()
+            )
         );
         l1LiskToken.renounceBurner(alice);
 
         vm.stopPrank();
 
         vm.expectEmit(true, true, true, true, address(l1LiskToken));
-        emit RoleGranted(l1LiskToken.getBurnerRole(), alice, address(this));
+        emit RoleGranted(l1LiskToken.BURNER_ROLE(), alice, address(this));
         l1LiskToken.addBurner(alice);
         assertTrue(l1LiskToken.isBurner(alice));
 
         vm.expectEmit(true, true, true, true, address(l1LiskToken));
-        emit RoleRevoked(l1LiskToken.getBurnerRole(), alice, address(this));
+        emit RoleRevoked(l1LiskToken.BURNER_ROLE(), alice, address(this));
         l1LiskToken.renounceBurner(alice);
         assertFalse(l1LiskToken.isBurner(alice));
     }
@@ -90,7 +93,7 @@ contract L1LiskTokenTest is Test {
         vm.startPrank(alice);
         vm.expectRevert(
             abi.encodeWithSelector(
-                IAccessControl.AccessControlUnauthorizedAccount.selector, alice, l1LiskToken.getBurnerRole()
+                IAccessControl.AccessControlUnauthorizedAccount.selector, alice, l1LiskToken.BURNER_ROLE()
             )
         );
         l1LiskToken.burn(amountToBurn);
@@ -118,7 +121,7 @@ contract L1LiskTokenTest is Test {
         vm.startPrank(alice);
         vm.expectRevert(
             abi.encodeWithSelector(
-                IAccessControl.AccessControlUnauthorizedAccount.selector, alice, l1LiskToken.getBurnerRole()
+                IAccessControl.AccessControlUnauthorizedAccount.selector, alice, l1LiskToken.BURNER_ROLE()
             )
         );
         l1LiskToken.burnFrom(address(this), amountToBurn);
@@ -159,23 +162,26 @@ contract L1LiskTokenTest is Test {
     function test_onlyOwnerTransfersTheOwnership() public {
         address alice = address(0x1);
         address bob = address(0x2);
-        vm.prank(alice);
+        vm.startPrank(alice);
         vm.expectRevert(
-            abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, alice, defaultAdminRole)
+            abi.encodeWithSelector(
+                IAccessControl.AccessControlUnauthorizedAccount.selector, alice, l1LiskToken.DEFAULT_ADMIN_ROLE()
+            )
         );
         l1LiskToken.transferOwnership(bob);
+        vm.stopPrank();
 
         vm.expectEmit(true, true, true, true, address(l1LiskToken));
-        emit RoleGranted(defaultAdminRole, alice, address(this));
+        emit RoleGranted(l1LiskToken.DEFAULT_ADMIN_ROLE(), alice, address(this));
         vm.expectEmit(true, true, true, true, address(l1LiskToken));
-        emit RoleRevoked(defaultAdminRole, address(this), address(this));
+        emit RoleRevoked(l1LiskToken.DEFAULT_ADMIN_ROLE(), address(this), address(this));
         l1LiskToken.transferOwnership(alice);
 
-        assertFalse(l1LiskToken.hasRole(defaultAdminRole, address(this)));
-        assertTrue(l1LiskToken.hasRole(defaultAdminRole, alice));
+        assertFalse(l1LiskToken.hasRole(l1LiskToken.DEFAULT_ADMIN_ROLE(), address(this)));
+        assertTrue(l1LiskToken.hasRole(l1LiskToken.DEFAULT_ADMIN_ROLE(), alice));
     }
 
     function test_defaultRoleIsRoleAdminForBurnerRole() public {
-        assertEq(defaultAdminRole, l1LiskToken.getRoleAdmin(l1LiskToken.getBurnerRole()));
+        assertEq(l1LiskToken.DEFAULT_ADMIN_ROLE(), l1LiskToken.getRoleAdmin(l1LiskToken.BURNER_ROLE()));
     }
 }
