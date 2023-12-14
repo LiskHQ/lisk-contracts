@@ -159,15 +159,12 @@ contract L1LiskTokenTest is Test {
     function test_onlyOwnerTransfersTheOwnership() public {
         address alice = address(0x1);
         address bob = address(0x2);
-        bytes32 aliceAsRoleAdmin = bytes32(uint256(uint160(alice)));
         vm.prank(alice);
         vm.expectRevert(
             abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, alice, defaultAdminRole)
         );
         l1LiskToken.transferOwnership(bob);
 
-        vm.expectEmit(true, true, true, true, address(l1LiskToken));
-        emit RoleAdminChanged(defaultAdminRole, bytes32(uint256(uint160(address(this)))), aliceAsRoleAdmin);
         vm.expectEmit(true, true, true, true, address(l1LiskToken));
         emit RoleGranted(defaultAdminRole, alice, address(this));
         vm.expectEmit(true, true, true, true, address(l1LiskToken));
@@ -176,14 +173,9 @@ contract L1LiskTokenTest is Test {
 
         assertFalse(l1LiskToken.hasRole(defaultAdminRole, address(this)));
         assertTrue(l1LiskToken.hasRole(defaultAdminRole, alice));
-
-        assertEq(aliceAsRoleAdmin, l1LiskToken.getRoleAdmin(defaultAdminRole));
-        assertEq(aliceAsRoleAdmin, l1LiskToken.getRoleAdmin(l1LiskToken.getBurnerRole()));
     }
 
-    function test_ownerIsAdminForOwnerAndBurnerRole() public {
-        bytes32 roleAdmin = bytes32(uint256(uint160(address(this))));
-        assertEq(roleAdmin, l1LiskToken.getRoleAdmin(defaultAdminRole));
-        assertEq(roleAdmin, l1LiskToken.getRoleAdmin(l1LiskToken.getBurnerRole()));
+    function test_defaultRoleIsRoleAdminForBurnerRole() public {
+        assertEq(defaultAdminRole, l1LiskToken.getRoleAdmin(l1LiskToken.getBurnerRole()));
     }
 }
