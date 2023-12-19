@@ -48,9 +48,7 @@ contract L2ClaimScript is Script {
         assert(address(l2ClaimProxy) != address(0));
 
         // wrap in ABI to support easier calls
-        vm.startBroadcast(deployerPrivateKey);
         L2Claim l2Claim = L2Claim(address(l2ClaimProxy));
-        vm.stopBroadcast();
 
         // initialize the proxy contract (calls the initialize function in L2Claim)
         vm.startBroadcast(deployerPrivateKey);

@@ -402,7 +402,8 @@ contract L2ClaimTest is Test {
     function test_claimMultisigAccount_RevertWhenAlreadyClaimed() public {
         test_claimMultisigAccount_SuccessClaim_3M();
 
-        // Copy-and-paste test_claimMultisigAccount_SuccessClaim_3M(), such that the `vm.expectRevert` could be correctly placed
+        // Copy-and-paste test_claimMultisigAccount_SuccessClaim_3M(), such that the `vm.expectRevert` could be
+        // correctly placed
         uint256 accountIndex = 50;
         Utils.MerkleTreeLeaf memory leaf = utils.readMerkleTreeFile().leaves[accountIndex];
         Signature memory signature = getSignature(accountIndex);
