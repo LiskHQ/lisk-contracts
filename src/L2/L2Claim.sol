@@ -3,6 +3,9 @@ pragma solidity 0.8.21;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { MerkleProof } from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
+import { Initializable } from "@openzeppelin-upgradeable/contracts/proxy/utils/Initializable.sol";
+import { OwnableUpgradeable } from "@openzeppelin-upgradeable/contracts/access/OwnableUpgradeable.sol";
+import { UUPSUpgradeable } from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
 import { Ed25519 } from "../utils/Ed25519.sol";
 
 /// @notice A struct of array of mandatoryKeys and optionalKeys.
@@ -19,15 +22,15 @@ struct ED25519Signature {
 
 /// @title L2Claim
 /// @notice L2Claim lets user claim their LSK token from Lisk Chain using Merkle Tree method.
-contract L2Claim {
+contract L2Claim is Initializable, OwnableUpgradeable, UUPSUpgradeable {
     /// @notice LSK originally has 8 d.p., L2 LSK has 18.
     uint256 public constant LSK_MULTIPLIER = 10 ** 10;
 
     /// @notice address of L2 LSK Token.
-    IERC20 public immutable l2LiskToken;
+    IERC20 public l2LiskToken;
 
     /// @notice Merkle Root for the claim.
-    bytes32 public immutable merkleRoot;
+    bytes32 public merkleRoot;
 
     // @notice Records claimed addresses (lskAddress => boolean).
     mapping(bytes20 => bool) public claimed;
@@ -35,10 +38,10 @@ contract L2Claim {
     /// @notice Emitted when an address has claimed the LSK.
     event LSKClaimed(bytes20 lskAddress, address recipient, uint256 amount);
 
-    /// @notice Constructs the L2Claim contract.
+    /// @notice Setting global params.
     /// @param  _l2LiskToken    L2 LSK Token Address
     /// @param  _merkleRoot     Merkle Tree Root
-    constructor(address _l2LiskToken, bytes32 _merkleRoot) {
+    function initialize(address _l2LiskToken, bytes32 _merkleRoot) public initializer {
         l2LiskToken = IERC20(_l2LiskToken);
         merkleRoot = _merkleRoot;
     }
@@ -175,4 +178,8 @@ contract L2Claim {
 
         claim(_lskAddress, _amount, _proof, leaf, _recipient);
     }
+
+    /// @notice Function that should revert when msg.sender is not authorized to upgrade the contract.
+    /// @param _newImplementation        New Implementation Contract
+    function _authorizeUpgrade(address _newImplementation) internal override onlyOwner { }
 }

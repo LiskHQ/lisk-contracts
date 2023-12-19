@@ -2,7 +2,9 @@
 pragma solidity 0.8.21;
 
 import { Script, console2 } from "forge-std/Script.sol";
-import { L1LiskToken, UUPSProxy } from "src/L1/L1LiskToken.sol";
+import { L1LiskToken } from "src/L1/L1LiskToken.sol";
+import { UUPSProxy } from "src/utils/UUPSProxy.sol";
+
 import "script/Utils.sol";
 
 /// @title L1LiskTokenScript - L1 Lisk token deployment script

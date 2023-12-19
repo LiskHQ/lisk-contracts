@@ -17,8 +17,10 @@ contract Utils is Script {
 
     /// @notice This struct is used to read and write L2 addresses to JSON file.
     struct L2AddressesConfig {
-        /// @notice L2 Claim contract address.
+        /// @notice L2 Claim contract (in Proxy), which users interact with.
         address L2ClaimContract;
+        /// @notice The Current implementation of L2 Claim Contract.
+        address L2ClaimImplementation;
         /// @notice L2 Lisk token address.
         address L2LiskToken;
     }
@@ -75,6 +77,7 @@ contract Utils is Script {
     function writeL2AddressesFile(L2AddressesConfig memory cfg) external {
         string memory json = "";
         vm.serializeAddress(json, "L2ClaimContract", cfg.L2ClaimContract);
+        vm.serializeAddress(json, "L2ClaimImplementation", cfg.L2ClaimImplementation);
         string memory finalJson = vm.serializeAddress(json, "L2LiskToken", cfg.L2LiskToken);
         finalJson.write(string.concat("deployment/l2addresses.json"));
     }
