@@ -42,6 +42,7 @@ contract L2Claim is Initializable, OwnableUpgradeable, UUPSUpgradeable {
     /// @param  _l2LiskToken    L2 LSK Token Address
     /// @param  _merkleRoot     Merkle Tree Root
     function initialize(address _l2LiskToken, bytes32 _merkleRoot) public initializer {
+        __Ownable_init(msg.sender);
         l2LiskToken = IERC20(_l2LiskToken);
         merkleRoot = _merkleRoot;
     }
