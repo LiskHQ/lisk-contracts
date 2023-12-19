@@ -27,16 +27,11 @@ contract L2ClaimTest is Test {
     ERC20 public lsk;
 
     UUPSProxy public proxy;
+    L2Claim public l2ClaimImplementation;
     L2Claim public l2Claim;
-    L2Claim public l2ClaimProxy;
 
     Utils public utils;
-    string public merkleTreeJson;
     string public signatureJson;
-
-    function getMerkleTree() internal view returns (Utils.MerkleTree memory) {
-        return abi.decode(merkleTreeJson.parseRaw("."), (Utils.MerkleTree));
-    }
 
     function getSignature(uint256 _index) internal view returns (Signature memory) {
         return abi.decode(
@@ -50,41 +45,42 @@ contract L2ClaimTest is Test {
     }
 
     function setUp() public {
+        utils = new Utils();
+
         console.log("L2ClaimTest Address is: %s", address(this));
 
-        string memory root = string.concat(vm.projectRoot(), "/test/L2/data");
-
-        // Read Merkle Tree File
-        merkleTreeJson = vm.readFile(string.concat(root, "/merkle-tree-result-simple.json"));
-
         // Read Pre-signed Signatures, for testing purpose
-        signatureJson = vm.readFile(string.concat(root, "/signatures.json"));
+        string memory rootPath = string.concat(vm.projectRoot(), "/test/L2/data");
+        signatureJson = vm.readFile(string.concat(rootPath, "/signatures.json"));
 
-        Utils.MerkleTree memory rawTxDetail = getMerkleTree();
-        l2Claim = new L2Claim();
+        // Read MerkleTree from file
+        Utils.MerkleTree memory merkleTree = utils.readMerkleTreeFile();
 
-        // deploy Proxy contract
-        l2ClaimProxy = L2Claim(address(new UUPSProxy(address(l2Claim), "")));
+        // deploy L2Claim Implementation Contract
+        l2ClaimImplementation = new L2Claim();
+
+        // deploy L2Claim Contract via Proxy
+        l2Claim = L2Claim(address(new UUPSProxy(address(l2ClaimImplementation), "")));
 
         // Send bunch of MockLSK to Claim Contract
         lsk = new MockERC20(10_000_000 * 10 ** 18);
-        lsk.transfer(address(l2ClaimProxy), lsk.balanceOf(address(this)));
+        lsk.transfer(address(l2Claim), lsk.balanceOf(address(this)));
 
-        l2ClaimProxy.initialize(address(lsk), rawTxDetail.merkleRoot);
-
-        assertEq(address(l2ClaimProxy.l2LiskToken()), address(lsk));
-        assertEq(l2ClaimProxy.merkleRoot(), rawTxDetail.merkleRoot);
+        // Initialize L2Claim Proxy Contract
+        l2Claim.initialize(address(lsk), merkleTree.merkleRoot);
+        assertEq(address(l2Claim.l2LiskToken()), address(lsk));
+        assertEq(l2Claim.merkleRoot(), merkleTree.merkleRoot);
     }
 
     function test_claimRegularAccount_RevertWhenInvalidProof() public {
         uint256 accountIndex = 0;
-        Utils.MerkleTreeLeaf memory leaf = getMerkleTree().leaves[accountIndex];
+        Utils.MerkleTreeLeaf memory leaf = utils.readMerkleTreeFile().leaves[accountIndex];
         Signature memory signature = getSignature(accountIndex);
 
         leaf.proof[0] = bytes32AddOne(leaf.proof[0]);
 
         vm.expectRevert("Invalid Proof");
-        l2ClaimProxy.claimRegularAccount(
+        l2Claim.claimRegularAccount(
             leaf.proof,
             bytes32(signature.sigs[0].pubKey),
             leaf.balanceBeddows,
@@ -95,11 +91,11 @@ contract L2ClaimTest is Test {
 
     function test_claimRegularAccount_RevertWhenValidProofInvalidSig() public {
         uint256 accountIndex = 0;
-        Utils.MerkleTreeLeaf memory leaf = getMerkleTree().leaves[accountIndex];
+        Utils.MerkleTreeLeaf memory leaf = utils.readMerkleTreeFile().leaves[accountIndex];
         Signature memory signature = getSignature(accountIndex);
 
         vm.expectRevert();
-        l2ClaimProxy.claimRegularAccount(
+        l2Claim.claimRegularAccount(
             leaf.proof,
             bytes32(signature.sigs[0].pubKey),
             leaf.balanceBeddows,
@@ -108,7 +104,7 @@ contract L2ClaimTest is Test {
         );
 
         vm.expectRevert();
-        l2ClaimProxy.claimRegularAccount(
+        l2Claim.claimRegularAccount(
             leaf.proof,
             bytes32(signature.sigs[0].pubKey),
             leaf.balanceBeddows,
@@ -119,10 +115,10 @@ contract L2ClaimTest is Test {
 
     function claimRegularAccount(uint256 _accountIndex) internal {
         uint256 originalBalance = lsk.balanceOf(address(this));
-        Utils.MerkleTreeLeaf memory leaf = getMerkleTree().leaves[_accountIndex];
+        Utils.MerkleTreeLeaf memory leaf = utils.readMerkleTreeFile().leaves[_accountIndex];
         Signature memory signature = getSignature(_accountIndex);
 
-        l2ClaimProxy.claimRegularAccount(
+        l2Claim.claimRegularAccount(
             leaf.proof,
             bytes32(signature.sigs[0].pubKey),
             leaf.balanceBeddows,
@@ -130,7 +126,7 @@ contract L2ClaimTest is Test {
             ED25519Signature(signature.sigs[0].r, signature.sigs[0].s)
         );
 
-        assertEq(lsk.balanceOf(address(this)), originalBalance + leaf.balanceBeddows * l2ClaimProxy.LSK_MULTIPLIER());
+        assertEq(lsk.balanceOf(address(this)), originalBalance + leaf.balanceBeddows * l2Claim.LSK_MULTIPLIER());
     }
 
     function test_claimRegularAccount_SuccessClaim() public {
@@ -144,11 +140,11 @@ contract L2ClaimTest is Test {
         uint256 claimIndex = 0;
         claimRegularAccount(claimIndex);
 
-        Utils.MerkleTreeLeaf memory leaf = getMerkleTree().leaves[claimIndex];
+        Utils.MerkleTreeLeaf memory leaf = utils.readMerkleTreeFile().leaves[claimIndex];
         Signature memory signature = getSignature(claimIndex);
 
         vm.expectRevert("Already Claimed");
-        l2ClaimProxy.claimRegularAccount(
+        l2Claim.claimRegularAccount(
             leaf.proof,
             bytes32(signature.sigs[0].pubKey),
             leaf.balanceBeddows,
@@ -160,7 +156,7 @@ contract L2ClaimTest is Test {
     // Multisig settings refers to: lisk-merkle-tree-builder/data/example/create-balances.ts
     function test_claimMultisigAccount_RevertWhenIncorrectProof() public {
         uint256 accountIndex = 50;
-        Utils.MerkleTreeLeaf memory leaf = getMerkleTree().leaves[accountIndex];
+        Utils.MerkleTreeLeaf memory leaf = utils.readMerkleTreeFile().leaves[accountIndex];
         Signature memory signature = getSignature(accountIndex);
 
         ED25519Signature[] memory ed25519Signatures = new ED25519Signature[](leaf.numberOfSignatures);
@@ -172,7 +168,7 @@ contract L2ClaimTest is Test {
         leaf.proof[0] = bytes32AddOne(leaf.proof[0]);
 
         vm.expectRevert("Invalid Proof");
-        l2ClaimProxy.claimMultisigAccount(
+        l2Claim.claimMultisigAccount(
             leaf.proof,
             bytes20(leaf.b32Address << 96),
             leaf.balanceBeddows,
@@ -184,7 +180,7 @@ contract L2ClaimTest is Test {
 
     function test_claimMultisigAccount_RevertWhenValidProofInvalidMandatorySig() public {
         uint256 accountIndex = 50;
-        Utils.MerkleTreeLeaf memory leaf = getMerkleTree().leaves[accountIndex];
+        Utils.MerkleTreeLeaf memory leaf = utils.readMerkleTreeFile().leaves[accountIndex];
         Signature memory signature = getSignature(accountIndex);
 
         ED25519Signature[] memory ed25519Signatures = new ED25519Signature[](leaf.numberOfSignatures);
@@ -196,7 +192,7 @@ contract L2ClaimTest is Test {
         ed25519Signatures[0].r = bytes32AddOne(ed25519Signatures[0].r);
 
         vm.expectRevert("Invalid signature for mandatoryKey");
-        l2ClaimProxy.claimMultisigAccount(
+        l2Claim.claimMultisigAccount(
             leaf.proof,
             bytes20(leaf.b32Address << 96),
             leaf.balanceBeddows,
@@ -208,7 +204,7 @@ contract L2ClaimTest is Test {
 
     function test_claimMultisigAccount_RevertWhenValidProofInvalidOptionalSig() public {
         uint256 accountIndex = 51;
-        Utils.MerkleTreeLeaf memory leaf = getMerkleTree().leaves[accountIndex];
+        Utils.MerkleTreeLeaf memory leaf = utils.readMerkleTreeFile().leaves[accountIndex];
         Signature memory signature = getSignature(accountIndex);
 
         ED25519Signature[] memory ed25519Signatures =
@@ -223,7 +219,7 @@ contract L2ClaimTest is Test {
             bytes32AddOne(ed25519Signatures[leaf.numberOfSignatures - 1].r);
 
         vm.expectRevert("Invalid signature for optionalKey");
-        l2ClaimProxy.claimMultisigAccount(
+        l2Claim.claimMultisigAccount(
             leaf.proof,
             bytes20(leaf.b32Address << 96),
             leaf.balanceBeddows,
@@ -235,7 +231,7 @@ contract L2ClaimTest is Test {
 
     function test_claimMultisigAccount_RevertWhenValidProofInsufficientSig() public {
         uint256 accountIndex = 50;
-        Utils.MerkleTreeLeaf memory leaf = getMerkleTree().leaves[accountIndex];
+        Utils.MerkleTreeLeaf memory leaf = utils.readMerkleTreeFile().leaves[accountIndex];
         Signature memory signature = getSignature(accountIndex);
 
         ED25519Signature[] memory ed25519Signatures = new ED25519Signature[](leaf.numberOfSignatures);
@@ -246,7 +242,7 @@ contract L2ClaimTest is Test {
 
         vm.expectRevert("Invalid signature for mandatoryKey");
 
-        l2ClaimProxy.claimMultisigAccount(
+        l2Claim.claimMultisigAccount(
             leaf.proof,
             bytes20(leaf.b32Address << 96),
             leaf.balanceBeddows,
@@ -258,7 +254,7 @@ contract L2ClaimTest is Test {
 
     function test_claimMultisigAccount_RevertWhenSigLengthLongerThanManKeysAndOpKeys() public {
         uint256 accountIndex = 50;
-        Utils.MerkleTreeLeaf memory leaf = getMerkleTree().leaves[accountIndex];
+        Utils.MerkleTreeLeaf memory leaf = utils.readMerkleTreeFile().leaves[accountIndex];
         Signature memory signature = getSignature(accountIndex);
 
         ED25519Signature[] memory ed25519Signatures = new ED25519Signature[](leaf.numberOfSignatures + 1);
@@ -268,7 +264,7 @@ contract L2ClaimTest is Test {
         }
 
         vm.expectRevert("Signatures array has invalid length");
-        l2ClaimProxy.claimMultisigAccount(
+        l2Claim.claimMultisigAccount(
             leaf.proof,
             bytes20(leaf.b32Address << 96),
             leaf.balanceBeddows,
@@ -284,7 +280,7 @@ contract L2ClaimTest is Test {
         // 1m + 2o, numberOfSignatures = 2
         uint256 accountIndex = 51;
 
-        Utils.MerkleTreeLeaf memory leaf = getMerkleTree().leaves[accountIndex];
+        Utils.MerkleTreeLeaf memory leaf = utils.readMerkleTreeFile().leaves[accountIndex];
         Signature memory signature = getSignature(accountIndex);
 
         ED25519Signature[] memory ed25519Signatures =
@@ -295,7 +291,7 @@ contract L2ClaimTest is Test {
         }
 
         vm.expectRevert("Invalid signature for mandatoryKey");
-        l2ClaimProxy.claimMultisigAccount(
+        l2Claim.claimMultisigAccount(
             leaf.proof,
             bytes20(leaf.b32Address << 96),
             leaf.balanceBeddows,
@@ -307,7 +303,7 @@ contract L2ClaimTest is Test {
 
     function test_claimMultisigAccount_SuccessClaim_3M() public {
         uint256 accountIndex = 50;
-        Utils.MerkleTreeLeaf memory leaf = getMerkleTree().leaves[accountIndex];
+        Utils.MerkleTreeLeaf memory leaf = utils.readMerkleTreeFile().leaves[accountIndex];
         Signature memory signature = getSignature(accountIndex);
 
         ED25519Signature[] memory ed25519Signatures = new ED25519Signature[](leaf.numberOfSignatures);
@@ -316,7 +312,7 @@ contract L2ClaimTest is Test {
             ed25519Signatures[i] = ED25519Signature(signature.sigs[i].r, signature.sigs[i].s);
         }
 
-        l2ClaimProxy.claimMultisigAccount(
+        l2Claim.claimMultisigAccount(
             leaf.proof,
             bytes20(leaf.b32Address << 96),
             leaf.balanceBeddows,
@@ -324,12 +320,12 @@ contract L2ClaimTest is Test {
             address(this),
             ed25519Signatures
         );
-        assertEq(lsk.balanceOf(address(this)), leaf.balanceBeddows * l2ClaimProxy.LSK_MULTIPLIER());
+        assertEq(lsk.balanceOf(address(this)), leaf.balanceBeddows * l2Claim.LSK_MULTIPLIER());
     }
 
     function test_claimMultisigAccount_SuccessClaim_1M_2O() public {
         uint256 accountIndex = 51;
-        Utils.MerkleTreeLeaf memory leaf = getMerkleTree().leaves[accountIndex];
+        Utils.MerkleTreeLeaf memory leaf = utils.readMerkleTreeFile().leaves[accountIndex];
         Signature memory signature = getSignature(accountIndex);
 
         ED25519Signature[] memory ed25519Signatures =
@@ -341,7 +337,7 @@ contract L2ClaimTest is Test {
 
         ed25519Signatures[1] = ED25519Signature(bytes32(0), bytes32(0));
 
-        l2ClaimProxy.claimMultisigAccount(
+        l2Claim.claimMultisigAccount(
             leaf.proof,
             bytes20(leaf.b32Address << 96),
             leaf.balanceBeddows,
@@ -350,12 +346,12 @@ contract L2ClaimTest is Test {
             ed25519Signatures
         );
 
-        assertEq(lsk.balanceOf(address(this)), leaf.balanceBeddows * l2ClaimProxy.LSK_MULTIPLIER());
+        assertEq(lsk.balanceOf(address(this)), leaf.balanceBeddows * l2Claim.LSK_MULTIPLIER());
     }
 
     function test_claimMultisigAccount_SuccessClaim_3M_3O() public {
         uint256 accountIndex = 52;
-        Utils.MerkleTreeLeaf memory leaf = getMerkleTree().leaves[accountIndex];
+        Utils.MerkleTreeLeaf memory leaf = utils.readMerkleTreeFile().leaves[accountIndex];
         Signature memory signature = getSignature(accountIndex);
 
         ED25519Signature[] memory ed25519Signatures =
@@ -367,7 +363,7 @@ contract L2ClaimTest is Test {
 
         ed25519Signatures[4] = ED25519Signature(bytes32(0), bytes32(0));
 
-        l2ClaimProxy.claimMultisigAccount(
+        l2Claim.claimMultisigAccount(
             leaf.proof,
             bytes20(leaf.b32Address << 96),
             leaf.balanceBeddows,
@@ -376,12 +372,12 @@ contract L2ClaimTest is Test {
             ed25519Signatures
         );
 
-        assertEq(lsk.balanceOf(address(this)), leaf.balanceBeddows * l2ClaimProxy.LSK_MULTIPLIER());
+        assertEq(lsk.balanceOf(address(this)), leaf.balanceBeddows * l2Claim.LSK_MULTIPLIER());
     }
 
     function test_claimMultisigAccount_SuccessClaim_64M() public {
         uint256 accountIndex = 53;
-        Utils.MerkleTreeLeaf memory leaf = getMerkleTree().leaves[accountIndex];
+        Utils.MerkleTreeLeaf memory leaf = utils.readMerkleTreeFile().leaves[accountIndex];
         Signature memory signature = getSignature(accountIndex);
 
         ED25519Signature[] memory ed25519Signatures =
@@ -391,7 +387,7 @@ contract L2ClaimTest is Test {
             ed25519Signatures[i] = ED25519Signature(signature.sigs[i].r, signature.sigs[i].s);
         }
 
-        l2ClaimProxy.claimMultisigAccount(
+        l2Claim.claimMultisigAccount(
             leaf.proof,
             bytes20(leaf.b32Address << 96),
             leaf.balanceBeddows,
@@ -400,13 +396,31 @@ contract L2ClaimTest is Test {
             ed25519Signatures
         );
 
-        assertEq(lsk.balanceOf(address(this)), leaf.balanceBeddows * l2ClaimProxy.LSK_MULTIPLIER());
+        assertEq(lsk.balanceOf(address(this)), leaf.balanceBeddows * l2Claim.LSK_MULTIPLIER());
     }
 
     function test_claimMultisigAccount_RevertWhenAlreadyClaimed() public {
         test_claimMultisigAccount_SuccessClaim_3M();
 
+        // Copy-and-paste test_claimMultisigAccount_SuccessClaim_3M(), such that the `vm.expectRevert` could be correctly placed
+        uint256 accountIndex = 50;
+        Utils.MerkleTreeLeaf memory leaf = utils.readMerkleTreeFile().leaves[accountIndex];
+        Signature memory signature = getSignature(accountIndex);
+
+        ED25519Signature[] memory ed25519Signatures = new ED25519Signature[](leaf.numberOfSignatures);
+
+        for (uint256 i; i < leaf.numberOfSignatures; i++) {
+            ed25519Signatures[i] = ED25519Signature(signature.sigs[i].r, signature.sigs[i].s);
+        }
+
         vm.expectRevert("Already Claimed");
-        test_claimMultisigAccount_SuccessClaim_3M();
+        l2Claim.claimMultisigAccount(
+            leaf.proof,
+            bytes20(leaf.b32Address << 96),
+            leaf.balanceBeddows,
+            MultisigKeys(leaf.mandatoryKeys, leaf.optionalKeys),
+            address(this),
+            ed25519Signatures
+        );
     }
 }
