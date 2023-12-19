@@ -25,10 +25,10 @@ contract Utils is Script {
         address L2LiskToken;
     }
 
-    // Limitation of parseJSON, only bytes32 is supported
-    // to convert b32Address back to bytes20, shift 96 bits to the left
-    // i.e. bytes20(leaf.b32Address << 96)
-    /// @notice This struct is store merkleTree leaf.
+    /// @notice This struct stores merkleTree leaf.
+    /// @dev Limitation of parseJSON, only bytes32 is supported.
+    ///      To convert b32Address back to bytes20, shift 96 bits to the left.
+    ///      i.e. bytes20(leaf.b32Address << 96)
     struct MerkleTreeLeaf {
         bytes32 b32Address;
         uint64 balanceBeddows;
