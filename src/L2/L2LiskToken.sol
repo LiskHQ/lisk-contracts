@@ -2,6 +2,7 @@
 pragma solidity 0.8.21;
 
 import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import { ERC20Permit } from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 
 /// @title IOptimismMintableERC20
@@ -16,10 +17,10 @@ interface IOptimismMintableERC20 is IERC165 {
 }
 
 /// @title L2LiskToken
-/// @notice L2LiskToken is a standard extension of the base ERC20 and IOptimismMintableERC20 token contracts designed to
-///         allow the StandardBridge contract to mint and burn tokens. This makes it possible to use an L2LiskToken as
-///         the L2 representation of an L1LiskToken.
-contract L2LiskToken is IOptimismMintableERC20, ERC20 {
+/// @notice L2LiskToken is a standard extension of the base ERC20, ERC20Permit and IOptimismMintableERC20 token
+///         contracts designed to allow the StandardBridge contract to mint and burn tokens. This makes it possible to
+///         use an L2LiskToken as the L2 representation of an L1LiskToken.
+contract L2LiskToken is IOptimismMintableERC20, ERC20, ERC20Permit {
     /// @notice Name of the token.
     string private constant NAME = "Lisk";
 
@@ -51,7 +52,7 @@ contract L2LiskToken is IOptimismMintableERC20, ERC20 {
     /// @notice Constructs the L2LiskToken contract.
     /// @param bridgeAddr      Address of the L2 standard bridge.
     /// @param remoteTokenAddr Address of the corresponding L1LiskToken.
-    constructor(address bridgeAddr, address remoteTokenAddr) ERC20(NAME, SYMBOL) {
+    constructor(address bridgeAddr, address remoteTokenAddr) ERC20(NAME, SYMBOL) ERC20Permit(NAME) {
         REMOTE_TOKEN = remoteTokenAddr;
         BRIDGE = bridgeAddr;
     }

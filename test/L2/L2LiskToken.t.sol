@@ -1,19 +1,31 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.21;
 
-import { Test, console2 } from "forge-std/Test.sol";
+import { Test, console2, StdCheats } from "forge-std/Test.sol";
 import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import { L2LiskToken, IOptimismMintableERC20 } from "src/L2/L2LiskToken.sol";
+import { SigUtils } from "test/SigUtils.sol";
 
 contract L2LiskTokenTest is Test {
     L2LiskToken public l2LiskToken;
     address public remoteToken;
     address public bridge;
+    SigUtils public sigUtils;
+
+    // some accounts to test with
+    uint256 public alicePrivateKey;
+    uint256 public bobPrivateKey;
+    address public alice;
+    address public bob;
 
     function setUp() public {
         bridge = vm.addr(1);
         remoteToken = vm.addr(2);
         l2LiskToken = new L2LiskToken(bridge, remoteToken);
+        sigUtils = new SigUtils(l2LiskToken.DOMAIN_SEPARATOR());
+
+        (alice, alicePrivateKey) = makeAddrAndKey("alice");
+        (bob, bobPrivateKey) = makeAddrAndKey("bob");
     }
 
     function test_Initialize() public {
@@ -42,9 +54,6 @@ contract L2LiskTokenTest is Test {
     }
 
     function test_Mint() public {
-        address alice = vm.addr(3);
-        address bob = vm.addr(4);
-
         vm.prank(bridge);
         l2LiskToken.mint(alice, 100 * 10 ** 18);
         assertEq(l2LiskToken.balanceOf(alice), 100 * 10 ** 18);
@@ -65,9 +74,6 @@ contract L2LiskTokenTest is Test {
     }
 
     function test_MintFail_NotBridge() public {
-        address alice = vm.addr(3);
-        address bob = vm.addr(4);
-
         // try to mint new tokens beeing alice and not the Standard Bridge
         vm.prank(alice);
         vm.expectRevert();
@@ -75,9 +81,6 @@ contract L2LiskTokenTest is Test {
     }
 
     function test_Burn() public {
-        address alice = vm.addr(3);
-        address bob = vm.addr(4);
-
         vm.prank(bridge);
         l2LiskToken.mint(alice, 100 * 10 ** 18);
         assertEq(l2LiskToken.balanceOf(alice), 100 * 10 ** 18);
@@ -116,9 +119,6 @@ contract L2LiskTokenTest is Test {
     }
 
     function test_BurnFail_NotBridge() public {
-        address alice = vm.addr(3);
-        address bob = vm.addr(4);
-
         vm.prank(bridge);
         l2LiskToken.mint(bob, 100 * 10 ** 18);
         assertEq(l2LiskToken.balanceOf(bob), 100 * 10 ** 18);
@@ -130,9 +130,6 @@ contract L2LiskTokenTest is Test {
     }
 
     function testFuzz_Transfer(uint256 amount) public {
-        address alice = vm.addr(3);
-        address bob = vm.addr(4);
-
         // mint some tokens to alice
         vm.prank(bridge);
         l2LiskToken.mint(alice, amount);
@@ -152,9 +149,6 @@ contract L2LiskTokenTest is Test {
     }
 
     function testFuzz_Allowance(uint256 amount) public {
-        address alice = vm.addr(3);
-        address bob = vm.addr(4);
-
         // mint some tokens to alice
         vm.prank(bridge);
         l2LiskToken.mint(alice, amount);
@@ -172,5 +166,185 @@ contract L2LiskTokenTest is Test {
         assertEq(l2LiskToken.balanceOf(alice), 0);
         // test bob balance
         assertEq(l2LiskToken.balanceOf(bob), amount);
+    }
+
+    function test_Permit() public {
+        SigUtils.Permit memory permit = SigUtils.Permit({
+            owner: alice,
+            spender: bob,
+            value: 100 * 10 ** 18,
+            nonce: l2LiskToken.nonces(alice),
+            deadline: 1 days
+        });
+
+        bytes32 digest = sigUtils.getTypedDataHash(permit);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alicePrivateKey, digest);
+
+        l2LiskToken.permit(permit.owner, permit.spender, permit.value, permit.deadline, v, r, s);
+
+        assertEq(l2LiskToken.allowance(alice, bob), 100 * 10 ** 18);
+        assertEq(l2LiskToken.nonces(alice), 1);
+    }
+
+    function test_PermitFail_ExpiredPermit() public {
+        SigUtils.Permit memory permit = SigUtils.Permit({
+            owner: alice,
+            spender: bob,
+            value: 100 * 10 ** 18,
+            nonce: l2LiskToken.nonces(alice),
+            deadline: 1 days
+        });
+
+        bytes32 digest = sigUtils.getTypedDataHash(permit);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alicePrivateKey, digest);
+
+        vm.warp(1 days + 1 seconds); // fast forward one second past the deadline
+
+        vm.expectRevert();
+        l2LiskToken.permit(permit.owner, permit.spender, permit.value, permit.deadline, v, r, s);
+    }
+
+    function test_PermitFail_InvalidSigner() public {
+        SigUtils.Permit memory permit = SigUtils.Permit({
+            owner: alice,
+            spender: bob,
+            value: 100 * 10 ** 18,
+            nonce: l2LiskToken.nonces(alice),
+            deadline: 1 days
+        });
+
+        bytes32 digest = sigUtils.getTypedDataHash(permit);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(bobPrivateKey, digest); // bob signs alice's approval
+
+        vm.expectRevert();
+        l2LiskToken.permit(permit.owner, permit.spender, permit.value, permit.deadline, v, r, s);
+    }
+
+    function test_PermitFail_InvalidNonce() public {
+        SigUtils.Permit memory permit = SigUtils.Permit({
+            owner: alice,
+            spender: bob,
+            value: 100 * 10 ** 18,
+            nonce: l2LiskToken.nonces(alice) + 1, // alice nonce is 0, but we set it to 1
+            deadline: 1 days
+        });
+
+        bytes32 digest = sigUtils.getTypedDataHash(permit);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alicePrivateKey, digest);
+
+        vm.expectRevert();
+        l2LiskToken.permit(permit.owner, permit.spender, permit.value, permit.deadline, v, r, s);
+    }
+
+    function test_PermitFail_SignatureReplay() public {
+        SigUtils.Permit memory permit = SigUtils.Permit({
+            owner: alice,
+            spender: bob,
+            value: 100 * 10 ** 18,
+            nonce: l2LiskToken.nonces(alice),
+            deadline: 1 days
+        });
+
+        bytes32 digest = sigUtils.getTypedDataHash(permit);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alicePrivateKey, digest);
+
+        l2LiskToken.permit(permit.owner, permit.spender, permit.value, permit.deadline, v, r, s);
+
+        vm.expectRevert();
+        l2LiskToken.permit(permit.owner, permit.spender, permit.value, permit.deadline, v, r, s);
+    }
+
+    function test_TransferFromLimitedPermit() public {
+        vm.prank(bridge);
+        l2LiskToken.mint(alice, 100 * 10 ** 18);
+
+        SigUtils.Permit memory permit = SigUtils.Permit({
+            owner: alice,
+            spender: bob,
+            value: 100 * 10 ** 18,
+            nonce: l2LiskToken.nonces(alice),
+            deadline: 1 days
+        });
+
+        bytes32 digest = sigUtils.getTypedDataHash(permit);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alicePrivateKey, digest);
+
+        l2LiskToken.permit(permit.owner, permit.spender, permit.value, permit.deadline, v, r, s);
+
+        vm.prank(bob);
+        l2LiskToken.transferFrom(alice, bob, 100 * 10 ** 18);
+
+        assertEq(l2LiskToken.balanceOf(alice), 0);
+        assertEq(l2LiskToken.balanceOf(bob), 100 * 10 ** 18);
+        assertEq(l2LiskToken.allowance(alice, bob), 0);
+    }
+
+    function test_TransferFromMaxPermit() public {
+        vm.prank(bridge);
+        l2LiskToken.mint(alice, 100 * 10 ** 18);
+
+        SigUtils.Permit memory permit = SigUtils.Permit({
+            owner: alice,
+            spender: bob,
+            value: type(uint256).max,
+            nonce: l2LiskToken.nonces(alice),
+            deadline: 1 days
+        });
+
+        bytes32 digest = sigUtils.getTypedDataHash(permit);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alicePrivateKey, digest);
+
+        l2LiskToken.permit(permit.owner, permit.spender, permit.value, permit.deadline, v, r, s);
+
+        vm.prank(bob);
+        l2LiskToken.transferFrom(alice, bob, 100 * 10 ** 18);
+
+        assertEq(l2LiskToken.balanceOf(alice), 0);
+        assertEq(l2LiskToken.balanceOf(bob), 100 * 10 ** 18);
+        assertEq(l2LiskToken.allowance(alice, bob), type(uint256).max);
+    }
+
+    function test_TransferFromPermitFail_InvalidAllowance() public {
+        vm.prank(bridge);
+        l2LiskToken.mint(alice, 100 * 10 ** 18);
+
+        SigUtils.Permit memory permit = SigUtils.Permit({
+            owner: alice,
+            spender: bob,
+            value: 50 * 10 ** 18, // approve only 50 tokens
+            nonce: l2LiskToken.nonces(alice),
+            deadline: 1 days
+        });
+
+        bytes32 digest = sigUtils.getTypedDataHash(permit);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alicePrivateKey, digest);
+
+        l2LiskToken.permit(permit.owner, permit.spender, permit.value, permit.deadline, v, r, s);
+
+        vm.prank(bob);
+        vm.expectRevert();
+        l2LiskToken.transferFrom(alice, bob, 100 * 10 ** 18); // attempt to transfer 100 token (alice only approved 50)
+    }
+
+    function test_TransferFromPermitFail_InvalidBalance() public {
+        vm.prank(bridge);
+        l2LiskToken.mint(alice, 100 * 10 ** 18);
+
+        SigUtils.Permit memory permit = SigUtils.Permit({
+            owner: alice,
+            spender: bob,
+            value: 101 * 10 ** 18, // approve 101 tokens
+            nonce: l2LiskToken.nonces(alice),
+            deadline: 1 days
+        });
+
+        bytes32 digest = sigUtils.getTypedDataHash(permit);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alicePrivateKey, digest);
+
+        l2LiskToken.permit(permit.owner, permit.spender, permit.value, permit.deadline, v, r, s);
+
+        vm.prank(bob);
+        vm.expectRevert();
+        l2LiskToken.transferFrom(alice, bob, 101 * 10 ** 18); // attempt to transfer 101 tokens (alice only owns 100)
     }
 }
