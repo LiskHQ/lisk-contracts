@@ -2,9 +2,9 @@
 pragma solidity 0.8.21;
 
 import { Test, console2 } from "forge-std/Test.sol";
-import { L1LiskToken } from "src/L1/L1LiskToken.sol";
 import { IAccessControl } from "@openzeppelin/contracts/access/IAccessControl.sol";
 import { IERC20Errors } from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
+import { L1LiskToken } from "src/L1/L1LiskToken.sol";
 
 contract SigUtils {
     bytes32 internal DOMAIN_SEPARATOR;
