@@ -26,11 +26,14 @@ contract L2Claim is Initializable, OwnableUpgradeable, UUPSUpgradeable {
     /// @notice LSK originally has 8 d.p., L2 LSK has 18.
     uint256 public constant LSK_MULTIPLIER = 10 ** 10;
 
-    /// @notice address of L2 LSK Token.
+    /// @notice Address of L2 LSK Token.
     IERC20 public l2LiskToken;
 
     /// @notice Merkle Root for the claim.
     bytes32 public merkleRoot;
+
+    /// @notice After this timestamp, owner can send all remaining unclaimed LSK from this contract back to DAO
+    uint256 public recoverPeriodTimestamp;
 
     // @notice Records claimed addresses (lskAddress => boolean).
     mapping(bytes20 => bool) public claimed;
@@ -38,13 +41,30 @@ contract L2Claim is Initializable, OwnableUpgradeable, UUPSUpgradeable {
     /// @notice Emitted when an address has claimed the LSK.
     event LSKClaimed(bytes20 lskAddress, address recipient, uint256 amount);
 
+    /// @notice Emitted when `recoverLSK` has been called.
+    event ClaimEnded();
+
+    /// @notice Disable Initializers at Implementation Contract.
+    constructor() {
+        _disableInitializers();
+    }
+
     /// @notice Setting global params.
-    /// @param  _l2LiskToken    L2 LSK Token Address
-    /// @param  _merkleRoot     Merkle Tree Root
-    function initialize(address _l2LiskToken, bytes32 _merkleRoot) public initializer {
+    /// @param  _l2LiskToken            L2 LSK Token Address
+    /// @param  _merkleRoot             Merkle Tree Root
+    /// @param  _recoverPeriodTimestamp Timestamp for allowing LSK Recovery
+    function initialize(
+        address _l2LiskToken,
+        bytes32 _merkleRoot,
+        uint256 _recoverPeriodTimestamp
+    )
+        public
+        initializer
+    {
         __Ownable_init(msg.sender);
         l2LiskToken = IERC20(_l2LiskToken);
         merkleRoot = _merkleRoot;
+        recoverPeriodTimestamp = _recoverPeriodTimestamp;
     }
 
     /// @notice Verifies ED25519 Signature, throws error when verification fails.
@@ -77,7 +97,8 @@ contract L2Claim is Initializable, OwnableUpgradeable, UUPSUpgradeable {
     /// @param _lskAddress  LSK Address in bytes format.
     /// @param _amount      Amount of LSK (In Beddows [1 LSK = 10**8 Beddow]).
     /// @param _proof       Array of hashes that proves existence of the leaf.
-    /// @param _leaf        Double-hashed leaf by combining address, amount and signatures.
+    /// @param _leaf        Double-hashed leaf by combining address, amount, numberOfSignatures, mandatory and optional
+    /// keys.
     /// @param _recipient   Destination address at L2 Chain.
     function claim(
         bytes20 _lskAddress,
@@ -160,7 +181,7 @@ contract L2Claim is Initializable, OwnableUpgradeable, UUPSUpgradeable {
 
         for (uint256 i = 0; i < _keys.mandatoryKeys.length; i++) {
             verifySignature(
-                _keys.mandatoryKeys[i], _sigs[i].r, _sigs[i].s, message, "Invalid signature for mandatoryKey"
+                _keys.mandatoryKeys[i], _sigs[i].r, _sigs[i].s, message, "Invalid signature in mandatoryKeys[]"
             );
         }
 
@@ -173,11 +194,20 @@ contract L2Claim is Initializable, OwnableUpgradeable, UUPSUpgradeable {
                 _sigs[i + _keys.mandatoryKeys.length].r,
                 _sigs[i + _keys.mandatoryKeys.length].s,
                 message,
-                "Invalid signature for optionalKey"
+                "Invalid signature in optionalKeys[]"
             );
         }
 
         claim(_lskAddress, _amount, _proof, leaf, _recipient);
+    }
+
+    /// @notice Unclaimed LSK token can be transferred back to DAO Address after claim period.
+    /// @param _daoAddress        Destination recipient Address
+    function recoverLSK(address _daoAddress) public onlyOwner {
+        require(block.timestamp >= recoverPeriodTimestamp, "Recover period not reached");
+        l2LiskToken.transfer(_daoAddress, l2LiskToken.balanceOf(address(this)));
+
+        emit ClaimEnded();
     }
 
     /// @notice Function that should revert when msg.sender is not authorized to upgrade the contract.

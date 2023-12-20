@@ -25,22 +25,8 @@ contract Utils is Script {
         address L2LiskToken;
     }
 
-    /// @notice This struct stores merkleTree leaf.
-    /// @dev Limitation of parseJSON, only bytes32 is supported.
-    ///      To convert b32Address back to bytes20, shift 96 bits to the left.
-    ///      i.e. bytes20(leaf.b32Address << 96)
-    struct MerkleTreeLeaf {
-        bytes32 b32Address;
-        uint64 balanceBeddows;
-        bytes32[] mandatoryKeys;
-        uint256 numberOfSignatures;
-        bytes32[] optionalKeys;
-        bytes32[] proof;
-    }
-
     /// @notice This struct is used to read MerkleTree from JSON file.
     struct MerkleTree {
-        MerkleTreeLeaf[] leaves;
         bytes32 merkleRoot;
     }
 
@@ -86,9 +72,9 @@ contract Utils is Script {
     /// @return MerkleTree struct containing merkle root.
     function readMerkleTreeFile() external view returns (MerkleTree memory) {
         string memory root = vm.projectRoot();
-        string memory addressPath = string.concat(root, "/script/data/devnet/merkleTree.json");
-        string memory addressJson = vm.readFile(addressPath);
-        bytes memory addressRaw = vm.parseJson(addressJson);
-        return abi.decode(addressRaw, (MerkleTree));
+        string memory merkleTreePath = string.concat(root, "/script/data/devnet/merkleTree.json");
+        string memory merkleTreeJson = vm.readFile(merkleTreePath);
+        bytes memory merkleTreeRaw = vm.parseJson(merkleTreeJson);
+        return abi.decode(merkleTreeRaw, (MerkleTree));
     }
 }

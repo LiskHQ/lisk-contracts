@@ -5,6 +5,11 @@ import { ERC20Upgradeable } from "@openzeppelin-upgradeable/contracts/token/ERC2
 import { Initializable } from "@openzeppelin-upgradeable/contracts/proxy/utils/Initializable.sol";
 import { OwnableUpgradeable } from "@openzeppelin-upgradeable/contracts/access/OwnableUpgradeable.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
+import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+
+contract UUPSProxy is ERC1967Proxy {
+    constructor(address _implementation, bytes memory _data) ERC1967Proxy(_implementation, _data) { }
+}
 
 contract L1LiskToken is Initializable, ERC20Upgradeable, OwnableUpgradeable, UUPSUpgradeable {
     string private constant NAME = "Lisk";

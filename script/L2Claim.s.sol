@@ -12,6 +12,9 @@ contract L2ClaimScript is Script {
     /// @notice Utils contract which provides functions to read and write JSON files containing L1 and L2 addresses.
     Utils utils;
 
+    /// @notice  Recover LSK Tokens after 2 years
+    uint256 public constant RECOVER_PERIOD = 730 days;
+
     function setUp() public {
         utils = new Utils();
     }
@@ -36,10 +39,11 @@ contract L2ClaimScript is Script {
         vm.startBroadcast(deployerPrivateKey);
         L2Claim l2ClaimImplementation = new L2Claim();
         vm.stopBroadcast();
+
         assert(address(l2ClaimImplementation) != address(0));
-        assert(
-            l2ClaimImplementation.proxiableUUID() == 0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc
-        );
+
+        // ERC1967Utils: keccak-256 hash of "eip1967.proxy.implementation" subtracted by 1.
+        assert(l2ClaimImplementation.proxiableUUID() == bytes32(uint256(keccak256("eip1967.proxy.implementation")) - 1));
 
         // deploy L2Claim Proxy Contract
         vm.startBroadcast(deployerPrivateKey);
@@ -52,7 +56,7 @@ contract L2ClaimScript is Script {
 
         // initialize the proxy contract (calls the initialize function in L2Claim)
         vm.startBroadcast(deployerPrivateKey);
-        l2Claim.initialize(l2AddressesConfig.L2LiskToken, merkleTree.merkleRoot);
+        l2Claim.initialize(l2AddressesConfig.L2LiskToken, merkleTree.merkleRoot, block.timestamp + RECOVER_PERIOD);
         vm.stopBroadcast();
         assert(address(l2Claim.l2LiskToken()) == l2AddressesConfig.L2LiskToken);
         assert(l2Claim.merkleRoot() == merkleTree.merkleRoot);
