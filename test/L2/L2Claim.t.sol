@@ -37,7 +37,6 @@ struct MerkleTreeLeaf {
 /// @notice This struct is used to read MerkleTree from JSON file with leaves.
 struct DetailedMerkleTree {
     MerkleTreeLeaf[] leaves;
-    bytes32 merkleRoot;
 }
 
 contract L2ClaimTest is Test {

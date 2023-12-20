@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.21;
 
+import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import { Script, console2 } from "forge-std/Script.sol";
 import { L2Claim } from "src/L2/L2Claim.sol";
-import { UUPSProxy } from "src/utils/UUPSProxy.sol";
 import "script/Utils.sol";
 
 /// @title L2ClaimScript - L2 Claim contract deployment script
@@ -47,7 +47,7 @@ contract L2ClaimScript is Script {
 
         // deploy L2Claim Proxy Contract
         vm.startBroadcast(deployerPrivateKey);
-        UUPSProxy l2ClaimProxy = new UUPSProxy(address(l2ClaimImplementation), "");
+        ERC1967Proxy l2ClaimProxy = new ERC1967Proxy(address(l2ClaimImplementation), "");
         vm.stopBroadcast();
         assert(address(l2ClaimProxy) != address(0));
 
