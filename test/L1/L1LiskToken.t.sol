@@ -119,6 +119,8 @@ contract L1LiskTokenTest is Test {
         l1LiskToken.burn(amountToBurn);
 
         l1LiskToken.transfer(alice, amountToBurn * 2);
+        assertEq(l1LiskToken.balanceOf(alice), amountToBurn * 2);
+
         vm.prank(alice);
         vm.expectEmit(true, true, false, true, address(l1LiskToken));
         emit Transfer(alice, address(0), amountToBurn);
@@ -148,6 +150,8 @@ contract L1LiskTokenTest is Test {
         l1LiskToken.burnFrom(address(this), amountToBurn);
 
         l1LiskToken.approve(alice, amountToBurn);
+        assertEq(l1LiskToken.allowance(address(this), alice), amountToBurn);
+
         vm.prank(alice);
         l1LiskToken.burnFrom(address(this), amountToBurn);
 
