@@ -49,9 +49,10 @@ contract L2ClaimTest is Test {
     ERC1967Proxy public proxy;
     L2Claim public l2ClaimImplementation;
     L2Claim public l2Claim;
-
     Utils public utils;
+
     string public signatureJson;
+    string public detailedMerkleTreeJson;
 
     function getSignature(uint256 _index) internal view returns (Signature memory) {
         return abi.decode(
@@ -59,18 +60,14 @@ contract L2ClaimTest is Test {
         );
     }
 
+    // Get detailed MerkleTree, which only exists in devnet
+    function getDetailedMerkleTree() internal view returns (DetailedMerkleTree memory) {
+        return abi.decode(detailedMerkleTreeJson.parseRaw("."), (DetailedMerkleTree));
+    }
+
     // Helper function to "invalidate" a proof or sig. (e.g. 0xabcdef -> 0xabcdf0)
     function bytes32AddOne(bytes32 _value) internal pure returns (bytes32) {
         return bytes32(uint256(_value) + 1);
-    }
-
-    // Get detailed MerkleTree, which only exists in devnet
-    function getDetailedMerkleTree() internal view returns (DetailedMerkleTree memory) {
-        string memory root = vm.projectRoot();
-        string memory merkleTreePath = string.concat(root, "/script/data/devnet/merkleTreeWithLeaves.json");
-        string memory merkleTreeJson = vm.readFile(merkleTreePath);
-        bytes memory merkleTreeRaw = vm.parseJson(merkleTreeJson);
-        return abi.decode(merkleTreeRaw, (DetailedMerkleTree));
     }
 
     function setUp() public {
@@ -81,6 +78,7 @@ contract L2ClaimTest is Test {
         // Read Pre-signed Signatures, for testing purpose
         string memory rootPath = string.concat(vm.projectRoot(), "/test/L2/data");
         signatureJson = vm.readFile(string.concat(rootPath, "/signatures.json"));
+        detailedMerkleTreeJson = vm.readFile(string.concat(rootPath, "/merkleTreeWithLeaves.json"));
 
         // Read MerkleRoot from file
         Utils.MerkleTree memory merkleTree = utils.readMerkleTreeFile();
