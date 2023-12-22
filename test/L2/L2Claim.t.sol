@@ -39,6 +39,16 @@ struct MerkleLeaves {
     MerkleTreeLeaf[] leaves;
 }
 
+contract L2ClaimV2Mock is L2Claim {
+    function initializeV2(uint256 _recoverPeriodTimestamp) public reinitializer(2) {
+        recoverPeriodTimestamp = _recoverPeriodTimestamp;
+    }
+
+    function onlyV2() public pure returns (string memory) {
+        return "Hello from V2";
+    }
+}
+
 contract L2ClaimTest is Test {
     using stdJson for string;
 
@@ -46,7 +56,6 @@ contract L2ClaimTest is Test {
     uint256 public constant RECOVER_PERIOD = 730 days;
 
     ERC20 public lsk;
-    ERC1967Proxy public proxy;
     L2Claim public l2ClaimImplementation;
     L2Claim public l2Claim;
     Utils public utils;
@@ -70,8 +79,25 @@ contract L2ClaimTest is Test {
         return bytes32(uint256(_value) + 1);
     }
 
+    function claimRegularAccount(uint256 _accountIndex) internal {
+        uint256 originalBalance = lsk.balanceOf(address(this));
+        MerkleTreeLeaf memory leaf = getMerkleLeaves().leaves[_accountIndex];
+        Signature memory signature = getSignature(_accountIndex);
+
+        l2Claim.claimRegularAccount(
+            leaf.proof,
+            bytes32(signature.sigs[0].pubKey),
+            leaf.balanceBeddows,
+            address(this),
+            ED25519Signature(signature.sigs[0].r, signature.sigs[0].s)
+        );
+
+        assertEq(lsk.balanceOf(address(this)), originalBalance + leaf.balanceBeddows * l2Claim.LSK_MULTIPLIER());
+    }
+
     function setUp() public {
         utils = new Utils();
+        lsk = new MockERC20(10_000_000 * 10 ** 18);
 
         console.log("L2ClaimTest Address is: %s", address(this));
 
@@ -86,25 +112,29 @@ contract L2ClaimTest is Test {
         // deploy L2Claim Implementation Contract
         l2ClaimImplementation = new L2Claim();
 
-        // deploy L2Claim Contract via Proxy
-        l2Claim = L2Claim(address(new ERC1967Proxy(address(l2ClaimImplementation), "")));
-
-        // Send bunch of MockLSK to Claim Contract
-        lsk = new MockERC20(10_000_000 * 10 ** 18);
-        lsk.transfer(address(l2Claim), lsk.balanceOf(address(this)));
-
+        // deploy L2Claim Contract via Proxy and Initialize at the same time
         // Initialize L2Claim Proxy Contract
-        l2Claim.initialize(address(lsk), merkleTree.merkleRoot, block.timestamp + RECOVER_PERIOD);
+        l2Claim = L2Claim(
+            address(
+                new ERC1967Proxy(
+                    address(l2ClaimImplementation),
+                    abi.encodeWithSelector(l2Claim.initialize.selector, address(lsk), merkleTree.merkleRoot, block.timestamp + RECOVER_PERIOD)
+                )
+            )
+        );
         assertEq(address(l2Claim.l2LiskToken()), address(lsk));
         assertEq(l2Claim.merkleRoot(), merkleTree.merkleRoot);
+
+        // Send bunch of MockLSK to Claim Contract
+        lsk.transfer(address(l2Claim), lsk.balanceOf(address(this)));
     }
 
-    function test_initialize_RevertWhenCalledAtImplementationContract() public {
+    function test_Initialize_RevertWhenCalledAtImplementationContract() public {
         vm.expectRevert();
         l2ClaimImplementation.initialize(address(lsk), bytes32(0), block.timestamp + RECOVER_PERIOD);
     }
 
-    function test_claimRegularAccount_RevertWhenInvalidProof() public {
+    function test_ClaimRegularAccount_RevertWhenInvalidProof() public {
         uint256 accountIndex = 0;
         MerkleTreeLeaf memory leaf = getMerkleLeaves().leaves[accountIndex];
         Signature memory signature = getSignature(accountIndex);
@@ -121,7 +151,7 @@ contract L2ClaimTest is Test {
         );
     }
 
-    function test_claimRegularAccount_RevertWhenValidProofInvalidSig() public {
+    function test_ClaimRegularAccount_RevertWhenValidProofInvalidSig() public {
         uint256 accountIndex = 0;
         MerkleTreeLeaf memory leaf = getMerkleLeaves().leaves[accountIndex];
         Signature memory signature = getSignature(accountIndex);
@@ -145,29 +175,13 @@ contract L2ClaimTest is Test {
         );
     }
 
-    function claimRegularAccount(uint256 _accountIndex) internal {
-        uint256 originalBalance = lsk.balanceOf(address(this));
-        MerkleTreeLeaf memory leaf = getMerkleLeaves().leaves[_accountIndex];
-        Signature memory signature = getSignature(_accountIndex);
-
-        l2Claim.claimRegularAccount(
-            leaf.proof,
-            bytes32(signature.sigs[0].pubKey),
-            leaf.balanceBeddows,
-            address(this),
-            ED25519Signature(signature.sigs[0].r, signature.sigs[0].s)
-        );
-
-        assertEq(lsk.balanceOf(address(this)), originalBalance + leaf.balanceBeddows * l2Claim.LSK_MULTIPLIER());
-    }
-
-    function test_claimRegularAccount_SuccessClaim() public {
+    function test_ClaimRegularAccount_SuccessClaim() public {
         for (uint256 i; i < 50; i++) {
             claimRegularAccount(i);
         }
     }
 
-    function test_claimRegularAccount_RevertWhenAlreadyClaimed() public {
+    function test_ClaimRegularAccount_RevertWhenAlreadyClaimed() public {
         uint256 claimIndex = 0;
         claimRegularAccount(claimIndex);
 
@@ -185,7 +199,7 @@ contract L2ClaimTest is Test {
     }
 
     // Multisig settings refers to: lisk-merkle-tree-builder/data/example/create-balances.ts
-    function test_claimMultisigAccount_RevertWhenIncorrectProof() public {
+    function test_ClaimMultisigAccount_RevertWhenIncorrectProof() public {
         uint256 accountIndex = 50;
         MerkleTreeLeaf memory leaf = getMerkleLeaves().leaves[accountIndex];
         Signature memory signature = getSignature(accountIndex);
@@ -209,7 +223,7 @@ contract L2ClaimTest is Test {
         );
     }
 
-    function test_claimMultisigAccount_RevertWhenValidProofInvalidMandatorySig() public {
+    function test_ClaimMultisigAccount_RevertWhenValidProofInvalidMandatorySig() public {
         uint256 accountIndex = 50;
         MerkleTreeLeaf memory leaf = getMerkleLeaves().leaves[accountIndex];
         Signature memory signature = getSignature(accountIndex);
@@ -233,7 +247,7 @@ contract L2ClaimTest is Test {
         );
     }
 
-    function test_claimMultisigAccount_RevertWhenValidProofInvalidOptionalSig() public {
+    function test_ClaimMultisigAccount_RevertWhenValidProofInvalidOptionalSig() public {
         uint256 accountIndex = 51;
         MerkleTreeLeaf memory leaf = getMerkleLeaves().leaves[accountIndex];
         Signature memory signature = getSignature(accountIndex);
@@ -260,7 +274,7 @@ contract L2ClaimTest is Test {
         );
     }
 
-    function test_claimMultisigAccount_RevertWhenValidProofInsufficientSig() public {
+    function test_ClaimMultisigAccount_RevertWhenValidProofInsufficientSig() public {
         uint256 accountIndex = 50;
         MerkleTreeLeaf memory leaf = getMerkleLeaves().leaves[accountIndex];
         Signature memory signature = getSignature(accountIndex);
@@ -283,7 +297,7 @@ contract L2ClaimTest is Test {
         );
     }
 
-    function test_claimMultisigAccount_RevertWhenSigLengthLongerThanManKeysAndOpKeys() public {
+    function test_ClaimMultisigAccount_RevertWhenSigLengthLongerThanManKeysAndOpKeys() public {
         uint256 accountIndex = 50;
         MerkleTreeLeaf memory leaf = getMerkleLeaves().leaves[accountIndex];
         Signature memory signature = getSignature(accountIndex);
@@ -307,7 +321,7 @@ contract L2ClaimTest is Test {
 
     // numberOfSignatures are calculated by number of non-empty signatures, hence providing more signature than needed
     // would result in sig error at mandatoryKey stage
-    function test_claimMultisigAccount_RevertWhenSigOversupplied() public {
+    function test_ClaimMultisigAccount_RevertWhenSigOversupplied() public {
         // 1m + 2o, numberOfSignatures = 2
         uint256 accountIndex = 51;
 
@@ -332,7 +346,7 @@ contract L2ClaimTest is Test {
         );
     }
 
-    function test_claimMultisigAccount_SuccessClaim_3M() public {
+    function test_ClaimMultisigAccount_SuccessClaim_3M() public {
         uint256 accountIndex = 50;
         MerkleTreeLeaf memory leaf = getMerkleLeaves().leaves[accountIndex];
         Signature memory signature = getSignature(accountIndex);
@@ -354,7 +368,7 @@ contract L2ClaimTest is Test {
         assertEq(lsk.balanceOf(address(this)), leaf.balanceBeddows * l2Claim.LSK_MULTIPLIER());
     }
 
-    function test_claimMultisigAccount_SuccessClaim_1M_2O() public {
+    function test_ClaimMultisigAccount_SuccessClaim_1M_2O() public {
         uint256 accountIndex = 51;
         MerkleTreeLeaf memory leaf = getMerkleLeaves().leaves[accountIndex];
         Signature memory signature = getSignature(accountIndex);
@@ -380,7 +394,7 @@ contract L2ClaimTest is Test {
         assertEq(lsk.balanceOf(address(this)), leaf.balanceBeddows * l2Claim.LSK_MULTIPLIER());
     }
 
-    function test_claimMultisigAccount_SuccessClaim_3M_3O() public {
+    function test_ClaimMultisigAccount_SuccessClaim_3M_3O() public {
         uint256 accountIndex = 52;
         MerkleTreeLeaf memory leaf = getMerkleLeaves().leaves[accountIndex];
         Signature memory signature = getSignature(accountIndex);
@@ -406,7 +420,7 @@ contract L2ClaimTest is Test {
         assertEq(lsk.balanceOf(address(this)), leaf.balanceBeddows * l2Claim.LSK_MULTIPLIER());
     }
 
-    function test_claimMultisigAccount_SuccessClaim_64M() public {
+    function test_ClaimMultisigAccount_SuccessClaim_64M() public {
         uint256 accountIndex = 53;
         MerkleTreeLeaf memory leaf = getMerkleLeaves().leaves[accountIndex];
         Signature memory signature = getSignature(accountIndex);
@@ -430,10 +444,10 @@ contract L2ClaimTest is Test {
         assertEq(lsk.balanceOf(address(this)), leaf.balanceBeddows * l2Claim.LSK_MULTIPLIER());
     }
 
-    function test_claimMultisigAccount_RevertWhenAlreadyClaimed() public {
-        test_claimMultisigAccount_SuccessClaim_3M();
+    function test_ClaimMultisigAccount_RevertWhenAlreadyClaimed() public {
+        test_ClaimMultisigAccount_SuccessClaim_3M();
 
-        // Copy-and-paste test_claimMultisigAccount_SuccessClaim_3M(), such that the `vm.expectRevert` could be
+        // Copy-and-paste test_ClaimMultisigAccount_SuccessClaim_3M(), such that the `vm.expectRevert` could be
         // correctly placed
         uint256 accountIndex = 50;
         MerkleTreeLeaf memory leaf = getMerkleLeaves().leaves[accountIndex];
@@ -456,12 +470,12 @@ contract L2ClaimTest is Test {
         );
     }
 
-    function test_recoverLSK_RevertWhenRecoverPeriodNotReached() public {
+    function test_RecoverLSK_RevertWhenRecoverPeriodNotReached() public {
         vm.expectRevert("Recover period not reached");
         l2Claim.recoverLSK(address(this));
     }
 
-    function test_recoverLSK_RevertWhenNotCalledByOwner() public {
+    function test_RecoverLSK_RevertWhenNotCalledByOwner() public {
         address nobody = vm.addr(1);
 
         vm.prank(nobody);
@@ -469,7 +483,7 @@ contract L2ClaimTest is Test {
         l2Claim.recoverLSK(address(this));
     }
 
-    function test_recoverLSK_SuccessRecover() public {
+    function test_RecoverLSK_SuccessRecover() public {
         address daoAddress = vm.addr(2);
         uint256 claimContractBalance = lsk.balanceOf(address(l2Claim));
 
@@ -477,5 +491,47 @@ contract L2ClaimTest is Test {
 
         l2Claim.recoverLSK(daoAddress);
         assertEq(lsk.balanceOf(daoAddress), claimContractBalance);
+    }
+
+    function test_UpgradeToAndCall_RevertWhenNotOwner() public {
+        // deploy L2Claim Implementation Contract
+        L2ClaimV2Mock l2ClaimV2Implementation = new L2ClaimV2Mock();
+        address nobody = vm.addr(1);
+
+        vm.prank(nobody);
+        vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, nobody));
+        l2Claim.upgradeToAndCall(address(l2ClaimV2Implementation), "");
+    }
+
+    function test_UpgradeToAndCall_SuccessUpgrade() public {
+        // deploy L2ClaimV2 Implementation Contract
+        L2ClaimV2Mock l2ClaimV2Implementation = new L2ClaimV2Mock();
+        Utils.MerkleTree memory merkleTree = utils.readMerkleTreeFile();
+
+        // Claim Period is now 20 years!
+        uint256 newRecoverPeriodTimestamp = block.timestamp + 365 days * 20;
+
+        // Upgrade contract, and also change some variables by reinitialize
+        l2Claim.upgradeToAndCall(
+            address(l2ClaimV2Implementation),
+            abi.encodeWithSelector(l2ClaimV2Implementation.initializeV2.selector, newRecoverPeriodTimestamp)
+        );
+
+        // Wrap L2Claim Proxy with new contract
+        L2ClaimV2Mock l2ClaimV2 = L2ClaimV2Mock(address(l2Claim));
+
+        // LSK Token and MerkleRoot unchanged
+        assertEq(address(l2ClaimV2.l2LiskToken()), address(lsk));
+        assertEq(l2ClaimV2.merkleRoot(), merkleTree.merkleRoot);
+
+        // New Timestamp changed by reinitializer
+        assertEq(l2ClaimV2.recoverPeriodTimestamp(), newRecoverPeriodTimestamp);
+
+        // New function introduced
+        assertEq(l2ClaimV2.onlyV2(), "Hello from V2");
+
+        // Assure cannot re-reinitialize
+        vm.expectRevert();
+        l2ClaimV2.initializeV2(newRecoverPeriodTimestamp + 1);
     }
 }

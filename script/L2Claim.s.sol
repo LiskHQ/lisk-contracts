@@ -46,18 +46,16 @@ contract L2ClaimScript is Script {
         assert(l2ClaimImplementation.proxiableUUID() == bytes32(uint256(keccak256("eip1967.proxy.implementation")) - 1));
 
         // deploy L2Claim Proxy Contract
+        // at the same time initialize the proxy contract (calls the initialize function in L2Claim)
         vm.startBroadcast(deployerPrivateKey);
-        ERC1967Proxy l2ClaimProxy = new ERC1967Proxy(address(l2ClaimImplementation), "");
+        ERC1967Proxy l2ClaimProxy = new ERC1967Proxy(address(l2ClaimImplementation),
+            abi.encodeWithSelector(l2ClaimImplementation.initialize.selector, l2AddressesConfig.L2LiskToken, merkleTree.merkleRoot, block.timestamp + RECOVER_PERIOD)
+        );
         vm.stopBroadcast();
         assert(address(l2ClaimProxy) != address(0));
 
         // wrap in ABI to support easier calls
         L2Claim l2Claim = L2Claim(address(l2ClaimProxy));
-
-        // initialize the proxy contract (calls the initialize function in L2Claim)
-        vm.startBroadcast(deployerPrivateKey);
-        l2Claim.initialize(l2AddressesConfig.L2LiskToken, merkleTree.merkleRoot, block.timestamp + RECOVER_PERIOD);
-        vm.stopBroadcast();
         assert(address(l2Claim.l2LiskToken()) == l2AddressesConfig.L2LiskToken);
         assert(l2Claim.merkleRoot() == merkleTree.merkleRoot);
 
