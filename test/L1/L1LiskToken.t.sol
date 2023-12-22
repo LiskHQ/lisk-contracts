@@ -98,6 +98,13 @@ contract L1LiskTokenTest is Test {
             )
         );
         l1LiskToken.burn(amountToBurn);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IAccessControl.AccessControlUnauthorizedAccount.selector, address(this), l1LiskToken.BURNER_ROLE()
+            )
+        );
+        l1LiskToken.burnFrom(address(0x1), amountToBurn);
     }
 
     function test_onlyBurnerWithSufficientBalanceBurnsToken() public {
