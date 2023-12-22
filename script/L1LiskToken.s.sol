@@ -20,11 +20,14 @@ contract L1LiskTokenScript is Script {
         // Deployer's private key. Owner of the L1 Lisk token. PRIVATE_KEY is set in .env file.
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
 
+        // Address, the ownership of L1 Lisk token contract is transferred to after deployment.
+        address ownerAddress = vm.envAddress("OWNER_ADDRESS");
         console2.log("Simulation: Deploying L1 Lisk token...");
 
         // deploy L1LiskToken contract
         vm.startBroadcast(deployerPrivateKey);
         L1LiskToken l1LiskToken = new L1LiskToken();
+        l1LiskToken.transferOwnership(ownerAddress);
         vm.stopBroadcast();
 
         assert(address(l1LiskToken) != address(0));
@@ -33,8 +36,11 @@ contract L1LiskTokenScript is Script {
         assert(l1LiskToken.decimals() == 18);
         assert(l1LiskToken.totalSupply() == 300000000 * 10 ** 18);
         assert(l1LiskToken.balanceOf(vm.addr(deployerPrivateKey)) == 300000000 * 10 ** 18);
-        assert(l1LiskToken.hasRole(l1LiskToken.DEFAULT_ADMIN_ROLE(), vm.addr(deployerPrivateKey)) == true);
+        assert(l1LiskToken.hasRole(l1LiskToken.DEFAULT_ADMIN_ROLE(), vm.addr(deployerPrivateKey)) == false);
         assert(l1LiskToken.hasRole(l1LiskToken.BURNER_ROLE(), vm.addr(deployerPrivateKey)) == false);
+        assert(l1LiskToken.hasRole(l1LiskToken.DEFAULT_ADMIN_ROLE(), ownerAddress) == true);
+        assert(l1LiskToken.hasRole(l1LiskToken.BURNER_ROLE(), ownerAddress) == false);
+        assert(l1LiskToken.balanceOf(ownerAddress) == 0);
 
         console2.log("Simulation: L1 Lisk token successfully deployed!");
         console2.log("Simulation: L1 Lisk token address: %s", address(l1LiskToken));
