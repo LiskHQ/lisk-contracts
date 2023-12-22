@@ -34,7 +34,7 @@ contract L1LiskTokenTest is Test {
         assertFalse(l1LiskToken.hasRole(l1LiskToken.BURNER_ROLE(), address(this)));
     }
 
-    function test_onlyOwnerAddsOrRenouncesBurner() public {
+    function test_OnlyOwnerAddsOrRenouncesBurner() public {
         address alice = address(0x1);
 
         vm.startPrank(alice);
@@ -66,7 +66,7 @@ contract L1LiskTokenTest is Test {
         assertFalse(l1LiskToken.isBurner(alice));
     }
 
-    function test_ownerIsNotABurner() public {
+    function test_OwnerIsNotABurner() public {
         uint256 amountToBurn = 1000000;
         vm.expectRevert(
             abi.encodeWithSelector(
@@ -83,7 +83,7 @@ contract L1LiskTokenTest is Test {
         l1LiskToken.burnFrom(address(0x1), amountToBurn);
     }
 
-    function test_onlyBurnerWithSufficientBalanceBurnsToken() public {
+    function test_OnlyBurnerWithSufficientBalanceBurnsToken() public {
         address alice = address(0x1);
         uint256 amountToBurn = 1000000;
         vm.startPrank(alice);
@@ -113,7 +113,7 @@ contract L1LiskTokenTest is Test {
         assertEq(l1LiskToken.totalSupply(), TOTAL_SUPPLY - amountToBurn);
     }
 
-    function test_onlyBurnerWithSufficientAllowanceBurnsTokensFromAnAccount() public {
+    function test_OnlyBurnerWithSufficientAllowanceBurnsTokensFromAnAccount() public {
         address alice = address(0x1);
         uint256 amountToBurn = 1000000;
         vm.startPrank(alice);
@@ -142,7 +142,7 @@ contract L1LiskTokenTest is Test {
         assertEq(l1LiskToken.totalSupply(), TOTAL_SUPPLY - amountToBurn);
     }
 
-    function test_permit() public {
+    function test_Permit() public {
         uint256 ownerPrivateKey = 0xB0B;
         uint256 spenderPrivateKey = 0xA11CE;
         address owner = vm.addr(ownerPrivateKey);
@@ -159,7 +159,7 @@ contract L1LiskTokenTest is Test {
         assertEq(l1LiskToken.allowance(owner, spender), permit.value);
     }
 
-    function test_onlyOwnerTransfersTheOwnership() public {
+    function test_OnlyOwnerTransfersTheOwnership() public {
         address alice = address(0x1);
         address bob = address(0x2);
         vm.startPrank(alice);
@@ -181,7 +181,7 @@ contract L1LiskTokenTest is Test {
         assertTrue(l1LiskToken.hasRole(l1LiskToken.DEFAULT_ADMIN_ROLE(), alice));
     }
 
-    function test_defaultAdminRoleIsRoleAdminForBurnerRole() public {
+    function test_DefaultAdminRoleIsRoleAdminForBurnerRole() public {
         assertEq(l1LiskToken.DEFAULT_ADMIN_ROLE(), l1LiskToken.getRoleAdmin(l1LiskToken.BURNER_ROLE()));
     }
 }
