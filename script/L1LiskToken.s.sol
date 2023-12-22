@@ -24,7 +24,7 @@ contract L1LiskTokenScript is Script {
         address ownerAddress = vm.envAddress("OWNER_ADDRESS");
         console2.log("Simulation: Deploying L1 Lisk token...");
 
-        // deploy L1LiskToken contract
+        // deploy L1LiskToken contract and transfer its ownership
         vm.startBroadcast(deployerPrivateKey);
         L1LiskToken l1LiskToken = new L1LiskToken();
         l1LiskToken.transferOwnership(ownerAddress);
