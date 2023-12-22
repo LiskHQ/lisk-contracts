@@ -5,31 +5,7 @@ import { Test, console2 } from "forge-std/Test.sol";
 import { IAccessControl } from "@openzeppelin/contracts/access/IAccessControl.sol";
 import { IERC20Errors } from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
 import { L1LiskToken } from "src/L1/L1LiskToken.sol";
-
-contract SigUtils {
-    bytes32 internal DOMAIN_SEPARATOR;
-    bytes32 public constant PERMIT_TYPEHASH =
-        keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
-
-    struct Permit {
-        address owner;
-        address spender;
-        uint256 value;
-        uint256 nonce;
-        uint256 deadline;
-    }
-
-    constructor(bytes32 _DOMAIN_SEPARATOR) {
-        DOMAIN_SEPARATOR = _DOMAIN_SEPARATOR;
-    }
-
-    function getPermitDataHash(Permit memory _permit) public view returns (bytes32) {
-        bytes32 permitHash = keccak256(
-            abi.encode(PERMIT_TYPEHASH, _permit.owner, _permit.spender, _permit.value, _permit.nonce, _permit.deadline)
-        );
-        return keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, permitHash));
-    }
-}
+import { SigUtils } from "test/SigUtils.sol";
 
 contract L1LiskTokenTest is Test {
     event RoleAdminChanged(bytes32 indexed role, bytes32 indexed previousAdminRole, bytes32 indexed newAdminRole);
@@ -174,7 +150,7 @@ contract L1LiskTokenTest is Test {
         SigUtils sigUtils = new SigUtils(l1LiskToken.DOMAIN_SEPARATOR());
         SigUtils.Permit memory permit =
             SigUtils.Permit({ owner: owner, spender: spender, value: 1000000, nonce: 0, deadline: 1 days });
-        bytes32 digest = sigUtils.getPermitDataHash(permit);
+        bytes32 digest = sigUtils.getTypedDataHash(permit);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(ownerPrivateKey, digest);
 
         l1LiskToken.transfer(permit.owner, 2000000);
