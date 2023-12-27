@@ -118,7 +118,12 @@ contract L2ClaimTest is Test {
             address(
                 new ERC1967Proxy(
                     address(l2ClaimImplementation),
-                    abi.encodeWithSelector(l2Claim.initialize.selector, address(lsk), merkleTree.merkleRoot, block.timestamp + RECOVER_PERIOD)
+                    abi.encodeWithSelector(
+                        l2Claim.initialize.selector,
+                        address(lsk),
+                        merkleTree.merkleRoot,
+                        block.timestamp + RECOVER_PERIOD
+                    )
                 )
             )
         );

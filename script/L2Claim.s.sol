@@ -48,8 +48,14 @@ contract L2ClaimScript is Script {
         // deploy L2Claim Proxy Contract
         // at the same time initialize the proxy contract (calls the initialize function in L2Claim)
         vm.startBroadcast(deployerPrivateKey);
-        ERC1967Proxy l2ClaimProxy = new ERC1967Proxy(address(l2ClaimImplementation),
-            abi.encodeWithSelector(l2ClaimImplementation.initialize.selector, l2AddressesConfig.L2LiskToken, merkleTree.merkleRoot, block.timestamp + RECOVER_PERIOD)
+        ERC1967Proxy l2ClaimProxy = new ERC1967Proxy(
+            address(l2ClaimImplementation),
+            abi.encodeWithSelector(
+                l2ClaimImplementation.initialize.selector,
+                l2AddressesConfig.L2LiskToken,
+                merkleTree.merkleRoot,
+                block.timestamp + RECOVER_PERIOD
+            )
         );
         vm.stopBroadcast();
         assert(address(l2ClaimProxy) != address(0));
