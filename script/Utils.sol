@@ -23,6 +23,23 @@ contract Utils is Script {
         address L2LiskToken;
     }
 
+    /// @notice This struct is used to read accounts from JSON file. These accounts are used to transfer L1 Lisk tokens
+    ///         to them after all contracts are deployed.
+    struct Accounts {
+        /// @notice Array of L1 addresses and amounts of LSK tokens to be transferred to them.
+        FundedAccount[] l1Addresses;
+        /// @notice Array of L2 addresses and amounts of LSK tokens to be transferred to them.
+        FundedAccount[] l2Addresses;
+    }
+
+    /// @notice This struct is used to read a single account from JSON file.
+    struct FundedAccount {
+        /// @notice Account address.
+        address addr;
+        /// @notice Amount of LSK tokens to be transferred to the account.
+        uint256 amount;
+    }
+
     /// @notice This function reads L1 addresses from JSON file.
     /// @return L1AddressesConfig struct containing L1 addresses.
     function readL1AddressesFile() external view returns (L1AddressesConfig memory) {
@@ -58,5 +75,15 @@ contract Utils is Script {
         vm.serializeAddress(json, "L2ClaimContract", cfg.L2ClaimContract);
         string memory finalJson = vm.serializeAddress(json, "L2LiskToken", cfg.L2LiskToken);
         finalJson.write(string.concat("deployment/l2addresses.json"));
+    }
+
+    /// @notice This function reads accounts from JSON file.
+    /// @return Accounts struct containing accounts.
+    function readAccountsFile() external view returns (Accounts memory) {
+        string memory root = vm.projectRoot();
+        string memory accountsPath = string.concat(root, "/script/data/devnet/accounts.json");
+        string memory accountsJson = vm.readFile(accountsPath);
+        bytes memory accountsRaw = vm.parseJson(accountsJson);
+        return abi.decode(accountsRaw, (Accounts));
     }
 }

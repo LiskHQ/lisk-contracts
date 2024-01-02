@@ -43,6 +43,6 @@ forge script --rpc-url="$L2_RPC_URL" --broadcast --verify --etherscan-api-key="$
 fi
 echo "Done."
 
-echo "Transferring funds to L2Claim smart contract..."
+echo "Transferring funds to L1 and L2 addresses and L2Claim smart contract..."
 forge script --rpc-url="$L1_RPC_URL" --broadcast -vvvv script/TransferFunds.s.sol:TransferFundsScript
 echo "Done."
