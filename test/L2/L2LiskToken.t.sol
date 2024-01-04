@@ -93,7 +93,7 @@ contract L2LiskTokenTest is Test {
         assertEq(address(l2LiskTokenSalted), l2LiskTokenAddressCalculated);
     }
 
-    function test_UnifiedTokenAddress_DifferentStandardBridgeAddresses() public {
+    function test_UnifiedTokenAddress_DifferentStandardBridgeAddress() public {
         // calculate L2LiskToken contract address
         address l2LiskTokenAddressCalculated =
             computeCreate2Address(salt, hashInitCode(type(L2LiskToken).creationCode, abi.encode(remoteToken)), alice);
@@ -110,7 +110,7 @@ contract L2LiskTokenTest is Test {
         assertEq(address(l2LiskTokenSalted), l2LiskTokenAddressCalculated);
     }
 
-    function test_UnifiedTokenAddressFail_DifferentDeployers() public {
+    function test_UnifiedTokenAddressFail_DifferentDeployer() public {
         // calculate L2LiskToken contract address
         address l2LiskTokenAddressCalculated =
             computeCreate2Address(salt, hashInitCode(type(L2LiskToken).creationCode, abi.encode(remoteToken)), alice);
