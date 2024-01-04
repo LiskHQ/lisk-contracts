@@ -28,7 +28,7 @@ contract L2LiskToken is IOptimismMintableERC20, ERC20, ERC20Permit {
     string private constant SYMBOL = "LSK";
 
     /// @notice Address of the corresponding version of this token on the remote chain (on L1).
-    address public REMOTE_TOKEN;
+    address public immutable REMOTE_TOKEN;
 
     /// @notice Address of the StandardBridge on this (deployed) network.
     address public BRIDGE;
@@ -50,16 +50,16 @@ contract L2LiskToken is IOptimismMintableERC20, ERC20, ERC20Permit {
     }
 
     /// @notice Constructs the L2LiskToken contract.
-    constructor() ERC20(NAME, SYMBOL) ERC20Permit(NAME) { }
+    /// @param remoteTokenAddr Address of the corresponding L1LiskToken.
+    constructor(address remoteTokenAddr) ERC20(NAME, SYMBOL) ERC20Permit(NAME) {
+        REMOTE_TOKEN = remoteTokenAddr;
+    }
 
     /// @notice Initializes the L2LiskToken contract.
     /// @param bridgeAddr      Address of the L2 standard bridge.
-    /// @param remoteTokenAddr Address of the corresponding L1LiskToken.
-    function initialize(address bridgeAddr, address remoteTokenAddr) public {
+    function initialize(address bridgeAddr) public {
         require(BRIDGE == address(0), "L2LiskToken: already initialized");
-        require(REMOTE_TOKEN == address(0), "L2LiskToken: already initialized");
         BRIDGE = bridgeAddr;
-        REMOTE_TOKEN = remoteTokenAddr;
     }
 
     /// @notice Allows the StandardBridge on this network to mint tokens.

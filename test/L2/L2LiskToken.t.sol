@@ -24,8 +24,8 @@ contract L2LiskTokenTest is Test {
     function setUp() public {
         bridge = vm.addr(uint256(bytes32("bridge")));
         remoteToken = vm.addr(uint256(bytes32("remoteToken")));
-        l2LiskToken = new L2LiskToken();
-        l2LiskToken.initialize(bridge, remoteToken);
+        l2LiskToken = new L2LiskToken(remoteToken);
+        l2LiskToken.initialize(bridge);
         sigUtils = new SigUtils(l2LiskToken.DOMAIN_SEPARATOR());
 
         (alice, alicePrivateKey) = makeAddrAndKey("alice");
@@ -51,36 +51,34 @@ contract L2LiskTokenTest is Test {
 
     function test_InitializeFail_AlreadyInitialized() public {
         vm.expectRevert("L2LiskToken: already initialized");
-        l2LiskToken.initialize(bridge, remoteToken);
+        l2LiskToken.initialize(bridge);
     }
 
     function test_UnifiedTokenAddress() public {
         // calculate L2LiskToken contract address
         address l2LiskTokenAddressCalculated =
-            computeCreate2Address(salt, hashInitCode(type(L2LiskToken).creationCode), alice);
+            computeCreate2Address(salt, hashInitCode(type(L2LiskToken).creationCode, abi.encode(remoteToken)), alice);
 
         // use the same salt and the same deployer as in calculated address of L2LiskToken contract
         vm.prank(alice);
-        L2LiskToken l2LiskTokenSalted = new L2LiskToken{ salt: salt }();
-        l2LiskTokenSalted.initialize(bridge, remoteToken);
+        L2LiskToken l2LiskTokenSalted = new L2LiskToken{ salt: salt }(remoteToken);
+        l2LiskTokenSalted.initialize(bridge);
 
         // check that both token contracts and the calculated address have the same address
         assertEq(address(l2LiskTokenSalted), l2LiskTokenAddressCalculated);
     }
 
-    function test_UnifiedTokenAddress_DifferentL1TokenAndStandardBridgeAddresses() public {
+    function test_UnifiedTokenAddress_DifferentStandardBridgeAddresses() public {
         // calculate L2LiskToken contract address
         address l2LiskTokenAddressCalculated =
-            computeCreate2Address(salt, hashInitCode(type(L2LiskToken).creationCode), alice);
+            computeCreate2Address(salt, hashInitCode(type(L2LiskToken).creationCode, abi.encode(remoteToken)), alice);
 
         // use the same salt and the same deployer as in calculated address of L2LiskToken contract
         vm.prank(alice);
-        L2LiskToken l2LiskTokenSalted = new L2LiskToken{ salt: salt }();
+        L2LiskToken l2LiskTokenSalted = new L2LiskToken{ salt: salt }(remoteToken);
 
-        // use different Lisk L1 token and Standard Bridge addresses
-        l2LiskTokenSalted.initialize(
-            vm.addr(uint256(bytes32("differentBridge"))), vm.addr(uint256(bytes32("differentRemoteToken")))
-        );
+        // use different Standard Bridge addresses
+        l2LiskTokenSalted.initialize(vm.addr(uint256(bytes32("differentBridge"))));
 
         // check that both token contracts and the calculated address have the same address
         assertEq(address(l2LiskTokenSalted), l2LiskTokenAddressCalculated);
@@ -89,12 +87,12 @@ contract L2LiskTokenTest is Test {
     function test_UnifiedTokenAddressFail_DifferentDeployers() public {
         // calculate L2LiskToken contract address
         address l2LiskTokenAddressCalculated =
-            computeCreate2Address(salt, hashInitCode(type(L2LiskToken).creationCode), alice);
+            computeCreate2Address(salt, hashInitCode(type(L2LiskToken).creationCode, abi.encode(remoteToken)), alice);
 
         // use the same salt but different deployer as in calculated address of L2LiskToken contract
         vm.prank(bob);
-        L2LiskToken l2LiskTokenSalted = new L2LiskToken{ salt: salt }();
-        l2LiskTokenSalted.initialize(bridge, remoteToken);
+        L2LiskToken l2LiskTokenSalted = new L2LiskToken{ salt: salt }(remoteToken);
+        l2LiskTokenSalted.initialize(bridge);
 
         // check that token contracts and the calculated address have different addresses
         assertNotEq(address(l2LiskTokenSalted), l2LiskTokenAddressCalculated);
@@ -103,12 +101,12 @@ contract L2LiskTokenTest is Test {
     function test_UnifiedTokenAddressFail_DifferentSalt() public {
         // calculate L2LiskToken contract address
         address l2LiskTokenAddressCalculated =
-            computeCreate2Address(salt, hashInitCode(type(L2LiskToken).creationCode), alice);
+            computeCreate2Address(salt, hashInitCode(type(L2LiskToken).creationCode, abi.encode(remoteToken)), alice);
 
         // use different salt but the same deployer as in calculated address of L2LiskToken contract
         vm.prank(alice);
-        L2LiskToken l2LiskTokenSalted = new L2LiskToken{ salt: keccak256(bytes("different_salt")) }();
-        l2LiskTokenSalted.initialize(bridge, remoteToken);
+        L2LiskToken l2LiskTokenSalted = new L2LiskToken{ salt: keccak256(bytes("different_salt")) }(remoteToken);
+        l2LiskTokenSalted.initialize(bridge);
 
         // check that token contracts and the calculated address have different addresses
         assertNotEq(address(l2LiskTokenSalted), l2LiskTokenAddressCalculated);
