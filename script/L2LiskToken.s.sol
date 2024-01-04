@@ -2,6 +2,7 @@
 pragma solidity 0.8.21;
 
 import { Script, console2 } from "forge-std/Script.sol";
+import { StdUtils } from "forge-std/StdUtils.sol";
 import { L2LiskToken } from "src/L2/L2LiskToken.sol";
 import "script/Utils.sol";
 
@@ -29,12 +30,24 @@ contract L2LiskTokenScript is Script {
         Utils.L1AddressesConfig memory l1AddressesConfig = utils.readL1AddressesFile();
         console2.log("Simulation: L1 Lisk token address: %s", l1AddressesConfig.L1LiskToken);
 
+        // get salt for L2LiskToken contract
+        bytes32 salt = keccak256(bytes(vm.envString("L2_TOKEN_SALT")));
+        console2.log("Simulation: L2 Lisk token address salt: %s", vm.envString("L2_TOKEN_SALT"));
+
+        // calculate L2LiskToken contract address
+        address l2LiskTokenAddressCalculated = computeCreate2Address(
+            salt,
+            hashInitCode(type(L2LiskToken).creationCode, abi.encode(L2_STANDARD_BRIDGE, l1AddressesConfig.L1LiskToken)),
+            CREATE2_FACTORY
+        );
+        console2.log("Simulation: Calculated L2 Lisk token address: %s", l2LiskTokenAddressCalculated);
+
         // deploy L2LiskToken contract
         vm.startBroadcast(deployerPrivateKey);
-        L2LiskToken l2LiskToken = new L2LiskToken(L2_STANDARD_BRIDGE, l1AddressesConfig.L1LiskToken);
+        L2LiskToken l2LiskToken = new L2LiskToken{ salt: salt }(L2_STANDARD_BRIDGE, l1AddressesConfig.L1LiskToken);
         vm.stopBroadcast();
 
-        assert(address(l2LiskToken) != address(0));
+        assert(address(l2LiskToken) == l2LiskTokenAddressCalculated);
         assert(keccak256(bytes(l2LiskToken.name())) == keccak256(bytes("Lisk")));
         assert(keccak256(bytes(l2LiskToken.symbol())) == keccak256(bytes("LSK")));
         assert(l2LiskToken.decimals() == 18);
