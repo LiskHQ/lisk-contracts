@@ -109,8 +109,8 @@ contract L2Claim is Initializable, OwnableUpgradeable, UUPSUpgradeable {
     )
         internal
     {
-        require(!claimed[_lskAddress], "Already Claimed");
-        require(MerkleProof.verify(_proof, merkleRoot, _leaf), "Invalid Proof");
+        require(!claimed[_lskAddress], "L2Claim: Already Claimed");
+        require(MerkleProof.verify(_proof, merkleRoot, _leaf), "L2Claim: Invalid Proof");
 
         l2LiskToken.transfer(_recipient, _amount * LSK_MULTIPLIER);
 
@@ -136,7 +136,7 @@ contract L2Claim is Initializable, OwnableUpgradeable, UUPSUpgradeable {
         bytes20 lskAddress = bytes20(sha256(abi.encode(_pubKey)));
         bytes32 leaf = doubleKeccak256(abi.encode(lskAddress, _amount, uint32(0), new bytes32[](0), new bytes32[](0)));
 
-        verifySignature(_pubKey, _sig.r, _sig.s, keccak256(abi.encode(leaf, _recipient)), "Invalid Signature");
+        verifySignature(_pubKey, _sig.r, _sig.s, keccak256(abi.encode(leaf, _recipient)), "L2Claim: Invalid Signature");
 
         claim(lskAddress, _amount, _proof, leaf, _recipient);
     }
@@ -160,7 +160,7 @@ contract L2Claim is Initializable, OwnableUpgradeable, UUPSUpgradeable {
     {
         require(
             _sigs.length == _keys.optionalKeys.length + _keys.mandatoryKeys.length,
-            "Signatures array has invalid length"
+            "L2Claim: Signatures array has invalid length"
         );
 
         // If numberOfSignatures passes MerkleProof in later stage, that means this value is correct.
@@ -185,7 +185,7 @@ contract L2Claim is Initializable, OwnableUpgradeable, UUPSUpgradeable {
                 _sigs[i].r,
                 _sigs[i].s,
                 message,
-                "Invalid signature when verifying with mandatoryKeys[]"
+                "L2Claim: Invalid signature when verifying with mandatoryKeys[]"
             );
         }
 
@@ -198,7 +198,7 @@ contract L2Claim is Initializable, OwnableUpgradeable, UUPSUpgradeable {
                 _sigs[i + _keys.mandatoryKeys.length].r,
                 _sigs[i + _keys.mandatoryKeys.length].s,
                 message,
-                "Invalid signature when verifying with optionalKeys[]"
+                "L2Claim: Invalid signature when verifying with optionalKeys[]"
             );
         }
 
@@ -208,7 +208,7 @@ contract L2Claim is Initializable, OwnableUpgradeable, UUPSUpgradeable {
     /// @notice Unclaimed LSK token can be transferred to DAO Address after claim period.
     /// @param _daoAddress        Destination recipient Address
     function recoverLSK(address _daoAddress) public onlyOwner {
-        require(block.timestamp >= recoverPeriodTimestamp, "Recover period not reached");
+        require(block.timestamp >= recoverPeriodTimestamp, "L2Claim: Recover period not reached");
         l2LiskToken.transfer(_daoAddress, l2LiskToken.balanceOf(address(this)));
 
         emit ClaimingEnded();

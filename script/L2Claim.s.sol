@@ -25,6 +25,9 @@ contract L2ClaimScript is Script {
         // file.
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
 
+        // Address, the ownership of L2Claim Proxy Contract is transferred to after deployment.
+        address ownerAddress = vm.envAddress("L2_CLAIM_OWNER_ADDRESS");
+
         console2.log("Simulation: Deploying L2 Claim contract...");
 
         // get L2LiskToken contract address
@@ -65,13 +68,20 @@ contract L2ClaimScript is Script {
         assert(address(l2Claim.l2LiskToken()) == l2AddressesConfig.L2LiskToken);
         assert(l2Claim.merkleRoot() == merkleTree.merkleRoot);
 
+        // Transfer ownership of L2Claim Proxy
+        vm.startBroadcast(deployerPrivateKey);
+        l2Claim.transferOwnership(ownerAddress);
+        vm.stopBroadcast();
+        assert(l2Claim.owner() == ownerAddress);
+
         console2.log("Simulation: L2 Claim contract successfully deployed!");
         console2.log("Simulation: L2 Claim (Implementation) address: %s", address(l2ClaimImplementation));
-        console2.log("Simulation: L2 Claim (Proxy) address: %s", address(l2ClaimProxy));
+        console2.log("Simulation: L2 Claim (Proxy) address: %s", address(l2Claim));
+        console2.log("Simulation: Owner of L2 Claim (Proxy) address: %s", l2Claim.owner());
 
         // write L2ClaimContract address to l2addresses.json
         l2AddressesConfig.L2ClaimImplementation = address(l2ClaimImplementation);
-        l2AddressesConfig.L2ClaimContract = address(l2ClaimProxy);
+        l2AddressesConfig.L2ClaimContract = address(l2Claim);
         utils.writeL2AddressesFile(l2AddressesConfig);
     }
 }
