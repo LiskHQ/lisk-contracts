@@ -241,7 +241,7 @@ contract L2ClaimTest is Test {
 
         ed25519Signatures[0].r = bytes32AddOne(ed25519Signatures[0].r);
 
-        vm.expectRevert("Invalid signature in mandatoryKeys[]");
+        vm.expectRevert("Invalid signature when verifying with mandatoryKeys[]");
         l2Claim.claimMultisigAccount(
             leaf.proof,
             bytes20(leaf.b32Address << 96),
@@ -268,7 +268,7 @@ contract L2ClaimTest is Test {
         ed25519Signatures[leaf.numberOfSignatures - 1].r =
             bytes32AddOne(ed25519Signatures[leaf.numberOfSignatures - 1].r);
 
-        vm.expectRevert("Invalid signature in optionalKeys[]");
+        vm.expectRevert("Invalid signature when verifying with optionalKeys[]");
         l2Claim.claimMultisigAccount(
             leaf.proof,
             bytes20(leaf.b32Address << 96),
@@ -290,7 +290,7 @@ contract L2ClaimTest is Test {
             ed25519Signatures[i] = ED25519Signature(signature.sigs[i].r, signature.sigs[i].s);
         }
 
-        vm.expectRevert("Invalid signature in mandatoryKeys[]");
+        vm.expectRevert("Invalid signature when verifying with mandatoryKeys[]");
 
         l2Claim.claimMultisigAccount(
             leaf.proof,
@@ -340,7 +340,7 @@ contract L2ClaimTest is Test {
             ed25519Signatures[i] = ED25519Signature(signature.sigs[i].r, signature.sigs[i].s);
         }
 
-        vm.expectRevert("Invalid signature in mandatoryKeys[]");
+        vm.expectRevert("Invalid signature when verifying with mandatoryKeys[]");
         l2Claim.claimMultisigAccount(
             leaf.proof,
             bytes20(leaf.b32Address << 96),

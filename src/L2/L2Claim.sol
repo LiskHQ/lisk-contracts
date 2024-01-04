@@ -32,7 +32,7 @@ contract L2Claim is Initializable, OwnableUpgradeable, UUPSUpgradeable {
     /// @notice Merkle Root for the claim.
     bytes32 public merkleRoot;
 
-    /// @notice After this timestamp, owner can send all remaining unclaimed LSK from this contract back to DAO
+    /// @notice After this timestamp, owner can send all remaining unclaimed LSK from this contract to DAO
     uint256 public recoverPeriodTimestamp;
 
     // @notice Records claimed addresses (lskAddress => boolean).
@@ -42,7 +42,7 @@ contract L2Claim is Initializable, OwnableUpgradeable, UUPSUpgradeable {
     event LSKClaimed(bytes20 lskAddress, address recipient, uint256 amount);
 
     /// @notice Emitted when `recoverLSK` has been called.
-    event ClaimEnded();
+    event ClaimingEnded();
 
     /// @notice Disable Initializers at Implementation Contract.
     constructor() {
@@ -98,7 +98,7 @@ contract L2Claim is Initializable, OwnableUpgradeable, UUPSUpgradeable {
     /// @param _amount      Amount of LSK (In Beddows [1 LSK = 10**8 Beddow]).
     /// @param _proof       Array of hashes that proves existence of the leaf.
     /// @param _leaf        Double-hashed leaf by combining address, amount, numberOfSignatures, mandatory and optional
-    /// keys.
+    ///                     keys.
     /// @param _recipient   Destination address at L2 Chain.
     function claim(
         bytes20 _lskAddress,
@@ -181,7 +181,11 @@ contract L2Claim is Initializable, OwnableUpgradeable, UUPSUpgradeable {
 
         for (uint256 i = 0; i < _keys.mandatoryKeys.length; i++) {
             verifySignature(
-                _keys.mandatoryKeys[i], _sigs[i].r, _sigs[i].s, message, "Invalid signature in mandatoryKeys[]"
+                _keys.mandatoryKeys[i],
+                _sigs[i].r,
+                _sigs[i].s,
+                message,
+                "Invalid signature when verifying with mandatoryKeys[]"
             );
         }
 
@@ -194,20 +198,20 @@ contract L2Claim is Initializable, OwnableUpgradeable, UUPSUpgradeable {
                 _sigs[i + _keys.mandatoryKeys.length].r,
                 _sigs[i + _keys.mandatoryKeys.length].s,
                 message,
-                "Invalid signature in optionalKeys[]"
+                "Invalid signature when verifying with optionalKeys[]"
             );
         }
 
         claim(_lskAddress, _amount, _proof, leaf, _recipient);
     }
 
-    /// @notice Unclaimed LSK token can be transferred back to DAO Address after claim period.
+    /// @notice Unclaimed LSK token can be transferred to DAO Address after claim period.
     /// @param _daoAddress        Destination recipient Address
     function recoverLSK(address _daoAddress) public onlyOwner {
         require(block.timestamp >= recoverPeriodTimestamp, "Recover period not reached");
         l2LiskToken.transfer(_daoAddress, l2LiskToken.balanceOf(address(this)));
 
-        emit ClaimEnded();
+        emit ClaimingEnded();
     }
 
     /// @notice Function that should revert when msg.sender is not authorized to upgrade the contract.
