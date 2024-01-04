@@ -27,14 +27,14 @@ contract L2LiskToken is IOptimismMintableERC20, ERC20, ERC20Permit {
     /// @notice Symbol of the token.
     string private constant SYMBOL = "LSK";
 
+    /// @notice Address which deployed this contract. Only this address is able to call initialize() function.
+    address private immutable initializer;
+
     /// @notice Address of the corresponding version of this token on the remote chain (on L1).
     address public immutable REMOTE_TOKEN;
 
     /// @notice Address of the StandardBridge on this (deployed) network.
     address public BRIDGE;
-
-    /// @notice Address which deployed this contract. Only this address is able to call initialize() function.
-    address public initializer;
 
     /// @notice Emitted whenever tokens are minted for an account.
     /// @param account Address of the account tokens are being minted for.
