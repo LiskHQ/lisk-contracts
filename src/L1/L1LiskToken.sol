@@ -52,7 +52,7 @@ contract L1LiskToken is ERC20Burnable, AccessControl, ERC20Permit {
     }
 
     /// @notice Allows the owner to revoke burner role from an account.
-    /// @param account Account to removed as a burner.
+    /// @param account Account to be removed as a burner.
     function renounceBurner(address account) public onlyRole(DEFAULT_ADMIN_ROLE) {
         _revokeRole(BURNER_ROLE, account);
     }
