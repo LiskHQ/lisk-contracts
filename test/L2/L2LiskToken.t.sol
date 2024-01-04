@@ -49,6 +49,30 @@ contract L2LiskTokenTest is Test {
         assertEq(l2LiskToken.supportsInterface(type(IOptimismMintableERC20).interfaceId), true);
     }
 
+    function test_Initialize_ValidInitializer() public {
+        // initialize the contract beeing alice
+        vm.prank(alice);
+        L2LiskToken l2LiskTokenNew = new L2LiskToken{ salt: salt }(remoteToken);
+
+        // initialize the contract beeing alice and the initializer
+        vm.prank(alice);
+        l2LiskTokenNew.initialize(bridge);
+
+        // check that the contract is initialized
+        assertEq(l2LiskTokenNew.BRIDGE(), bridge);
+    }
+
+    function test_InitializeFail_NotInitializer() public {
+        // initialize the contract beeing alice
+        vm.prank(alice);
+        L2LiskToken l2LiskTokenNew = new L2LiskToken{ salt: salt }(remoteToken);
+
+        // try to initialize the contract beeing bob and not the initializer
+        vm.prank(bob);
+        vm.expectRevert("L2LiskToken: only initializer can initialize this contract");
+        l2LiskTokenNew.initialize(bridge);
+    }
+
     function test_InitializeFail_AlreadyInitialized() public {
         vm.expectRevert("L2LiskToken: already initialized");
         l2LiskToken.initialize(bridge);
@@ -62,6 +86,7 @@ contract L2LiskTokenTest is Test {
         // use the same salt and the same deployer as in calculated address of L2LiskToken contract
         vm.prank(alice);
         L2LiskToken l2LiskTokenSalted = new L2LiskToken{ salt: salt }(remoteToken);
+        vm.prank(alice);
         l2LiskTokenSalted.initialize(bridge);
 
         // check that both token contracts and the calculated address have the same address
@@ -78,6 +103,7 @@ contract L2LiskTokenTest is Test {
         L2LiskToken l2LiskTokenSalted = new L2LiskToken{ salt: salt }(remoteToken);
 
         // use different Standard Bridge addresses
+        vm.prank(alice);
         l2LiskTokenSalted.initialize(vm.addr(uint256(bytes32("differentBridge"))));
 
         // check that both token contracts and the calculated address have the same address
@@ -92,6 +118,7 @@ contract L2LiskTokenTest is Test {
         // use the same salt but different deployer as in calculated address of L2LiskToken contract
         vm.prank(bob);
         L2LiskToken l2LiskTokenSalted = new L2LiskToken{ salt: salt }(remoteToken);
+        vm.prank(bob);
         l2LiskTokenSalted.initialize(bridge);
 
         // check that token contracts and the calculated address have different addresses
@@ -106,6 +133,7 @@ contract L2LiskTokenTest is Test {
         // use different salt but the same deployer as in calculated address of L2LiskToken contract
         vm.prank(alice);
         L2LiskToken l2LiskTokenSalted = new L2LiskToken{ salt: keccak256(bytes("different_salt")) }(remoteToken);
+        vm.prank(alice);
         l2LiskTokenSalted.initialize(bridge);
 
         // check that token contracts and the calculated address have different addresses

@@ -33,6 +33,9 @@ contract L2LiskToken is IOptimismMintableERC20, ERC20, ERC20Permit {
     /// @notice Address of the StandardBridge on this (deployed) network.
     address public BRIDGE;
 
+    /// @notice Address which deployed this contract. Only this address is able to call initialize() function.
+    address public initializer;
+
     /// @notice Emitted whenever tokens are minted for an account.
     /// @param account Address of the account tokens are being minted for.
     /// @param amount  Amount of tokens minted.
@@ -53,11 +56,13 @@ contract L2LiskToken is IOptimismMintableERC20, ERC20, ERC20Permit {
     /// @param remoteTokenAddr Address of the corresponding L1LiskToken.
     constructor(address remoteTokenAddr) ERC20(NAME, SYMBOL) ERC20Permit(NAME) {
         REMOTE_TOKEN = remoteTokenAddr;
+        initializer = msg.sender;
     }
 
     /// @notice Initializes the L2LiskToken contract.
     /// @param bridgeAddr      Address of the L2 standard bridge.
     function initialize(address bridgeAddr) public {
+        require(msg.sender == initializer, "L2LiskToken: only initializer can initialize this contract");
         require(BRIDGE == address(0), "L2LiskToken: already initialized");
         BRIDGE = bridgeAddr;
     }
