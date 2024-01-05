@@ -6,8 +6,8 @@ import { L1LiskToken } from "src/L1/L1LiskToken.sol";
 import "script/Utils.sol";
 
 /// @title L1LiskTokenScript - L1 Lisk token deployment script
-/// @notice This contract is used to deploy L1 Lisk token contract, transfer its ownership and write its address to JSON
-///         file.
+/// @notice This contract is used to deploy L1 Lisk token contract, transfers its ownership and writes its address to
+///         JSON file.
 contract L1LiskTokenScript is Script {
     /// @notice Utils contract which provides functions to read and write JSON files containing L1 and L2 addresses.
     Utils utils;
@@ -16,7 +16,8 @@ contract L1LiskTokenScript is Script {
         utils = new Utils();
     }
 
-This function deploys L1 Lisk token contract, transfers its ownership and writes its address to JSON file.
+    /// @notice This function deploys L1 Lisk token contract, transfers its ownership and writes its address to JSON
+    ///         file.
     function run() public {
         // Deployer's private key. Owner of the L1 Lisk token. PRIVATE_KEY is set in .env file.
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
