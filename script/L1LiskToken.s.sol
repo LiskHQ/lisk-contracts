@@ -16,8 +16,7 @@ contract L1LiskTokenScript is Script {
         utils = new Utils();
     }
 
-    /// @notice This contract is used to deploy L1 Lisk token contract, transfer its ownership and write its address to
-    ///         JSON file.
+This function deploys L1 Lisk token contract, transfers its ownership and writes its address to JSON file.
     function run() public {
         // Deployer's private key. Owner of the L1 Lisk token. PRIVATE_KEY is set in .env file.
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
