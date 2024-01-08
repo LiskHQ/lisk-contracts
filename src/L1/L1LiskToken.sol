@@ -26,7 +26,6 @@ contract L1LiskToken is ERC20Burnable, AccessControl, ERC20Permit {
 
     /// @notice Constructs the L1LiskToken contract.
     constructor() ERC20(NAME, SYMBOL) ERC20Permit(NAME) {
-        _setRoleAdmin(BURNER_ROLE, DEFAULT_ADMIN_ROLE);
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _mint(msg.sender, TOTAL_SUPPLY);
     }
