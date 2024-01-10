@@ -61,20 +61,16 @@ contract TransferFundsScript is Script {
 
         // get accounts to which L1 Lisk tokens will be transferred
         Utils.Accounts memory accounts = utils.readAccountsFile();
-        console2.log("Simulation: Number of L1 addresses: %s", accounts.l1Addresses.length);
-        for (uint256 i = 0; i < accounts.l1Addresses.length; i++) {
-            console2.log("Simulation: %d: %s", i + 1, accounts.l1Addresses[i].addr);
-        }
-        console2.log("Simulation: Number of L2 addresses: %s", accounts.l2Addresses.length);
-        for (uint256 i = 0; i < accounts.l2Addresses.length; i++) {
-            console2.log("Simulation: %d: %s", i + 1, accounts.l2Addresses[i].addr);
-        }
+        console2.log(
+            "Simulation: Number of L1 and L2 addresses to which L1 Lisk tokens will be transferred: %s",
+            accounts.l1Addresses.length + accounts.l2Addresses.length
+        );
 
         // get L1LiskToken and L1StandardBridge contracts instances
         L1LiskToken l1LiskToken = L1LiskToken(address(l1AddressesConfig.L1LiskToken));
         IL1StandardBridge bridge = IL1StandardBridge(l1StandardBridge);
 
-        console2.log("Simulation: Sending L1 Lisk tokens to all L1 addresses...");
+        console2.log("Simulation: Sending L1 Lisk tokens to %s L1 addresses...", accounts.l1Addresses.length);
 
         // send L1 Lisk tokens to all L1 addresses
         for (uint256 i = 0; i < accounts.l1Addresses.length; i++) {
@@ -109,7 +105,7 @@ contract TransferFundsScript is Script {
 
         console2.log("Simulation: L1 Lisk tokens successfully approved to be transfered by L1 Standard Bridge!");
 
-        console2.log("Simulation: Sending L1 Lisk tokens to all L2 addresses...");
+        console2.log("Simulation: Sending L1 Lisk tokens to %s L2 addresses...", accounts.l2Addresses.length);
 
         // send L1 Lisk tokens to all L2 addresses
         for (uint256 i = 0; i < accounts.l2Addresses.length; i++) {
