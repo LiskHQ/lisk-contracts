@@ -55,11 +55,11 @@ contract L2LiskTokenTest is Test {
     }
 
     function test_Initialize_ValidInitializer() public {
-        // initialize the contract beeing alice
+        // initialize the contract being alice
         vm.prank(alice, alice);
         L2LiskToken l2LiskTokenNew = new L2LiskToken{ salt: salt }(remoteToken);
 
-        // initialize the contract beeing alice and the initializer
+        // initialize the contract being alice and the initializer
         vm.prank(alice);
         l2LiskTokenNew.initialize(bridge);
 
@@ -68,11 +68,11 @@ contract L2LiskTokenTest is Test {
     }
 
     function test_InitializeFail_NotInitializer() public {
-        // initialize the contract beeing alice
+        // initialize the contract being alice
         vm.prank(alice);
         L2LiskToken l2LiskTokenNew = new L2LiskToken{ salt: salt }(remoteToken);
 
-        // try to initialize the contract beeing bob and not the initializer
+        // try to initialize the contract being bob and not the initializer
         vm.prank(bob);
         vm.expectRevert("L2LiskToken: only initializer can initialize this contract");
         l2LiskTokenNew.initialize(bridge);
@@ -176,7 +176,7 @@ contract L2LiskTokenTest is Test {
     }
 
     function test_MintFail_NotBridge() public {
-        // try to mint new tokens beeing alice and not the Standard Bridge
+        // try to mint new tokens being alice and not the Standard Bridge
         vm.prank(alice);
         vm.expectRevert("L2LiskToken: only bridge can mint or burn");
         l2LiskToken.mint(bob, 100 * 10 ** 18);
@@ -225,7 +225,7 @@ contract L2LiskTokenTest is Test {
         l2LiskToken.mint(bob, 100 * 10 ** 18);
         assertEq(l2LiskToken.balanceOf(bob), 100 * 10 ** 18);
 
-        // try to burn tokens beeing alice and not the Standard Bridge
+        // try to burn tokens being alice and not the Standard Bridge
         vm.prank(alice);
         vm.expectRevert("L2LiskToken: only bridge can mint or burn");
         l2LiskToken.burn(bob, 100 * 10 ** 18);
