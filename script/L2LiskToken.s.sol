@@ -36,9 +36,7 @@ contract L2LiskTokenScript is Script {
 
         // calculate L2LiskToken contract address
         address l2LiskTokenAddressCalculated = computeCreate2Address(
-            salt,
-            hashInitCode(type(L2LiskToken).creationCode, abi.encode(l1AddressesConfig.L1LiskToken)),
-            CREATE2_FACTORY
+            salt, hashInitCode(type(L2LiskToken).creationCode, abi.encode(l1AddressesConfig.L1LiskToken))
         );
         console2.log("Simulation: Calculated L2 Lisk token address: %s", l2LiskTokenAddressCalculated);
 

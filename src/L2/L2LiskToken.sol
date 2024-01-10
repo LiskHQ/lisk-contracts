@@ -28,6 +28,12 @@ contract L2LiskToken is IOptimismMintableERC20, ERC20, ERC20Permit {
     string private constant SYMBOL = "LSK";
 
     /// @notice Address which deployed this contract. Only this address is able to call initialize() function.
+    ///         Using Foundry's forge script when deploying a contract with CREATE2 opcode, the address of the
+    ///         deployer is a proxy contract address to have a deterministic deployer address. This offers a
+    ///         flexibility that a deployed contract address is calculated only by the hash of the contract's bytecode
+    ///         and a salt. Because initialize() function needs to be called by the actual deployer (EOA), we need to
+    ///         store the address of the original caller of the constructor (tx.origin) and not msg.sender which is the
+    ///         proxy contract address.
     address private immutable initializer;
 
     /// @notice Address of the corresponding version of this token on the remote chain (on L1).
@@ -56,7 +62,7 @@ contract L2LiskToken is IOptimismMintableERC20, ERC20, ERC20Permit {
     /// @param remoteTokenAddr Address of the corresponding L1LiskToken.
     constructor(address remoteTokenAddr) ERC20(NAME, SYMBOL) ERC20Permit(NAME) {
         REMOTE_TOKEN = remoteTokenAddr;
-        initializer = msg.sender;
+        initializer = tx.origin;
     }
 
     /// @notice Initializes the L2LiskToken contract.
