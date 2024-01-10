@@ -2,103 +2,186 @@
 pragma solidity 0.8.21;
 
 import { Test, console2 } from "forge-std/Test.sol";
-import { L1LiskToken, UUPSProxy } from "src/L1/L1LiskToken.sol";
+import { IAccessControl } from "@openzeppelin/contracts/access/IAccessControl.sol";
+import { IERC20Errors } from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
+import { L1LiskToken } from "src/L1/L1LiskToken.sol";
+import { SigUtils } from "test/SigUtils.sol";
 
 contract L1LiskTokenTest is Test {
-    L1LiskToken public l1LiskToken;
-    UUPSProxy public proxy;
-    L1LiskToken public wrappedProxy;
+    event RoleAdminChanged(bytes32 indexed role, bytes32 indexed previousAdminRole, bytes32 indexed newAdminRole);
+    event RoleGranted(bytes32 indexed role, address indexed account, address indexed sender);
+    event RoleRevoked(bytes32 indexed role, address indexed account, address indexed sender);
+
+    event Transfer(address indexed from, address indexed to, uint256 value);
+
+    string private constant NAME = "Lisk";
+    string private constant SYMBOL = "LSK";
+    uint256 private constant TOTAL_SUPPLY = 300_000_000 * 10 ** 18; //300 million LSK tokens
+
+    L1LiskToken l1LiskToken;
 
     function setUp() public {
         l1LiskToken = new L1LiskToken();
-
-        // deploy proxy contract and point it to the L1LiskToken contract
-        proxy = new UUPSProxy(address(l1LiskToken), "");
-
-        // wrap in ABI to support easier calls
-        wrappedProxy = L1LiskToken(address(proxy));
-
-        // initialize the proxy contract (calls the initialize function in L1LiskToken)
-        wrappedProxy.initialize();
     }
 
     function test_Initialize() public {
-        assertEq(wrappedProxy.name(), "Lisk");
-        assertEq(wrappedProxy.symbol(), "LSK");
-        assertEq(wrappedProxy.decimals(), 18);
-        assertEq(wrappedProxy.totalSupply(), 200000000 * 10 ** 18);
-        assertEq(wrappedProxy.balanceOf(address(this)), 200000000 * 10 ** 18);
-        assertEq(wrappedProxy.owner(), address(this));
-        assertEq(l1LiskToken.proxiableUUID(), 0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc);
+        assertEq(l1LiskToken.name(), NAME);
+        assertEq(l1LiskToken.symbol(), SYMBOL);
+        assertEq(l1LiskToken.totalSupply(), TOTAL_SUPPLY);
+        assertEq(l1LiskToken.balanceOf(address(this)), TOTAL_SUPPLY);
+        assertEq(l1LiskToken.decimals(), 18);
+        assertTrue(l1LiskToken.hasRole(l1LiskToken.DEFAULT_ADMIN_ROLE(), address(this)));
+        assertFalse(l1LiskToken.hasRole(l1LiskToken.BURNER_ROLE(), address(this)));
     }
 
-    function test_Transfer() public {
-        address alice = vm.addr(1);
-        address bob = vm.addr(2);
+    function test_OnlyOwnerAddsOrRenouncesBurner() public {
+        address alice = address(0x1);
 
-        // send 1000 tokens to alice
-        wrappedProxy.transfer(alice, 1000);
-        assertEq(wrappedProxy.balanceOf(alice), 1000);
+        vm.startPrank(alice);
 
-        // send 1000 tokens from alice to bob
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IAccessControl.AccessControlUnauthorizedAccount.selector, alice, l1LiskToken.DEFAULT_ADMIN_ROLE()
+            )
+        );
+        l1LiskToken.addBurner(alice);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IAccessControl.AccessControlUnauthorizedAccount.selector, alice, l1LiskToken.DEFAULT_ADMIN_ROLE()
+            )
+        );
+        l1LiskToken.renounceBurner(alice);
+
+        vm.stopPrank();
+
+        vm.expectEmit(true, true, true, true, address(l1LiskToken));
+        emit RoleGranted(l1LiskToken.BURNER_ROLE(), alice, address(this));
+        l1LiskToken.addBurner(alice);
+        assertTrue(l1LiskToken.isBurner(alice));
+
+        vm.expectEmit(true, true, true, true, address(l1LiskToken));
+        emit RoleRevoked(l1LiskToken.BURNER_ROLE(), alice, address(this));
+        l1LiskToken.renounceBurner(alice);
+        assertFalse(l1LiskToken.isBurner(alice));
+    }
+
+    function test_OwnerIsNotABurner() public {
+        uint256 amountToBurn = 1000000;
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IAccessControl.AccessControlUnauthorizedAccount.selector, address(this), l1LiskToken.BURNER_ROLE()
+            )
+        );
+        l1LiskToken.burn(amountToBurn);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IAccessControl.AccessControlUnauthorizedAccount.selector, address(this), l1LiskToken.BURNER_ROLE()
+            )
+        );
+        l1LiskToken.burnFrom(address(0x1), amountToBurn);
+    }
+
+    function test_OnlyBurnerWithSufficientBalanceBurnsToken() public {
+        address alice = address(0x1);
+        uint256 amountToBurn = 1000000;
+        vm.startPrank(alice);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IAccessControl.AccessControlUnauthorizedAccount.selector, alice, l1LiskToken.BURNER_ROLE()
+            )
+        );
+        l1LiskToken.burn(amountToBurn);
+        vm.stopPrank();
+
+        l1LiskToken.addBurner(alice);
+
         vm.prank(alice);
-        wrappedProxy.transfer(bob, 1000);
-        assertEq(wrappedProxy.balanceOf(alice), 0);
-        assertEq(wrappedProxy.balanceOf(bob), 1000);
+        vm.expectRevert(abi.encodeWithSelector(IERC20Errors.ERC20InsufficientBalance.selector, alice, 0, amountToBurn));
+        l1LiskToken.burn(amountToBurn);
 
-        // send 1000 tokens from bob to alice
-        vm.prank(bob);
-        wrappedProxy.transfer(alice, 1000);
-        assertEq(wrappedProxy.balanceOf(alice), 1000);
-        assertEq(wrappedProxy.balanceOf(bob), 0);
-    }
+        l1LiskToken.transfer(alice, amountToBurn * 2);
+        assertEq(l1LiskToken.balanceOf(alice), amountToBurn * 2);
 
-    function test_Allowance() public {
-        address alice = vm.addr(1);
-        address bob = vm.addr(2);
-
-        // send 1000 tokens to alice
-        wrappedProxy.transfer(alice, 1000);
-        assertEq(wrappedProxy.balanceOf(alice), 1000);
-
-        // alice approves bob to spend 1000 tokens
         vm.prank(alice);
-        wrappedProxy.approve(bob, 1000);
-        assertEq(wrappedProxy.allowance(alice, bob), 1000);
+        vm.expectEmit(true, true, false, true, address(l1LiskToken));
+        emit Transfer(alice, address(0), amountToBurn);
+        l1LiskToken.burn(amountToBurn);
 
-        // test that bob can call transferFrom
-        vm.prank(bob);
-        wrappedProxy.transferFrom(alice, bob, 1000);
-        // test alice balance
-        assertEq(wrappedProxy.balanceOf(alice), 0);
-        // test bob balance
-        assertEq(wrappedProxy.balanceOf(bob), 1000);
+        assertEq(l1LiskToken.balanceOf(alice), amountToBurn);
+        assertEq(l1LiskToken.totalSupply(), TOTAL_SUPPLY - amountToBurn);
     }
 
-    function test_Upgrade() public {
-        // deploy new version of L1LiskToken and upgrade the proxy to point to it
-        L1LiskToken l1LiskToken_v2 = new L1LiskToken();
-        wrappedProxy.upgradeToAndCall(address(l1LiskToken_v2), "");
+    function test_OnlyBurnerWithSufficientAllowanceBurnsTokensFromAnAccount() public {
+        address alice = address(0x1);
+        uint256 amountToBurn = 1000000;
+        vm.startPrank(alice);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IAccessControl.AccessControlUnauthorizedAccount.selector, alice, l1LiskToken.BURNER_ROLE()
+            )
+        );
+        l1LiskToken.burnFrom(address(this), amountToBurn);
+        vm.stopPrank();
 
-        // re-wrap the proxy
-        L1LiskToken wrappedProxy_v2 = L1LiskToken(address(proxy));
-
-        assertEq(wrappedProxy_v2.name(), "Lisk");
-        assertEq(wrappedProxy_v2.symbol(), "LSK");
-        assertEq(wrappedProxy_v2.decimals(), 18);
-        assertEq(wrappedProxy_v2.totalSupply(), 200000000 * 10 ** 18);
-        assertEq(wrappedProxy_v2.balanceOf(address(this)), 200000000 * 10 ** 18);
-        assertEq(wrappedProxy_v2.owner(), address(this));
-        assertEq(l1LiskToken_v2.proxiableUUID(), 0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc);
-    }
-
-    function test_UpgradeFail_NotOwner() public {
-        L1LiskToken l1LiskToken_v2 = new L1LiskToken();
-
-        // try to upgrade the proxy while not being the owner
-        address alice = vm.addr(1);
+        l1LiskToken.addBurner(alice);
         vm.prank(alice);
-        vm.expectRevert();
-        wrappedProxy.upgradeToAndCall(address(l1LiskToken_v2), "");
+        vm.expectRevert(
+            abi.encodeWithSelector(IERC20Errors.ERC20InsufficientAllowance.selector, alice, 0, amountToBurn)
+        );
+        l1LiskToken.burnFrom(address(this), amountToBurn);
+
+        l1LiskToken.approve(alice, amountToBurn);
+        assertEq(l1LiskToken.allowance(address(this), alice), amountToBurn);
+
+        vm.prank(alice);
+        l1LiskToken.burnFrom(address(this), amountToBurn);
+
+        assertEq(l1LiskToken.allowance(address(this), alice), 0);
+        assertEq(l1LiskToken.totalSupply(), TOTAL_SUPPLY - amountToBurn);
+    }
+
+    function test_Permit() public {
+        uint256 ownerPrivateKey = 0xB0B;
+        uint256 spenderPrivateKey = 0xA11CE;
+        address owner = vm.addr(ownerPrivateKey);
+        address spender = vm.addr(spenderPrivateKey);
+        SigUtils sigUtils = new SigUtils(l1LiskToken.DOMAIN_SEPARATOR());
+        SigUtils.Permit memory permit =
+            SigUtils.Permit({ owner: owner, spender: spender, value: 1000000, nonce: 0, deadline: 1 days });
+        bytes32 digest = sigUtils.getTypedDataHash(permit);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(ownerPrivateKey, digest);
+
+        l1LiskToken.transfer(permit.owner, 2000000);
+        l1LiskToken.permit(permit.owner, permit.spender, permit.value, permit.deadline, v, r, s);
+
+        assertEq(l1LiskToken.allowance(owner, spender), permit.value);
+    }
+
+    function test_OnlyOwnerTransfersTheOwnership() public {
+        address alice = address(0x1);
+        address bob = address(0x2);
+        vm.startPrank(alice);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IAccessControl.AccessControlUnauthorizedAccount.selector, alice, l1LiskToken.DEFAULT_ADMIN_ROLE()
+            )
+        );
+        l1LiskToken.transferOwnership(bob);
+        vm.stopPrank();
+
+        vm.expectEmit(true, true, true, true, address(l1LiskToken));
+        emit RoleGranted(l1LiskToken.DEFAULT_ADMIN_ROLE(), alice, address(this));
+        vm.expectEmit(true, true, true, true, address(l1LiskToken));
+        emit RoleRevoked(l1LiskToken.DEFAULT_ADMIN_ROLE(), address(this), address(this));
+        l1LiskToken.transferOwnership(alice);
+
+        assertFalse(l1LiskToken.hasRole(l1LiskToken.DEFAULT_ADMIN_ROLE(), address(this)));
+        assertTrue(l1LiskToken.hasRole(l1LiskToken.DEFAULT_ADMIN_ROLE(), alice));
+    }
+
+    function test_DefaultAdminRoleIsRoleAdminForBurnerRole() public {
+        assertEq(l1LiskToken.DEFAULT_ADMIN_ROLE(), l1LiskToken.getRoleAdmin(l1LiskToken.BURNER_ROLE()));
     }
 }
