@@ -35,6 +35,9 @@ contract L2Claim is Initializable, OwnableUpgradeable, UUPSUpgradeable {
     /// @notice After this timestamp, owner can send all remaining unclaimed LSK from this contract to DAO
     uint256 public recoverPeriodTimestamp;
 
+    /// @notice DAO Address, will be used to receive unclaimed LSK after claim period
+    address public daoAddress;
+
     // @notice Records claimed addresses (lskAddress => boolean).
     mapping(bytes20 => bool) public claimed;
 
@@ -205,11 +208,17 @@ contract L2Claim is Initializable, OwnableUpgradeable, UUPSUpgradeable {
         claim(_lskAddress, _amount, _proof, leaf, _recipient);
     }
 
-    /// @notice Unclaimed LSK token can be transferred to DAO Address after claim period.
+    /// @notice Set DAO address, which is the destination of all unclaimed LSK. This function can only be called once
     /// @param _daoAddress        Destination recipient Address
-    function recoverLSK(address _daoAddress) public onlyOwner {
+    function setDAOAddress(address _daoAddress) public onlyOwner {
+        require(daoAddress == address(0), "L2Claim: DAO Address has already been set");
+        daoAddress = _daoAddress;
+    }
+
+    /// @notice Unclaimed LSK token can be transferred to DAO Address after claim period.
+    function recoverLSK() public onlyOwner {
         require(block.timestamp >= recoverPeriodTimestamp, "L2Claim: Recover period not reached");
-        l2LiskToken.transfer(_daoAddress, l2LiskToken.balanceOf(address(this)));
+        l2LiskToken.transfer(daoAddress, l2LiskToken.balanceOf(address(this)));
 
         emit ClaimingEnded();
     }

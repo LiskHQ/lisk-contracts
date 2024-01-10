@@ -25,18 +25,21 @@ contract L2ClaimScript is Script {
         // file.
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
 
-        // Address, the ownership of L2Claim Proxy Contract is transferred to after deployment.
+        // DAO Address, will be used to receive unclaimed LSK after claim period
+        address daoAddress = vm.envAddress("DAO_ADDRESS");
+
+        // Owner Address, the ownership of L2Claim Proxy Contract is transferred to after deployment.
         address ownerAddress = vm.envAddress("L2_CLAIM_OWNER_ADDRESS");
 
-        console2.log("Simulation: Deploying L2 Claim contract...");
+        console2.log("Deploying L2 Claim contract...");
 
         // get L2LiskToken contract address
         Utils.L2AddressesConfig memory l2AddressesConfig = utils.readL2AddressesFile();
-        console2.log("Simulation: L2 Lisk token address: %s", l2AddressesConfig.L2LiskToken);
+        console2.log("L2 Lisk token address: %s", l2AddressesConfig.L2LiskToken);
 
         // get MerkleTree details
-        Utils.MerkleTree memory merkleTree = utils.readMerkleTreeFile();
-        console2.log("MerkleTree Root: %s", vm.toString(merkleTree.merkleRoot));
+        Utils.MerkleRoot memory merkleRoot = utils.readMerkleRootFile();
+        console2.log("MerkleRoot: %s", vm.toString(merkleRoot.merkleRoot));
 
         // deploy L2Claim Implementation Contract
         vm.startBroadcast(deployerPrivateKey);
@@ -56,7 +59,7 @@ contract L2ClaimScript is Script {
             abi.encodeWithSelector(
                 l2ClaimImplementation.initialize.selector,
                 l2AddressesConfig.L2LiskToken,
-                merkleTree.merkleRoot,
+                merkleRoot.merkleRoot,
                 block.timestamp + RECOVER_PERIOD
             )
         );
@@ -66,7 +69,13 @@ contract L2ClaimScript is Script {
         // wrap in ABI to support easier calls
         L2Claim l2Claim = L2Claim(address(l2ClaimProxy));
         assert(address(l2Claim.l2LiskToken()) == l2AddressesConfig.L2LiskToken);
-        assert(l2Claim.merkleRoot() == merkleTree.merkleRoot);
+        assert(l2Claim.merkleRoot() == merkleRoot.merkleRoot);
+
+        // Assign DAO Address
+        vm.startBroadcast(deployerPrivateKey);
+        l2Claim.setDAOAddress(daoAddress);
+        vm.stopBroadcast();
+        assert(l2Claim.daoAddress() == daoAddress);
 
         // Transfer ownership of L2Claim Proxy
         vm.startBroadcast(deployerPrivateKey);
@@ -74,10 +83,11 @@ contract L2ClaimScript is Script {
         vm.stopBroadcast();
         assert(l2Claim.owner() == ownerAddress);
 
-        console2.log("Simulation: L2 Claim contract successfully deployed!");
-        console2.log("Simulation: L2 Claim (Implementation) address: %s", address(l2ClaimImplementation));
-        console2.log("Simulation: L2 Claim (Proxy) address: %s", address(l2Claim));
-        console2.log("Simulation: Owner of L2 Claim (Proxy) address: %s", l2Claim.owner());
+        console2.log("L2 Claim contract successfully deployed!");
+        console2.log("L2 Claim (Implementation) address: %s", address(l2ClaimImplementation));
+        console2.log("L2 Claim (Proxy) address: %s", address(l2Claim));
+        console2.log("DAO Address of L2 Claim (Proxy) address: %s", l2Claim.daoAddress());
+        console2.log("Owner of L2 Claim (Proxy) address: %s", l2Claim.owner());
 
         // write L2ClaimContract address to l2addresses.json
         l2AddressesConfig.L2ClaimImplementation = address(l2ClaimImplementation);

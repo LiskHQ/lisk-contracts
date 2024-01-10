@@ -2,6 +2,7 @@
 pragma solidity 0.8.21;
 
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import { IERC20Errors } from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
 import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { OwnableUpgradeable } from "@openzeppelin-upgradeable/contracts/access/OwnableUpgradeable.sol";
@@ -63,6 +64,8 @@ contract L2ClaimTest is Test {
     string public signatureJson;
     string public MerkleLeavesJson;
 
+    address public daoAddress;
+
     function getSignature(uint256 _index) internal view returns (Signature memory) {
         return abi.decode(
             signatureJson.parseRaw(string(abi.encodePacked(".[", Strings.toString(_index), "]"))), (Signature)
@@ -98,6 +101,7 @@ contract L2ClaimTest is Test {
     function setUp() public {
         utils = new Utils();
         lsk = new MockERC20(10_000_000 * 10 ** 18);
+        (daoAddress,) = makeAddrAndKey("DAO");
 
         console.log("L2ClaimTest Address is: %s", address(this));
 
@@ -107,7 +111,7 @@ contract L2ClaimTest is Test {
         MerkleLeavesJson = vm.readFile(string.concat(rootPath, "/merkleLeaves.json"));
 
         // Read MerkleRoot from file
-        Utils.MerkleTree memory merkleTree = utils.readMerkleTreeFile();
+        Utils.MerkleRoot memory merkleRoot = utils.readMerkleRootFile();
 
         // deploy L2Claim Implementation Contract
         l2ClaimImplementation = new L2Claim();
@@ -121,14 +125,14 @@ contract L2ClaimTest is Test {
                     abi.encodeWithSelector(
                         l2Claim.initialize.selector,
                         address(lsk),
-                        merkleTree.merkleRoot,
+                        merkleRoot.merkleRoot,
                         block.timestamp + RECOVER_PERIOD
                     )
                 )
             )
         );
         assertEq(address(l2Claim.l2LiskToken()), address(lsk));
-        assertEq(l2Claim.merkleRoot(), merkleTree.merkleRoot);
+        assertEq(l2Claim.merkleRoot(), merkleRoot.merkleRoot);
 
         // Send bunch of MockLSK to Claim Contract
         lsk.transfer(address(l2Claim), lsk.balanceOf(address(this)));
@@ -476,25 +480,33 @@ contract L2ClaimTest is Test {
     }
 
     function test_RecoverLSK_RevertWhenRecoverPeriodNotReached() public {
+        l2Claim.setDAOAddress(daoAddress);
         vm.expectRevert("L2Claim: Recover period not reached");
-        l2Claim.recoverLSK(address(this));
+        l2Claim.recoverLSK();
     }
 
     function test_RecoverLSK_RevertWhenNotCalledByOwner() public {
+        l2Claim.setDAOAddress(daoAddress);
         address nobody = vm.addr(1);
 
         vm.prank(nobody);
         vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, nobody));
-        l2Claim.recoverLSK(address(this));
+        l2Claim.recoverLSK();
+    }
+
+    function test_RecoverLSK_RevertWhenDAOAddressNotSet() public {
+        vm.warp(RECOVER_PERIOD + 1 seconds);
+
+        vm.expectRevert(abi.encodeWithSelector(IERC20Errors.ERC20InvalidReceiver.selector, address(0)));
+        l2Claim.recoverLSK();
     }
 
     function test_RecoverLSK_SuccessRecover() public {
-        address daoAddress = vm.addr(2);
-        uint256 claimContractBalance = lsk.balanceOf(address(l2Claim));
+        l2Claim.setDAOAddress(daoAddress);
+        uint256 claimContractBalance = lsk.balanceOf(daoAddress);
 
         vm.warp(RECOVER_PERIOD + 1 seconds);
 
-        l2Claim.recoverLSK(daoAddress);
         assertEq(lsk.balanceOf(daoAddress), claimContractBalance);
     }
 
@@ -511,7 +523,7 @@ contract L2ClaimTest is Test {
     function test_UpgradeToAndCall_SuccessUpgrade() public {
         // deploy L2ClaimV2 Implementation Contract
         L2ClaimV2Mock l2ClaimV2Implementation = new L2ClaimV2Mock();
-        Utils.MerkleTree memory merkleTree = utils.readMerkleTreeFile();
+        Utils.MerkleRoot memory merkleRoot = utils.readMerkleRootFile();
 
         // Claim Period is now 20 years!
         uint256 newRecoverPeriodTimestamp = block.timestamp + 365 days * 20;
@@ -527,7 +539,7 @@ contract L2ClaimTest is Test {
 
         // LSK Token and MerkleRoot unchanged
         assertEq(address(l2ClaimV2.l2LiskToken()), address(lsk));
-        assertEq(l2ClaimV2.merkleRoot(), merkleTree.merkleRoot);
+        assertEq(l2ClaimV2.merkleRoot(), merkleRoot.merkleRoot);
 
         // New Timestamp changed by reinitializer
         assertEq(l2ClaimV2.recoverPeriodTimestamp(), newRecoverPeriodTimestamp);
