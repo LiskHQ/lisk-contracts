@@ -36,15 +36,14 @@ contract L2LiskTokenScript is Script {
 
         // calculate L2LiskToken contract address
         address l2LiskTokenAddressCalculated = computeCreate2Address(
-            salt,
-            hashInitCode(type(L2LiskToken).creationCode, abi.encode(L2_STANDARD_BRIDGE, l1AddressesConfig.L1LiskToken)),
-            CREATE2_FACTORY
+            salt, hashInitCode(type(L2LiskToken).creationCode, abi.encode(l1AddressesConfig.L1LiskToken))
         );
         console2.log("Simulation: Calculated L2 Lisk token address: %s", l2LiskTokenAddressCalculated);
 
         // deploy L2LiskToken contract
         vm.startBroadcast(deployerPrivateKey);
-        L2LiskToken l2LiskToken = new L2LiskToken{ salt: salt }(L2_STANDARD_BRIDGE, l1AddressesConfig.L1LiskToken);
+        L2LiskToken l2LiskToken = new L2LiskToken{ salt: salt }(l1AddressesConfig.L1LiskToken);
+        l2LiskToken.initialize(L2_STANDARD_BRIDGE);
         vm.stopBroadcast();
 
         assert(address(l2LiskToken) == l2LiskTokenAddressCalculated);

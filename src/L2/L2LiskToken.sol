@@ -27,11 +27,20 @@ contract L2LiskToken is IOptimismMintableERC20, ERC20, ERC20Permit {
     /// @notice Symbol of the token.
     string private constant SYMBOL = "LSK";
 
+    /// @notice Address which deployed this contract. Only this address is able to call initialize() function.
+    ///         Using Foundry's forge script when deploying a contract with CREATE2 opcode, the address of the
+    ///         deployer is a proxy contract address to have a deterministic deployer address. This offers a
+    ///         flexibility that a deployed contract address is calculated only by the hash of the contract's bytecode
+    ///         and a salt. Because initialize() function needs to be called by the actual deployer (EOA), we need to
+    ///         store the address of the original caller of the constructor (tx.origin) and not msg.sender which is the
+    ///         proxy contract address.
+    address private immutable initializer;
+
     /// @notice Address of the corresponding version of this token on the remote chain (on L1).
     address public immutable REMOTE_TOKEN;
 
     /// @notice Address of the StandardBridge on this (deployed) network.
-    address public immutable BRIDGE;
+    address public BRIDGE;
 
     /// @notice Emitted whenever tokens are minted for an account.
     /// @param account Address of the account tokens are being minted for.
@@ -50,10 +59,17 @@ contract L2LiskToken is IOptimismMintableERC20, ERC20, ERC20Permit {
     }
 
     /// @notice Constructs the L2LiskToken contract.
-    /// @param bridgeAddr      Address of the L2 standard bridge.
     /// @param remoteTokenAddr Address of the corresponding L1LiskToken.
-    constructor(address bridgeAddr, address remoteTokenAddr) ERC20(NAME, SYMBOL) ERC20Permit(NAME) {
+    constructor(address remoteTokenAddr) ERC20(NAME, SYMBOL) ERC20Permit(NAME) {
         REMOTE_TOKEN = remoteTokenAddr;
+        initializer = tx.origin;
+    }
+
+    /// @notice Initializes the L2LiskToken contract.
+    /// @param bridgeAddr      Address of the L2 standard bridge.
+    function initialize(address bridgeAddr) public {
+        require(msg.sender == initializer, "L2LiskToken: only initializer can initialize this contract");
+        require(BRIDGE == address(0), "L2LiskToken: already initialized");
         BRIDGE = bridgeAddr;
     }
 
