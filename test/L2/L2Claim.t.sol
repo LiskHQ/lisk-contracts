@@ -479,6 +479,26 @@ contract L2ClaimTest is Test {
         );
     }
 
+    function test_SetDAOAddress_RevertWhenNotCalledByOwner() public {
+        address nobody = vm.addr(1);
+
+        vm.prank(nobody);
+        vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, nobody));
+        l2Claim.setDAOAddress(daoAddress);
+    }
+
+    function test_SetDAOAddress_RevertWhenDAOAddressAlreadyBeenSet() public {
+        l2Claim.setDAOAddress(daoAddress);
+
+        vm.expectRevert("L2Claim: DAO Address has already been set");
+        l2Claim.setDAOAddress(daoAddress);
+    }
+
+    function test_SetDAOAddress_SuccessSet() public {
+        l2Claim.setDAOAddress(daoAddress);
+        assertEq(l2Claim.daoAddress(), daoAddress);
+    }
+
     function test_RecoverLSK_RevertWhenRecoverPeriodNotReached() public {
         l2Claim.setDAOAddress(daoAddress);
         vm.expectRevert("L2Claim: Recover period not reached");
