@@ -25,7 +25,7 @@ contract L1LiskTokenScript is Script {
         // Address, the ownership of L1 Lisk token contract is transferred to after deployment.
         address ownerAddress = vm.envAddress("L1_TOKEN_OWNER_ADDRESS");
 
-        console2.log("Simulation: Deploying L1 Lisk token...");
+        console2.log("Deploying L1 Lisk token...");
 
         // deploy L1LiskToken contract and transfer its ownership
         vm.startBroadcast(deployerPrivateKey);
@@ -45,8 +45,8 @@ contract L1LiskTokenScript is Script {
         assert(l1LiskToken.hasRole(l1LiskToken.BURNER_ROLE(), ownerAddress) == false);
         assert(l1LiskToken.balanceOf(ownerAddress) == 0);
 
-        console2.log("Simulation: L1 Lisk token successfully deployed!");
-        console2.log("Simulation: L1 Lisk token address: %s", address(l1LiskToken));
+        console2.log("L1 Lisk token successfully deployed!");
+        console2.log("L1 Lisk token address: %s", address(l1LiskToken));
 
         // write L1LiskToken address to l1addresses.json
         Utils.L1AddressesConfig memory l1AddressesConfig;
