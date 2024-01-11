@@ -22,10 +22,11 @@ contract L1LiskTokenScript is Script {
         // Deployer's private key. Owner of the L1 Lisk token. PRIVATE_KEY is set in .env file.
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
 
+        console2.log("Deploying L1 Lisk token...");
+
         // Address, the ownership of L1 Lisk token contract is transferred to after deployment.
         address ownerAddress = vm.envAddress("L1_TOKEN_OWNER_ADDRESS");
-
-        console2.log("Deploying L1 Lisk token...");
+        console2.log("L1 Lisk token owner address: %s", ownerAddress);
 
         // deploy L1LiskToken contract and transfer its ownership
         vm.startBroadcast(deployerPrivateKey);

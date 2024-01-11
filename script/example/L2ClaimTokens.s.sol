@@ -16,7 +16,7 @@ contract L2ClaimTokensScript is Script {
     }
 
     /// @notice This function claims L2 Lisk tokens from the L2 Claim contract for a demonstration purpose.
-    function run() public {
+    function run() public view {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
 
         // print deployer address
