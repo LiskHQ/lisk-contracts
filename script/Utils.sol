@@ -47,11 +47,25 @@ contract Utils is Script {
         uint256 amount;
     }
 
+    /// @notice This function gets network type from .env file. It should be either mainnet, testnet or devnet.
+    /// @return string containing network type.
+    function getNetworkType() public view returns (string memory) {
+        string memory network = vm.envString("NETWORK");
+        require(
+            keccak256(bytes(network)) == keccak256(bytes("mainnet"))
+                || keccak256(bytes(network)) == keccak256(bytes("testnet"))
+                || keccak256(bytes(network)) == keccak256(bytes("devnet")),
+            "Utils: Invalid network type"
+        );
+        return network;
+    }
+
     /// @notice This function reads L1 addresses from JSON file.
     /// @return L1AddressesConfig struct containing L1 addresses.
     function readL1AddressesFile() external view returns (L1AddressesConfig memory) {
+        string memory network = getNetworkType();
         string memory root = vm.projectRoot();
-        string memory addressPath = string.concat(root, "/deployment/l1addresses.json");
+        string memory addressPath = string.concat(root, "/deployment/", network, "/l1addresses.json");
         string memory addressJson = vm.readFile(addressPath);
         bytes memory addressRaw = vm.parseJson(addressJson);
         return abi.decode(addressRaw, (L1AddressesConfig));
@@ -60,16 +74,18 @@ contract Utils is Script {
     /// @notice This function writes L1 addresses to JSON file.
     /// @param cfg L1AddressesConfig struct containing L1 addresses which will be written to JSON file.
     function writeL1AddressesFile(L1AddressesConfig memory cfg) external {
+        string memory network = getNetworkType();
         string memory json = "";
         string memory finalJson = vm.serializeAddress(json, "L1LiskToken", cfg.L1LiskToken);
-        finalJson.write(string.concat("deployment/l1addresses.json"));
+        finalJson.write(string.concat("deployment/", network, "/l1addresses.json"));
     }
 
     /// @notice This function reads L2 addresses from JSON file.
     /// @return L2AddressesConfig struct containing L2 addresses.
     function readL2AddressesFile() external view returns (L2AddressesConfig memory) {
+        string memory network = getNetworkType();
         string memory root = vm.projectRoot();
-        string memory addressPath = string.concat(root, "/deployment/l2addresses.json");
+        string memory addressPath = string.concat(root, "/deployment/", network, "/ll2addresses.json");
         string memory addressJson = vm.readFile(addressPath);
         bytes memory addressRaw = vm.parseJson(addressJson);
         return abi.decode(addressRaw, (L2AddressesConfig));
@@ -78,18 +94,20 @@ contract Utils is Script {
     /// @notice This function writes L2 addresses to JSON file.
     /// @param cfg L2AddressesConfig struct containing L2 addresses which will be written to JSON file.
     function writeL2AddressesFile(L2AddressesConfig memory cfg) external {
+        string memory network = getNetworkType();
         string memory json = "";
         vm.serializeAddress(json, "L2ClaimContract", cfg.L2ClaimContract);
         vm.serializeAddress(json, "L2ClaimImplementation", cfg.L2ClaimImplementation);
         string memory finalJson = vm.serializeAddress(json, "L2LiskToken", cfg.L2LiskToken);
-        finalJson.write(string.concat("deployment/l2addresses.json"));
+        finalJson.write(string.concat("deployment/", network, "/ll2addresses.json"));
     }
 
     /// @notice This function reads MerkleRoot from JSON file.
     /// @return MerkleRoot struct containing merkle root only.
     function readMerkleRootFile() external view returns (MerkleRoot memory) {
+        string memory network = getNetworkType();
         string memory root = vm.projectRoot();
-        string memory merkleRootPath = string.concat(root, "/script/data/devnet/merkle-root.json");
+        string memory merkleRootPath = string.concat(root, "/script/data/", network, "/merkle-root.json");
         string memory merkleRootJson = vm.readFile(merkleRootPath);
         bytes memory merkleRootRaw = vm.parseJson(merkleRootJson);
         return abi.decode(merkleRootRaw, (MerkleRoot));
@@ -98,8 +116,9 @@ contract Utils is Script {
     /// @notice This function reads accounts from JSON file.
     /// @return Accounts struct containing accounts.
     function readAccountsFile() external view returns (Accounts memory) {
+        string memory network = getNetworkType();
         string memory root = vm.projectRoot();
-        string memory accountsPath = string.concat(root, "/script/data/devnet/accounts.json");
+        string memory accountsPath = string.concat(root, "/script/data/", network, "/accounts.json");
         string memory accountsJson = vm.readFile(accountsPath);
         bytes memory accountsRaw = vm.parseJson(accountsJson);
         return abi.decode(accountsRaw, (Accounts));
