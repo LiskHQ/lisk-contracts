@@ -7,6 +7,7 @@ import { Initializable } from "@openzeppelin-upgradeable/contracts/proxy/utils/I
 import { OwnableUpgradeable } from "@openzeppelin-upgradeable/contracts/access/OwnableUpgradeable.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
 import { Ed25519 } from "../utils/Ed25519.sol";
+import { ISemver } from "../utils/ISemver.sol";
 
 /// @notice A struct of array of mandatoryKeys and optionalKeys.
 struct MultisigKeys {
@@ -22,7 +23,7 @@ struct ED25519Signature {
 
 /// @title L2Claim
 /// @notice L2Claim lets user claim their LSK token from Lisk Chain using Merkle Tree method.
-contract L2Claim is Initializable, OwnableUpgradeable, UUPSUpgradeable {
+contract L2Claim is Initializable, OwnableUpgradeable, UUPSUpgradeable, ISemver {
     /// @notice LSK originally has 8 d.p., L2 LSK has 18.
     uint256 public constant LSK_MULTIPLIER = 10 ** 10;
 
@@ -47,6 +48,9 @@ contract L2Claim is Initializable, OwnableUpgradeable, UUPSUpgradeable {
     /// @notice Emitted when `recoverLSK` has been called.
     event ClaimingEnded();
 
+    /// @notice Semantic version of the contract.
+    string public version;
+
     /// @notice Disable Initializers at Implementation Contract.
     constructor() {
         _disableInitializers();
@@ -68,6 +72,7 @@ contract L2Claim is Initializable, OwnableUpgradeable, UUPSUpgradeable {
         l2LiskToken = IERC20(_l2LiskToken);
         merkleRoot = _merkleRoot;
         recoverPeriodTimestamp = _recoverPeriodTimestamp;
+        version = "1.0.0";
     }
 
     /// @notice Verifies ED25519 Signature, throws error when verification fails.
