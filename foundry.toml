@@ -5,13 +5,16 @@ libs = ["lib"]
 fs_permissions = [{ access = "read-write", path = "./" }]
 solc_version = "0.8.21"
 optimizer = true
-optimizer_runs = 999999
+optimizer_runs = 200
 remappings = [
+    '@openzeppelin/=lib/openzeppelin-contracts/',
+    '@openzeppelin-upgradeable/=lib/openzeppelin-contracts-upgradeable/',
     'ds-test/=lib/forge-std/lib/ds-test/src/',
     'erc4626-tests/=lib/openzeppelin-contracts/lib/erc4626-tests/',
     'forge-std/=lib/forge-std/src/',
     '@openzeppelin/=lib/openzeppelin-contracts/',
     '@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/',
+    'openzeppelin-contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/',
     'openzeppelin-contracts/=lib/openzeppelin-contracts/',
 ]
 
