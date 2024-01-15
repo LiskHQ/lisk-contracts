@@ -78,6 +78,7 @@ contract L2ClaimTest is Test {
         return abi.decode(MerkleLeavesJson.parseRaw("."), (MerkleLeaves));
     }
 
+    // Get MerkleRoot struct
     function getMerkleRoot() internal view returns (Utils.MerkleRoot memory) {
         return abi.decode(MerkleRootJson.parseRaw("."), (Utils.MerkleRoot));
     }
@@ -110,13 +111,13 @@ contract L2ClaimTest is Test {
 
         console.log("L2ClaimTest Address is: %s", address(this));
 
-        // Read Pre-signed Signatures, for testing purpose
+        // Read Pre-signed Signatures, Merkle Leaves and a Merkle Root in a json format from different files
         string memory rootPath = string.concat(vm.projectRoot(), "/test/L2/data");
         signatureJson = vm.readFile(string.concat(rootPath, "/signatures.json"));
         MerkleLeavesJson = vm.readFile(string.concat(rootPath, "/merkleLeaves.json"));
         MerkleRootJson = vm.readFile(string.concat(rootPath, "/merkleRoot.json"));
 
-        // Read MerkleRoot from file
+        // Get MerkleRoot struct
         Utils.MerkleRoot memory merkleRoot = getMerkleRoot();
 
         // deploy L2Claim Implementation Contract
