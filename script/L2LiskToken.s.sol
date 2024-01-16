@@ -24,21 +24,21 @@ contract L2LiskTokenScript is Script {
         // Deployer's private key. Owner of the L2 Lisk token. PRIVATE_KEY is set in .env file.
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
 
-        console2.log("Simulation: Deploying L2 Lisk token...");
+        console2.log("Deploying L2 Lisk token...");
 
         // get L1LiskToken contract address
         Utils.L1AddressesConfig memory l1AddressesConfig = utils.readL1AddressesFile();
-        console2.log("Simulation: L1 Lisk token address: %s", l1AddressesConfig.L1LiskToken);
+        console2.log("L1 Lisk token address: %s", l1AddressesConfig.L1LiskToken);
 
         // get salt for L2LiskToken contract
         bytes32 salt = keccak256(bytes(vm.envString("L2_TOKEN_SALT")));
-        console2.log("Simulation: L2 Lisk token address salt: %s", vm.envString("L2_TOKEN_SALT"));
+        console2.log("L2 Lisk token address salt: %s", vm.envString("L2_TOKEN_SALT"));
 
         // calculate L2LiskToken contract address
         address l2LiskTokenAddressCalculated = computeCreate2Address(
             salt, hashInitCode(type(L2LiskToken).creationCode, abi.encode(l1AddressesConfig.L1LiskToken))
         );
-        console2.log("Simulation: Calculated L2 Lisk token address: %s", l2LiskTokenAddressCalculated);
+        console2.log("Calculated L2 Lisk token address: %s", l2LiskTokenAddressCalculated);
 
         // deploy L2LiskToken contract
         vm.startBroadcast(deployerPrivateKey);
@@ -54,8 +54,8 @@ contract L2LiskTokenScript is Script {
         assert(l2LiskToken.REMOTE_TOKEN() == l1AddressesConfig.L1LiskToken);
         assert(l2LiskToken.BRIDGE() == L2_STANDARD_BRIDGE);
 
-        console2.log("Simulation: L2 Lisk token successfully deployed!");
-        console2.log("Simulation: L2 Lisk token address: %s", address(l2LiskToken));
+        console2.log("L2 Lisk token successfully deployed!");
+        console2.log("L2 Lisk token address: %s", address(l2LiskToken));
 
         // write L2LiskToken address to l2addresses.json
         Utils.L2AddressesConfig memory l2AddressesConfig;

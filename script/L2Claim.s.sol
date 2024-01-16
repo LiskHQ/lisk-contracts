@@ -25,13 +25,15 @@ contract L2ClaimScript is Script {
         // file.
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
 
+        console2.log("Deploying L2 Claim contract...");
+
         // DAO Address, will be used to receive unclaimed LSK after claim period
         address daoAddress = vm.envAddress("DAO_ADDRESS");
+        console2.log("DAO address: %s", daoAddress);
 
         // Owner Address, the ownership of L2Claim Proxy Contract is transferred to after deployment.
         address ownerAddress = vm.envAddress("L2_CLAIM_OWNER_ADDRESS");
-
-        console2.log("Deploying L2 Claim contract...");
+        console2.log("L2 Claim contract owner address: %s", ownerAddress);
 
         // get L2LiskToken contract address
         Utils.L2AddressesConfig memory l2AddressesConfig = utils.readL2AddressesFile();

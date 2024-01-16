@@ -63,6 +63,7 @@ contract L2ClaimTest is Test {
 
     string public signatureJson;
     string public MerkleLeavesJson;
+    string public MerkleRootJson;
 
     address public daoAddress;
 
@@ -75,6 +76,11 @@ contract L2ClaimTest is Test {
     // Get detailed MerkleTree, which only exists in devnet
     function getMerkleLeaves() internal view returns (MerkleLeaves memory) {
         return abi.decode(MerkleLeavesJson.parseRaw("."), (MerkleLeaves));
+    }
+
+    // Get MerkleRoot struct
+    function getMerkleRoot() internal view returns (Utils.MerkleRoot memory) {
+        return abi.decode(MerkleRootJson.parseRaw("."), (Utils.MerkleRoot));
     }
 
     // Helper function to "invalidate" a proof or sig. (e.g. 0xabcdef -> 0xabcdf0)
@@ -105,13 +111,14 @@ contract L2ClaimTest is Test {
 
         console.log("L2ClaimTest Address is: %s", address(this));
 
-        // Read Pre-signed Signatures, for testing purpose
+        // Read Pre-signed Signatures, Merkle Leaves and a Merkle Root in a json format from different files
         string memory rootPath = string.concat(vm.projectRoot(), "/test/L2/data");
         signatureJson = vm.readFile(string.concat(rootPath, "/signatures.json"));
         MerkleLeavesJson = vm.readFile(string.concat(rootPath, "/merkleLeaves.json"));
+        MerkleRootJson = vm.readFile(string.concat(rootPath, "/merkleRoot.json"));
 
-        // Read MerkleRoot from file
-        Utils.MerkleRoot memory merkleRoot = utils.readMerkleRootFile();
+        // Get MerkleRoot struct
+        Utils.MerkleRoot memory merkleRoot = getMerkleRoot();
 
         // deploy L2Claim Implementation Contract
         l2ClaimImplementation = new L2Claim();
@@ -543,7 +550,7 @@ contract L2ClaimTest is Test {
     function test_UpgradeToAndCall_SuccessUpgrade() public {
         // deploy L2ClaimV2 Implementation Contract
         L2ClaimV2Mock l2ClaimV2Implementation = new L2ClaimV2Mock();
-        Utils.MerkleRoot memory merkleRoot = utils.readMerkleRootFile();
+        Utils.MerkleRoot memory merkleRoot = getMerkleRoot();
 
         // Claim Period is now 20 years!
         uint256 newRecoverPeriodTimestamp = block.timestamp + 365 days * 20;
