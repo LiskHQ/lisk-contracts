@@ -43,6 +43,7 @@ struct MerkleLeaves {
 contract L2ClaimV2Mock is L2Claim {
     function initializeV2(uint256 _recoverPeriodTimestamp) public reinitializer(2) {
         recoverPeriodTimestamp = _recoverPeriodTimestamp;
+        version = "2.0.0";
     }
 
     function onlyV2() public pure returns (string memory) {
@@ -148,6 +149,10 @@ contract L2ClaimTest is Test {
     function test_Initialize_RevertWhenCalledAtImplementationContract() public {
         vm.expectRevert();
         l2ClaimImplementation.initialize(address(lsk), bytes32(0), block.timestamp + RECOVER_PERIOD);
+    }
+
+    function test_Version() public {
+        assertEq(l2Claim.version(), "1.0.0");
     }
 
     function test_ClaimRegularAccount_RevertWhenInvalidProof() public {
@@ -567,6 +572,9 @@ contract L2ClaimTest is Test {
         // LSK Token and MerkleRoot unchanged
         assertEq(address(l2ClaimV2.l2LiskToken()), address(lsk));
         assertEq(l2ClaimV2.merkleRoot(), merkleRoot.merkleRoot);
+
+        // Version of L2Claim changed to 2.0.0
+        assertEq(l2ClaimV2.version(), "2.0.0");
 
         // New Timestamp changed by reinitializer
         assertEq(l2ClaimV2.recoverPeriodTimestamp(), newRecoverPeriodTimestamp);
