@@ -32,7 +32,7 @@ contract L2LiskTokenScript is Script {
 
         // get salt for L2LiskToken contract
         bytes32 salt = utils.getSalt(type(L2LiskToken).name);
-        console2.log("L2 Lisk token address salt: %s", utils.getSaltPretty(type(L2LiskToken).name));
+        console2.log("L2 Lisk token address salt: keccak256 of %s", utils.getSaltPretty(type(L2LiskToken).name));
 
         // calculate L2LiskToken contract address
         address l2LiskTokenAddressCalculated = computeCreate2Address(
