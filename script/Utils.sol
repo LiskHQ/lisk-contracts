@@ -124,18 +124,19 @@ contract Utils is Script {
         return abi.decode(accountsRaw, (Accounts));
     }
 
+    /// @notice This function returns salt as a string. keccak256 of this string is used as salt for calculating
+    ///         deterministic address of a contract.
+    /// @dev This function may be used for logging purposes.
+    /// @param contractName Name of the contract.
+    /// @return string salt.
+    function getPreHashedSalt(string memory contractName) public view returns (string memory) {
+        return string.concat(vm.envString("DETERMINISTIC_ADDRESS_SALT"), "_", contractName);
+    }
+
     /// @notice This function calculates and returns salt which is used to have a deterministic address for a contract.
     /// @param contractName Name of the contract.
     /// @return bytes32 salt.
     function getSalt(string memory contractName) public view returns (bytes32) {
-        return keccak256(abi.encodePacked(vm.envString("DETERMINISTIC_ADDRESS_SALT"), "_", contractName));
-    }
-
-    /// @notice This function returns salt as a string which is used to have a deterministic address for a contract.
-    /// @dev This function is used for logging purposes.
-    /// @param contractName Name of the contract.
-    /// @return string salt.
-    function getSaltPretty(string memory contractName) public view returns (string memory) {
-        return string.concat(vm.envString("DETERMINISTIC_ADDRESS_SALT"), "_", contractName);
+        return keccak256(abi.encodePacked(getPreHashedSalt(contractName)));
     }
 }
