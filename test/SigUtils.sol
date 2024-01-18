@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.21;
+pragma solidity 0.8.23;
 
 /// @title SigUtils - signature verification utility library
 /// @notice This library provides functions to create, hash, and sign the approvals off-chain.

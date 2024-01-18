@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.21;
+pragma solidity 0.8.23;
 
 import { Test, console2, StdCheats } from "forge-std/Test.sol";
 import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
