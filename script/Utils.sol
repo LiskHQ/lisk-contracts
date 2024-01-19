@@ -85,7 +85,7 @@ contract Utils is Script {
     function readL2AddressesFile() external view returns (L2AddressesConfig memory) {
         string memory network = getNetworkType();
         string memory root = vm.projectRoot();
-        string memory addressPath = string.concat(root, "/deployment/", network, "/ll2addresses.json");
+        string memory addressPath = string.concat(root, "/deployment/", network, "/l2addresses.json");
         string memory addressJson = vm.readFile(addressPath);
         bytes memory addressRaw = vm.parseJson(addressJson);
         return abi.decode(addressRaw, (L2AddressesConfig));
@@ -99,7 +99,7 @@ contract Utils is Script {
         vm.serializeAddress(json, "L2ClaimContract", cfg.L2ClaimContract);
         vm.serializeAddress(json, "L2ClaimImplementation", cfg.L2ClaimImplementation);
         string memory finalJson = vm.serializeAddress(json, "L2LiskToken", cfg.L2LiskToken);
-        finalJson.write(string.concat("deployment/", network, "/ll2addresses.json"));
+        finalJson.write(string.concat("deployment/", network, "/l2addresses.json"));
     }
 
     /// @notice This function reads MerkleRoot from JSON file.
