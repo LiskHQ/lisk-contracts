@@ -26,30 +26,51 @@ else
 fi
 echo "Done."
 
-echo "Deploying L1LiskToken smart contract..."
-if [ -z "$L1_ETHERSCAN_API_KEY" ]
+echo "Deploying and if enabled verifying L1LiskToken smart contract..."
+if [ -z "$CONTRACT_VERIFIER" ]
 then
       forge script --rpc-url="$L1_RPC_URL" --broadcast -vvvv script/L1LiskToken.s.sol:L1LiskTokenScript
 else
-      forge script --rpc-url="$L1_RPC_URL" --broadcast --verify --etherscan-api-key="$L1_ETHERSCAN_API_KEY" -vvvv script/L1LiskToken.s.sol:L1LiskTokenScript
+      if [ $CONTRACT_VERIFIER = "blockscout" ]
+      then
+            forge script --rpc-url="$L1_RPC_URL" --broadcast --verify --verifier blockscout --verifier-url $L1_VERIFIER_URL -vvvv script/L1LiskToken.s.sol:L1LiskTokenScript
+      fi
+      if [ $CONTRACT_VERIFIER = "etherscan" ]
+      then        
+            forge script --rpc-url="$L1_RPC_URL" --broadcast --verify --verifier etherscan --etherscan-api-key="$L1_ETHERSCAN_API_KEY" -vvvv script/L1LiskToken.s.sol:L1LiskTokenScript
+      fi
 fi
 echo "Done."
 
-echo "Deploying L2LiskToken smart contract..."
-if [ -z "$L2_ETHERSCAN_API_KEY" ]
+echo "Deploying and if enabled verifying L2LiskToken smart contract..."
+if [ -z "$CONTRACT_VERIFIER" ]
 then
-forge script --rpc-url="$L2_RPC_URL" --broadcast -vvvv script/L2LiskToken.s.sol:L2LiskTokenScript
+      forge script --rpc-url="$L2_RPC_URL" --broadcast -vvvv script/L2LiskToken.s.sol:L2LiskTokenScript
 else
-forge script --rpc-url="$L2_RPC_URL" --broadcast --verify --etherscan-api-key="$L2_ETHERSCAN_API_KEY" -vvvv script/L2LiskToken.s.sol:L2LiskTokenScript
+      if [ $CONTRACT_VERIFIER = "blockscout" ]
+      then
+            forge script --rpc-url="$L2_RPC_URL" --broadcast --verify --verifier blockscout --verifier-url $L2_VERIFIER_URL -vvvv script/L2LiskToken.s.sol:L2LiskTokenScript
+      fi
+      if [ $CONTRACT_VERIFIER = "etherscan" ]
+      then        
+            forge script --rpc-url="$L2_RPC_URL" --broadcast --verify --verifier etherscan --etherscan-api-key="$L2_ETHERSCAN_API_KEY" -vvvv script/L2LiskToken.s.sol:L2LiskTokenScript
+      fi
 fi
 echo "Done."
 
-echo "Deploying L2Claim smart contract..."
-if [ -z "$L2_ETHERSCAN_API_KEY" ]
+echo "Deploying and if enabled verifying L2Claim smart contract..."
+if [ -z "$CONTRACT_VERIFIER" ]
 then
-forge script --rpc-url="$L2_RPC_URL" --broadcast -vvvv script/L2Claim.s.sol:L2ClaimScript
+      forge script --rpc-url="$L2_RPC_URL" --broadcast -vvvv script/L2Claim.s.sol:L2ClaimScript
 else
-forge script --rpc-url="$L2_RPC_URL" --broadcast --verify --etherscan-api-key="$L2_ETHERSCAN_API_KEY" -vvvv script/L2Claim.s.sol:L2ClaimScript
+      if [ $CONTRACT_VERIFIER = "blockscout" ]
+      then
+            forge script --rpc-url="$L2_RPC_URL" --broadcast --verify --verifier blockscout --verifier-url $L2_VERIFIER_URL -vvvv script/L2Claim.s.sol:L2ClaimScript
+      fi
+      if [ $CONTRACT_VERIFIER = "etherscan" ]
+      then        
+            forge script --rpc-url="$L2_RPC_URL" --broadcast --verify --verifier etherscan --etherscan-api-key="$L2_ETHERSCAN_API_KEY" -vvvv script/L2Claim.s.sol:L2ClaimScript
+      fi
 fi
 echo "Done."
 
