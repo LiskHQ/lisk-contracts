@@ -1,6 +1,6 @@
 # Lisk Smart Contracts <!-- omit in toc -->
 
-This repository contains the smart contracts for the Lisk L2 network. In order for the Lisk L2 network to function as designed, certain smart contracts must be deployed on L1 (Ethereum's Layer 1), while others are deployed on L2.
+This repository contains smart contracts for various services of the Lisk project. This includes, for instance, the contract for the LSK token or the contracts required to migrate the LSK token distribution from the Lisk L1 to the L2. In order to function as designed, certain smart contracts must be deployed on L1 (Ethereum's Layer 1), while others are deployed on L2.
 
 Additionally, it also includes various deployment scripts that are integral for deploying on different networks. These scripts handle the deployment of smart contracts to both L1 and L2 private test networks, as well as to public `testnet` and `mainnet` networks. They also ensure seamless deployment across different environments and the efficient movement of tokens to the appropriate accounts as per the project's requirements.
 
@@ -66,7 +66,7 @@ git submodule update --init --recursive
 Private L1 and L2 test networks are established using the `anvil` tool, and the smart contracts are deployed using the `forge script` tool. To run private networks and deploy the smart contracts, follow these steps:
 1. Create `.env` file and set the vars `PRIVATE_KEY`, `NETWORK`, `L1_TOKEN_OWNER_ADDRESS`, `L2_CLAIM_OWNER_ADDRESS`, `DAO_ADDRESS`, `DETERMINISTIC_ADDRESS_SALT`, `L1_STANDARD_BRIDGE_ADDR`, `L1_RPC_URL`, `L1_FORK_RPC_URL`, `L2_RPC_URL`, `L2_FORK_RPC_URL` and `TEST_NETWORK_MNEMONIC`. You can copy and rename the `.env.example` file if the default values provided in `.env.example` are satisfactory. `L1_RPC_URL` should be set to `http://127.0.0.1:8545` and `L2_RPC_URL` should be set to `http://127.0.0.1:8546` if no changes are made in the `./runL1TestNetwork.sh` or `./runL2TestNetwork.sh` script files.
 2. Navigate to the `script` directory.
-3. Place the `accounts.json` and `merkle-root.json` files in the correct folder (`data/devnet`, `data/testnet`, or `data/mainnet`) corresponding to the previously set `NETWORK` environment variable.
+3. Place the `accounts.json` and `merkle-root.json` files in the correct folder (`data/devnet`, `data/testnet`, or `data/mainnet`) corresponding to the previously set `NETWORK` environment variable. Example files for `accounts.json` and `merkle-root.json` may be found inside `data/devnet` directory.
 4. To create and launch a private test L1 network, execute the script: `./runL1TestNetwork.sh`
 5. To create and launch a private test L2 network, execute the script: `./runL2TestNetwork.sh`
 6. To deploy all smart contracts, execute the script: `./deployContracts.sh`
@@ -78,7 +78,7 @@ Private L1 and L2 test networks are established using the `anvil` tool, and the 
 To deploy smart contracts on both L1 and L2 public networks, you will need to provide for each network an URL for a public node from a RPC provider, such as Alchemy or Infura. Additionally, in order to verify smart contracts on Etherscan Block Explorer during the deployment process, it is necessary to provide an Etherscan API key. If Etherscan API key is not provided, smart contracts are verified on Blockscout. Follow these steps to deploy the smart contracts:
 1. Create `.env` file and set the vars `PRIVATE_KEY`, `NETWORK`, `L1_TOKEN_OWNER_ADDRESS`, `L2_CLAIM_OWNER_ADDRESS`, `DAO_ADDRESS`, `DETERMINISTIC_ADDRESS_SALT`, `L1_STANDARD_BRIDGE_ADDR`, `L1_RPC_URL`, `L2_RPC_URL`, `L1_ETHERSCAN_API_KEY` and `L2_ETHERSCAN_API_KEY`. You can copy and rename the `.env.example` file if the default values provided in `.env.example` are satisfactory. `L1_ETHERSCAN_API_KEY` and `L2_ETHERSCAN_API_KEY` may be empty to skip smart contracts verification process on Etherscan Block Explorer.
 2. Navigate to the `script` directory.
-3. Place the `accounts.json` and `merkle-root.json` files in the correct folder (`data/devnet`, `data/testnet`, or `data/mainnet`) corresponding to the previously set `NETWORK` environment variable.
+3. Place the `accounts.json` and `merkle-root.json` files in the correct folder (`data/devnet`, `data/testnet`, or `data/mainnet`) corresponding to the previously set `NETWORK` environment variable. Example files for `accounts.json` and `merkle-root.json` may be found inside `data/devnet` directory.
 4. To deploy all smart contracts, execute the script: `./deployContracts.sh`
    
 ## Tips & Tricks
