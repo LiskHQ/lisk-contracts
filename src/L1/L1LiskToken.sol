@@ -8,9 +8,9 @@ import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol"
 
 /// @title L1LiskToken
 /// @notice L1LiskToken is an implementation of ERC20 token and is an extension of AccessControl, ERC20Permit and
-///         ERC20Burnable token contracts.
-///         It maintains the ownership of the deployed contract and only allows the owners to transfer the ownership.
-///         L1LiskToken's only allows burners to burn the total supply and only the owner manages burner accounts.
+///         ERC20Burnable token contracts. It maintains the ownership of the deployed contract and only allows the
+///         owners to transfer the ownership. The L1LiskToken exclusively authorizes burners to reduce the total supply,
+///         while the management of burner accounts is solely under the domain of the owner.
 contract L1LiskToken is ERC20Burnable, AccessControl, ERC20Permit {
     /// @notice Name of the token.
     string private constant NAME = "Lisk";
@@ -21,7 +21,7 @@ contract L1LiskToken is ERC20Burnable, AccessControl, ERC20Permit {
     /// @notice Total supply of the token.
     uint256 private constant TOTAL_SUPPLY = 300_000_000 * 10 ** 18; //300 million LSK tokens
 
-    /// @notice Burner role.
+    /// @notice Burner role. Only accounts with burner role can burn tokens.
     bytes32 public constant BURNER_ROLE = keccak256("BURNER_ROLE");
 
     /// @notice Constructs the L1LiskToken contract.

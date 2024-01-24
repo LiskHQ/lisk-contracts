@@ -33,10 +33,10 @@ contract L2Claim is Initializable, OwnableUpgradeable, UUPSUpgradeable, ISemver 
     /// @notice Merkle Root for the claim.
     bytes32 public merkleRoot;
 
-    /// @notice After this timestamp, owner can send all remaining unclaimed LSK from this contract to DAO
+    /// @notice After this timestamp, owner can send all remaining unclaimed LSK from this contract to DAO.
     uint256 public recoverPeriodTimestamp;
 
-    /// @notice DAO Address, will be used to receive unclaimed LSK after claim period
+    /// @notice DAO Address, will be used to receive unclaimed LSK after claim period.
     address public daoAddress;
 
     // @notice Records claimed addresses (lskAddress => boolean).
@@ -57,9 +57,9 @@ contract L2Claim is Initializable, OwnableUpgradeable, UUPSUpgradeable, ISemver 
     }
 
     /// @notice Setting global params.
-    /// @param  _l2LiskToken            L2 LSK Token Address
-    /// @param  _merkleRoot             Merkle Tree Root
-    /// @param  _recoverPeriodTimestamp Timestamp for allowing LSK Recovery
+    /// @param  _l2LiskToken            L2 LSK Token Address.
+    /// @param  _merkleRoot             Merkle Tree Root.
+    /// @param  _recoverPeriodTimestamp Timestamp for allowing LSK Recovery.
     function initialize(
         address _l2LiskToken,
         bytes32 _merkleRoot,
@@ -96,7 +96,7 @@ contract L2Claim is Initializable, OwnableUpgradeable, UUPSUpgradeable, ISemver 
 
     /// @notice Hash a message twice using Keccak-256.
     /// @param  _message Message to be hashed.
-    /// @return double keccak256 hashed bytes32
+    /// @return double keccak256 hashed bytes32.
     function doubleKeccak256(bytes memory _message) internal pure returns (bytes32) {
         return keccak256(bytes.concat(keccak256(_message)));
     }
@@ -144,7 +144,7 @@ contract L2Claim is Initializable, OwnableUpgradeable, UUPSUpgradeable, ISemver 
         bytes20 lskAddress = bytes20(sha256(abi.encode(_pubKey)));
         bytes32 leaf = doubleKeccak256(abi.encode(lskAddress, _amount, uint32(0), new bytes32[](0), new bytes32[](0)));
 
-        verifySignature(_pubKey, _sig.r, _sig.s, keccak256(abi.encode(leaf, _recipient)), "L2Claim: Invalid Signature");
+        verifySignature(_pubKey, _sig.r, _sig.s, keccak256(abi.encode(leaf, _recipient)), "L2Claim: invalid signature");
 
         claim(lskAddress, _amount, _proof, leaf, _recipient);
     }
@@ -168,7 +168,7 @@ contract L2Claim is Initializable, OwnableUpgradeable, UUPSUpgradeable, ISemver 
     {
         require(
             _sigs.length == _keys.optionalKeys.length + _keys.mandatoryKeys.length,
-            "L2Claim: Signatures array has invalid length"
+            "L2Claim: signatures array has invalid length"
         );
 
         // If numberOfSignatures passes MerkleProof in later stage, that means this value is correct.
@@ -193,7 +193,7 @@ contract L2Claim is Initializable, OwnableUpgradeable, UUPSUpgradeable, ISemver 
                 _sigs[i].r,
                 _sigs[i].s,
                 message,
-                "L2Claim: Invalid signature when verifying with mandatoryKeys[]"
+                "L2Claim: invalid signature when verifying with mandatoryKeys[]"
             );
         }
 
@@ -206,29 +206,29 @@ contract L2Claim is Initializable, OwnableUpgradeable, UUPSUpgradeable, ISemver 
                 _sigs[i + _keys.mandatoryKeys.length].r,
                 _sigs[i + _keys.mandatoryKeys.length].s,
                 message,
-                "L2Claim: Invalid signature when verifying with optionalKeys[]"
+                "L2Claim: invalid signature when verifying with optionalKeys[]"
             );
         }
 
         claim(_lskAddress, _amount, _proof, leaf, _recipient);
     }
 
-    /// @notice Set DAO address, which is the destination of all unclaimed LSK. This function can only be called once
-    /// @param _daoAddress        Destination recipient Address
+    /// @notice Set DAO address which is the destination of all unclaimed LSK. This function can only be called once.
+    /// @param _daoAddress        Destination recipient Address.
     function setDAOAddress(address _daoAddress) public onlyOwner {
         require(daoAddress == address(0), "L2Claim: DAO Address has already been set");
         daoAddress = _daoAddress;
     }
 
-    /// @notice Unclaimed LSK token can be transferred to DAO Address after claim period.
+    /// @notice Unclaimed LSK token can be transferred to DAO Address after claim period is over.
     function recoverLSK() public onlyOwner {
-        require(block.timestamp >= recoverPeriodTimestamp, "L2Claim: Recover period not reached");
+        require(block.timestamp >= recoverPeriodTimestamp, "L2Claim: recover period not reached");
         l2LiskToken.transfer(daoAddress, l2LiskToken.balanceOf(address(this)));
 
         emit ClaimingEnded();
     }
 
     /// @notice Function that should revert when msg.sender is not authorized to upgrade the contract.
-    /// @param _newImplementation        New Implementation Contract
+    /// @param _newImplementation        New Implementation Contract.
     function _authorizeUpgrade(address _newImplementation) internal override onlyOwner { }
 }

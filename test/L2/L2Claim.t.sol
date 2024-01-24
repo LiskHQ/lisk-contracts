@@ -54,7 +54,7 @@ contract L2ClaimV2Mock is L2Claim {
 contract L2ClaimTest is Test {
     using stdJson for string;
 
-    // Recover LSK Tokens after 2 years
+    // recover LSK tokens after 2 years
     uint256 public constant RECOVER_PERIOD = 730 days;
 
     ERC20 public lsk;
@@ -74,17 +74,17 @@ contract L2ClaimTest is Test {
         );
     }
 
-    // Get detailed MerkleTree, which only exists in devnet
+    // get detailed MerkleTree, which only exists in devnet
     function getMerkleLeaves() internal view returns (MerkleLeaves memory) {
         return abi.decode(MerkleLeavesJson.parseRaw("."), (MerkleLeaves));
     }
 
-    // Get MerkleRoot struct
+    // get MerkleRoot struct
     function getMerkleRoot() internal view returns (Utils.MerkleRoot memory) {
         return abi.decode(MerkleRootJson.parseRaw("."), (Utils.MerkleRoot));
     }
 
-    // Helper function to "invalidate" a proof or sig. (e.g. 0xabcdef -> 0xabcdf0)
+    // helper function to "invalidate" a proof or sig. (e.g. 0xabcdef -> 0xabcdf0)
     function bytes32AddOne(bytes32 _value) internal pure returns (bytes32) {
         return bytes32(uint256(_value) + 1);
     }
@@ -112,20 +112,19 @@ contract L2ClaimTest is Test {
 
         console.log("L2ClaimTest Address is: %s", address(this));
 
-        // Read Pre-signed Signatures, Merkle Leaves and a Merkle Root in a json format from different files
+        // read Pre-signed Signatures, Merkle Leaves and a Merkle Root in a json format from different files
         string memory rootPath = string.concat(vm.projectRoot(), "/test/L2/data");
         signatureJson = vm.readFile(string.concat(rootPath, "/signatures.json"));
         MerkleLeavesJson = vm.readFile(string.concat(rootPath, "/merkleLeaves.json"));
         MerkleRootJson = vm.readFile(string.concat(rootPath, "/merkleRoot.json"));
 
-        // Get MerkleRoot struct
+        // get MerkleRoot struct
         Utils.MerkleRoot memory merkleRoot = getMerkleRoot();
 
-        // deploy L2Claim Implementation Contract
+        // deploy L2Claim Implementation contract
         l2ClaimImplementation = new L2Claim();
 
-        // deploy L2Claim Contract via Proxy and Initialize at the same time
-        // Initialize L2Claim Proxy Contract
+        // deploy L2Claim contract via Proxy and initialize it at the same time
         l2Claim = L2Claim(
             address(
                 new ERC1967Proxy(
@@ -142,7 +141,7 @@ contract L2ClaimTest is Test {
         assertEq(address(l2Claim.l2LiskToken()), address(lsk));
         assertEq(l2Claim.merkleRoot(), merkleRoot.merkleRoot);
 
-        // Send bunch of MockLSK to Claim Contract
+        // send bunch of MockLSK to Claim contract
         lsk.transfer(address(l2Claim), lsk.balanceOf(address(this)));
     }
 
@@ -219,7 +218,7 @@ contract L2ClaimTest is Test {
         );
     }
 
-    // Multisig settings refers to: lisk-merkle-tree-builder/data/example/create-balances.ts
+    // multisig settings refers to: lisk-merkle-tree-builder/data/example/create-balances.ts
     function test_ClaimMultisigAccount_RevertWhenIncorrectProof() public {
         uint256 accountIndex = 50;
         MerkleTreeLeaf memory leaf = getMerkleLeaves().leaves[accountIndex];
@@ -280,7 +279,7 @@ contract L2ClaimTest is Test {
             ed25519Signatures[i] = ED25519Signature(signature.sigs[i].r, signature.sigs[i].s);
         }
 
-        // Shifting byte of the last sig (i.e. one of the optionalKey sig)
+        // shifting byte of the last sig (i.e. one of the optionalKey sig)
         ed25519Signatures[leaf.numberOfSignatures - 1].r =
             bytes32AddOne(ed25519Signatures[leaf.numberOfSignatures - 1].r);
 
@@ -468,7 +467,7 @@ contract L2ClaimTest is Test {
     function test_ClaimMultisigAccount_RevertWhenAlreadyClaimed() public {
         test_ClaimMultisigAccount_SuccessClaim_3M();
 
-        // Copy-and-paste test_ClaimMultisigAccount_SuccessClaim_3M(), such that the `vm.expectRevert` could be
+        // copy-and-paste test_ClaimMultisigAccount_SuccessClaim_3M(), such that the `vm.expectRevert` could be
         // correctly placed
         uint256 accountIndex = 50;
         MerkleTreeLeaf memory leaf = getMerkleLeaves().leaves[accountIndex];
@@ -543,7 +542,7 @@ contract L2ClaimTest is Test {
     }
 
     function test_UpgradeToAndCall_RevertWhenNotOwner() public {
-        // deploy L2Claim Implementation Contract
+        // deploy L2Claim Implementation contract
         L2ClaimV2Mock l2ClaimV2Implementation = new L2ClaimV2Mock();
         address nobody = vm.addr(1);
 
@@ -553,36 +552,36 @@ contract L2ClaimTest is Test {
     }
 
     function test_UpgradeToAndCall_SuccessUpgrade() public {
-        // deploy L2ClaimV2 Implementation Contract
+        // deploy L2ClaimV2 Implementation contract
         L2ClaimV2Mock l2ClaimV2Implementation = new L2ClaimV2Mock();
         Utils.MerkleRoot memory merkleRoot = getMerkleRoot();
 
-        // Claim Period is now 20 years!
+        // claim Period is now 20 years
         uint256 newRecoverPeriodTimestamp = block.timestamp + 365 days * 20;
 
-        // Upgrade contract, and also change some variables by reinitialize
+        // upgrade contract, and also change some variables by reinitialize
         l2Claim.upgradeToAndCall(
             address(l2ClaimV2Implementation),
             abi.encodeWithSelector(l2ClaimV2Implementation.initializeV2.selector, newRecoverPeriodTimestamp)
         );
 
-        // Wrap L2Claim Proxy with new contract
+        // wrap L2Claim Proxy with new contract
         L2ClaimV2Mock l2ClaimV2 = L2ClaimV2Mock(address(l2Claim));
 
         // LSK Token and MerkleRoot unchanged
         assertEq(address(l2ClaimV2.l2LiskToken()), address(lsk));
         assertEq(l2ClaimV2.merkleRoot(), merkleRoot.merkleRoot);
 
-        // Version of L2Claim changed to 2.0.0
+        // version of L2Claim changed to 2.0.0
         assertEq(l2ClaimV2.version(), "2.0.0");
 
-        // New Timestamp changed by reinitializer
+        // new Timestamp changed by reinitializer
         assertEq(l2ClaimV2.recoverPeriodTimestamp(), newRecoverPeriodTimestamp);
 
-        // New function introduced
+        // new function introduced
         assertEq(l2ClaimV2.onlyV2(), "Hello from V2");
 
-        // Assure cannot re-reinitialize
+        // assure cannot re-reinitialize
         vm.expectRevert();
         l2ClaimV2.initializeV2(newRecoverPeriodTimestamp + 1);
     }

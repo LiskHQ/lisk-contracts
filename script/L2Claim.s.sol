@@ -31,7 +31,7 @@ contract L2ClaimScript is Script {
         address daoAddress = vm.envAddress("DAO_ADDRESS");
         console2.log("DAO address: %s", daoAddress);
 
-        // Owner Address, the ownership of L2Claim Proxy Contract is transferred to after deployment.
+        // owner Address, the ownership of L2Claim Proxy Contract is transferred to after deployment
         address ownerAddress = vm.envAddress("L2_CLAIM_OWNER_ADDRESS");
         console2.log("L2 Claim contract owner address: %s", ownerAddress);
 
@@ -53,8 +53,8 @@ contract L2ClaimScript is Script {
         // ERC1967Utils: keccak-256 hash of "eip1967.proxy.implementation" subtracted by 1.
         assert(l2ClaimImplementation.proxiableUUID() == bytes32(uint256(keccak256("eip1967.proxy.implementation")) - 1));
 
-        // deploy L2Claim Proxy Contract
-        // at the same time initialize the proxy contract (calls the initialize function in L2Claim)
+        // deploy L2Claim Proxy Contract and at the same time initialize the proxy contract (calls the initialize
+        // function in L2Claim)
         vm.startBroadcast(deployerPrivateKey);
         ERC1967Proxy l2ClaimProxy = new ERC1967Proxy(
             address(l2ClaimImplementation),
@@ -73,13 +73,13 @@ contract L2ClaimScript is Script {
         assert(address(l2Claim.l2LiskToken()) == l2AddressesConfig.L2LiskToken);
         assert(l2Claim.merkleRoot() == merkleRoot.merkleRoot);
 
-        // Assign DAO Address
+        // assign DAO Address
         vm.startBroadcast(deployerPrivateKey);
         l2Claim.setDAOAddress(daoAddress);
         vm.stopBroadcast();
         assert(l2Claim.daoAddress() == daoAddress);
 
-        // Transfer ownership of L2Claim Proxy
+        // transfer ownership of L2Claim Proxy
         vm.startBroadcast(deployerPrivateKey);
         l2Claim.transferOwnership(ownerAddress);
         vm.stopBroadcast();
