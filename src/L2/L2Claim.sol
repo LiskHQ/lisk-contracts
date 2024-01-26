@@ -119,8 +119,8 @@ contract L2Claim is Initializable, OwnableUpgradeable, UUPSUpgradeable, ISemver 
     )
         internal
     {
-        require(!claimed[_lskAddress], "L2Claim: Already Claimed");
-        require(MerkleProof.verify(_proof, merkleRoot, _leaf), "L2Claim: Invalid Proof");
+        require(!claimed[_lskAddress], "L2Claim: already Claimed");
+        require(MerkleProof.verify(_proof, merkleRoot, _leaf), "L2Claim: invalid Proof");
 
         l2LiskToken.transfer(_recipient, _amount * LSK_MULTIPLIER);
 

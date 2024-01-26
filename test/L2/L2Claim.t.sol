@@ -161,7 +161,7 @@ contract L2ClaimTest is Test {
 
         leaf.proof[0] = bytes32AddOne(leaf.proof[0]);
 
-        vm.expectRevert("L2Claim: Invalid Proof");
+        vm.expectRevert("L2Claim: invalid Proof");
         l2Claim.claimRegularAccount(
             leaf.proof,
             bytes32(signature.sigs[0].pubKey),
@@ -208,7 +208,7 @@ contract L2ClaimTest is Test {
         MerkleTreeLeaf memory leaf = getMerkleLeaves().leaves[claimIndex];
         Signature memory signature = getSignature(claimIndex);
 
-        vm.expectRevert("L2Claim: Already Claimed");
+        vm.expectRevert("L2Claim: already Claimed");
         l2Claim.claimRegularAccount(
             leaf.proof,
             bytes32(signature.sigs[0].pubKey),
@@ -232,7 +232,7 @@ contract L2ClaimTest is Test {
 
         leaf.proof[0] = bytes32AddOne(leaf.proof[0]);
 
-        vm.expectRevert("L2Claim: Invalid Proof");
+        vm.expectRevert("L2Claim: invalid Proof");
         l2Claim.claimMultisigAccount(
             leaf.proof,
             bytes20(leaf.b32Address << 96),
@@ -256,7 +256,7 @@ contract L2ClaimTest is Test {
 
         ed25519Signatures[0].r = bytes32AddOne(ed25519Signatures[0].r);
 
-        vm.expectRevert("L2Claim: Invalid signature when verifying with mandatoryKeys[]");
+        vm.expectRevert("L2Claim: invalid signature when verifying with mandatoryKeys[]");
         l2Claim.claimMultisigAccount(
             leaf.proof,
             bytes20(leaf.b32Address << 96),
@@ -283,7 +283,7 @@ contract L2ClaimTest is Test {
         ed25519Signatures[leaf.numberOfSignatures - 1].r =
             bytes32AddOne(ed25519Signatures[leaf.numberOfSignatures - 1].r);
 
-        vm.expectRevert("L2Claim: Invalid signature when verifying with optionalKeys[]");
+        vm.expectRevert("L2Claim: invalid signature when verifying with optionalKeys[]");
         l2Claim.claimMultisigAccount(
             leaf.proof,
             bytes20(leaf.b32Address << 96),
@@ -305,7 +305,7 @@ contract L2ClaimTest is Test {
             ed25519Signatures[i] = ED25519Signature(signature.sigs[i].r, signature.sigs[i].s);
         }
 
-        vm.expectRevert("L2Claim: Invalid signature when verifying with mandatoryKeys[]");
+        vm.expectRevert("L2Claim: invalid signature when verifying with mandatoryKeys[]");
 
         l2Claim.claimMultisigAccount(
             leaf.proof,
@@ -328,7 +328,7 @@ contract L2ClaimTest is Test {
             ed25519Signatures[i] = ED25519Signature(signature.sigs[i].r, signature.sigs[i].s);
         }
 
-        vm.expectRevert("L2Claim: Signatures array has invalid length");
+        vm.expectRevert("L2Claim: signatures array has invalid length");
         l2Claim.claimMultisigAccount(
             leaf.proof,
             bytes20(leaf.b32Address << 96),
@@ -355,7 +355,7 @@ contract L2ClaimTest is Test {
             ed25519Signatures[i] = ED25519Signature(signature.sigs[i].r, signature.sigs[i].s);
         }
 
-        vm.expectRevert("L2Claim: Invalid signature when verifying with mandatoryKeys[]");
+        vm.expectRevert("L2Claim: invalid signature when verifying with mandatoryKeys[]");
         l2Claim.claimMultisigAccount(
             leaf.proof,
             bytes20(leaf.b32Address << 96),
@@ -479,7 +479,7 @@ contract L2ClaimTest is Test {
             ed25519Signatures[i] = ED25519Signature(signature.sigs[i].r, signature.sigs[i].s);
         }
 
-        vm.expectRevert("L2Claim: Already Claimed");
+        vm.expectRevert("L2Claim: already Claimed");
         l2Claim.claimMultisigAccount(
             leaf.proof,
             bytes20(leaf.b32Address << 96),
@@ -512,7 +512,7 @@ contract L2ClaimTest is Test {
 
     function test_RecoverLSK_RevertWhenRecoverPeriodNotReached() public {
         l2Claim.setDAOAddress(daoAddress);
-        vm.expectRevert("L2Claim: Recover period not reached");
+        vm.expectRevert("L2Claim: recover period not reached");
         l2Claim.recoverLSK();
     }
 
