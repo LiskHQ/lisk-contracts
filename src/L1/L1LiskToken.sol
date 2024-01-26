@@ -21,7 +21,7 @@ contract L1LiskToken is ERC20Burnable, AccessControl, ERC20Permit {
     /// @notice Total supply of the token.
     uint256 private constant TOTAL_SUPPLY = 300_000_000 * 10 ** 18; //300 million LSK tokens
 
-    /// @notice Burner role. Only accounts with burner role can burn tokens.
+    /// @notice A unique role identifier for accounts with the ability to burn tokens.
     bytes32 public constant BURNER_ROLE = keccak256("BURNER_ROLE");
 
     /// @notice Constructs the L1LiskToken contract.
@@ -30,41 +30,46 @@ contract L1LiskToken is ERC20Burnable, AccessControl, ERC20Permit {
         _mint(msg.sender, TOTAL_SUPPLY);
     }
 
-    /// @notice Allows the owner to transfer the ownership of the contract.
-    /// @param account The new owner of the contract.
+    /// @notice Transfer the contract ownership to a new account.
+    /// @param account The address of the new owner.
+    /// @dev Requires DEFAULT_ADMIN_ROLE.
     function transferOwnership(address account) public onlyRole(DEFAULT_ADMIN_ROLE) {
         _grantRole(DEFAULT_ADMIN_ROLE, account);
         _revokeRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
 
-    /// @notice Verifies if an account is a burner.
-    /// @param account Account to be verified.
-    /// @return Whether or not the provided account is a burner.
+    /// @notice Check if an account has the burner role.
+    /// @param account The account to check.
+    /// @return True if the account has the burner role, false otherwise.
     function isBurner(address account) public view returns (bool) {
         return hasRole(BURNER_ROLE, account);
     }
 
-    /// @notice Allows the owner to grant burner role to an account.
-    /// @param account Account to be added as a burner.
+    /// @notice Assign the burner role to an account.
+    /// @param account The account to be assigned the burner role.
+    /// @dev Requires DEFAULT_ADMIN_ROLE.
     function addBurner(address account) public onlyRole(DEFAULT_ADMIN_ROLE) {
         _grantRole(BURNER_ROLE, account);
     }
 
-    /// @notice Allows the owner to revoke burner role from an account.
-    /// @param account Account to be removed as a burner.
+    /// @notice Remove the burner role from an account.
+    /// @param account The account to remove the burner role from.
+    /// @dev Requires DEFAULT_ADMIN_ROLE.
     function renounceBurner(address account) public onlyRole(DEFAULT_ADMIN_ROLE) {
         _revokeRole(BURNER_ROLE, account);
     }
 
-    /// @notice Allows a burner to burn token.
-    /// @param value Amount to be burned.
+    /// @notice Burn tokens from the caller's account.
+    /// @param value The amount of tokens to burn.
+    /// @dev Requires BURNER_ROLE.
     function burn(uint256 value) public override onlyRole(BURNER_ROLE) {
         super.burn(value);
     }
 
-    /// @notice Allows a burner to burn its allowance from an account.
-    /// @param account Account to burn tokens from.
-    /// @param value Amount to burned.
+    /// @notice Burn tokens from another account, deducting from the caller's allowance.
+    /// @param account The account to burn tokens from.
+    /// @param value   The amount of tokens to be burned.
+    /// @dev Requires BURNER_ROLE.
     function burnFrom(address account, uint256 value) public override onlyRole(BURNER_ROLE) {
         super.burnFrom(account, value);
     }
