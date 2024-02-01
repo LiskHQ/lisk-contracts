@@ -31,7 +31,7 @@ contract L2Claim is Initializable, OwnableUpgradeable, UUPSUpgradeable, ISemver 
     /// @notice Address of L2 LSK Token.
     IERC20 public l2LiskToken;
 
-    /// @notice Merkle Root hash for the claim process.
+    /// @notice Merkle Root for the claim process.
     bytes32 public merkleRoot;
 
     /// @notice Timestamp after which the contract owner can recover unclaimed LSK to the DAO.
