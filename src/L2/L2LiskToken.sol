@@ -81,7 +81,7 @@ contract L2LiskToken is IOptimismMintableERC20, ERC20, ERC20Permit {
     }
 
     /// @notice Burn function callable only by the bridge, to decrease the token balance.
-    /// @param from   Address from which tokens are burned.
+    /// @param from   Address from whose tokens are burned.
     /// @param amount Amount of tokens to burn.
     function burn(address from, uint256 amount) external virtual override(IOptimismMintableERC20) onlyBridge {
         _burn(from, amount);

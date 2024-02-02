@@ -5,7 +5,7 @@ This document contains a set of requirements for smart contracts inside this rep
 ## Requirements for L1 Lisk Token
 
 - L1 Lisk token smart contract should not be an upgradable smart contract.
-- Total supply of L1 Lisk tokens should be set to 300,000,000 (300 millions).
+- Total supply of L1 Lisk tokens should be set to 300,000,000 (300 million).
 - There should exist two roles inside a smart contract - admin and burner.
   - Admin can add or remove addresses to and from burner role.
   - Only burner role is able to burn L1 Lisk tokens.
@@ -30,5 +30,5 @@ This document contains a set of requirements for smart contracts inside this rep
 - Claim smart contract should be upgradeable smart contract. Upgrades can only be performed by the owner.
 - Claim smart contract should contain a Merkle Root, derived from a merkle tree constructed using a snapshot data from the Lisk v4 network.
 - Users should be able to claim their tokens from regular and multisig Lisk accounts.
-- Each Lisk account should be eligible for only a single claim (no double claims for the same Lisk address).
+- Each eligible account should claim all its tokens in one single transaction (no double claims for the same Lisk address).
 - Claim smart contract should have an option that after a window of 2 years, the unclaimed tokens could be moved to the Lisk DAO treasury. This token movement can only be performed by the owner.
