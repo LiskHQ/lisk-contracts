@@ -9,57 +9,58 @@ import { UUPSUpgradeable } from "@openzeppelin/contracts/proxy/utils/UUPSUpgrade
 import { Ed25519 } from "../utils/Ed25519.sol";
 import { ISemver } from "../utils/ISemver.sol";
 
-/// @notice A struct of array of mandatoryKeys and optionalKeys.
+/// @notice Struct representing arrays of mandatory and optional ED25519 keys used in multisig operations.
 struct MultisigKeys {
     bytes32[] mandatoryKeys;
     bytes32[] optionalKeys;
 }
 
-/// @notice A struct of ED25519 signature pair.
+/// @notice Struct encapsulating the components of an ED25519 signature.
 struct ED25519Signature {
     bytes32 r;
     bytes32 s;
 }
 
 /// @title L2Claim
-/// @notice L2Claim lets user claim their LSK token from Lisk Chain using Merkle Tree method.
+/// @notice Enables users to claim their LSK tokens from Lisk Chain on L2 using Merkle proofs, with support for both
+///         regular and multisig accounts.
 contract L2Claim is Initializable, OwnableUpgradeable, UUPSUpgradeable, ISemver {
-    /// @notice LSK originally has 8 d.p., L2 LSK has 18.
+    /// @notice LSK originally has 8 decimal places, L2 LSK has 18 decimal places.
     uint256 public constant LSK_MULTIPLIER = 10 ** 10;
 
     /// @notice Address of L2 LSK Token.
     IERC20 public l2LiskToken;
 
-    /// @notice Merkle Root for the claim.
+    /// @notice Merkle Root for the claim process.
     bytes32 public merkleRoot;
 
-    /// @notice After this timestamp, owner can send all remaining unclaimed LSK from this contract to DAO
+    /// @notice Timestamp after which the contract owner can recover unclaimed LSK to the DAO.
     uint256 public recoverPeriodTimestamp;
 
-    /// @notice DAO Address, will be used to receive unclaimed LSK after claim period
+    /// @notice DAO address for receiving unclaimed LSK after the claim period.
     address public daoAddress;
 
-    // @notice Records claimed addresses (lskAddress => boolean).
+    // @notice Mapping to track which LSK addresses have claimed their tokens (lskAddress => boolean).
     mapping(bytes20 => bool) public claimed;
 
     /// @notice Emitted when an address has claimed the LSK.
     event LSKClaimed(bytes20 lskAddress, address recipient, uint256 amount);
 
-    /// @notice Emitted when `recoverLSK` has been called.
+    /// @notice Event indicating the end of the claiming period.
     event ClaimingEnded();
 
     /// @notice Semantic version of the contract.
     string public version;
 
-    /// @notice Disable Initializers at Implementation Contract.
+    /// @notice Disabling initializers on implementation contract to prevent misuse.
     constructor() {
         _disableInitializers();
     }
 
     /// @notice Setting global params.
-    /// @param  _l2LiskToken            L2 LSK Token Address
-    /// @param  _merkleRoot             Merkle Tree Root
-    /// @param  _recoverPeriodTimestamp Timestamp for allowing LSK Recovery
+    /// @param  _l2LiskToken            The address of the L2 LSK Token contract.
+    /// @param  _merkleRoot             The root of the Merkle Tree for claims.
+    /// @param  _recoverPeriodTimestamp The timestamp after which unclaimed LSK can be recovered.
     function initialize(
         address _l2LiskToken,
         bytes32 _merkleRoot,
@@ -76,11 +77,11 @@ contract L2Claim is Initializable, OwnableUpgradeable, UUPSUpgradeable, ISemver 
     }
 
     /// @notice Verifies ED25519 Signature, throws error when verification fails.
-    /// @param _pubKey          Public Key of the address in Lisk Chain.
-    /// @param _r               r-value of the ED25519 signature.
-    /// @param _s               s-value of the ED25519 signature.
-    /// @param _message         Message to be verified.
-    /// @param _errorMessage    Message the contract should throw, when the check returns false.
+    /// @param _pubKey       The public key associated with the address in the Lisk Chain.
+    /// @param _r            The 'r' component of the ED25519 signature.
+    /// @param _s            The 's' component of the ED25519 signature.
+    /// @param _message      The message to be verified.
+    /// @param _errorMessage The error message to throw if verification fails.
     function verifySignature(
         bytes32 _pubKey,
         bytes32 _r,
@@ -94,20 +95,21 @@ contract L2Claim is Initializable, OwnableUpgradeable, UUPSUpgradeable, ISemver 
         require(Ed25519.check(_pubKey, _r, _s, _message, bytes9(0)), _errorMessage);
     }
 
-    /// @notice Hash a message twice using Keccak-256.
-    /// @param  _message Message to be hashed.
-    /// @return double keccak256 hashed bytes32
+    /// @notice Hashes a message twice using Keccak-256.
+    /// @param  _message The message to be double-hashed.
+    /// @return The double-hashed message.
     function doubleKeccak256(bytes memory _message) internal pure returns (bytes32) {
         return keccak256(bytes.concat(keccak256(_message)));
     }
 
-    /// @notice Internal function called by both regular and multisig claims.
-    /// @param _lskAddress  LSK Address in bytes format.
-    /// @param _amount      Amount of LSK (In Beddows [1 LSK = 10**8 Beddow]).
-    /// @param _proof       Array of hashes that proves existence of the leaf.
-    /// @param _leaf        Double-hashed leaf by combining address, amount, numberOfSignatures, mandatory and optional
-    ///                     keys.
-    /// @param _recipient   Destination address at L2 Chain.
+    /// @notice Internal function to process claims by verifying the Merkle proof and transferring tokens called by both
+    ///         regular and multisig claims.
+    /// @param _lskAddress The LSK address in bytes format.
+    /// @param _amount     Amount of LSK (In Beddows [1 LSK = 10**8 Beddow]).
+    /// @param _proof      The array of hashes that prove the existence of the leaf in the Merkle Tree.
+    /// @param _leaf       Double-hashed leaf by combining address, amount, numberOfSignatures, mandatory and optional
+    ///                    keys.
+    /// @param _recipient  The destination address on the L2 Chain.
     function claim(
         bytes20 _lskAddress,
         uint64 _amount,
@@ -117,8 +119,8 @@ contract L2Claim is Initializable, OwnableUpgradeable, UUPSUpgradeable, ISemver 
     )
         internal
     {
-        require(!claimed[_lskAddress], "L2Claim: Already Claimed");
-        require(MerkleProof.verify(_proof, merkleRoot, _leaf), "L2Claim: Invalid Proof");
+        require(!claimed[_lskAddress], "L2Claim: already Claimed");
+        require(MerkleProof.verify(_proof, merkleRoot, _leaf), "L2Claim: invalid Proof");
 
         l2LiskToken.transfer(_recipient, _amount * LSK_MULTIPLIER);
 
@@ -126,12 +128,12 @@ contract L2Claim is Initializable, OwnableUpgradeable, UUPSUpgradeable, ISemver 
         emit LSKClaimed(_lskAddress, _recipient, _amount);
     }
 
-    /// @notice Claim LSK from a regular account.
-    /// @param _proof       Array of hashes that proves existence of the leaf.
-    /// @param _pubKey      Public Key of the address in Lisk Chain.
-    /// @param _amount      Amount of LSK (In Beddows [1 LSK = 10**8 Beddow]).
-    /// @param _recipient   Destination address at L2 Chain.
-    /// @param _sig         ED25519 signature pair.
+    /// @notice Allows users to claim their LSK from a regular account on the L2 chain.
+    /// @param _proof     Array of hashes that proves existence of the leaf.
+    /// @param _pubKey    The public key of the Lisk chain address.
+    /// @param _amount    Amount of LSK (In Beddows [1 LSK = 10**8 Beddow]).
+    /// @param _recipient The recipient address on the L2 chain.
+    /// @param _sig       ED25519 signature pair.
     function claimRegularAccount(
         bytes32[] calldata _proof,
         bytes32 _pubKey,
@@ -144,18 +146,18 @@ contract L2Claim is Initializable, OwnableUpgradeable, UUPSUpgradeable, ISemver 
         bytes20 lskAddress = bytes20(sha256(abi.encode(_pubKey)));
         bytes32 leaf = doubleKeccak256(abi.encode(lskAddress, _amount, uint32(0), new bytes32[](0), new bytes32[](0)));
 
-        verifySignature(_pubKey, _sig.r, _sig.s, keccak256(abi.encode(leaf, _recipient)), "L2Claim: Invalid Signature");
+        verifySignature(_pubKey, _sig.r, _sig.s, keccak256(abi.encode(leaf, _recipient)), "L2Claim: invalid signature");
 
         claim(lskAddress, _amount, _proof, leaf, _recipient);
     }
 
-    /// @notice Claim LSK from a multisig account.
-    /// @param _proof       Array of hashes that proves existence of the leaf.
-    /// @param _lskAddress  LSK Address in bytes format.
-    /// @param _amount      Amount of LSK (In Beddows [1 LSK = 10**8 Beddow]).
-    /// @param _keys        Structs of Mandatory Keys and Optional Keys.
-    /// @param _recipient   Destination address at L2 Chain.
-    /// @param _sigs        Array of ED25519 signature pair.
+    /// @notice Allows users to claim their LSK from a multisig account on the L2 chain.
+    /// @param _proof      Array of hashes that proves existence of the leaf.
+    /// @param _lskAddress The LSK address in bytes format.
+    /// @param _amount     The amount of LSK (In Beddows [1 LSK = 10**8 Beddow]) to be claimed.
+    /// @param _keys       The struct containing mandatory and optional keys for the multisig.
+    /// @param _recipient  The recipient address on the L2 chain.
+    /// @param _sigs       Array of ED25519 signature pairs.
     function claimMultisigAccount(
         bytes32[] calldata _proof,
         bytes20 _lskAddress,
@@ -168,7 +170,7 @@ contract L2Claim is Initializable, OwnableUpgradeable, UUPSUpgradeable, ISemver 
     {
         require(
             _sigs.length == _keys.optionalKeys.length + _keys.mandatoryKeys.length,
-            "L2Claim: Signatures array has invalid length"
+            "L2Claim: signatures array has invalid length"
         );
 
         // If numberOfSignatures passes MerkleProof in later stage, that means this value is correct.
@@ -193,7 +195,7 @@ contract L2Claim is Initializable, OwnableUpgradeable, UUPSUpgradeable, ISemver 
                 _sigs[i].r,
                 _sigs[i].s,
                 message,
-                "L2Claim: Invalid signature when verifying with mandatoryKeys[]"
+                "L2Claim: invalid signature when verifying with mandatoryKeys[]"
             );
         }
 
@@ -206,29 +208,32 @@ contract L2Claim is Initializable, OwnableUpgradeable, UUPSUpgradeable, ISemver 
                 _sigs[i + _keys.mandatoryKeys.length].r,
                 _sigs[i + _keys.mandatoryKeys.length].s,
                 message,
-                "L2Claim: Invalid signature when verifying with optionalKeys[]"
+                "L2Claim: invalid signature when verifying with optionalKeys[]"
             );
         }
 
         claim(_lskAddress, _amount, _proof, leaf, _recipient);
     }
 
-    /// @notice Set DAO address, which is the destination of all unclaimed LSK. This function can only be called once
-    /// @param _daoAddress        Destination recipient Address
+    /// @notice Sets the DAO address which will receive all unclaimed LSK tokens. This function can only be called once
+    ///         by the contract owner.
+    /// @param _daoAddress The address of the DAO.
     function setDAOAddress(address _daoAddress) public onlyOwner {
         require(daoAddress == address(0), "L2Claim: DAO Address has already been set");
         daoAddress = _daoAddress;
     }
 
-    /// @notice Unclaimed LSK token can be transferred to DAO Address after claim period.
+    /// @notice Allows the contract owner to recover unclaimed LSK tokens to the DAO address after the claim period is
+    ///         over.
     function recoverLSK() public onlyOwner {
-        require(block.timestamp >= recoverPeriodTimestamp, "L2Claim: Recover period not reached");
+        require(block.timestamp >= recoverPeriodTimestamp, "L2Claim: recover period not reached");
         l2LiskToken.transfer(daoAddress, l2LiskToken.balanceOf(address(this)));
 
         emit ClaimingEnded();
     }
 
-    /// @notice Function that should revert when msg.sender is not authorized to upgrade the contract.
-    /// @param _newImplementation        New Implementation Contract
+    /// @notice Ensures that only the owner can authorize a contract upgrade. It reverts if called by any address other
+    ///         than the contract owner.
+    /// @param _newImplementation The address of the new contract implementation to which the proxy will be upgraded.
     function _authorizeUpgrade(address _newImplementation) internal override onlyOwner { }
 }

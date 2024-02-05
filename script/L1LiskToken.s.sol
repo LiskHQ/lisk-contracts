@@ -24,7 +24,7 @@ contract L1LiskTokenScript is Script {
 
         console2.log("Deploying L1 Lisk token...");
 
-        // Address, the ownership of L1 Lisk token contract is transferred to after deployment.
+        // address, the ownership of L1 Lisk token contract is transferred to after deployment
         address ownerAddress = vm.envAddress("L1_TOKEN_OWNER_ADDRESS");
         console2.log("L1 Lisk token owner address: %s", ownerAddress);
 
