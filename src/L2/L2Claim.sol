@@ -40,8 +40,9 @@ contract L2Claim is Initializable, OwnableUpgradeable, UUPSUpgradeable, ISemver 
     /// @notice DAO address for receiving unclaimed LSK after the claim period.
     address public daoAddress;
 
-    // @notice Mapping to track which LSK addresses have claimed their tokens (lskAddress => boolean).
-    mapping(bytes20 => bool) public claimed;
+    // @notice Mapping to track which LSK addresses have claimed their tokens and its destination (lskAddress =>
+    // address).
+    mapping(bytes20 => address) public claimedTo;
 
     /// @notice Emitted when an address has claimed the LSK.
     event LSKClaimed(bytes20 lskAddress, address recipient, uint256 amount);
@@ -119,12 +120,12 @@ contract L2Claim is Initializable, OwnableUpgradeable, UUPSUpgradeable, ISemver 
     )
         internal
     {
-        require(!claimed[_lskAddress], "L2Claim: already Claimed");
+        require(claimedTo[_lskAddress] == address(0), "L2Claim: already Claimed");
         require(MerkleProof.verify(_proof, merkleRoot, _leaf), "L2Claim: invalid Proof");
 
         l2LiskToken.transfer(_recipient, _amount * LSK_MULTIPLIER);
 
-        claimed[_lskAddress] = true;
+        claimedTo[_lskAddress] = _recipient;
         emit LSKClaimed(_lskAddress, _recipient, _amount);
     }
 

@@ -94,15 +94,17 @@ contract L2ClaimTest is Test {
         MerkleTreeLeaf memory leaf = getMerkleLeaves().leaves[_accountIndex];
         Signature memory signature = getSignature(_accountIndex);
 
+        bytes32 pubKey = signature.sigs[0].pubKey;
         l2Claim.claimRegularAccount(
             leaf.proof,
-            bytes32(signature.sigs[0].pubKey),
+            pubKey,
             leaf.balanceBeddows,
             address(this),
             ED25519Signature(signature.sigs[0].r, signature.sigs[0].s)
         );
 
         assertEq(lsk.balanceOf(address(this)), originalBalance + leaf.balanceBeddows * l2Claim.LSK_MULTIPLIER());
+        assertEq(l2Claim.claimedTo(bytes20(sha256(abi.encode(pubKey)))), address(this));
     }
 
     function setUp() public {
@@ -377,15 +379,17 @@ contract L2ClaimTest is Test {
             ed25519Signatures[i] = ED25519Signature(signature.sigs[i].r, signature.sigs[i].s);
         }
 
+        bytes20 lskAddress = bytes20(leaf.b32Address << 96);
         l2Claim.claimMultisigAccount(
             leaf.proof,
-            bytes20(leaf.b32Address << 96),
+            lskAddress,
             leaf.balanceBeddows,
             MultisigKeys(leaf.mandatoryKeys, leaf.optionalKeys),
             address(this),
             ed25519Signatures
         );
         assertEq(lsk.balanceOf(address(this)), leaf.balanceBeddows * l2Claim.LSK_MULTIPLIER());
+        assertEq(l2Claim.claimedTo(lskAddress), address(this));
     }
 
     function test_ClaimMultisigAccount_SuccessClaim_1M_2O() public {
@@ -402,9 +406,10 @@ contract L2ClaimTest is Test {
 
         ed25519Signatures[1] = ED25519Signature(bytes32(0), bytes32(0));
 
+        bytes20 lskAddress = bytes20(leaf.b32Address << 96);
         l2Claim.claimMultisigAccount(
             leaf.proof,
-            bytes20(leaf.b32Address << 96),
+            lskAddress,
             leaf.balanceBeddows,
             MultisigKeys(leaf.mandatoryKeys, leaf.optionalKeys),
             address(this),
@@ -412,6 +417,7 @@ contract L2ClaimTest is Test {
         );
 
         assertEq(lsk.balanceOf(address(this)), leaf.balanceBeddows * l2Claim.LSK_MULTIPLIER());
+        assertEq(l2Claim.claimedTo(lskAddress), address(this));
     }
 
     function test_ClaimMultisigAccount_SuccessClaim_3M_3O() public {
@@ -428,9 +434,10 @@ contract L2ClaimTest is Test {
 
         ed25519Signatures[4] = ED25519Signature(bytes32(0), bytes32(0));
 
+        bytes20 lskAddress = bytes20(leaf.b32Address << 96);
         l2Claim.claimMultisigAccount(
             leaf.proof,
-            bytes20(leaf.b32Address << 96),
+            lskAddress,
             leaf.balanceBeddows,
             MultisigKeys(leaf.mandatoryKeys, leaf.optionalKeys),
             address(this),
@@ -438,6 +445,7 @@ contract L2ClaimTest is Test {
         );
 
         assertEq(lsk.balanceOf(address(this)), leaf.balanceBeddows * l2Claim.LSK_MULTIPLIER());
+        assertEq(l2Claim.claimedTo(lskAddress), address(this));
     }
 
     function test_ClaimMultisigAccount_SuccessClaim_64M() public {
@@ -452,6 +460,7 @@ contract L2ClaimTest is Test {
             ed25519Signatures[i] = ED25519Signature(signature.sigs[i].r, signature.sigs[i].s);
         }
 
+        bytes20 lskAddress = bytes20(leaf.b32Address << 96);
         l2Claim.claimMultisigAccount(
             leaf.proof,
             bytes20(leaf.b32Address << 96),
@@ -462,6 +471,7 @@ contract L2ClaimTest is Test {
         );
 
         assertEq(lsk.balanceOf(address(this)), leaf.balanceBeddows * l2Claim.LSK_MULTIPLIER());
+        assertEq(l2Claim.claimedTo(lskAddress), address(this));
     }
 
     function test_ClaimMultisigAccount_RevertWhenAlreadyClaimed() public {
