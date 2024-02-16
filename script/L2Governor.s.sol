@@ -14,6 +14,9 @@ contract L2GovernorScript is Script {
     /// @notice Utils contract which provides functions to read and write JSON files containing L2 addresses.
     Utils utils;
 
+    /// @notice Array of addresses that can execute proposals.
+    address[] executors;
+
     function setUp() public {
         utils = new Utils();
     }
@@ -39,10 +42,13 @@ contract L2GovernorScript is Script {
 
         // deploy TimelockController contract
         vm.startBroadcast(deployerPrivateKey);
+        executors.push(address(0)); // executor array contains address(0) such that anyone can execute proposals
         TimelockController timelock =
-            new TimelockController(0, new address[](0), new address[](0), vm.addr(deployerPrivateKey));
+            new TimelockController(0, new address[](0), executors, vm.addr(deployerPrivateKey));
         vm.stopBroadcast();
         assert(address(timelock) != address(0));
+        // address(0) has the executor role
+        assert(timelock.hasRole(timelock.EXECUTOR_ROLE(), address(0)) == true);
 
         // deploy L2Governor implementation contract
         vm.startBroadcast(deployerPrivateKey);
@@ -77,13 +83,13 @@ contract L2GovernorScript is Script {
         assert(address(l2Governor.token()) == address(votingPower));
         assert(l2Governor.owner() == vm.addr(deployerPrivateKey));
 
-        // grant the proposer and the executor role to the Governor contract
+        // grant the proposer role to the Governor contract
         vm.startBroadcast(deployerPrivateKey);
         timelock.grantRole(timelock.PROPOSER_ROLE(), address(l2Governor));
-        timelock.grantRole(timelock.EXECUTOR_ROLE(), address(l2Governor));
         vm.stopBroadcast();
         assert(timelock.hasRole(timelock.PROPOSER_ROLE(), address(l2Governor)));
-        assert(timelock.hasRole(timelock.EXECUTOR_ROLE(), address(l2Governor)));
+        // Governor contract does not have the executor role
+        assert(!timelock.hasRole(timelock.EXECUTOR_ROLE(), address(l2Governor)));
 
         // revoke the admin role of our admin account for TimeLockController contract
         vm.startBroadcast(deployerPrivateKey);

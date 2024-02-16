@@ -31,6 +31,7 @@ contract L2GovernorTest is Test {
     L2Governor public l2Governor;
 
     IVotes votingPower;
+    address[] executors;
     TimelockController timelock;
     address initialOwner;
 
@@ -39,7 +40,8 @@ contract L2GovernorTest is Test {
 
         // set initial values
         votingPower = IVotes(address(0x1));
-        timelock = new TimelockController(0, new address[](0), new address[](0), address(this));
+        executors.push(address(0)); // executor array contains address(0) such that anyone can execute proposals
+        timelock = new TimelockController(0, new address[](0), executors, address(this));
         initialOwner = address(this);
 
         console.log("L2GovernorTest address is: %s", address(this));
@@ -67,6 +69,9 @@ contract L2GovernorTest is Test {
         assertEq(l2Governor.timelock(), address(timelock));
         assertEq(address(l2Governor.token()), address(votingPower));
         assertEq(l2Governor.owner(), initialOwner);
+
+        // assure that address(0) is in executors role
+        assertEq(timelock.hasRole(timelock.EXECUTOR_ROLE(), address(0)), true);
     }
 
     function test_UpgradeToAndCall_RevertWhenNotOwner() public {
