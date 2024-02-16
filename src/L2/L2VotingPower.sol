@@ -79,15 +79,25 @@ contract L2VotingPower is ERC20VotesUpgradeable, OwnableUpgradeable, UUPSUpgrade
     /// @param positionAfter Locking position after the adjustment.
     function adjustVotingPower(
         address ownerAddress,
-        LockingPosition memory positionBefore,
-        LockingPosition memory positionAfter
+        LockingPosition[] memory positionBefore,
+        LockingPosition[] memory positionAfter
     )
         public
         virtual
         onlyStakingContract
     {
-        _mint(ownerAddress, votingPower(positionAfter));
-        _burn(ownerAddress, votingPower(positionBefore));
+        require(
+            positionBefore.length == 0 || positionBefore.length == 1, "L2VotingPower: invalid positionBefore length"
+        );
+        require(positionAfter.length == 0 || positionAfter.length == 1, "L2VotingPower: invalid positionAfter length");
+
+        if (positionAfter.length > 0) {
+            _mint(ownerAddress, votingPower(positionAfter[0]));
+        }
+
+        if (positionBefore.length > 0) {
+            _burn(ownerAddress, votingPower(positionBefore[0]));
+        }
     }
 
     /// @notice Overrides clock() function to make the token & governor timestamp-based

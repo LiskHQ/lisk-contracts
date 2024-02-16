@@ -33,6 +33,8 @@ contract L2VotingPowerTest is Test {
     L2VotingPower public l2VotingPower;
 
     address stakingContractAddress;
+    LockingPosition[] public positionBefore;
+    LockingPosition[] public positionAfter;
 
     function setUp() public {
         utils = new Utils();
@@ -80,8 +82,8 @@ contract L2VotingPowerTest is Test {
     }
 
     function test_AdjustVotingPower_EventsAreEmitted() public {
-        LockingPosition memory positionBefore = LockingPosition(50, 50, 50);
-        LockingPosition memory positionAfter = LockingPosition(100, 100, 100);
+        positionBefore.push(LockingPosition(50, 50, 50));
+        positionAfter.push(LockingPosition(100, 100, 100));
 
         // check that events for mint and burn are emitted
         vm.expectEmit(true, true, true, true);
@@ -95,11 +97,68 @@ contract L2VotingPowerTest is Test {
     }
 
     function test_AdjustVotingPower_NotStakingContract() public {
-        LockingPosition memory positionBefore = LockingPosition(50, 50, 50);
-        LockingPosition memory positionAfter = LockingPosition(100, 100, 100);
+        positionBefore.push(LockingPosition(50, 50, 50));
+        positionAfter.push(LockingPosition(100, 100, 100));
 
         // call it as non-staking contract
         vm.expectRevert("L2VotingPower: only staking contract can call this function");
+        l2VotingPower.adjustVotingPower(address(this), positionBefore, positionAfter);
+    }
+
+    function test_AdjustVotingPower_PositionBeforeLength() public {
+        positionBefore.push(LockingPosition(50, 50, 50));
+        positionBefore.push(LockingPosition(50, 50, 50));
+        positionAfter.push(LockingPosition(100, 100, 100));
+
+        // call it as staking contract
+        vm.prank(stakingContractAddress);
+        vm.expectRevert("L2VotingPower: invalid positionBefore length");
+        l2VotingPower.adjustVotingPower(address(this), positionBefore, positionAfter);
+    }
+
+    function test_AdjustVotingPower_PositionAfterLength() public {
+        positionBefore.push(LockingPosition(50, 50, 50));
+        positionAfter.push(LockingPosition(100, 100, 100));
+        positionAfter.push(LockingPosition(100, 100, 100));
+
+        // call it as staking contract
+        vm.prank(stakingContractAddress);
+        vm.expectRevert("L2VotingPower: invalid positionAfter length");
+        l2VotingPower.adjustVotingPower(address(this), positionBefore, positionAfter);
+    }
+
+    function test_AdjustVotingPower_PositionBeforeIsNull() public {
+        positionAfter.push(LockingPosition(100, 100, 100));
+
+        // check that event for mint is emitted
+        vm.expectEmit(true, true, true, true);
+        emit IERC20.Transfer(address(0), address(this), 6250);
+
+        // call it as staking contract
+        vm.prank(stakingContractAddress);
+        l2VotingPower.adjustVotingPower(address(this), positionBefore, positionAfter);
+    }
+
+    function test_AdjustVotingPower_PositionAfterIsNull() public {
+        // mint some tokens that then can be burned
+        positionAfter.push(LockingPosition(500, 500, 500));
+        vm.prank(stakingContractAddress);
+        l2VotingPower.adjustVotingPower(address(this), positionBefore, positionAfter);
+
+        // clear positionAfter array
+        positionAfter.pop();
+        assertEq(positionAfter.length, 0);
+        assertEq(positionBefore.length, 0);
+
+        // only positionBefore is set
+        positionBefore.push(LockingPosition(50, 50, 50));
+
+        // check that event for burn is emitted
+        vm.expectEmit(true, true, true, true);
+        emit IERC20.Transfer(address(this), address(0), 2500);
+
+        // call it as staking contract
+        vm.prank(stakingContractAddress);
         l2VotingPower.adjustVotingPower(address(this), positionBefore, positionAfter);
     }
 
