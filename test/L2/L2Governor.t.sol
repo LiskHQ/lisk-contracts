@@ -64,7 +64,7 @@ contract L2GovernorTest is Test {
         assertEq(l2Governor.name(), "Lisk Governor");
         assertEq(l2Governor.version(), "1.0.0");
         assertEq(l2Governor.votingDelay(), 0);
-        assertEq(l2Governor.votingPeriod(), 50400);
+        assertEq(l2Governor.votingPeriod(), 604800);
         assertEq(l2Governor.proposalThreshold(), 2e18);
         assertEq(l2Governor.timelock(), address(timelock));
         assertEq(address(l2Governor.token()), address(votingPower));

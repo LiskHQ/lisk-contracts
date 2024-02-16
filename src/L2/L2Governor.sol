@@ -35,13 +35,13 @@ contract L2Governor is
     uint48 public constant VOTING_DELAY = 0;
 
     /// @notice Voting period for proposals (in EIP-6372 clock).
-    uint32 public constant VOTING_PERIOD = 50400; // 7 days
+    uint32 public constant VOTING_PERIOD = 604800; // 7 days
 
     /// @notice Threshold for a proposal to be successful.
-    uint256 public constant PROPOSAL_THRESHOLD = 2e18;
+    uint256 public constant PROPOSAL_THRESHOLD = 2e18; // TODO change this value once we have a proper threshold
 
     /// @notice Quorum required for a proposal to be successful (number of tokens).
-    uint256 public constant QUORUM_THRESHOLD = 50000e18;
+    uint256 public constant QUORUM_THRESHOLD = 50000e18; // TODO change this value once we have a proper threshold
 
     /// @notice Disabling initializers on implementation contract to prevent misuse.
     constructor() {
@@ -74,10 +74,7 @@ contract L2Governor is
     }
 
     /// @notice Returns the quorum required for a proposal to be successful.
-    function quorum(uint256 blockNumber) public pure override returns (uint256) {
-        // blockNumber is not used in the calculation, but it is a required parameter.
-        blockNumber;
-
+    function quorum(uint256) public pure override returns (uint256) {
         return QUORUM_THRESHOLD;
     }
 
