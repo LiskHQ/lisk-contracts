@@ -240,5 +240,5 @@ contract L2Claim is Initializable, OwnableUpgradeable, UUPSUpgradeable, ISemver 
     /// @notice Ensures that only the owner can authorize a contract upgrade. It reverts if called by any address other
     ///         than the contract owner.
     /// @param _newImplementation The address of the new contract implementation to which the proxy will be upgraded.
-    function _authorizeUpgrade(address _newImplementation) internal override onlyOwner { }
+    function _authorizeUpgrade(address _newImplementation) internal virtual override onlyOwner { }
 }
