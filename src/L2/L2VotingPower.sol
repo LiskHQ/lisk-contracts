@@ -58,12 +58,12 @@ contract L2VotingPower is ERC20VotesUpgradeable, OwnableUpgradeable, UUPSUpgrade
     /// @notice Ensures that only the owner can authorize a contract upgrade. It reverts if called by any address other
     ///         than the contract owner.
     /// @param _newImplementation The address of the new contract implementation to which the proxy will be upgraded.
-    function _authorizeUpgrade(address _newImplementation) internal override onlyOwner { }
+    function _authorizeUpgrade(address _newImplementation) internal virtual override onlyOwner { }
 
     /// @notice Calculates the voting power of a locking position.
     /// @param position Locking position.
     /// @return Voting power of the locking position.
-    function votingPower(LockingPosition memory position) internal pure returns (uint256) {
+    function votingPower(LockingPosition memory position) internal pure virtual returns (uint256) {
         uint256 powerDuringLocking = position.amount * (position.unlockingDuration + HEADSTART);
         if (position.expDate == 0) {
             return powerDuringLocking;
@@ -83,6 +83,7 @@ contract L2VotingPower is ERC20VotesUpgradeable, OwnableUpgradeable, UUPSUpgrade
         LockingPosition memory positionAfter
     )
         public
+        virtual
         onlyStakingContract
     {
         _mint(ownerAddress, votingPower(positionAfter));
@@ -90,30 +91,30 @@ contract L2VotingPower is ERC20VotesUpgradeable, OwnableUpgradeable, UUPSUpgrade
     }
 
     /// @notice Overrides clock() function to make the token & governor timestamp-based
-    function clock() public view override returns (uint48) {
+    function clock() public view virtual override returns (uint48) {
         return uint48(block.timestamp);
     }
 
     /// @notice Overrides CLOCK_MODE() function to make the token & governor timestamp-based
-    function CLOCK_MODE() public pure override returns (string memory) {
+    function CLOCK_MODE() public pure virtual override returns (string memory) {
         return "mode=timestamp";
     }
 
     /// @notice Always reverts to disable ERC20 token transfer feature.
     /// @dev This function always reverts.
-    function approve(address, uint256) public pure override(ERC20Upgradeable) returns (bool) {
+    function approve(address, uint256) public pure virtual override(ERC20Upgradeable) returns (bool) {
         revert ApproveDisabled();
     }
 
     ///  @notice Always reverts to disable ERC20 token transfer feature.
     ///  @dev This function always reverts.
-    function transfer(address, uint256) public pure override(ERC20Upgradeable) returns (bool) {
+    function transfer(address, uint256) public pure virtual override(ERC20Upgradeable) returns (bool) {
         revert TransferDisabled();
     }
 
     ///  @notice Always reverts to disable ERC20 token transfer feature.
     ///  @dev This function always reverts.
-    function transferFrom(address, address, uint256) public pure override(ERC20Upgradeable) returns (bool) {
+    function transferFrom(address, address, uint256) public pure virtual override(ERC20Upgradeable) returns (bool) {
         revert TransferDisabled();
     }
 }
