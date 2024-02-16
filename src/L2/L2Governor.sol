@@ -74,20 +74,21 @@ contract L2Governor is
     }
 
     /// @notice Returns the quorum required for a proposal to be successful.
-    function quorum(uint256) public pure override returns (uint256) {
+    function quorum(uint256) public pure virtual override returns (uint256) {
         return QUORUM_THRESHOLD;
     }
 
     /// @notice Ensures that only the owner can authorize a contract upgrade. It reverts if called by any address other
     ///         than the contract owner.
     /// @param _newImplementation The address of the new contract implementation to which the proxy will be upgraded.
-    function _authorizeUpgrade(address _newImplementation) internal override onlyOwner { }
+    function _authorizeUpgrade(address _newImplementation) internal virtual override onlyOwner { }
 
     // The below functions are overrides required by Solidity.
 
     function state(uint256 proposalId)
         public
         view
+        virtual
         override(GovernorUpgradeable, GovernorTimelockControlUpgradeable)
         returns (ProposalState)
     {
@@ -97,6 +98,7 @@ contract L2Governor is
     function proposalNeedsQueuing(uint256 proposalId)
         public
         view
+        virtual
         override(GovernorUpgradeable, GovernorTimelockControlUpgradeable)
         returns (bool)
     {
@@ -106,6 +108,7 @@ contract L2Governor is
     function proposalThreshold()
         public
         view
+        virtual
         override(GovernorUpgradeable, GovernorSettingsUpgradeable)
         returns (uint256)
     {
@@ -120,6 +123,7 @@ contract L2Governor is
         bytes32 descriptionHash
     )
         internal
+        virtual
         override(GovernorUpgradeable, GovernorTimelockControlUpgradeable)
         returns (uint48)
     {
@@ -134,6 +138,7 @@ contract L2Governor is
         bytes32 descriptionHash
     )
         internal
+        virtual
         override(GovernorUpgradeable, GovernorTimelockControlUpgradeable)
     {
         super._executeOperations(proposalId, targets, values, calldatas, descriptionHash);
@@ -146,6 +151,7 @@ contract L2Governor is
         bytes32 descriptionHash
     )
         internal
+        virtual
         override(GovernorUpgradeable, GovernorTimelockControlUpgradeable)
         returns (uint256)
     {
@@ -155,6 +161,7 @@ contract L2Governor is
     function _executor()
         internal
         view
+        virtual
         override(GovernorUpgradeable, GovernorTimelockControlUpgradeable)
         returns (address)
     {
