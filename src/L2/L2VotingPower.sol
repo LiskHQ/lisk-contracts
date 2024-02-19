@@ -60,6 +60,14 @@ contract L2VotingPower is ERC20VotesUpgradeable, OwnableUpgradeable, UUPSUpgrade
     /// @param _newImplementation The address of the new contract implementation to which the proxy will be upgraded.
     function _authorizeUpgrade(address _newImplementation) internal virtual override onlyOwner { }
 
+    /// @notice Checks if the locking position is null.
+    /// @dev A locking position is null if all of its fields are zero.
+    /// @param position Locking position.
+    /// @return True if the locking position is null, false otherwise.
+    function isLockingPositionNull(LockingPosition memory position) internal pure virtual returns (bool) {
+        return position.amount == 0 && position.unlockingDuration == 0 && position.expDate == 0;
+    }
+
     /// @notice Calculates the voting power of a locking position.
     /// @param position Locking position.
     /// @return Voting power of the locking position.
@@ -79,24 +87,19 @@ contract L2VotingPower is ERC20VotesUpgradeable, OwnableUpgradeable, UUPSUpgrade
     /// @param positionAfter Locking position after the adjustment.
     function adjustVotingPower(
         address ownerAddress,
-        LockingPosition[] memory positionBefore,
-        LockingPosition[] memory positionAfter
+        LockingPosition memory positionBefore,
+        LockingPosition memory positionAfter
     )
         public
         virtual
         onlyStakingContract
     {
-        require(
-            positionBefore.length == 0 || positionBefore.length == 1, "L2VotingPower: invalid positionBefore length"
-        );
-        require(positionAfter.length == 0 || positionAfter.length == 1, "L2VotingPower: invalid positionAfter length");
-
-        if (positionAfter.length > 0) {
-            _mint(ownerAddress, votingPower(positionAfter[0]));
+        if (!isLockingPositionNull(positionAfter)) {
+            _mint(ownerAddress, votingPower(positionAfter));
         }
 
-        if (positionBefore.length > 0) {
-            _burn(ownerAddress, votingPower(positionBefore[0]));
+        if (!isLockingPositionNull(positionBefore)) {
+            _burn(ownerAddress, votingPower(positionBefore));
         }
     }
 
