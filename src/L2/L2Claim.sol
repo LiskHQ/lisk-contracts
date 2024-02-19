@@ -92,6 +92,7 @@ contract L2Claim is Initializable, OwnableUpgradeable, UUPSUpgradeable, ISemver 
     )
         internal
         pure
+        virtual
     {
         require(Ed25519.check(_pubKey, _r, _s, _message, bytes9(0)), _errorMessage);
     }
@@ -99,7 +100,7 @@ contract L2Claim is Initializable, OwnableUpgradeable, UUPSUpgradeable, ISemver 
     /// @notice Hashes a message twice using Keccak-256.
     /// @param  _message The message to be double-hashed.
     /// @return The double-hashed message.
-    function doubleKeccak256(bytes memory _message) internal pure returns (bytes32) {
+    function doubleKeccak256(bytes memory _message) internal pure virtual returns (bytes32) {
         return keccak256(bytes.concat(keccak256(_message)));
     }
 
@@ -119,6 +120,7 @@ contract L2Claim is Initializable, OwnableUpgradeable, UUPSUpgradeable, ISemver 
         address _recipient
     )
         internal
+        virtual
     {
         require(claimedTo[_lskAddress] == address(0), "L2Claim: already Claimed");
         require(MerkleProof.verify(_proof, merkleRoot, _leaf), "L2Claim: invalid Proof");
@@ -143,6 +145,7 @@ contract L2Claim is Initializable, OwnableUpgradeable, UUPSUpgradeable, ISemver 
         ED25519Signature calldata _sig
     )
         external
+        virtual
     {
         bytes20 lskAddress = bytes20(sha256(abi.encode(_pubKey)));
         bytes32 leaf = doubleKeccak256(abi.encode(lskAddress, _amount, uint32(0), new bytes32[](0), new bytes32[](0)));
@@ -168,6 +171,7 @@ contract L2Claim is Initializable, OwnableUpgradeable, UUPSUpgradeable, ISemver 
         ED25519Signature[] calldata _sigs
     )
         external
+        virtual
     {
         require(
             _sigs.length == _keys.optionalKeys.length + _keys.mandatoryKeys.length,
@@ -219,14 +223,14 @@ contract L2Claim is Initializable, OwnableUpgradeable, UUPSUpgradeable, ISemver 
     /// @notice Sets the DAO address which will receive all unclaimed LSK tokens. This function can only be called once
     ///         by the contract owner.
     /// @param _daoAddress The address of the DAO.
-    function setDAOAddress(address _daoAddress) public onlyOwner {
+    function setDAOAddress(address _daoAddress) public virtual onlyOwner {
         require(daoAddress == address(0), "L2Claim: DAO Address has already been set");
         daoAddress = _daoAddress;
     }
 
     /// @notice Allows the contract owner to recover unclaimed LSK tokens to the DAO address after the claim period is
     ///         over.
-    function recoverLSK() public onlyOwner {
+    function recoverLSK() public virtual onlyOwner {
         require(block.timestamp >= recoverPeriodTimestamp, "L2Claim: recover period not reached");
         l2LiskToken.transfer(daoAddress, l2LiskToken.balanceOf(address(this)));
 
@@ -236,5 +240,5 @@ contract L2Claim is Initializable, OwnableUpgradeable, UUPSUpgradeable, ISemver 
     /// @notice Ensures that only the owner can authorize a contract upgrade. It reverts if called by any address other
     ///         than the contract owner.
     /// @param _newImplementation The address of the new contract implementation to which the proxy will be upgraded.
-    function _authorizeUpgrade(address _newImplementation) internal override onlyOwner { }
+    function _authorizeUpgrade(address _newImplementation) internal virtual override onlyOwner { }
 }
