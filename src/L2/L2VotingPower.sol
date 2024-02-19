@@ -13,15 +13,11 @@ import { ISemver } from "../utils/ISemver.sol";
 /// @notice Struct for locking position.
 struct LockingPosition {
     uint256 amount;
-    uint256 unlockingDuration;
+    uint256 lockingDuration;
     uint256 expDate;
 }
 
 contract L2VotingPower is ERC20VotesUpgradeable, OwnableUpgradeable, UUPSUpgradeable, ISemver {
-    // TODO use this from staking contract
-    /// @notice The headstart value of stake weight as a linear function of remaining stake duration.
-    uint256 public constant HEADSTART = 150;
-
     /// @notice Address of the staking contract.
     address public stakingContractAddress;
 
@@ -65,7 +61,7 @@ contract L2VotingPower is ERC20VotesUpgradeable, OwnableUpgradeable, UUPSUpgrade
     /// @param position Locking position.
     /// @return True if the locking position is null, false otherwise.
     function isLockingPositionNull(LockingPosition memory position) internal pure virtual returns (bool) {
-        return position.amount == 0 && position.unlockingDuration == 0 && position.expDate == 0;
+        return position.amount == 0 && position.lockingDuration == 0 && position.expDate == 0;
     }
 
     /// @notice Calculates the voting power of a locking position.
@@ -74,8 +70,9 @@ contract L2VotingPower is ERC20VotesUpgradeable, OwnableUpgradeable, UUPSUpgrade
     function votingPower(LockingPosition memory position) internal pure virtual returns (uint256) {
         if (position.expDate == 0) {
             // locked
-            // return pos.amount * (1 + pos.unlockingDuration/365) but to avoid large rounding errors use the following
-            return position.amount + (position.amount * position.unlockingDuration) / 365;
+            // return pos.amount * (1 + pos.lockingDuration/365) but to avoid large rounding errors the following is
+            // used:
+            return position.amount + (position.amount * position.lockingDuration) / 365;
         } else {
             // unlocked
             return position.amount;

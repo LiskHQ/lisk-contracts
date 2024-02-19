@@ -4,6 +4,7 @@ pragma solidity 0.8.23;
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import { OwnableUpgradeable } from "@openzeppelin-upgradeable/contracts/access/OwnableUpgradeable.sol";
 import { IAccessControl } from "@openzeppelin/contracts/access/IAccessControl.sol";
+import { IERC20Errors } from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { Test, console } from "forge-std/Test.sol";
 import { L2VotingPower, LockingPosition } from "src/L2/L2VotingPower.sol";
@@ -127,6 +128,18 @@ contract L2VotingPowerTest is Test {
         l2VotingPower.adjustVotingPower(address(this), positionBefore, positionAfter);
     }
 
+    function test_AdjustVotingPower_TooLessVotingPower() public {
+        // decrease more tokens than available
+        LockingPosition memory positionBefore = LockingPosition(110, 110, 110);
+        LockingPosition memory positionAfter = LockingPosition(100, 100, 100);
+
+        // call it as staking contract
+        vm.prank(stakingContractAddress);
+        // revert with insufficient balance
+        vm.expectRevert(abi.encodeWithSelector(IERC20Errors.ERC20InsufficientBalance.selector, address(this), 0, 10));
+        l2VotingPower.adjustVotingPower(address(this), positionBefore, positionAfter);
+    }
+
     function test_AdjustVotingPower_NotStakingContract() public {
         LockingPosition memory positionBefore = LockingPosition(50, 50, 50);
         LockingPosition memory positionAfter = LockingPosition(100, 100, 100);
@@ -170,12 +183,13 @@ contract L2VotingPowerTest is Test {
     }
 
     function test_Clock() public {
-        assertEq(l2VotingPower.clock(), vm.getBlockNumber());
+        uint256 blockTimestamp = vm.getBlockTimestamp();
+        assertEq(l2VotingPower.clock(), blockTimestamp);
 
-        // increase block number
-        uint256 blockNumber = vm.getBlockNumber();
-        vm.roll(blockNumber);
-        assertEq(l2VotingPower.clock(), blockNumber);
+        // increase block timestamp
+        vm.warp(blockTimestamp + 1);
+
+        assertEq(l2VotingPower.clock(), blockTimestamp + 1);
     }
 
     function test_ClockMode() public {
