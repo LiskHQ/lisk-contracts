@@ -69,29 +69,58 @@ contract L2VotingPowerTest is Test {
         assertEq(l2VotingPower.version(), "1.0.0");
     }
 
+    function test_isLockingPositionNull() public {
+        L2VotingPowerHarness l2VotingPowerHarness = new L2VotingPowerHarness();
+
+        LockingPosition memory position = LockingPosition(0, 0, 0);
+        assert(l2VotingPowerHarness.exposedIsLockingPositionNull(position));
+
+        position = LockingPosition(50, 50, 50);
+        assert(!l2VotingPowerHarness.exposedIsLockingPositionNull(position));
+    }
+
     function test_VotingPower() public {
         L2VotingPowerHarness l2VotingPowerHarness = new L2VotingPowerHarness();
 
         LockingPosition memory position = LockingPosition(50, 50, 50);
-        assertEq(l2VotingPowerHarness.exposedVotingPower(position), 2500);
+        assertEq(l2VotingPowerHarness.exposedVotingPower(position), 50);
     }
 
     function test_VotingPower_ZeroExpDate() public {
         L2VotingPowerHarness l2VotingPowerHarness = new L2VotingPowerHarness();
 
         LockingPosition memory position = LockingPosition(50, 50, 0);
-        assertEq(l2VotingPowerHarness.exposedVotingPower(position), 10000);
+        assertEq(l2VotingPowerHarness.exposedVotingPower(position), 56);
     }
 
-    function test_AdjustVotingPower_EventsAreEmitted() public {
+    function test_AdjustVotingPower_DiffLargerThanZero() public {
+        // difference between positionBefore and positionAfter is larger than 0
         LockingPosition memory positionBefore = LockingPosition(50, 50, 50);
-        LockingPosition memory positionAfter = LockingPosition(100, 100, 100);
+        LockingPosition memory positionAfter = LockingPosition(200, 200, 200);
 
-        // check that events for mint and burn are emitted
+        // check that event for mint is emitted
         vm.expectEmit(true, true, true, true);
-        emit IERC20.Transfer(address(0), address(this), 6250);
+        emit IERC20.Transfer(address(0), address(this), 150);
+
+        // call it as staking contract
+        vm.prank(stakingContractAddress);
+        l2VotingPower.adjustVotingPower(address(this), positionBefore, positionAfter);
+    }
+
+    function test_AdjustVotingPower_DiffLessThanZero() public {
+        // mint some tokens that then can be burned
+        LockingPosition memory positionBefore = LockingPosition(0, 0, 0);
+        LockingPosition memory positionAfter = LockingPosition(500, 500, 500);
+        vm.prank(stakingContractAddress);
+        l2VotingPower.adjustVotingPower(address(this), positionBefore, positionAfter);
+
+        // difference between positionBefore and positionAfter is less than 0
+        positionBefore = LockingPosition(250, 250, 250);
+        positionAfter = LockingPosition(100, 100, 100);
+
+        // check that event for burn is emitted
         vm.expectEmit(true, true, true, true);
-        emit IERC20.Transfer(address(this), address(0), 2500);
+        emit IERC20.Transfer(address(this), address(0), 150);
 
         // call it as staking contract
         vm.prank(stakingContractAddress);
@@ -107,23 +136,13 @@ contract L2VotingPowerTest is Test {
         l2VotingPower.adjustVotingPower(address(this), positionBefore, positionAfter);
     }
 
-    function test_isLockingPositionNull() public {
-        L2VotingPowerHarness l2VotingPowerHarness = new L2VotingPowerHarness();
-
-        LockingPosition memory position = LockingPosition(0, 0, 0);
-        assert(l2VotingPowerHarness.exposedIsLockingPositionNull(position));
-
-        position = LockingPosition(50, 50, 50);
-        assert(!l2VotingPowerHarness.exposedIsLockingPositionNull(position));
-    }
-
     function test_AdjustVotingPower_PositionBeforeIsNull() public {
         LockingPosition memory positionBefore = LockingPosition(0, 0, 0);
         LockingPosition memory positionAfter = LockingPosition(100, 100, 100);
 
         // check that event for mint is emitted
         vm.expectEmit(true, true, true, true);
-        emit IERC20.Transfer(address(0), address(this), 6250);
+        emit IERC20.Transfer(address(0), address(this), 100);
 
         // call it as staking contract
         vm.prank(stakingContractAddress);
@@ -143,7 +162,7 @@ contract L2VotingPowerTest is Test {
 
         // check that event for burn is emitted
         vm.expectEmit(true, true, true, true);
-        emit IERC20.Transfer(address(this), address(0), 2500);
+        emit IERC20.Transfer(address(this), address(0), 50);
 
         // call it as staking contract
         vm.prank(stakingContractAddress);

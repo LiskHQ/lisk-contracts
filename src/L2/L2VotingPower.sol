@@ -72,16 +72,18 @@ contract L2VotingPower is ERC20VotesUpgradeable, OwnableUpgradeable, UUPSUpgrade
     /// @param position Locking position.
     /// @return Voting power of the locking position.
     function votingPower(LockingPosition memory position) internal pure virtual returns (uint256) {
-        uint256 powerDuringLocking = position.amount * (position.unlockingDuration + HEADSTART);
         if (position.expDate == 0) {
-            return powerDuringLocking;
+            // locked
+            // return pos.amount * (1 + pos.unlockingDuration/365) but to avoid large rounding errors use the following
+            return position.amount + (position.amount * position.unlockingDuration) / 365;
         } else {
-            return powerDuringLocking / 4;
+            // unlocked
+            return position.amount;
         }
     }
 
-    /// @notice Adjusts the voting power of the owner address. It mint the voting power of the new locking position and
-    ///         burns the voting power of the old locking position.
+    /// @notice Adjusts the voting power of the owner address. It calculates the difference between the voting power
+    ///         before and after the adjustment and mints or burns the difference.
     /// @param ownerAddress Address of the locking position owner.
     /// @param positionBefore Locking position before the adjustment.
     /// @param positionAfter Locking position after the adjustment.
@@ -94,12 +96,13 @@ contract L2VotingPower is ERC20VotesUpgradeable, OwnableUpgradeable, UUPSUpgrade
         virtual
         onlyStakingContract
     {
-        if (!isLockingPositionNull(positionAfter)) {
-            _mint(ownerAddress, votingPower(positionAfter));
-        }
+        uint256 votingPowerAfter = votingPower(positionAfter);
+        uint256 votingPowerBefore = votingPower(positionBefore);
 
-        if (!isLockingPositionNull(positionBefore)) {
-            _burn(ownerAddress, votingPower(positionBefore));
+        if (votingPowerAfter > votingPowerBefore) {
+            _mint(ownerAddress, votingPowerAfter - votingPowerBefore);
+        } else if (votingPowerAfter < votingPowerBefore) {
+            _burn(ownerAddress, votingPowerBefore - votingPowerAfter);
         }
     }
 
