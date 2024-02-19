@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.23;
 
+import { IVotes } from "@openzeppelin/contracts/governance/utils/IVotes.sol";
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import { OwnableUpgradeable } from "@openzeppelin-upgradeable/contracts/access/OwnableUpgradeable.sol";
 import { IAccessControl } from "@openzeppelin/contracts/access/IAccessControl.sol";
@@ -180,6 +181,42 @@ contract L2VotingPowerTest is Test {
         // call it as staking contract
         vm.prank(stakingContractAddress);
         l2VotingPower.adjustVotingPower(address(this), positionBefore, positionAfter);
+    }
+
+    function test_AdjustVotingPower_EventDelegateVotesChangedEmitted() public {
+        address alice = vm.addr(1);
+        address bob = vm.addr(2);
+
+        // expect DelegateChanged event to be emitted when alice delegates to bob
+        vm.expectEmit(true, true, true, true);
+        emit IVotes.DelegateChanged(alice, address(0), bob);
+
+        // call it as alice to delegate her votes to bob
+        vm.prank(alice);
+        l2VotingPower.delegate(bob);
+
+        LockingPosition memory positionBefore = LockingPosition(50, 50, 50);
+        LockingPosition memory positionAfter = LockingPosition(100, 100, 100);
+
+        // expect event DelegateVotesChanged to be emitted
+        vm.expectEmit(true, true, true, true);
+        emit IVotes.DelegateVotesChanged(bob, 0, 50);
+
+        // call it as staking contract
+        vm.prank(stakingContractAddress);
+        l2VotingPower.adjustVotingPower(alice, positionBefore, positionAfter);
+
+        // alice delegates some more votes to bob
+        positionBefore = LockingPosition(50, 50, 50);
+        positionAfter = LockingPosition(200, 200, 200);
+
+        // expect event DelegateVotesChanged to be emitted
+        vm.expectEmit(true, true, true, true);
+        emit IVotes.DelegateVotesChanged(bob, 50, 200);
+
+        // call it as staking contract
+        vm.prank(stakingContractAddress);
+        l2VotingPower.adjustVotingPower(alice, positionBefore, positionAfter);
     }
 
     function test_Clock() public {
