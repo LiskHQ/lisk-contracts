@@ -129,7 +129,7 @@ contract L2VotingPowerTest is Test {
         l2VotingPower.adjustVotingPower(address(this), positionBefore, positionAfter);
     }
 
-    function test_AdjustVotingPower_TooLessVotingPower() public {
+    function test_AdjustVotingPower_TooLittleVotingPower() public {
         // decrease more tokens than available
         LockingPosition memory positionBefore = LockingPosition(110, 110, 110);
         LockingPosition memory positionAfter = LockingPosition(100, 100, 100);
@@ -195,8 +195,8 @@ contract L2VotingPowerTest is Test {
         vm.prank(alice);
         l2VotingPower.delegate(bob);
 
-        LockingPosition memory positionBefore = LockingPosition(50, 50, 50);
-        LockingPosition memory positionAfter = LockingPosition(100, 100, 100);
+        LockingPosition memory positionBefore = LockingPosition(0, 0, 0);
+        LockingPosition memory positionAfter = LockingPosition(50, 50, 50);
 
         // expect event DelegateVotesChanged to be emitted
         vm.expectEmit(true, true, true, true);
@@ -227,8 +227,8 @@ contract L2VotingPowerTest is Test {
         vm.prank(alice);
         l2VotingPower.delegate(bob);
 
-        LockingPosition memory positionBefore = LockingPosition(50, 50, 50);
-        LockingPosition memory positionAfter = LockingPosition(100, 100, 100);
+        LockingPosition memory positionBefore = LockingPosition(0, 0, 0);
+        LockingPosition memory positionAfter = LockingPosition(50, 50, 50);
 
         // call it as staking contract
         vm.prank(stakingContractAddress);
@@ -246,9 +246,14 @@ contract L2VotingPowerTest is Test {
         // increase block timestamp
         vm.warp(blockTimestamp + 20);
 
+        // check that votes for bob still returns 50
+        for (uint256 i = 10; i < 20; i++) {
+            assertEq(l2VotingPower.getPastVotes(bob, blockTimestamp + i), 50);
+        }
+
         // decrease voting power of alice for 10
-        positionBefore = LockingPosition(100, 100, 100);
-        positionAfter = LockingPosition(90, 90, 90);
+        positionBefore = LockingPosition(50, 50, 50);
+        positionAfter = LockingPosition(40, 40, 40);
 
         // call it as staking contract
         vm.prank(stakingContractAddress);
