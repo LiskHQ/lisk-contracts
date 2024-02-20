@@ -219,6 +219,50 @@ contract L2VotingPowerTest is Test {
         l2VotingPower.adjustVotingPower(alice, positionBefore, positionAfter);
     }
 
+    function test_AdjustVotingPower_GetPastVotes() public {
+        address alice = vm.addr(1);
+        address bob = vm.addr(2);
+
+        // call it as alice to delegate her votes to bob
+        vm.prank(alice);
+        l2VotingPower.delegate(bob);
+
+        LockingPosition memory positionBefore = LockingPosition(50, 50, 50);
+        LockingPosition memory positionAfter = LockingPosition(100, 100, 100);
+
+        // call it as staking contract
+        vm.prank(stakingContractAddress);
+        l2VotingPower.adjustVotingPower(alice, positionBefore, positionAfter);
+
+        // increase block timestamp
+        uint256 blockTimestamp = vm.getBlockTimestamp();
+        vm.warp(blockTimestamp + 10);
+
+        // check past votes for bob for interval [blockTimestamp, blockTimestamp + 10)
+        for (uint256 i = 0; i < 10; i++) {
+            assertEq(l2VotingPower.getPastVotes(bob, blockTimestamp + i), 50);
+        }
+
+        // increase block timestamp
+        vm.warp(blockTimestamp + 20);
+
+        // decrease voting power of alice for 10
+        positionBefore = LockingPosition(100, 100, 100);
+        positionAfter = LockingPosition(90, 90, 90);
+
+        // call it as staking contract
+        vm.prank(stakingContractAddress);
+        l2VotingPower.adjustVotingPower(alice, positionBefore, positionAfter);
+
+        // increase block timestamp
+        vm.warp(blockTimestamp + 30);
+
+        // check past votes for bob for interval [blockTimestamp + 20, blockTimestamp + 30)
+        for (uint256 i = 20; i < 30; i++) {
+            assertEq(l2VotingPower.getPastVotes(bob, blockTimestamp + i), 40);
+        }
+    }
+
     function test_Clock() public {
         uint256 blockTimestamp = vm.getBlockTimestamp();
         assertEq(l2VotingPower.clock(), blockTimestamp);
