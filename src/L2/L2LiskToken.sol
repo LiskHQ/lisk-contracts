@@ -51,6 +51,11 @@ contract L2LiskToken is IOptimismMintableERC20, ERC20, ERC20Permit {
     /// @param amount  Amount of tokens burned.
     event Burn(address indexed account, uint256 amount);
 
+    /// @notice Emitted whenever the Standard bridge address is changed.
+    /// @param oldBridgeAddr Address of the old Standard bridge.
+    /// @param newBridgeAddr Address of the new Standard bridge.
+    event BridgeAddressChanged(address indexed oldBridgeAddr, address indexed newBridgeAddr);
+
     /// @notice A modifier that only allows the bridge to call.
     modifier onlyBridge() {
         require(msg.sender == BRIDGE, "L2LiskToken: only bridge can mint or burn");
@@ -60,6 +65,7 @@ contract L2LiskToken is IOptimismMintableERC20, ERC20, ERC20Permit {
     /// @notice Constructs the L2LiskToken contract.
     /// @param remoteTokenAddr Address of the corresponding L1LiskToken.
     constructor(address remoteTokenAddr) ERC20(NAME, SYMBOL) ERC20Permit(NAME) {
+        require(remoteTokenAddr != address(0), "L2LiskToken: remoteTokenAddr can not be zero");
         REMOTE_TOKEN = remoteTokenAddr;
         initializer = tx.origin;
     }
@@ -68,8 +74,10 @@ contract L2LiskToken is IOptimismMintableERC20, ERC20, ERC20Permit {
     /// @param bridgeAddr      Address of the L2 standard bridge.
     function initialize(address bridgeAddr) public {
         require(msg.sender == initializer, "L2LiskToken: only initializer can initialize this contract");
+        require(bridgeAddr != address(0), "L2LiskToken: bridgeAddr can not be zero");
         require(BRIDGE == address(0), "L2LiskToken: already initialized");
         BRIDGE = bridgeAddr;
+        emit BridgeAddressChanged(address(0), bridgeAddr);
     }
 
     /// @notice Mint function callable only by the bridge, to increase the token balance.

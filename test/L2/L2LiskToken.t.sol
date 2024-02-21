@@ -39,6 +39,11 @@ contract L2LiskTokenTest is Test {
         salt = keccak256(bytes("test_salt"));
     }
 
+    function test_ConstructorFail_ZeroRemoteTokenAddress() public {
+        vm.expectRevert("L2LiskToken: remoteTokenAddr can not be zero");
+        new L2LiskToken(address(0));
+    }
+
     function test_Initialize() public {
         assertEq(l2LiskToken.name(), "Lisk");
         assertEq(l2LiskToken.symbol(), "LSK");
@@ -52,6 +57,21 @@ contract L2LiskTokenTest is Test {
 
         // check that an IOptimismMintableERC20 interface is supported
         assertEq(l2LiskToken.supportsInterface(type(IOptimismMintableERC20).interfaceId), true);
+    }
+
+    function test_Initialize_BridgeAddressChangedEmitted() public {
+        address newRemoteToken = vm.addr(uint256(bytes32("newRemoteToken")));
+        vm.prank(address(this), address(this));
+        L2LiskToken l2LiskTokenNew = new L2LiskToken{ salt: salt }(newRemoteToken);
+        vm.stopPrank();
+
+        // check that the BridgeAddressChanged event is emitted
+        vm.expectEmit(true, true, true, true);
+        emit L2LiskToken.BridgeAddressChanged(address(0), bridge);
+
+        vm.prank(address(this), address(this));
+        l2LiskTokenNew.initialize(bridge);
+        vm.stopPrank();
     }
 
     function test_Initialize_ValidInitializer() public {
@@ -81,6 +101,17 @@ contract L2LiskTokenTest is Test {
     function test_InitializeFail_AlreadyInitialized() public {
         vm.expectRevert("L2LiskToken: already initialized");
         l2LiskToken.initialize(bridge);
+    }
+
+    function test_InitializeFail_ZeroBridgeAddress() public {
+        // initialize the contract being alice
+        vm.prank(alice, alice);
+        L2LiskToken l2LiskTokenNew = new L2LiskToken{ salt: salt }(remoteToken);
+
+        // try to initialize the contract with zero bridge address
+        vm.prank(alice);
+        vm.expectRevert("L2LiskToken: bridgeAddr can not be zero");
+        l2LiskTokenNew.initialize(address(0));
     }
 
     function test_UnifiedTokenAddress() public {
