@@ -246,11 +246,6 @@ contract L2VotingPowerTest is Test {
         // increase block timestamp
         vm.warp(blockTimestamp + 20);
 
-        // check that votes for bob still returns 50
-        for (uint256 i = 10; i < 20; i++) {
-            assertEq(l2VotingPower.getPastVotes(bob, blockTimestamp + i), 50);
-        }
-
         // decrease voting power of alice for 10
         positionBefore = LockingPosition(50, 50, 50);
         positionAfter = LockingPosition(40, 40, 40);
@@ -265,6 +260,11 @@ contract L2VotingPowerTest is Test {
         // check past votes for bob for interval [blockTimestamp + 20, blockTimestamp + 30)
         for (uint256 i = 20; i < 30; i++) {
             assertEq(l2VotingPower.getPastVotes(bob, blockTimestamp + i), 40);
+        }
+
+        // check that past votes for bob for interval [blockTimestamp, blockTimestamp + 20) still returns 50
+        for (uint256 i = 0; i < 20; i++) {
+            assertEq(l2VotingPower.getPastVotes(bob, blockTimestamp + i), 50);
         }
     }
 
