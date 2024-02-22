@@ -125,9 +125,15 @@ contract L2Claim is Initializable, OwnableUpgradeable, UUPSUpgradeable, ISemver 
         require(claimedTo[_lskAddress] == address(0), "L2Claim: already Claimed");
         require(MerkleProof.verify(_proof, merkleRoot, _leaf), "L2Claim: invalid Proof");
 
+        claimedTo[_lskAddress] = _recipient;
+
+        // L2LiskToken is using openzeppelin ERC20, which the transfer is always checked and has no threat of
+        // reentrancy.
+        // slither-disable-next-line reentrancy-no-eth
+        // slither-disable-next-line unchecked-transfer
         l2LiskToken.transfer(_recipient, _amount * LSK_MULTIPLIER);
 
-        claimedTo[_lskAddress] = _recipient;
+        // slither-disable-next-line reentrancy-events
         emit LSKClaimed(_lskAddress, _recipient, _amount);
     }
 
@@ -225,15 +231,24 @@ contract L2Claim is Initializable, OwnableUpgradeable, UUPSUpgradeable, ISemver 
     /// @param _daoAddress The address of the DAO.
     function setDAOAddress(address _daoAddress) public virtual onlyOwner {
         require(daoAddress == address(0), "L2Claim: DAO Address has already been set");
+        require(_daoAddress != address(0), "L2Claim: DAO Address cannot be zero");
         daoAddress = _daoAddress;
     }
 
     /// @notice Allows the contract owner to recover unclaimed LSK tokens to the DAO address after the claim period is
     ///         over.
     function recoverLSK() public virtual onlyOwner {
+        // Use of timestamp is intentional and safe as the period would stretch out by years.
+        // slither-disable-next-line timestamp
         require(block.timestamp >= recoverPeriodTimestamp, "L2Claim: recover period not reached");
+
+        // L2LiskToken is using openzeppelin ERC20, which the transfer is always checked and has no threat of
+        // reentrancy.
+        // slither-disable-next-line reentrancy-no-eth
+        // slither-disable-next-line unchecked-transfer
         l2LiskToken.transfer(daoAddress, l2LiskToken.balanceOf(address(this)));
 
+        // slither-disable-next-line reentrancy-events
         emit ClaimingEnded();
     }
 

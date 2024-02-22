@@ -508,6 +508,11 @@ contract L2ClaimTest is Test {
         l2Claim.setDAOAddress(daoAddress);
     }
 
+    function test_SetDAOAddress_RevertWhenSettingDAOAddressToZero() public {
+        vm.expectRevert("L2Claim: DAO Address cannot be zero");
+        l2Claim.setDAOAddress(address(0));
+    }
+
     function test_SetDAOAddress_RevertWhenDAOAddressAlreadyBeenSet() public {
         l2Claim.setDAOAddress(daoAddress);
 
