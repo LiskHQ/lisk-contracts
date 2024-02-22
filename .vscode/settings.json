@@ -6,5 +6,7 @@
   "solidity.packageDefaultDependenciesDirectory": "lib",
   "[solidity]": {
     "editor.defaultFormatter": "JuanBlanco.solidity"
-  }
+  },
+  "slither.solcPath": "",
+  "slither.hiddenDetectors": []
 }
