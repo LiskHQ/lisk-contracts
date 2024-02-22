@@ -10,3 +10,6 @@ broadcast/
 
 # Mac OS files
 .DS_Store
+
+# Slither files
+slither-results.json
