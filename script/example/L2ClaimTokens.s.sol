@@ -35,6 +35,9 @@ contract L2ClaimTokensScript is Script {
     /// @notice The contract address created by default mnemonic in Anvil/Ganache when nonce=0.
     address public constant destination = address(0x34A1D3fff3958843C43aD80F30b94c510645C316);
 
+    /// @notice 1 Beddows in LSK Chain = 10 * 10 Beddows in L2 Chain
+    uint256 public constant MULTIPLIER = 10 ** 10;
+
     function getSignature(uint256 _index) internal view returns (Signature memory) {
         return abi.decode(signatureJson.parseRaw(string(abi.encodePacked(".[", vm.toString(_index), "]"))), (Signature));
     }
@@ -81,7 +84,8 @@ contract L2ClaimTokensScript is Script {
     /// @notice This function submit request to `claimRegularAccount` and `claimMultisigAccount` once to demonstrate
     /// claiming process of both regular account and multisig account
     function run() public {
-        console2.log("Destination LSK Balance before Claim:", lsk.balanceOf(destination), "Beddows");
+        uint256 previousBalance = lsk.balanceOf(destination);
+        console2.log("Destination LSK Balance before Claim:", previousBalance, "Beddows");
 
         // Claiming Regular Account
         MerkleTreeLeaf memory regularAccountLeaf = getMerkleLeaves().leaves[0];
@@ -98,6 +102,7 @@ contract L2ClaimTokensScript is Script {
             destination,
             ED25519Signature(regularAccountSignature.sigs[0].r, regularAccountSignature.sigs[0].s)
         );
+        assert(previousBalance + regularAccountLeaf.balanceBeddows * MULTIPLIER == lsk.balanceOf(destination));
         console2.log("Destination LSK Balance After Regular Account Claim: %s Beddows", lsk.balanceOf(destination));
 
         // Claiming Multisig Account
@@ -125,6 +130,7 @@ contract L2ClaimTokensScript is Script {
                 ED25519Signature(multisigAccountSignature.sigs[i].r, multisigAccountSignature.sigs[i].s);
         }
 
+        previousBalance = lsk.balanceOf(destination);
         l2Claim.claimMultisigAccount(
             multisigAccountLeaf.proof,
             bytes20(multisigAccountLeaf.b32Address << 96),
@@ -133,6 +139,7 @@ contract L2ClaimTokensScript is Script {
             destination,
             ed25519Signatures
         );
+        assert(previousBalance + multisigAccountLeaf.balanceBeddows * MULTIPLIER == lsk.balanceOf(destination));
         console2.log("Destination LSK Balance After Multisig Account Claim: %s Beddows", lsk.balanceOf(destination));
     }
 }
