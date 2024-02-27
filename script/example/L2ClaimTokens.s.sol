@@ -11,7 +11,9 @@ import { MockERC20 } from "../../test/mock/MockERC20.sol";
 import "script/Utils.sol";
 
 /// @title L2ClaimTokensScript - L2 Claim Lisk tokens script
-/// @notice This contract is used to claim L2 Lisk tokens from the L2 Claim contract for a demonstration purpose.
+/// @notice This contract is used to claim L2 Lisk tokens from the L2 Claim contract for a demonstration purpose. This
+/// contract works independently without interacting with previously-deployed contracts and only works when `NETWORK` is
+/// set as `devnet`.
 contract L2ClaimTokensScript is Script {
     using stdJson for string;
 
@@ -48,15 +50,15 @@ contract L2ClaimTokensScript is Script {
             "L2ClaimTokensScript: this script is only available in `devnet`."
         );
 
-        /// @notice Get Merkle Root from /devnet/merkle-root.json
+        // Get Merkle Root from /devnet/merkle-root.json
         Utils.MerkleRoot memory merkleRoot = utils.readMerkleRootFile();
         console2.log("MerkleRoot: %s", vm.toString(merkleRoot.merkleRoot));
 
-        /// @notice The L2 Token is a Bridge token with zero totalSupply at the start. In this example script, a ERC20
-        /// is deployed to focus on the Claim Process.
+        // The L2 Token is a Bridge token with zero totalSupply at the start. In this example script, a ERC20 is
+        // deployed to focus on the Claim Process.
         lsk = new MockERC20(10000 ether);
 
-        /// @notice Since another "LSK" token is used, a new L2Claim also need to be deployed
+        // Since another "LSK" token is used, a new L2Claim also need to be deployed
         L2Claim l2ClaimImplementation = new L2Claim();
         ERC1967Proxy l2ClaimProxy = new ERC1967Proxy(
             address(l2ClaimImplementation),
@@ -70,6 +72,7 @@ contract L2ClaimTokensScript is Script {
         l2Claim = L2Claim(address(l2ClaimProxy));
         lsk.transfer(address(l2Claim), lsk.balanceOf(address(this)));
 
+        // Read devnet Json files
         string memory rootPath = string.concat(vm.projectRoot(), "/test/L2/data");
         signatureJson = vm.readFile(string.concat(rootPath, "/signatures.json"));
         merkleLeavesJson = vm.readFile(string.concat(rootPath, "/merkleLeaves.json"));
@@ -95,7 +98,7 @@ contract L2ClaimTokensScript is Script {
             destination,
             ED25519Signature(regularAccountSignature.sigs[0].r, regularAccountSignature.sigs[0].s)
         );
-        console2.log("Destination LSK Balance After Regular Account Claim:", lsk.balanceOf(destination), "Beddows");
+        console2.log("Destination LSK Balance After Regular Account Claim: %s Beddows", lsk.balanceOf(destination));
 
         // Claiming Multisig Account
         uint256 multisigAccountIndex = 0;
@@ -130,6 +133,6 @@ contract L2ClaimTokensScript is Script {
             destination,
             ed25519Signatures
         );
-        console2.log("Destination LSK Balance After Multisig Account Claim:", lsk.balanceOf(destination), "Beddows");
+        console2.log("Destination LSK Balance After Multisig Account Claim: %s Beddows", lsk.balanceOf(destination));
     }
 }
