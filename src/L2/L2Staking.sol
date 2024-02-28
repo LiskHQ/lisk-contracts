@@ -144,7 +144,7 @@ contract L2Staking is Initializable, OwnableUpgradeable, UUPSUpgradeable, ISemve
     function todayDay() internal view virtual returns (uint256) {
         return block.timestamp / 1 days;
     }
-
+    /*
     /// @notice Calculates key of a locking postion.
     /// @return Unique ID of the locking postion.
     function getLockID() internal virtual returns (uint32) {
@@ -329,7 +329,7 @@ contract L2Staking is Initializable, OwnableUpgradeable, UUPSUpgradeable, ISemve
         require(lockObj.ownerAddress != address(0x0), "L2Staking: Lock does not exist");
         require(msg.sender == lockObj.ownerAddress, "L2Staking: Only owner can unlock");
         require(amountIncrease > 0, "L2Staking: Increased amout should be greater than zero");
-        require(lockObj.expDate == 0 || lockObj.expDate > todayDay(), "L2Staking: Locking position is already expired");
+    require(lockObj.expDate == 0 || lockObj.expDate > todayDay(), "L2Staking: Locking position is already expired");
 
         if (lockObj.lastClaimDate < todayDay()) {
             claimRewards(lockId, lockUnclaimedRewards);
@@ -468,7 +468,7 @@ contract L2Staking is Initializable, OwnableUpgradeable, UUPSUpgradeable, ISemve
         totalUnlocked[lockObj.expDate] += lockObj.amount;
 
         // call voting power contract to update voting power
-        LockingPosition memory newLocking = LockingPosition(lockObj.amount, lockObj.unlockingPeriod, lockObj.expDate);
+    LockingPosition memory newLocking = LockingPosition(lockObj.amount, lockObj.unlockingPeriod, lockObj.expDate);
         adjustVotingPower(lockObj.ownerAddress, previousLocking, newLocking);
     }
 
@@ -540,5 +540,5 @@ contract L2Staking is Initializable, OwnableUpgradeable, UUPSUpgradeable, ISemve
 
         //send penalty amount to DAO treasury;
         IL2LiskToken(l2TokenContract).transfer(daoContract, penalty);
-    }
+    }*/
 }

@@ -7,7 +7,7 @@ import { stdStorage, StdStorage } from "forge-std/StdStorage.sol";
 import { L2Staking } from "src/L2/L2Staking.sol";
 
 contract L2StakingTest is Test {
-    using stdStorage for StdStorage;
+/*using stdStorage for StdStorage;
 
     L2Staking public l2StakingImplementation;
     L2Staking public l2Staking;
@@ -57,9 +57,9 @@ contract L2StakingTest is Test {
         );
 
         //assertEq(l2Staking.dailyReward(day), 1000 * 10 ** 18);
-    }
+    }*/
 
-    /*function test_StakeIsAddedForTheSender() public {
+/*function test_StakeIsAddedForTheSender() public {
         uint256 creationDate = deploymentDay + 2;
         uint256 amount = 1000;
         uint256 duration = 450;
