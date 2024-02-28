@@ -1,30 +1,70 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.23;
 
+import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import { Test, console2 } from "forge-std/Test.sol";
+import { stdStorage, StdStorage } from "forge-std/StdStorage.sol";
 import { L2Staking } from "src/L2/L2Staking.sol";
 
-/*contract L2StakingTest is Test {
-    L2Staking l2Staking;
+contract L2StakingTest is Test {
+    using stdStorage for StdStorage;
 
-    uint256 private constant HEADSTART = 150;
+    L2Staking public l2StakingImplementation;
+    L2Staking public l2Staking;
+
+    uint256 private constant OFFSET = 150;
 
     uint256 deploymentDay = 19740;
 
+    address l2TokenContractAddress = address(0x0);
+    address daoContractAddress = address(0x0);
+
     function setUp() public {
         skip(deploymentDay * 1 days);
-        l2Staking = new L2Staking();
 
-        assertEq(l2Staking.HEADSTART(), HEADSTART);
+        // deploy L2Staking implementation contract
+        l2StakingImplementation = new L2Staking();
+
+        // deploy L2Staking contract via proxy and initialize it at the same time
+        l2Staking = L2Staking(
+            address(
+                new ERC1967Proxy(
+                    address(l2StakingImplementation),
+                    abi.encodeWithSelector(l2Staking.initialize.selector, l2TokenContractAddress, daoContractAddress)
+                )
+            )
+        );
+
+        assertEq(l2Staking.OFFSET(), OFFSET);
         assertEq(l2Staking.lastTxDate(), deploymentDay);
     }
 
-    function test_StakeIsAddedForTheSender() public {
+    function test_DailyReward_RewardIsUsed() public {
+        uint256 day = 123;
+        // set totalAmountsLocked for a specific day bigger than yearly rewards amount
+        stdstore.target(address(l2Staking)).sig(l2Staking.totalAmountsLocked.selector).with_key(day).checked_write(
+            l2Staking.BASE_DAILY_REWARD() + 1 * 10 ** 18
+        );
+
+        //assertEq(l2Staking.dailyReward(day), 16438356164383561643835);
+    }
+
+    function test_DailyReward_CapIsUsed() public {
+        uint256 day = 123;
+        uint256 reward = 365000 * 10 ** 18;
+        stdstore.target(address(l2Staking)).sig(l2Staking.totalAmountsLocked.selector).with_key(day).checked_write(
+            reward
+        );
+
+        //assertEq(l2Staking.dailyReward(day), 1000 * 10 ** 18);
+    }
+
+    /*function test_StakeIsAddedForTheSender() public {
         uint256 creationDate = deploymentDay + 2;
         uint256 amount = 1000;
         uint256 duration = 450;
         bool autoExtend = true;
-        uint256 creationTotalWeight = amount * (duration + HEADSTART);
+        uint256 creationTotalWeight = amount * (duration + OFFSET);
 
         skip(2 days);
 
@@ -37,6 +77,12 @@ import { L2Staking } from "src/L2/L2Staking.sol";
             abi.encode(stakes[0]),
             abi.encode(
                 Stake(address(0x0), amount, creationDate + duration, creationDate, duration, creationTotalWeight)
+                Stake(address(0x0), amount, creationDate + duration, creationDate, duration, creationTotalWeight)
+            )
+            abi.encode(
+                L2Staking.Stake(
+                    address(0x0), amount, creationDate + duration, creationDate, duration, creationTotalWeight
+                )
             )
         );
 
@@ -46,7 +92,7 @@ import { L2Staking } from "src/L2/L2Staking.sol";
         assertEq(stakes.length, 2);
         assertEq(
             abi.encode(stakes[1]),
-            abi.encode(Stake(address(0x0), amount, creationDate + duration, creationDate, 0, creationTotalWeight * 2))
+    abi.encode(Stake(address(0x0), amount, creationDate + duration, creationDate, 0, creationTotalWeight * 2))
         );
     }
 
@@ -54,14 +100,14 @@ import { L2Staking } from "src/L2/L2Staking.sol";
         uint256 amount = 1000;
         uint256 duration = 450;
         bool autoExtend = false;
-        uint256 totalWeight = amount * (duration + HEADSTART);
+        uint256 totalWeight = amount * (duration + OFFSET);
 
         l2Staking.createStake(amount, duration, autoExtend);
 
         assertEq(l2Staking.totalWeight(), totalWeight);
 
         duration = 150;
-        totalWeight += (amount * (duration + HEADSTART));
+        totalWeight += (amount * (duration + OFFSET));
         l2Staking.createStake(amount, duration, autoExtend);
 
         assertEq(l2Staking.totalWeight(), totalWeight);
@@ -151,7 +197,7 @@ import { L2Staking } from "src/L2/L2Staking.sol";
         uint256 day = deploymentDay + 1;
         uint256 amount = 1000;
         uint256 duration = 450;
-        uint256 creationTotalWeight = amount * (duration + HEADSTART) * 2;
+        uint256 creationTotalWeight = amount * (duration + OFFSET) * 2;
 
         skip(1 days);
 
@@ -164,7 +210,7 @@ import { L2Staking } from "src/L2/L2Staking.sol";
         skip(2 days);
 
         duration = 150;
-        creationTotalWeight += amount * (duration + HEADSTART);
+        creationTotalWeight += amount * (duration + OFFSET);
 
         l2Staking.createStake(amount, duration, false);
 
@@ -175,7 +221,7 @@ import { L2Staking } from "src/L2/L2Staking.sol";
         uint256 day = deploymentDay + 1;
         uint256 amount = 1000;
         uint256 duration = 450;
-        uint256 creationTotalWeight = amount * (duration + HEADSTART);
+        uint256 creationTotalWeight = amount * (duration + OFFSET);
 
         skip(1 days);
 
@@ -219,5 +265,5 @@ import { L2Staking } from "src/L2/L2Staking.sol";
         l2Staking.createStake(l2Staking.YEARLY_REWARDS_AMOUNT(), 150, false);
 
         assertEq(l2Staking.dailyReward(deploymentDay), l2Staking.YEARLY_REWARDS_AMOUNT() / 365);
-    }
-}*/
+    }*/
+}
