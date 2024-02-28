@@ -15,7 +15,6 @@ struct LockingPosition {
     uint256 amount;
     uint256 expDate;
     uint256 pausedLockingDuration;
-    uint256 lastClaimDate;
 }
 
 contract L2LockingPosition is Initializable, OwnableUpgradeable, UUPSUpgradeable, ERC721EnumerableUpgradeable {
@@ -90,12 +89,8 @@ contract L2LockingPosition is Initializable, OwnableUpgradeable, UUPSUpgradeable
     {
         _mint(account, newPositionId);
 
-        lockingPositions[newPositionId] = LockingPosition({
-            amount: _amount,
-            expDate: _expDate,
-            pausedLockingDuration: _pausedLockingDuration,
-            lastClaimDate: 0
-        });
+        lockingPositions[newPositionId] =
+            LockingPosition({ amount: _amount, expDate: _expDate, pausedLockingDuration: _pausedLockingDuration });
 
         newPositionId++;
     }

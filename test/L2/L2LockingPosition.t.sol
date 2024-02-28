@@ -78,7 +78,6 @@ contract L2LockingPositionTest is Test {
         assertEq(l2LockingPosition.getLockingPosition(1).amount, 100 * 10 ** 18);
         assertEq(l2LockingPosition.getLockingPosition(1).expDate, 365);
         assertEq(l2LockingPosition.getLockingPosition(1).pausedLockingDuration, 0);
-        assertEq(l2LockingPosition.getLockingPosition(1).lastClaimDate, 0);
     }
 
     function test_CreateLockingPosition_OnlyStakingCanCall() public {
