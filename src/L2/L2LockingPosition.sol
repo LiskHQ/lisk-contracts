@@ -106,10 +106,17 @@ contract L2LockingPosition is Initializable, OwnableUpgradeable, UUPSUpgradeable
         virtual
         onlyStaking
     {
+        require(account != address(0), "L2LockingPosition: account address is required");
+        require(_amount > 0, "L2LockingPosition: amount should be greater than 0");
+
         _mint(account, newPositionId);
 
         lockingPositions[newPositionId] =
             LockingPosition({ amount: _amount, expDate: _expDate, pausedLockingDuration: _pausedLockingDuration });
+
+        IL2VotingPower(powerVotingContract).adjustVotingPower(
+            account, LockingPosition(0, 0, 0), lockingPositions[newPositionId]
+        );
 
         newPositionId++;
     }
@@ -127,12 +134,23 @@ contract L2LockingPosition is Initializable, OwnableUpgradeable, UUPSUpgradeable
         require(
             !isLockingPositionNull(lockingPositions[positionId]), "L2LockingPosition: locking position does not exist"
         );
+
+        LockingPosition memory oldPosition = lockingPositions[positionId];
         lockingPositions[positionId] =
             LockingPosition({ amount: _amount, expDate: _expDate, pausedLockingDuration: _pausedLockingDuration });
+
+        IL2VotingPower(powerVotingContract).adjustVotingPower(
+            ownerOf(positionId), oldPosition, lockingPositions[positionId]
+        );
     }
 
     function removeLockingPosition(uint256 positionId) public virtual onlyStaking {
         _burn(positionId);
+
+        IL2VotingPower(powerVotingContract).adjustVotingPower(
+            ownerOf(positionId), lockingPositions[positionId], LockingPosition(0, 0, 0)
+        );
+
         delete lockingPositions[positionId];
     }
 
