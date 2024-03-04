@@ -9,6 +9,17 @@ import { ERC721Upgradeable } from "@openzeppelin-upgradeable/contracts/token/ERC
 import { ERC721EnumerableUpgradeable } from
     "@openzeppelin-upgradeable/contracts/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
 
+/// @title IL2VotingPower
+/// @notice Interface for the L2VotingPower contract.
+interface IL2VotingPower {
+    function adjustVotingPower(
+        address ownerAddress,
+        LockingPosition memory positionBefore,
+        LockingPosition memory positionAfter
+    )
+        external;
+}
+
 /// @title LockingPosition
 /// @notice Struct for locking position.
 struct LockingPosition {
@@ -20,25 +31,33 @@ struct LockingPosition {
 contract L2LockingPosition is Initializable, OwnableUpgradeable, UUPSUpgradeable, ERC721EnumerableUpgradeable {
     uint256 private newPositionId;
 
-    mapping(uint256 => LockingPosition) private lockingPositions;
+    mapping(uint256 => LockingPosition) public lockingPositions;
 
     address public stakingContract;
+
+    address public powerVotingContract;
 
     modifier onlyStaking() {
         require(msg.sender == stakingContract, "L2LockingPosition: only Staking contract can call this function");
         _;
     }
 
-    function initialize(address _stakingContract) public initializer {
-        require(_stakingContract != address(0), "L2LockingPosition: staking contract address is required");
+    function initialize(address _stakingContract, address _powerVotingContract) public initializer {
+        require(_stakingContract != address(0), "L2LockingPosition: Staking contract address is required");
+        require(_powerVotingContract != address(0), "L2LockingPosition: Power Voting contract address is required");
         __Ownable_init(msg.sender);
         __UUPSUpgradeable_init();
         __ERC721_init("Lisk Locking Position", "LLP");
         newPositionId = 1;
         stakingContract = _stakingContract;
+        powerVotingContract = _powerVotingContract;
     }
 
     function _authorizeUpgrade(address) internal virtual override onlyOwner { }
+
+    function isLockingPositionNull(LockingPosition memory position) internal view virtual returns (bool) {
+        return position.amount == 0 && position.expDate == 0 && position.pausedLockingDuration == 0;
+    }
 
     function transferFrom(
         address from,
@@ -52,10 +71,10 @@ contract L2LockingPosition is Initializable, OwnableUpgradeable, UUPSUpgradeable
         super.transferFrom(from, to, tokenId);
 
         // remove voting power for an old owner
-        // TODO: remove voting power for an old owner
+        IL2VotingPower(powerVotingContract).adjustVotingPower(from, lockingPositions[tokenId], LockingPosition(0, 0, 0));
 
-        // add voting power for a new owner
-        // TODO: add voting power for a new owner
+        // add voting power to a new owner
+        IL2VotingPower(powerVotingContract).adjustVotingPower(to, LockingPosition(0, 0, 0), lockingPositions[tokenId]);
     }
 
     function safeTransferFrom(
@@ -71,10 +90,10 @@ contract L2LockingPosition is Initializable, OwnableUpgradeable, UUPSUpgradeable
         super.safeTransferFrom(from, to, tokenId, data);
 
         // remove voting power for an old owner
-        // TODO: remove voting power for an old owner
+        IL2VotingPower(powerVotingContract).adjustVotingPower(from, lockingPositions[tokenId], LockingPosition(0, 0, 0));
 
-        // add voting power for a new owner
-        // TODO: add voting power for a new owner
+        // add voting power to a new owner
+        IL2VotingPower(powerVotingContract).adjustVotingPower(to, LockingPosition(0, 0, 0), lockingPositions[tokenId]);
     }
 
     function createLockingPosition(
@@ -93,6 +112,23 @@ contract L2LockingPosition is Initializable, OwnableUpgradeable, UUPSUpgradeable
             LockingPosition({ amount: _amount, expDate: _expDate, pausedLockingDuration: _pausedLockingDuration });
 
         newPositionId++;
+    }
+
+    function updateLockingPosition(
+        uint256 positionId,
+        uint256 _amount,
+        uint256 _expDate,
+        uint256 _pausedLockingDuration
+    )
+        public
+        virtual
+        onlyStaking
+    {
+        require(
+            !isLockingPositionNull(lockingPositions[positionId]), "L2LockingPosition: locking position does not exist"
+        );
+        lockingPositions[positionId] =
+            LockingPosition({ amount: _amount, expDate: _expDate, pausedLockingDuration: _pausedLockingDuration });
     }
 
     function removeLockingPosition(uint256 positionId) public virtual onlyStaking {

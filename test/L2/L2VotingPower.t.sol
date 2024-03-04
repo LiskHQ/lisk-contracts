@@ -112,7 +112,7 @@ contract L2VotingPowerTest is Test {
     function test_VotingPower_PausedLockingDurationHigherThanZero() public {
         L2VotingPowerHarness l2VotingPowerHarness = new L2VotingPowerHarness();
 
-        LockingPosition memory position = LockingPosition(100, 50, 0);
+        LockingPosition memory position = LockingPosition(100, 0, 50);
         assertEq(l2VotingPowerHarness.exposedVotingPower(position), 113);
     }
 
