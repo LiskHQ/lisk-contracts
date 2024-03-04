@@ -6,16 +6,8 @@ import { ERC20VotesUpgradeable } from
 import { ERC20Upgradeable } from "@openzeppelin-upgradeable/contracts/token/ERC20/ERC20Upgradeable.sol";
 import { Ownable2StepUpgradeable } from "@openzeppelin-upgradeable/contracts/access/Ownable2StepUpgradeable.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
+import { LockingPosition } from "./L2LockingPosition.sol";
 import { ISemver } from "../utils/ISemver.sol";
-
-// TODO use this from staking contract
-/// @title LockingPosition
-/// @notice Struct for locking position.
-struct LockingPosition {
-    uint256 amount;
-    uint256 pausedLockingDuration;
-    uint256 expDate;
-}
 
 contract L2VotingPower is ERC20VotesUpgradeable, Ownable2StepUpgradeable, UUPSUpgradeable, ISemver {
     /// @notice Address of the staking contract.
