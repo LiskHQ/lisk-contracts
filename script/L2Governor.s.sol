@@ -80,6 +80,7 @@ contract L2GovernorScript is Script {
         assert(l2Governor.votingPeriod() == 604800);
         assert(l2Governor.proposalThreshold() == 2e18);
         assert(l2Governor.timelock() == address(timelock));
+        assert(l2Governor.quorum(0) == 50000e18);
         assert(address(l2Governor.token()) == address(votingPower));
         assert(l2Governor.owner() == vm.addr(deployerPrivateKey));
 
