@@ -113,7 +113,7 @@ contract Utils is Script {
         vm.serializeAddress(json, "L2Governor", cfg.L2Governor);
         vm.serializeAddress(json, "L2GovernorImplementation", cfg.L2GovernorImplementation);
         vm.serializeAddress(json, "L2LiskToken", cfg.L2LiskToken);
-        vm.serializeAddress(json, "L2LiskToken", cfg.L2LiskToken);
+        vm.serializeAddress(json, "L2Staking", cfg.L2Staking);
         vm.serializeAddress(json, "L2TimelockController", cfg.L2TimelockController);
         vm.serializeAddress(json, "L2VotingPower", cfg.L2VotingPower);
         string memory finalJson =
