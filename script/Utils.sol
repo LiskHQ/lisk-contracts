@@ -21,8 +21,18 @@ contract Utils is Script {
         address L2ClaimContract;
         /// @notice The Current implementation of L2 Claim Contract.
         address L2ClaimImplementation;
+        /// @notice L2 Governor contract (in Proxy), which users interact with.
+        address L2Governor;
+        /// @notice The Current implementation of L2 Governor Contract.
+        address L2GovernorImplementation;
         /// @notice L2 Lisk token address.
         address L2LiskToken;
+        /// @notice L2 Timelock Controller address.
+        address L2TimelockController;
+        /// @notice L2 Voting Power contract (in Proxy), which users interact with.
+        address L2VotingPower;
+        /// @notice The Current implementation of L2 Voting Power Contract.
+        address L2VotingPowerImplementation;
     }
 
     /// @notice This struct is used to read MerkleRoot from JSON file.
@@ -98,7 +108,13 @@ contract Utils is Script {
         string memory json = "";
         vm.serializeAddress(json, "L2ClaimContract", cfg.L2ClaimContract);
         vm.serializeAddress(json, "L2ClaimImplementation", cfg.L2ClaimImplementation);
-        string memory finalJson = vm.serializeAddress(json, "L2LiskToken", cfg.L2LiskToken);
+        vm.serializeAddress(json, "L2Governor", cfg.L2Governor);
+        vm.serializeAddress(json, "L2GovernorImplementation", cfg.L2GovernorImplementation);
+        vm.serializeAddress(json, "L2LiskToken", cfg.L2LiskToken);
+        vm.serializeAddress(json, "L2TimelockController", cfg.L2TimelockController);
+        vm.serializeAddress(json, "L2VotingPower", cfg.L2VotingPower);
+        string memory finalJson =
+            vm.serializeAddress(json, "L2VotingPowerImplementation", cfg.L2VotingPowerImplementation);
         finalJson.write(string.concat("deployment/", network, "/l2addresses.json"));
     }
 
