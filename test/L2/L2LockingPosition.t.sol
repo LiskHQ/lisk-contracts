@@ -41,32 +41,24 @@ contract L2LockingPositionTest is Test {
         // deploy L2VotingPower implementation contract
         l2VotingPowerImplementation = new L2VotingPower();
 
-        // deploy L2VotingPower contract via proxy and initialize it at the same time
-        l2VotingPower = L2VotingPower(
-            address(
-                new ERC1967Proxy(
-                    address(l2VotingPowerImplementation),
-                    abi.encodeWithSelector(l2VotingPower.initialize.selector, address(l2Staking))
-                )
-            )
-        );
+        // deploy L2VotingPower contract via proxy
+        l2VotingPower = L2VotingPower(address(new ERC1967Proxy(address(l2VotingPowerImplementation), "")));
 
         assert(address(l2VotingPower) != address(0x0));
 
         // deploy L2LockingPosition implementation contract
         l2LockingPositionImplementation = new L2LockingPosition();
 
-        // deploy L2LockingPosition contract via proxy and initialize it at the same time
-        l2LockingPosition = L2LockingPosition(
-            address(
-                new ERC1967Proxy(
-                    address(l2LockingPositionImplementation),
-                    abi.encodeWithSelector(
-                        l2LockingPosition.initialize.selector, address(l2Staking), address(l2VotingPower)
-                    )
-                )
-            )
-        );
+        // deploy L2LockingPosition contract via proxy
+        l2LockingPosition = L2LockingPosition(address(new ERC1967Proxy(address(l2LockingPositionImplementation), "")));
+
+        // initialize L2VotingPower contract
+        l2VotingPower.initialize(address(l2LockingPosition));
+
+        assert(l2VotingPower.lockingPositionAddress() == address(l2LockingPosition));
+
+        // initialize L2LockingPosition contract
+        l2LockingPosition.initialize(address(l2Staking), address(l2VotingPower));
 
         assertEq(l2LockingPosition.name(), "Lisk Locking Position");
         assertEq(l2LockingPosition.symbol(), "LLP");
@@ -227,7 +219,6 @@ contract L2LockingPositionTest is Test {
 
         // remove the second locking position of alice; index = 1
         uint256 positionId = l2LockingPosition.tokenOfOwnerByIndex(alice, 1);
-        console2.log("positionId %d", positionId);
         vm.prank(address(l2Staking));
         l2LockingPosition.removeLockingPosition(positionId);
 

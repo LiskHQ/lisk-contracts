@@ -145,11 +145,11 @@ contract L2LockingPosition is Initializable, OwnableUpgradeable, UUPSUpgradeable
     }
 
     function removeLockingPosition(uint256 positionId) public virtual onlyStaking {
-        _burn(positionId);
-
         IL2VotingPower(powerVotingContract).adjustVotingPower(
             ownerOf(positionId), lockingPositions[positionId], LockingPosition(0, 0, 0)
         );
+
+        _burn(positionId);
 
         delete lockingPositions[positionId];
     }

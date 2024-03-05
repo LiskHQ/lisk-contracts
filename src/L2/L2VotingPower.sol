@@ -10,14 +10,14 @@ import { LockingPosition } from "./L2LockingPosition.sol";
 import { ISemver } from "../utils/ISemver.sol";
 
 contract L2VotingPower is ERC20VotesUpgradeable, Ownable2StepUpgradeable, UUPSUpgradeable, ISemver {
-    /// @notice Address of the staking contract.
-    address public stakingContractAddress;
+    /// @notice Address of the LockingPosition contract.
+    address public lockingPositionAddress;
 
     /// @notice Semantic version of the contract.
     string public version;
 
-    /// @notice Emitted when the Staking contract address is changed.
-    event StakingContractAddressChanged(address indexed oldAddress, address indexed newAddress);
+    /// @notice Emitted when the LockingPosition contract address is changed.
+    event LockingPositionContractAddressChanged(address indexed oldAddress, address indexed newAddress);
 
     /// @notice Emitted when approve is called.
     error ApproveDisabled();
@@ -25,9 +25,11 @@ contract L2VotingPower is ERC20VotesUpgradeable, Ownable2StepUpgradeable, UUPSUp
     /// @notice Emitted when transfer or transferFrom is called.
     error TransferDisabled();
 
-    /// @notice A modifier that only allows the staking contract to call.
-    modifier onlyStakingContract() {
-        require(msg.sender == stakingContractAddress, "L2VotingPower: only staking contract can call this function");
+    /// @notice A modifier that only allows the LockingPosition contract to call.
+    modifier onlyLockingPositionContract() {
+        require(
+            msg.sender == lockingPositionAddress, "L2VotingPower: only LockingPosition contract can call this function"
+        );
         _;
     }
 
@@ -37,16 +39,16 @@ contract L2VotingPower is ERC20VotesUpgradeable, Ownable2StepUpgradeable, UUPSUp
     }
 
     /// @notice Setting global params.
-    /// @param _stakingContractAddress Address of the staking contract.
-    function initialize(address _stakingContractAddress) public initializer {
-        require(_stakingContractAddress != address(0), "L2VotingPower: Staking contract address cannot be 0");
+    /// @param _lockingPositionAddresss Address of the LockingPosition contract.
+    function initialize(address _lockingPositionAddresss) public initializer {
+        require(_lockingPositionAddresss != address(0), "L2VotingPower: LockingPosition contract address cannot be 0");
         __Ownable2Step_init();
         __Ownable_init(msg.sender);
         __ERC20_init("Lisk Voting Power", "vpLSK");
         __ERC20Votes_init();
-        stakingContractAddress = _stakingContractAddress;
+        lockingPositionAddress = _lockingPositionAddresss;
         version = "1.0.0";
-        emit StakingContractAddressChanged(address(0), _stakingContractAddress);
+        emit LockingPositionContractAddressChanged(address(0), _lockingPositionAddresss);
     }
 
     /// @notice Ensures that only the owner can authorize a contract upgrade. It reverts if called by any address other
@@ -81,7 +83,7 @@ contract L2VotingPower is ERC20VotesUpgradeable, Ownable2StepUpgradeable, UUPSUp
     )
         public
         virtual
-        onlyStakingContract
+        onlyLockingPositionContract
     {
         uint256 votingPowerAfter = votingPower(positionAfter);
         uint256 votingPowerBefore = votingPower(positionBefore);

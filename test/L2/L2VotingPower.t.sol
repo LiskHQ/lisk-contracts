@@ -8,7 +8,8 @@ import { IAccessControl } from "@openzeppelin/contracts/access/IAccessControl.so
 import { IERC20Errors } from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { Test, console } from "forge-std/Test.sol";
-import { L2VotingPower, LockingPosition } from "src/L2/L2VotingPower.sol";
+import { LockingPosition } from "src/L2/L2LockingPosition.sol";
+import { L2VotingPower } from "src/L2/L2VotingPower.sol";
 import { Utils } from "script/Utils.sol";
 
 contract L2VotingPowerV2 is L2VotingPower {
@@ -34,13 +35,13 @@ contract L2VotingPowerTest is Test {
     L2VotingPower public l2VotingPowerImplementation;
     L2VotingPower public l2VotingPower;
 
-    address stakingContractAddress;
+    address lockingPositionContractAddress;
 
     function setUp() public {
         utils = new Utils();
 
         // set initial values
-        stakingContractAddress = address(0xdeadbeefdeadbeefdeadbeef);
+        lockingPositionContractAddress = address(0xdeadbeefdeadbeefdeadbeef);
 
         console.log("L2VotingPowerTest address is: %s", address(this));
 
@@ -52,23 +53,23 @@ contract L2VotingPowerTest is Test {
             address(
                 new ERC1967Proxy(
                     address(l2VotingPowerImplementation),
-                    abi.encodeWithSelector(l2VotingPower.initialize.selector, stakingContractAddress)
+                    abi.encodeWithSelector(l2VotingPower.initialize.selector, lockingPositionContractAddress)
                 )
             )
         );
 
-        assertEq(l2VotingPower.stakingContractAddress(), stakingContractAddress);
+        assertEq(l2VotingPower.lockingPositionAddress(), lockingPositionContractAddress);
         assertEq(l2VotingPower.version(), "1.0.0");
         assertEq(l2VotingPower.name(), "Lisk Voting Power");
         assertEq(l2VotingPower.symbol(), "vpLSK");
     }
 
-    function test_Initialize_ZeroStakingContractAddress() public {
+    function test_Initialize_ZerolockingPositionContractAddress() public {
         // deploy L2VotingPower Implementation contract
         l2VotingPowerImplementation = new L2VotingPower();
 
-        // deploy L2VotingPower contract via proxy and initialize it with zero Staking contract address
-        vm.expectRevert("L2VotingPower: Staking contract address cannot be 0");
+        // deploy L2VotingPower contract via proxy and initialize it with zero LockingPosition contract address
+        vm.expectRevert("L2VotingPower: LockingPosition contract address cannot be 0");
         l2VotingPower = L2VotingPower(
             address(
                 new ERC1967Proxy(
@@ -79,20 +80,20 @@ contract L2VotingPowerTest is Test {
         );
     }
 
-    function test_Initialize_EventStakingContractAddressChangedEmitted() public {
+    function test_Initialize_EventlockingPositionContractAddressChangedEmitted() public {
         // deploy L2VotingPower Implementation contract
         l2VotingPowerImplementation = new L2VotingPower();
 
-        // check that event for Staking contract address change is emitted
+        // check that event for LockingPosition contract address change is emitted
         vm.expectEmit(true, true, true, true);
-        emit L2VotingPower.StakingContractAddressChanged(address(0), stakingContractAddress);
+        emit L2VotingPower.LockingPositionContractAddressChanged(address(0), lockingPositionContractAddress);
 
-        // deploy L2VotingPower contract via proxy and initialize it with new Staking contract address
+        // deploy L2VotingPower contract via proxy and initialize it with new LockingPosition contract address
         l2VotingPower = L2VotingPower(
             address(
                 new ERC1967Proxy(
                     address(l2VotingPowerImplementation),
-                    abi.encodeWithSelector(l2VotingPower.initialize.selector, stakingContractAddress)
+                    abi.encodeWithSelector(l2VotingPower.initialize.selector, lockingPositionContractAddress)
                 )
             )
         );
@@ -125,8 +126,8 @@ contract L2VotingPowerTest is Test {
         vm.expectEmit(true, true, true, true);
         emit IERC20.Transfer(address(0), address(this), 150);
 
-        // call it as staking contract
-        vm.prank(stakingContractAddress);
+        // call it as LockingPosition contract
+        vm.prank(lockingPositionContractAddress);
         l2VotingPower.adjustVotingPower(address(this), positionBefore, positionAfter);
     }
 
@@ -134,7 +135,7 @@ contract L2VotingPowerTest is Test {
         // mint some tokens that then can be burned
         LockingPosition memory positionBefore = LockingPosition(0, 0, 0);
         LockingPosition memory positionAfter = LockingPosition(500, 0, 0);
-        vm.prank(stakingContractAddress);
+        vm.prank(lockingPositionContractAddress);
         l2VotingPower.adjustVotingPower(address(this), positionBefore, positionAfter);
 
         // difference between positionBefore and positionAfter is less than 0
@@ -145,8 +146,8 @@ contract L2VotingPowerTest is Test {
         vm.expectEmit(true, true, true, true);
         emit IERC20.Transfer(address(this), address(0), 150);
 
-        // call it as staking contract
-        vm.prank(stakingContractAddress);
+        // call it as LockingPosition contract
+        vm.prank(lockingPositionContractAddress);
         l2VotingPower.adjustVotingPower(address(this), positionBefore, positionAfter);
     }
 
@@ -155,19 +156,19 @@ contract L2VotingPowerTest is Test {
         LockingPosition memory positionBefore = LockingPosition(110, 0, 0);
         LockingPosition memory positionAfter = LockingPosition(100, 0, 0);
 
-        // call it as staking contract
-        vm.prank(stakingContractAddress);
+        // call it as LockingPosition contract
+        vm.prank(lockingPositionContractAddress);
         // revert with insufficient balance
         vm.expectRevert(abi.encodeWithSelector(IERC20Errors.ERC20InsufficientBalance.selector, address(this), 0, 10));
         l2VotingPower.adjustVotingPower(address(this), positionBefore, positionAfter);
     }
 
-    function test_AdjustVotingPower_NotStakingContract() public {
+    function test_AdjustVotingPower_NotLockingPositionContract() public {
         LockingPosition memory positionBefore = LockingPosition(50, 50, 50);
         LockingPosition memory positionAfter = LockingPosition(100, 100, 100);
 
-        // call it as non-staking contract
-        vm.expectRevert("L2VotingPower: only staking contract can call this function");
+        // call it as non-LockingPosition contract
+        vm.expectRevert("L2VotingPower: only LockingPosition contract can call this function");
         l2VotingPower.adjustVotingPower(address(this), positionBefore, positionAfter);
     }
 
@@ -179,8 +180,8 @@ contract L2VotingPowerTest is Test {
         vm.expectEmit(true, true, true, true);
         emit IERC20.Transfer(address(0), address(this), 100);
 
-        // call it as staking contract
-        vm.prank(stakingContractAddress);
+        // call it as LockingPosition contract
+        vm.prank(lockingPositionContractAddress);
         l2VotingPower.adjustVotingPower(address(this), positionBefore, positionAfter);
     }
 
@@ -188,7 +189,7 @@ contract L2VotingPowerTest is Test {
         // mint some tokens that then can be burned
         LockingPosition memory positionBefore = LockingPosition(0, 0, 0);
         LockingPosition memory positionAfter = LockingPosition(500, 0, 0);
-        vm.prank(stakingContractAddress);
+        vm.prank(lockingPositionContractAddress);
         l2VotingPower.adjustVotingPower(address(this), positionBefore, positionAfter);
 
         // only positionBefore is set
@@ -199,8 +200,8 @@ contract L2VotingPowerTest is Test {
         vm.expectEmit(true, true, true, true);
         emit IERC20.Transfer(address(this), address(0), 50);
 
-        // call it as staking contract
-        vm.prank(stakingContractAddress);
+        // call it as LockingPosition contract
+        vm.prank(lockingPositionContractAddress);
         l2VotingPower.adjustVotingPower(address(this), positionBefore, positionAfter);
     }
 
@@ -223,8 +224,8 @@ contract L2VotingPowerTest is Test {
         vm.expectEmit(true, true, true, true);
         emit IVotes.DelegateVotesChanged(bob, 0, 50);
 
-        // call it as staking contract
-        vm.prank(stakingContractAddress);
+        // call it as LockingPosition contract
+        vm.prank(lockingPositionContractAddress);
         l2VotingPower.adjustVotingPower(alice, positionBefore, positionAfter);
 
         // alice delegates some more votes to bob
@@ -235,8 +236,8 @@ contract L2VotingPowerTest is Test {
         vm.expectEmit(true, true, true, true);
         emit IVotes.DelegateVotesChanged(bob, 50, 200);
 
-        // call it as staking contract
-        vm.prank(stakingContractAddress);
+        // call it as LockingPosition contract
+        vm.prank(lockingPositionContractAddress);
         l2VotingPower.adjustVotingPower(alice, positionBefore, positionAfter);
     }
 
@@ -251,8 +252,8 @@ contract L2VotingPowerTest is Test {
         LockingPosition memory positionBefore = LockingPosition(0, 0, 0);
         LockingPosition memory positionAfter = LockingPosition(50, 0, 0);
 
-        // call it as staking contract
-        vm.prank(stakingContractAddress);
+        // call it as LockingPosition contract
+        vm.prank(lockingPositionContractAddress);
         l2VotingPower.adjustVotingPower(alice, positionBefore, positionAfter);
 
         // increase block timestamp
@@ -271,8 +272,8 @@ contract L2VotingPowerTest is Test {
         positionBefore = LockingPosition(50, 0, 0);
         positionAfter = LockingPosition(40, 0, 0);
 
-        // call it as staking contract
-        vm.prank(stakingContractAddress);
+        // call it as LockingPosition contract
+        vm.prank(lockingPositionContractAddress);
         l2VotingPower.adjustVotingPower(alice, positionBefore, positionAfter);
 
         // increase block timestamp
