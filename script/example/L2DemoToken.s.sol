@@ -18,7 +18,7 @@ contract L2DemoToken is ERC20 {
 /// @notice In Demo environment, this script will be used to deploy L2 LSK Token and mint LSK to deployer.
 contract L2DemoTokenScript is Script {
     /// @notice Utils contract which provides functions to read and write JSON files containing L1 and L2 addresses.
-    Utils utils;
+    Utils internal utils;
 
     function setUp() public {
         utils = new Utils();

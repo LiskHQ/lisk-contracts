@@ -11,7 +11,7 @@ import "script/Utils.sol";
 /// Contract.
 contract DemoTransferFundsScript is Script {
     /// @notice Utils contract which provides functions to read and write JSON files containing L1 and L2 addresses.
-    Utils utils;
+    Utils internal utils;
 
     function setUp() public {
         utils = new Utils();
