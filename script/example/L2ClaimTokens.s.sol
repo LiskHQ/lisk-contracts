@@ -29,7 +29,7 @@ contract L2ClaimTokensScript is Script {
     /// @notice signatures.json in string format.
     string public signatureJson;
 
-    /// @notice merkleRoot.json in string format.
+    /// @notice merkleLeaves.json in string format.
     string public merkleLeavesJson;
 
     /// @notice The contract address created by default mnemonic in Anvil/Ganache when nonce=0.
