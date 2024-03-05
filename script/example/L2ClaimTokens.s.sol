@@ -48,32 +48,14 @@ contract L2ClaimTokensScript is Script {
 
     function setUp() public {
         utils = new Utils();
-        require(
-            keccak256(bytes(utils.getNetworkType())) == keccak256(bytes("devnet")),
-            "L2ClaimTokensScript: this script is only available in `devnet`."
-        );
+
+        Utils.L2AddressesConfig memory l2AddressesConfig = utils.readL2AddressesFile();
+        lsk = IERC20(l2AddressesConfig.L2LiskToken);
+        l2Claim = L2Claim(l2AddressesConfig.L2ClaimContract);
 
         // Get Merkle Root from /devnet/merkle-root.json
         Utils.MerkleRoot memory merkleRoot = utils.readMerkleRootFile();
         console2.log("MerkleRoot: %s", vm.toString(merkleRoot.merkleRoot));
-
-        // The L2 Token is a Bridge token with zero totalSupply at the start. In this example script, a ERC20 is
-        // deployed to focus on the Claim Process.
-        lsk = new MockERC20(10000 ether);
-
-        // Since another "LSK" token is used, a new L2Claim also need to be deployed
-        L2Claim l2ClaimImplementation = new L2Claim();
-        ERC1967Proxy l2ClaimProxy = new ERC1967Proxy(
-            address(l2ClaimImplementation),
-            abi.encodeWithSelector(
-                l2ClaimImplementation.initialize.selector,
-                address(lsk),
-                merkleRoot.merkleRoot,
-                block.timestamp + 365 days * 2
-            )
-        );
-        l2Claim = L2Claim(address(l2ClaimProxy));
-        lsk.transfer(address(l2Claim), lsk.balanceOf(address(this)));
 
         // Read devnet Json files
         string memory rootPath = string.concat(vm.projectRoot(), "/test/L2/data");
