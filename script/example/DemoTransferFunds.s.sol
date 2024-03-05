@@ -6,9 +6,9 @@ import { Script, console2 } from "forge-std/Script.sol";
 import { StdUtils } from "forge-std/StdUtils.sol";
 import "script/Utils.sol";
 
-/// @title DemoTransferFundsScript - Demo Transferring LSK to Claim Contract
+/// @title DemoTransferFundsScript - Demo Transferring LSK to Claim contract
 /// @notice In Demo environment, after Claim contract is deployed, this script is used to send LSK tokens to Claim
-/// Contract.
+/// contract.
 contract DemoTransferFundsScript is Script {
     /// @notice Utils contract which provides functions to read and write JSON files containing L1 and L2 addresses.
     Utils internal utils;
@@ -17,17 +17,17 @@ contract DemoTransferFundsScript is Script {
         utils = new Utils();
     }
 
-    /// @notice Transfer LSK Tokens to Claim Contract
+    /// @notice Transfer LSK Tokens to Claim contract
     function run() public {
         // Deployer's private key. Owner of the L2 Lisk token. PRIVATE_KEY is set in .env file.
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
 
-        // write L2LiskToken address to l2addresses.json
+        // read L2LiskToken address from l2addresses.json
         Utils.L2AddressesConfig memory l2AddressesConfig = utils.readL2AddressesFile();
         IERC20 lsk = IERC20(l2AddressesConfig.L2LiskToken);
 
         vm.startBroadcast(deployerPrivateKey);
-        console2.log(lsk.transfer(l2AddressesConfig.L2ClaimContract, 10000 ether));
+        lsk.transfer(l2AddressesConfig.L2ClaimContract, 10000 ether);
         vm.stopBroadcast();
     }
 }

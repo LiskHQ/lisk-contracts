@@ -29,7 +29,7 @@ contract L2ClaimTokensScript is Script {
     /// @notice signatures.json in string format.
     string public signatureJson;
 
-    /// @notice merkleLeaves.json in string format.
+    /// @notice merkle-leaves.json in string format.
     string public merkleLeavesJson;
 
     /// @notice The contract address created by default mnemonic in Anvil/Ganache when nonce=0.
@@ -58,9 +58,9 @@ contract L2ClaimTokensScript is Script {
         console2.log("MerkleRoot: %s", vm.toString(merkleRoot.merkleRoot));
 
         // Read devnet Json files
-        string memory rootPath = string.concat(vm.projectRoot(), "/test/L2/data");
+        string memory rootPath = string.concat(vm.projectRoot(), "/script/data/devnet");
         signatureJson = vm.readFile(string.concat(rootPath, "/signatures.json"));
-        merkleLeavesJson = vm.readFile(string.concat(rootPath, "/merkleLeaves.json"));
+        merkleLeavesJson = vm.readFile(string.concat(rootPath, "/merkle-leaves.json"));
     }
 
     /// @notice This function submit request to `claimRegularAccount` and `claimMultisigAccount` once to demonstrate

@@ -115,10 +115,10 @@ contract L2ClaimTest is Test {
         console.log("L2ClaimTest Address is: %s", address(this));
 
         // read Pre-signed Signatures, Merkle Leaves and a Merkle Root in a json format from different files
-        string memory rootPath = string.concat(vm.projectRoot(), "/test/L2/data");
+        string memory rootPath = string.concat(vm.projectRoot(), "/script/data/devnet");
         signatureJson = vm.readFile(string.concat(rootPath, "/signatures.json"));
-        MerkleLeavesJson = vm.readFile(string.concat(rootPath, "/merkleLeaves.json"));
-        MerkleRootJson = vm.readFile(string.concat(rootPath, "/merkleRoot.json"));
+        MerkleLeavesJson = vm.readFile(string.concat(rootPath, "/merkle-leaves.json"));
+        MerkleRootJson = vm.readFile(string.concat(rootPath, "/merkle-root.json"));
 
         // get MerkleRoot struct
         Utils.MerkleRoot memory merkleRoot = getMerkleRoot();
