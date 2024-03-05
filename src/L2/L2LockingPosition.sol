@@ -23,6 +23,7 @@ interface IL2VotingPower {
 /// @title LockingPosition
 /// @notice Struct for locking position.
 struct LockingPosition {
+    address creator;
     uint256 amount;
     uint256 expDate;
     uint256 pausedLockingDuration;
@@ -56,7 +57,8 @@ contract L2LockingPosition is Initializable, OwnableUpgradeable, UUPSUpgradeable
     function _authorizeUpgrade(address) internal virtual override onlyOwner { }
 
     function isLockingPositionNull(LockingPosition memory position) internal view virtual returns (bool) {
-        return position.amount == 0 && position.expDate == 0 && position.pausedLockingDuration == 0;
+        return position.creator == address(0) && position.amount == 0 && position.expDate == 0
+            && position.pausedLockingDuration == 0;
     }
 
     function transferFrom(
@@ -71,10 +73,14 @@ contract L2LockingPosition is Initializable, OwnableUpgradeable, UUPSUpgradeable
         super.transferFrom(from, to, tokenId);
 
         // remove voting power for an old owner
-        IL2VotingPower(powerVotingContract).adjustVotingPower(from, lockingPositions[tokenId], LockingPosition(0, 0, 0));
+        IL2VotingPower(powerVotingContract).adjustVotingPower(
+            from, lockingPositions[tokenId], LockingPosition(address(0), 0, 0, 0)
+        );
 
         // add voting power to a new owner
-        IL2VotingPower(powerVotingContract).adjustVotingPower(to, LockingPosition(0, 0, 0), lockingPositions[tokenId]);
+        IL2VotingPower(powerVotingContract).adjustVotingPower(
+            to, LockingPosition(address(0), 0, 0, 0), lockingPositions[tokenId]
+        );
     }
 
     function safeTransferFrom(
@@ -90,32 +96,41 @@ contract L2LockingPosition is Initializable, OwnableUpgradeable, UUPSUpgradeable
         super.safeTransferFrom(from, to, tokenId, data);
 
         // remove voting power for an old owner
-        IL2VotingPower(powerVotingContract).adjustVotingPower(from, lockingPositions[tokenId], LockingPosition(0, 0, 0));
+        IL2VotingPower(powerVotingContract).adjustVotingPower(
+            from, lockingPositions[tokenId], LockingPosition(address(0), 0, 0, 0)
+        );
 
         // add voting power to a new owner
-        IL2VotingPower(powerVotingContract).adjustVotingPower(to, LockingPosition(0, 0, 0), lockingPositions[tokenId]);
+        IL2VotingPower(powerVotingContract).adjustVotingPower(
+            to, LockingPosition(address(0), 0, 0, 0), lockingPositions[tokenId]
+        );
     }
 
     function createLockingPosition(
+        address creator,
         address account,
-        uint256 _amount,
-        uint256 _expDate,
-        uint256 _pausedLockingDuration
+        uint256 amount,
+        uint256 expDate,
+        uint256 pausedLockingDuration
     )
         public
         virtual
         onlyStaking
     {
         require(account != address(0), "L2LockingPosition: account address is required");
-        require(_amount > 0, "L2LockingPosition: amount should be greater than 0");
+        require(amount > 0, "L2LockingPosition: amount should be greater than 0");
 
         _mint(account, newPositionId);
 
-        lockingPositions[newPositionId] =
-            LockingPosition({ amount: _amount, expDate: _expDate, pausedLockingDuration: _pausedLockingDuration });
+        lockingPositions[newPositionId] = LockingPosition({
+            creator: creator,
+            amount: amount,
+            expDate: expDate,
+            pausedLockingDuration: pausedLockingDuration
+        });
 
         IL2VotingPower(powerVotingContract).adjustVotingPower(
-            account, LockingPosition(0, 0, 0), lockingPositions[newPositionId]
+            account, LockingPosition(address(0), 0, 0, 0), lockingPositions[newPositionId]
         );
 
         newPositionId++;
@@ -123,9 +138,9 @@ contract L2LockingPosition is Initializable, OwnableUpgradeable, UUPSUpgradeable
 
     function updateLockingPosition(
         uint256 positionId,
-        uint256 _amount,
-        uint256 _expDate,
-        uint256 _pausedLockingDuration
+        uint256 amount,
+        uint256 expDate,
+        uint256 pausedLockingDuration
     )
         public
         virtual
@@ -134,10 +149,17 @@ contract L2LockingPosition is Initializable, OwnableUpgradeable, UUPSUpgradeable
         require(
             !isLockingPositionNull(lockingPositions[positionId]), "L2LockingPosition: locking position does not exist"
         );
+        require(
+            msg.sender == lockingPositions[positionId].creator, "L2LockingPosition: only creator can update position"
+        );
 
         LockingPosition memory oldPosition = lockingPositions[positionId];
-        lockingPositions[positionId] =
-            LockingPosition({ amount: _amount, expDate: _expDate, pausedLockingDuration: _pausedLockingDuration });
+        lockingPositions[positionId] = LockingPosition({
+            creator: oldPosition.creator,
+            amount: amount,
+            expDate: expDate,
+            pausedLockingDuration: pausedLockingDuration
+        });
 
         IL2VotingPower(powerVotingContract).adjustVotingPower(
             ownerOf(positionId), oldPosition, lockingPositions[positionId]
@@ -145,8 +167,15 @@ contract L2LockingPosition is Initializable, OwnableUpgradeable, UUPSUpgradeable
     }
 
     function removeLockingPosition(uint256 positionId) public virtual onlyStaking {
+        require(
+            !isLockingPositionNull(lockingPositions[positionId]), "L2LockingPosition: locking position does not exist"
+        );
+        require(
+            msg.sender == lockingPositions[positionId].creator, "L2LockingPosition: only creator can remove position"
+        );
+
         IL2VotingPower(powerVotingContract).adjustVotingPower(
-            ownerOf(positionId), lockingPositions[positionId], LockingPosition(0, 0, 0)
+            ownerOf(positionId), lockingPositions[positionId], LockingPosition(address(0), 0, 0, 0)
         );
 
         _burn(positionId);

@@ -106,21 +106,21 @@ contract L2VotingPowerTest is Test {
     function test_VotingPower() public {
         L2VotingPowerHarness l2VotingPowerHarness = new L2VotingPowerHarness();
 
-        LockingPosition memory position = LockingPosition(50, 0, 0);
+        LockingPosition memory position = LockingPosition(address(this), 50, 0, 0);
         assertEq(l2VotingPowerHarness.exposedVotingPower(position), 50);
     }
 
     function test_VotingPower_PausedLockingDurationHigherThanZero() public {
         L2VotingPowerHarness l2VotingPowerHarness = new L2VotingPowerHarness();
 
-        LockingPosition memory position = LockingPosition(100, 0, 50);
+        LockingPosition memory position = LockingPosition(address(this), 100, 0, 50);
         assertEq(l2VotingPowerHarness.exposedVotingPower(position), 113);
     }
 
     function test_AdjustVotingPower_DiffLargerThanZero() public {
         // difference between positionBefore and positionAfter is larger than 0
-        LockingPosition memory positionBefore = LockingPosition(50, 0, 0);
-        LockingPosition memory positionAfter = LockingPosition(200, 0, 0);
+        LockingPosition memory positionBefore = LockingPosition(address(this), 50, 0, 0);
+        LockingPosition memory positionAfter = LockingPosition(address(this), 200, 0, 0);
 
         // check that event for mint is emitted
         vm.expectEmit(true, true, true, true);
@@ -133,14 +133,14 @@ contract L2VotingPowerTest is Test {
 
     function test_AdjustVotingPower_DiffLessThanZero() public {
         // mint some tokens that then can be burned
-        LockingPosition memory positionBefore = LockingPosition(0, 0, 0);
-        LockingPosition memory positionAfter = LockingPosition(500, 0, 0);
+        LockingPosition memory positionBefore = LockingPosition(address(this), 0, 0, 0);
+        LockingPosition memory positionAfter = LockingPosition(address(this), 500, 0, 0);
         vm.prank(lockingPositionContractAddress);
         l2VotingPower.adjustVotingPower(address(this), positionBefore, positionAfter);
 
         // difference between positionBefore and positionAfter is less than 0
-        positionBefore = LockingPosition(250, 0, 0);
-        positionAfter = LockingPosition(100, 0, 0);
+        positionBefore = LockingPosition(address(this), 250, 0, 0);
+        positionAfter = LockingPosition(address(this), 100, 0, 0);
 
         // check that event for burn is emitted
         vm.expectEmit(true, true, true, true);
@@ -153,8 +153,8 @@ contract L2VotingPowerTest is Test {
 
     function test_AdjustVotingPower_TooLittleVotingPower() public {
         // decrease more tokens than available
-        LockingPosition memory positionBefore = LockingPosition(110, 0, 0);
-        LockingPosition memory positionAfter = LockingPosition(100, 0, 0);
+        LockingPosition memory positionBefore = LockingPosition(address(this), 110, 0, 0);
+        LockingPosition memory positionAfter = LockingPosition(address(this), 100, 0, 0);
 
         // call it as LockingPosition contract
         vm.prank(lockingPositionContractAddress);
@@ -164,8 +164,8 @@ contract L2VotingPowerTest is Test {
     }
 
     function test_AdjustVotingPower_NotLockingPositionContract() public {
-        LockingPosition memory positionBefore = LockingPosition(50, 50, 50);
-        LockingPosition memory positionAfter = LockingPosition(100, 100, 100);
+        LockingPosition memory positionBefore = LockingPosition(address(this), 50, 50, 50);
+        LockingPosition memory positionAfter = LockingPosition(address(this), 100, 100, 100);
 
         // call it as non-LockingPosition contract
         vm.expectRevert("L2VotingPower: only LockingPosition contract can call this function");
@@ -173,8 +173,8 @@ contract L2VotingPowerTest is Test {
     }
 
     function test_AdjustVotingPower_PositionBeforeIsNull() public {
-        LockingPosition memory positionBefore = LockingPosition(0, 0, 0);
-        LockingPosition memory positionAfter = LockingPosition(100, 0, 0);
+        LockingPosition memory positionBefore = LockingPosition(address(this), 0, 0, 0);
+        LockingPosition memory positionAfter = LockingPosition(address(this), 100, 0, 0);
 
         // check that event for mint is emitted
         vm.expectEmit(true, true, true, true);
@@ -187,14 +187,14 @@ contract L2VotingPowerTest is Test {
 
     function test_AdjustVotingPower_PositionAfterIsNull() public {
         // mint some tokens that then can be burned
-        LockingPosition memory positionBefore = LockingPosition(0, 0, 0);
-        LockingPosition memory positionAfter = LockingPosition(500, 0, 0);
+        LockingPosition memory positionBefore = LockingPosition(address(this), 0, 0, 0);
+        LockingPosition memory positionAfter = LockingPosition(address(this), 500, 0, 0);
         vm.prank(lockingPositionContractAddress);
         l2VotingPower.adjustVotingPower(address(this), positionBefore, positionAfter);
 
         // only positionBefore is set
-        positionBefore = LockingPosition(50, 0, 0);
-        positionAfter = LockingPosition(0, 0, 0);
+        positionBefore = LockingPosition(address(this), 50, 0, 0);
+        positionAfter = LockingPosition(address(this), 0, 0, 0);
 
         // check that event for burn is emitted
         vm.expectEmit(true, true, true, true);
@@ -217,8 +217,8 @@ contract L2VotingPowerTest is Test {
         vm.prank(alice);
         l2VotingPower.delegate(bob);
 
-        LockingPosition memory positionBefore = LockingPosition(0, 0, 0);
-        LockingPosition memory positionAfter = LockingPosition(50, 0, 0);
+        LockingPosition memory positionBefore = LockingPosition(address(this), 0, 0, 0);
+        LockingPosition memory positionAfter = LockingPosition(address(this), 50, 0, 0);
 
         // expect event DelegateVotesChanged to be emitted
         vm.expectEmit(true, true, true, true);
@@ -229,8 +229,8 @@ contract L2VotingPowerTest is Test {
         l2VotingPower.adjustVotingPower(alice, positionBefore, positionAfter);
 
         // alice delegates some more votes to bob
-        positionBefore = LockingPosition(50, 0, 0);
-        positionAfter = LockingPosition(200, 0, 0);
+        positionBefore = LockingPosition(address(this), 50, 0, 0);
+        positionAfter = LockingPosition(address(this), 200, 0, 0);
 
         // expect event DelegateVotesChanged to be emitted
         vm.expectEmit(true, true, true, true);
@@ -249,8 +249,8 @@ contract L2VotingPowerTest is Test {
         vm.prank(alice);
         l2VotingPower.delegate(bob);
 
-        LockingPosition memory positionBefore = LockingPosition(0, 0, 0);
-        LockingPosition memory positionAfter = LockingPosition(50, 0, 0);
+        LockingPosition memory positionBefore = LockingPosition(address(this), 0, 0, 0);
+        LockingPosition memory positionAfter = LockingPosition(address(this), 50, 0, 0);
 
         // call it as LockingPosition contract
         vm.prank(lockingPositionContractAddress);
@@ -269,8 +269,8 @@ contract L2VotingPowerTest is Test {
         vm.warp(blockTimestamp + 20);
 
         // decrease voting power of alice for 10
-        positionBefore = LockingPosition(50, 0, 0);
-        positionAfter = LockingPosition(40, 0, 0);
+        positionBefore = LockingPosition(address(this), 50, 0, 0);
+        positionAfter = LockingPosition(address(this), 40, 0, 0);
 
         // call it as LockingPosition contract
         vm.prank(lockingPositionContractAddress);
