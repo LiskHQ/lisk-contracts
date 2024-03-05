@@ -74,7 +74,7 @@ contract L2ClaimTest is Test {
         );
     }
 
-    // get detailed MerkleTree, which only exists in devnet
+    // get detailed MerkleTree, which is located in `test/L2/data` and only being used by testing scripts
     function getMerkleLeaves() internal view returns (MerkleLeaves memory) {
         return abi.decode(MerkleLeavesJson.parseRaw("."), (MerkleLeaves));
     }
@@ -117,8 +117,8 @@ contract L2ClaimTest is Test {
         // read Pre-signed Signatures, Merkle Leaves and a Merkle Root in a json format from different files
         string memory rootPath = string.concat(vm.projectRoot(), "/test/L2/data");
         signatureJson = vm.readFile(string.concat(rootPath, "/signatures.json"));
-        MerkleLeavesJson = vm.readFile(string.concat(rootPath, "/merkleLeaves.json"));
-        MerkleRootJson = vm.readFile(string.concat(rootPath, "/merkleRoot.json"));
+        MerkleLeavesJson = vm.readFile(string.concat(rootPath, "/merkle-leaves.json"));
+        MerkleRootJson = vm.readFile(string.concat(rootPath, "/merkle-root.json"));
 
         // get MerkleRoot struct
         Utils.MerkleRoot memory merkleRoot = getMerkleRoot();
