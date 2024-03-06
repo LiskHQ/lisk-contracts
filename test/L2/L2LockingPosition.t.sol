@@ -55,7 +55,7 @@ contract L2LockingPositionTest is Test {
         // initialize L2VotingPower contract
         l2VotingPower.initialize(address(l2LockingPosition));
 
-        assert(l2VotingPower.lockingPositionAddress() == address(l2LockingPosition));
+        assertEq(l2VotingPower.lockingPositionAddress(), address(l2LockingPosition));
 
         // initialize L2LockingPosition contract
         l2LockingPosition.initialize(address(l2Staking), address(l2VotingPower));
@@ -106,36 +106,49 @@ contract L2LockingPositionTest is Test {
         LockingPosition memory position;
         assert(l2LockingPositionHarness.exposedIsLockingPositionNull(position));
 
+        position.creator = address(0xDeaDbeefdEAdbeefdEadbEEFdeadbeEFdEaDbeeF);
+        position.amount = 0;
+        position.expDate = 0;
+        position.pausedLockingDuration = 0;
+        assert(!l2LockingPositionHarness.exposedIsLockingPositionNull(position));
+
+        position.creator = address(0);
         position.amount = 100 * 10 ** 18;
         position.expDate = 0;
         position.pausedLockingDuration = 0;
         assert(!l2LockingPositionHarness.exposedIsLockingPositionNull(position));
 
+        position.creator = address(0);
         position.amount = 0;
         position.expDate = 365;
         position.pausedLockingDuration = 0;
         assert(!l2LockingPositionHarness.exposedIsLockingPositionNull(position));
 
+        position.creator = address(0xDeaDbeefdEAdbeefdEadbEEFdeadbeEFdEaDbeeF);
         position.amount = 0;
         position.expDate = 0;
         position.pausedLockingDuration = 50;
         assert(!l2LockingPositionHarness.exposedIsLockingPositionNull(position));
 
+        position.creator = address(0);
         position.amount = 0;
         position.expDate = 365;
         position.pausedLockingDuration = 50;
         assert(!l2LockingPositionHarness.exposedIsLockingPositionNull(position));
 
+        position.creator = address(0xDeaDbeefdEAdbeefdEadbEEFdeadbeEFdEaDbeeF);
         position.amount = 100 * 10 ** 18;
         position.expDate = 0;
         position.pausedLockingDuration = 50;
         assert(!l2LockingPositionHarness.exposedIsLockingPositionNull(position));
 
+        position.creator = address(0);
         position.amount = 100 * 10 ** 18;
         position.expDate = 365;
         position.pausedLockingDuration = 0;
         assert(!l2LockingPositionHarness.exposedIsLockingPositionNull(position));
 
+        position.creator = address(0xDeaDbeefdEAdbeefdEadbEEFdeadbeEFdEaDbeeF);
         position.amount = 100 * 10 ** 18;
         position.expDate = 365;
         position.pausedLockingDuration = 50;
@@ -148,13 +161,40 @@ contract L2LockingPositionTest is Test {
         assertEq(l2LockingPosition.balanceOf(alice), 0);
 
         vm.prank(address(l2Staking));
-        l2LockingPosition.createLockingPosition(address(l2Staking), alice, 100 * 10 ** 18, 365, 0);
+        uint256 positionId = l2LockingPosition.createLockingPosition(address(l2Staking), alice, 100 * 10 ** 18, 365, 0);
 
+        assertEq(positionId, 1);
         assertEq(l2LockingPosition.totalSupply(), 1);
         assertEq(l2LockingPosition.balanceOf(alice), 1);
         assertEq(l2LockingPosition.getLockingPosition(1).amount, 100 * 10 ** 18);
         assertEq(l2LockingPosition.getLockingPosition(1).expDate, 365);
         assertEq(l2LockingPosition.getLockingPosition(1).pausedLockingDuration, 0);
+
+        // create another locking position for alice
+
+        vm.prank(address(l2Staking));
+        positionId = l2LockingPosition.createLockingPosition(address(l2Staking), alice, 200 * 10 ** 18, 730, 50);
+
+        assertEq(positionId, 2);
+        assertEq(l2LockingPosition.totalSupply(), 2);
+        assertEq(l2LockingPosition.balanceOf(alice), 2);
+        assertEq(l2LockingPosition.getLockingPosition(2).amount, 200 * 10 ** 18);
+        assertEq(l2LockingPosition.getLockingPosition(2).expDate, 730);
+        assertEq(l2LockingPosition.getLockingPosition(2).pausedLockingDuration, 50);
+    }
+
+    function test_CreateLockingPosition_AccountIsZero() public {
+        address alice = address(0x0);
+        vm.prank(address(l2Staking));
+        vm.expectRevert("L2LockingPosition: account address is required");
+        l2LockingPosition.createLockingPosition(address(l2Staking), alice, 100 * 10 ** 18, 365, 0);
+    }
+
+    function test_CreateLockingPosition_AmountIsZero() public {
+        address alice = address(0x1);
+        vm.prank(address(l2Staking));
+        vm.expectRevert("L2LockingPosition: amount should be greater than 0");
+        l2LockingPosition.createLockingPosition(address(l2Staking), alice, 0, 365, 0);
     }
 
     function test_CreateLockingPosition_OnlyStakingCanCall() public {
@@ -185,6 +225,12 @@ contract L2LockingPositionTest is Test {
         assertEq(l2LockingPosition.getLockingPosition(1).amount, 200 * 10 ** 18);
         assertEq(l2LockingPosition.getLockingPosition(1).expDate, 730);
         assertEq(l2LockingPosition.getLockingPosition(1).pausedLockingDuration, 50);
+    }
+
+    function test_UpdateLockingPosition_PositionDoesNotExist() public {
+        vm.prank(address(l2Staking));
+        vm.expectRevert("L2LockingPosition: locking position does not exist");
+        l2LockingPosition.updateLockingPosition(1, 200 * 10 ** 18, 730, 50);
     }
 
     function test_UpdateLockingPosition_OnlyStakingCanCall() public {
@@ -240,6 +286,12 @@ contract L2LockingPositionTest is Test {
         );
     }
 
+    function test_RemoveLockingPosition_PositionDoesNotExist() public {
+        vm.prank(address(l2Staking));
+        vm.expectRevert("L2LockingPosition: locking position does not exist");
+        l2LockingPosition.removeLockingPosition(1);
+    }
+
     function test_RemoveLockingPosition_OnlyStakingCanCall() public {
         address alice = address(0x1);
         vm.prank(address(l2Staking));
@@ -249,5 +301,13 @@ contract L2LockingPositionTest is Test {
         vm.prank(alice);
         vm.expectRevert("L2LockingPosition: only Staking contract can call this function");
         l2LockingPosition.removeLockingPosition(positionId);
+    }
+
+    function test_GetLockingPosition_PositionDoesNotExist() public {
+        LockingPosition memory position = l2LockingPosition.getLockingPosition(1);
+        assertEq(position.creator, address(0));
+        assertEq(position.amount, 0);
+        assertEq(position.expDate, 0);
+        assertEq(position.pausedLockingDuration, 0);
     }
 }
