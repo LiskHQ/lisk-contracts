@@ -30,31 +30,48 @@ struct LockingPosition {
 }
 
 contract L2LockingPosition is Initializable, OwnableUpgradeable, UUPSUpgradeable, ERC721EnumerableUpgradeable {
-    uint256 private newPositionId;
+    /// @notice Next id for the locking position to be created.
+    uint256 private nextId;
 
+    /// @notice Mapping of locking position ID to LockingPosition entity.
     mapping(uint256 => LockingPosition) public lockingPositions;
 
+    /// @notice Address of the Staking contract.
     address public stakingContract;
 
+    /// @notice Address of the Power Voting contract.
     address public powerVotingContract;
 
+    /// @notice Modifier to allow only Staking contract to call the function.
     modifier onlyStaking() {
         require(msg.sender == stakingContract, "L2LockingPosition: only Staking contract can call this function");
         _;
     }
 
+    /// @notice Initialize the contract.
+    /// @param _stakingContract Address of the Staking contract.
+    /// @param _powerVotingContract Address of the Power Voting contract.
     function initialize(address _stakingContract, address _powerVotingContract) public initializer {
         require(_stakingContract != address(0), "L2LockingPosition: Staking contract address is required");
         require(_powerVotingContract != address(0), "L2LockingPosition: Power Voting contract address is required");
         __Ownable_init(msg.sender);
         __UUPSUpgradeable_init();
         __ERC721_init("Lisk Locking Position", "LLP");
-        newPositionId = 1;
+        nextId = 1;
         stakingContract = _stakingContract;
         powerVotingContract = _powerVotingContract;
     }
 
-    function _authorizeUpgrade(address) internal virtual override onlyOwner { }
+    /// @notice Ensures that only the owner can authorize a contract upgrade. It reverts if called by any address other
+    ///         than the contract owner.
+    /// @param _newImplementation The address of the new contract implementation to which the proxy will be upgraded.
+    function _authorizeUpgrade(address _newImplementation) internal virtual override onlyOwner { }
+
+    /// @notice Returns the current day.
+    /// @return The current day.
+    function todayDay() internal view virtual returns (uint256) {
+        return block.timestamp / 1 days;
+    }
 
     function isLockingPositionNull(LockingPosition memory position) internal view virtual returns (bool) {
         return position.creator == address(0) && position.amount == 0 && position.expDate == 0
@@ -108,37 +125,46 @@ contract L2LockingPosition is Initializable, OwnableUpgradeable, UUPSUpgradeable
 
     function createLockingPosition(
         address creator,
-        address account,
+        address owner,
         uint256 amount,
-        uint256 expDate,
-        uint256 pausedLockingDuration
+        uint256 lockingDuration
     )
         public
         virtual
         onlyStaking
         returns (uint256)
     {
-        require(account != address(0), "L2LockingPosition: account address is required");
+        require(owner != address(0), "L2LockingPosition: owner address is required");
         require(amount > 0, "L2LockingPosition: amount should be greater than 0");
+        require(lockingDuration > 0, "L2LockingPosition: locking duration should be greater than 0");
 
-        _mint(account, newPositionId);
+        // mint a new NFT token
+        _mint(owner, nextId);
 
-        lockingPositions[newPositionId] = LockingPosition({
+        // create entry for this locking position
+        lockingPositions[nextId] = LockingPosition({
             creator: creator,
             amount: amount,
-            expDate: expDate,
-            pausedLockingDuration: pausedLockingDuration
+            expDate: todayDay() + lockingDuration,
+            pausedLockingDuration: 0
         });
 
+        // call Voting Power contract to set voting power
         IL2VotingPower(powerVotingContract).adjustVotingPower(
-            account, LockingPosition(address(0), 0, 0, 0), lockingPositions[newPositionId]
+            owner, LockingPosition(address(0), 0, 0, 0), lockingPositions[nextId]
         );
 
-        newPositionId++;
-        return newPositionId - 1;
+        // update nextID and return the created locking position ID
+        nextId++;
+        return nextId - 1;
     }
 
-    function updateLockingPosition(
+    /// @notice Modifies the locking position.
+    /// @param positionId ID of the locking position to be modified.
+    /// @param amount New amount for the locking position.
+    /// @param expDate New expiration date for the locking position.
+    /// @param pausedLockingDuration New paused locking duration for the locking position.
+    function modifyLockingPosition(
         uint256 positionId,
         uint256 amount,
         uint256 expDate,
@@ -160,29 +186,41 @@ contract L2LockingPosition is Initializable, OwnableUpgradeable, UUPSUpgradeable
             pausedLockingDuration: pausedLockingDuration
         });
 
+        // call Voting Power contract to update voting power
         IL2VotingPower(powerVotingContract).adjustVotingPower(
             ownerOf(positionId), oldPosition, lockingPositions[positionId]
         );
     }
 
+    /// @notice Removes the locking position.
+    /// @param positionId ID of the locking position to be removed.
     function removeLockingPosition(uint256 positionId) public virtual onlyStaking {
         require(
             !isLockingPositionNull(lockingPositions[positionId]), "L2LockingPosition: locking position does not exist"
         );
 
+        // inform Voting Power contract
         IL2VotingPower(powerVotingContract).adjustVotingPower(
             ownerOf(positionId), lockingPositions[positionId], LockingPosition(address(0), 0, 0, 0)
         );
 
+        // burn the NFT token
         _burn(positionId);
 
+        // remove the locking position
         delete lockingPositions[positionId];
     }
 
+    /// @notice Returns the locking position for the given position ID.
+    /// @param positionId ID of the locking position.
+    /// @return Locking position for the given position ID.
     function getLockingPosition(uint256 positionId) public view virtual returns (LockingPosition memory) {
         return lockingPositions[positionId];
     }
 
+    /// @notice Returns all locking positions for the given owner.
+    /// @param owner Owner address.
+    /// @return All locking positions for the given owner.
     function getAllLockingPositionsByOwner(address owner) public view virtual returns (LockingPosition[] memory) {
         uint256 tokenCount = balanceOf(owner);
         LockingPosition[] memory result = new LockingPosition[](tokenCount);
