@@ -3,7 +3,6 @@ pragma solidity 0.8.23;
 
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import { Test, console2 } from "forge-std/Test.sol";
-import { stdStorage, StdStorage } from "forge-std/StdStorage.sol";
 import { L2LockingPosition, LockingPosition } from "src/L2/L2LockingPosition.sol";
 import { L2Staking } from "src/L2/L2Staking.sol";
 import { L2VotingPower } from "src/L2/L2VotingPower.sol";
@@ -155,7 +154,7 @@ contract L2LockingPositionTest is Test {
         assert(!l2LockingPositionHarness.exposedIsLockingPositionNull(position));
     }
 
-    function test_CreateLockingPositionT() public {
+    function test_CreateLockingPosition() public {
         address alice = address(0x1);
         assertEq(l2LockingPosition.totalSupply(), 0);
         assertEq(l2LockingPosition.balanceOf(alice), 0);
@@ -316,5 +315,157 @@ contract L2LockingPositionTest is Test {
         assertEq(position.amount, 0);
         assertEq(position.expDate, 0);
         assertEq(position.pausedLockingDuration, 0);
+    }
+
+    function test_TransferFrom() public {
+        address alice = address(0x1);
+        address bob = address(0x2);
+        assertEq(l2LockingPosition.totalSupply(), 0);
+        assertEq(l2LockingPosition.balanceOf(alice), 0);
+        assertEq(l2LockingPosition.balanceOf(bob), 0);
+
+        vm.prank(address(l2Staking));
+        l2LockingPosition.createLockingPosition(address(l2Staking), alice, 100 * 10 ** 18, 365);
+
+        assertEq(l2LockingPosition.totalSupply(), 1);
+        assertEq(l2LockingPosition.balanceOf(alice), 1);
+        assertEq(l2LockingPosition.balanceOf(bob), 0);
+
+        // transfer the first locking position of alice to bob
+        uint256 positionId = l2LockingPosition.tokenOfOwnerByIndex(alice, 0);
+        vm.prank(alice);
+        l2LockingPosition.transferFrom(alice, bob, positionId);
+
+        assertEq(l2LockingPosition.totalSupply(), 1);
+        assertEq(l2LockingPosition.balanceOf(alice), 0);
+        assertEq(l2LockingPosition.balanceOf(bob), 1);
+
+        assertEq(
+            l2LockingPosition.getLockingPosition(l2LockingPosition.tokenOfOwnerByIndex(bob, 0)).amount, 100 * 10 ** 18
+        );
+        assertEq(l2LockingPosition.getLockingPosition(l2LockingPosition.tokenOfOwnerByIndex(bob, 0)).expDate, 365);
+        assertEq(
+            l2LockingPosition.getLockingPosition(l2LockingPosition.tokenOfOwnerByIndex(bob, 0)).pausedLockingDuration, 0
+        );
+    }
+
+    function test_TransferFrom_Alowance() public {
+        address alice = address(0x1);
+        address bob = address(0x2);
+        assertEq(l2LockingPosition.totalSupply(), 0);
+        assertEq(l2LockingPosition.balanceOf(alice), 0);
+        assertEq(l2LockingPosition.balanceOf(bob), 0);
+
+        vm.prank(address(l2Staking));
+        l2LockingPosition.createLockingPosition(address(l2Staking), alice, 100 * 10 ** 18, 365);
+
+        assertEq(l2LockingPosition.totalSupply(), 1);
+        assertEq(l2LockingPosition.balanceOf(alice), 1);
+        assertEq(l2LockingPosition.balanceOf(bob), 0);
+
+        // approve bob to spend the first locking position of alice
+        uint256 positionId = l2LockingPosition.tokenOfOwnerByIndex(alice, 0);
+        vm.prank(alice);
+        l2LockingPosition.approve(bob, positionId);
+
+        // transfer the first locking position of alice to bob as bob
+        vm.prank(bob);
+        l2LockingPosition.transferFrom(alice, bob, positionId);
+
+        assertEq(l2LockingPosition.totalSupply(), 1);
+        assertEq(l2LockingPosition.balanceOf(alice), 0);
+        assertEq(l2LockingPosition.balanceOf(bob), 1);
+
+        assertEq(
+            l2LockingPosition.getLockingPosition(l2LockingPosition.tokenOfOwnerByIndex(bob, 0)).amount, 100 * 10 ** 18
+        );
+        assertEq(l2LockingPosition.getLockingPosition(l2LockingPosition.tokenOfOwnerByIndex(bob, 0)).expDate, 365);
+        assertEq(
+            l2LockingPosition.getLockingPosition(l2LockingPosition.tokenOfOwnerByIndex(bob, 0)).pausedLockingDuration, 0
+        );
+    }
+
+    function test_TransferFrom_PositionDoesNotExist() public {
+        address alice = address(0x1);
+        address bob = address(0x2);
+        vm.prank(alice);
+        vm.expectRevert("L2LockingPosition: locking position does not exist");
+        l2LockingPosition.transferFrom(alice, bob, 1);
+    }
+
+    function test_SafeTransferFrom() public {
+        address alice = address(0x1);
+        address bob = address(0x2);
+        assertEq(l2LockingPosition.totalSupply(), 0);
+        assertEq(l2LockingPosition.balanceOf(alice), 0);
+        assertEq(l2LockingPosition.balanceOf(bob), 0);
+
+        vm.prank(address(l2Staking));
+        l2LockingPosition.createLockingPosition(address(l2Staking), alice, 100 * 10 ** 18, 365);
+
+        assertEq(l2LockingPosition.totalSupply(), 1);
+        assertEq(l2LockingPosition.balanceOf(alice), 1);
+        assertEq(l2LockingPosition.balanceOf(bob), 0);
+
+        // transfer the first locking position of alice to bob
+        uint256 positionId = l2LockingPosition.tokenOfOwnerByIndex(alice, 0);
+        vm.prank(alice);
+        l2LockingPosition.safeTransferFrom(alice, bob, positionId, "");
+
+        assertEq(l2LockingPosition.totalSupply(), 1);
+        assertEq(l2LockingPosition.balanceOf(alice), 0);
+        assertEq(l2LockingPosition.balanceOf(bob), 1);
+
+        assertEq(
+            l2LockingPosition.getLockingPosition(l2LockingPosition.tokenOfOwnerByIndex(bob, 0)).amount, 100 * 10 ** 18
+        );
+        assertEq(l2LockingPosition.getLockingPosition(l2LockingPosition.tokenOfOwnerByIndex(bob, 0)).expDate, 365);
+        assertEq(
+            l2LockingPosition.getLockingPosition(l2LockingPosition.tokenOfOwnerByIndex(bob, 0)).pausedLockingDuration, 0
+        );
+    }
+
+    function test_SafeTransferFrom_Alowance() public {
+        address alice = address(0x1);
+        address bob = address(0x2);
+        assertEq(l2LockingPosition.totalSupply(), 0);
+        assertEq(l2LockingPosition.balanceOf(alice), 0);
+        assertEq(l2LockingPosition.balanceOf(bob), 0);
+
+        vm.prank(address(l2Staking));
+        l2LockingPosition.createLockingPosition(address(l2Staking), alice, 100 * 10 ** 18, 365);
+
+        assertEq(l2LockingPosition.totalSupply(), 1);
+        assertEq(l2LockingPosition.balanceOf(alice), 1);
+        assertEq(l2LockingPosition.balanceOf(bob), 0);
+
+        // approve bob to spend the first locking position of alice
+        uint256 positionId = l2LockingPosition.tokenOfOwnerByIndex(alice, 0);
+        vm.prank(alice);
+        l2LockingPosition.approve(bob, positionId);
+
+        // transfer the first locking position of alice to bob as bob
+        vm.prank(bob);
+        l2LockingPosition.safeTransferFrom(alice, bob, positionId, "");
+
+        assertEq(l2LockingPosition.totalSupply(), 1);
+        assertEq(l2LockingPosition.balanceOf(alice), 0);
+        assertEq(l2LockingPosition.balanceOf(bob), 1);
+
+        assertEq(
+            l2LockingPosition.getLockingPosition(l2LockingPosition.tokenOfOwnerByIndex(bob, 0)).amount, 100 * 10 ** 18
+        );
+        assertEq(l2LockingPosition.getLockingPosition(l2LockingPosition.tokenOfOwnerByIndex(bob, 0)).expDate, 365);
+        assertEq(
+            l2LockingPosition.getLockingPosition(l2LockingPosition.tokenOfOwnerByIndex(bob, 0)).pausedLockingDuration, 0
+        );
+    }
+
+    function test_SafeTransferFrom_PositionDoesNotExist() public {
+        address alice = address(0x1);
+        address bob = address(0x2);
+        vm.prank(alice);
+        vm.expectRevert("L2LockingPosition: locking position does not exist");
+        l2LockingPosition.safeTransferFrom(alice, bob, 1, "");
     }
 }

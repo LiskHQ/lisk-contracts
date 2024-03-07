@@ -73,11 +73,19 @@ contract L2LockingPosition is Initializable, OwnableUpgradeable, UUPSUpgradeable
         return block.timestamp / 1 days;
     }
 
+    /// @notice Returns whether the given locking position is null. Locking position is null if all its fields are
+    ///         initialized to 0 or address(0).
+    /// @param position Locking position to be checked.
+    /// @return Whether the given locking position is null.
     function isLockingPositionNull(LockingPosition memory position) internal view virtual returns (bool) {
         return position.creator == address(0) && position.amount == 0 && position.expDate == 0
             && position.pausedLockingDuration == 0;
     }
 
+    /// @notice Change owner of the locking position and adjust voting power.
+    /// @param from Address of the current owner of the locking position.
+    /// @param to Address of the new owner of the locking position.
+    /// @param tokenId ID of the locking position.
     function transferFrom(
         address from,
         address to,
@@ -87,6 +95,8 @@ contract L2LockingPosition is Initializable, OwnableUpgradeable, UUPSUpgradeable
         virtual
         override(ERC721Upgradeable, IERC721)
     {
+        require(!isLockingPositionNull(lockingPositions[tokenId]), "L2LockingPosition: locking position does not exist");
+
         super.transferFrom(from, to, tokenId);
 
         // remove voting power for an old owner
@@ -100,6 +110,10 @@ contract L2LockingPosition is Initializable, OwnableUpgradeable, UUPSUpgradeable
         );
     }
 
+    /// @notice Safetly change owner of the locking position and adjust voting power.
+    /// @param from Address of the current owner of the locking position.
+    /// @param to Address of the new owner of the locking position.
+    /// @param tokenId ID of the locking position.
     function safeTransferFrom(
         address from,
         address to,
@@ -111,18 +125,16 @@ contract L2LockingPosition is Initializable, OwnableUpgradeable, UUPSUpgradeable
         override(ERC721Upgradeable, IERC721)
     {
         super.safeTransferFrom(from, to, tokenId, data);
-
-        // remove voting power for an old owner
-        IL2VotingPower(powerVotingContract).adjustVotingPower(
-            from, lockingPositions[tokenId], LockingPosition(address(0), 0, 0, 0)
-        );
-
-        // add voting power to a new owner
-        IL2VotingPower(powerVotingContract).adjustVotingPower(
-            to, LockingPosition(address(0), 0, 0, 0), lockingPositions[tokenId]
-        );
+        // check if locking position exists is done in transferFrom because it is called by safeTransferFrom
+        // voting power is adjusted in transferFrom because it is called by safeTransferFrom
     }
 
+    /// @notice Creates a new locking position.
+    /// @param creator Address of the creator of the locking position.
+    /// @param owner Address of the owner of the locking position.
+    /// @param amount Amount to be locked.
+    /// @param lockingDuration Duration for which the amount should be locked.
+    /// @return ID of the created locking position.
     function createLockingPosition(
         address creator,
         address owner,
