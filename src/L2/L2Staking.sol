@@ -15,106 +15,62 @@ interface IL2LiskToken {
     function transferFrom(address from, address to, uint256 value) external returns (bool);
 }
 
-/// @title IL2VotingPower
-/// @notice Interface for the L2VotingPower contract.
-interface IL2VotingPower {
-    function adjustVotingPower(
-        address ownerAddress,
-        LockingPosition memory positionBefore,
-        LockingPosition memory positionAfter
+/// @title IL2LockingPosition
+/// @notice Interface for the L2LockingPosition contract.
+interface IL2LockingPosition {
+    function createLockingPosition(
+        address creator,
+        address owner,
+        uint256 amount,
+        uint256 lockingDuration
+    )
+        external
+        returns (uint256);
+    function modifyLockingPosition(
+        uint256 positionId,
+        uint256 amount,
+        uint256 expDate,
+        uint256 pausedLockingDuration
     )
         external;
-}
-
-interface IL2LockingPosition {
-    function createLockingPosition(address account, uint256 _amount, uint256 _pausedLockingDuration) external;
-    function getLockingPosition(uint256 tokenId) external view returns (LockingPosition memory);
+    function removeLockingPosition(uint256 positionId) external;
+    function getLockingPosition(uint256 positionId) external view returns (LockingPosition memory);
     function getAllLockingPositionsByOwner(address owner) external view returns (LockingPosition[] memory);
-
     function ownerOf(uint256 tokenId) external view returns (address);
 }
 
 /// @title L2Staking
 /// @notice This contract handles the staking functionality for the L2 network.
 contract L2Staking is Initializable, OwnableUpgradeable, UUPSUpgradeable, ISemver {
-    /// @notice Struct for locking position.
-    struct Lock {
-        address ownerAddress;
-        uint256 amount;
-        uint256 unlockingPeriod;
-        uint256 expDate;
-        uint256 lastClaimDate;
-    }
-
     /// @notice Minimum possible locking duration (in days).
-    uint8 public constant MIN_LOCKING_DURATION = 14;
+    uint32 public constant MIN_LOCKING_DURATION = 14;
 
     /// @notice Maximum possible locking duration (in days).
-    uint256 public constant MAX_LOCKING_DURATION = 730; // 2 years
+    uint32 public constant MAX_LOCKING_DURATION = 730; // 2 years
 
     /// @notice Emergency locking duration to enable fast unlock option (in days).
-    uint256 public constant FAST_UNLOCK_DURATION = 3;
+    uint32 public constant FAST_UNLOCK_DURATION = 3;
 
-    /// @notice The daily rewards guaranteed by the staking protoco (in LSK).
-    uint256 public constant BASE_DAILY_REWARD = (uint256(18_000_000) / (3 * 365)) * 10 ** 18;
+    /// @notice Specifies the part of the locked amount that is subject to penalty in case of fast unlock.
+    uint32 public constant PENALTY_DENOMINATOR = 2;
 
-    /// @notice The offset value of stake weight as a linear function of remaining stake duration.
-    uint256 public constant OFFSET = 150;
+    /// @notice Mapping of addresses to boolean values indicating whether the address is allowed to create locking
+    ///         positions.
+    mapping(address => bool) public allowedCreators;
 
-    /// @notice Total weight of all active locking positions.
-    uint256 public totalWeight;
-
-    /// @notice Total amount locked from all active locking positions.
-    uint256 public totalAmountLocked;
-
-    /// @notice Total amount requested to unlock (i.e., unlocking period has started).
-    uint256 public pendingUnlockAmount;
-
-    /// @notice Date of the last user-made action that caused the update of global variables.
-    uint256 public lastTxDate;
-
-    /// @notice Next available lock position index;
-    uint32 public lockNonce;
-
-    /// @notice Mapping of staking positions by Id.
-    mapping(uint256 => Lock) public locks;
-
-    /// @notice Storing the total weight of all stakes for the end of each day since the beginning of the staking
-    ///         process.
-    mapping(uint256 => uint256) public totalWeights;
-
-    /// @notice Storing the total amount of the staked tokens for the end of each day since the beginning of the staking
-    ///         process.
-    mapping(uint256 => uint256) public totalAmountsLocked;
-
-    /// @notice Storing the total amount expiring per day for next MAX_LOCKING_DURATION days.
-    mapping(uint256 => uint256) public totalUnlocked;
+    /// @notice  Address of the L2LiskToken contract.
+    address public l2LiskTokenContract;
 
     /// @notice Address of the Locking position contract.
     address public lockingPositionContract;
 
-    /// @notice  Address of the Voting Power contract.
-    address public votingPowerContract;
-
-    /// @notice  Address of the Rewards contract.
-    address public rewardsContract;
-
-    /// @notice  Address of the L2LiskToken contract.
-    address public l2TokenContract;
-
-    /// @notice  Address of the DAO contract.
+    /// @notice Address of the DAO contract.
     address public daoContract;
 
     /// @notice Semantic version of the contract.
     string public version;
 
-    // @notice Only Rewards contract can call a function.
-    modifier onlyRewards() {
-        require(msg.sender == rewardsContract, "L2Staking: only Rewards contract can call this function");
-        _;
-    }
-
-    /// @notice Event emitted when a user tries to claim rewards before the locking period ends.
+    /// @notice Event emitted when a user tries to unlock a staking position before the locking period ends.
     event LockingPeriodNotEnded();
 
     /// @notice Disabling initializers on implementation contract to prevent misuse.
@@ -123,14 +79,22 @@ contract L2Staking is Initializable, OwnableUpgradeable, UUPSUpgradeable, ISemve
     }
 
     /// @notice Setting global params.
-    /// @param _l2TokenContract The address of the L2LiskToken contract.
+    /// @param _l2LiskTokenContract The address of the L2LiskToken contract.
+    /// @param _lockingPositionContract The address of the L2LockingPosition contract.
     /// @param _daoContract The address of the DAO contract.
-    function initialize(address _l2TokenContract, address _daoContract) public initializer {
+    function initialize(
+        address _l2LiskTokenContract,
+        address _lockingPositionContract,
+        address _daoContract
+    )
+        public
+        initializer
+    {
         __Ownable_init(msg.sender);
         __UUPSUpgradeable_init();
-        l2TokenContract = _l2TokenContract;
+        l2LiskTokenContract = _l2LiskTokenContract;
+        lockingPositionContract = _lockingPositionContract;
         daoContract = _daoContract;
-        lastTxDate = todayDay();
         version = "1.0.0";
     }
 
@@ -144,401 +108,171 @@ contract L2Staking is Initializable, OwnableUpgradeable, UUPSUpgradeable, ISemve
     function todayDay() internal view virtual returns (uint256) {
         return block.timestamp / 1 days;
     }
-    /*
-    /// @notice Calculates key of a locking postion.
-    /// @return Unique ID of the locking postion.
-    function getLockID() internal virtual returns (uint32) {
-        lockNonce++;
 
-        return lockNonce;
+    /// @notice Returns whether the given locking position is null. Locking position is null if all its fields are
+    ///         initialized to 0 or address(0).
+    /// @param position Locking position to be checked.
+    /// @return Whether the given locking position is null.
+    function isLockingPositionNull(LockingPosition memory position) internal view virtual returns (bool) {
+        return position.creator == address(0) && position.amount == 0 && position.expDate == 0
+            && position.pausedLockingDuration == 0;
     }
 
-    /// @notice Whenever a user-made action occurs (lock/unlock/edit) the global state of the contract needs to be
-    ///         updated.
-    /// @dev This function is called before any state-changing function to update the global state of the contract.
-    function updateGlobalState() internal virtual {
-        uint256 today = todayDay();
-
-        if (today > lastTxDate) {
-            for (uint256 d = lastTxDate; d < today; d++) {
-                totalWeights[d] = totalWeight;
-                totalAmountsLocked[d] = totalAmountLocked;
-                // update total weight due to unlockable and pending unlocks
-                totalWeight -= pendingUnlockAmount + OFFSET * totalUnlocked[d + 1];
-                // the amount getting unlocked during the day should not be considered staked anymore
-                totalAmountLocked -= totalUnlocked[d + 1];
-                pendingUnlockAmount -= totalUnlocked[d + 1];
-            }
-            lastTxDate = today;
-        }
-    }
-
-    /// @notice Calculates the rewards for a given staking position.
-    /// @param lockId The ID of the staking position.
-    /// @return The rewards for the staking position.
-    function calculateRewards(uint256 lockId) internal view virtual returns (uint256) {
-        Lock memory lockObj = locks[lockId];
-        require(lockObj.ownerAddress != address(0x0), "L2Staking: lock does not exist");
-
-        uint256 duration = 0;
-        uint256 lastRewardDay = 0;
-        uint256 today = todayDay();
-
-        if (lockObj.unlockingPeriod == 0) {
-            // unlock request has been made
-            duration = lockObj.expDate - lockObj.lastClaimDate;
-            lastRewardDay = Math.min(lockObj.expDate, today);
-        } else {
-            duration = lockObj.unlockingPeriod;
-            lastRewardDay = today;
-        }
-
-        uint256 weight = lockObj.amount * (duration > 0 ? duration + OFFSET : 0);
-        uint256 reward = 0;
-
-        for (uint256 d = lockObj.lastClaimDate; d < lastRewardDay; d++) {
-            reward += (weight / totalWeights[d]) * dailyReward(d);
-            if (lockObj.unlockingPeriod == 0) {
-                // unlocking period active,  weight decreasing
-                weight -= lockObj.amount;
-            }
-        }
-
-        return reward;
-    }
-
-    /// @notice Claims the rewards for a given staking position.
-    /// @param lockId      The ID of the staking position.
-    /// @param lockRewards Whether the rewards should be locked or not.
-    function claimRewards(uint256 lockId, bool lockRewards) internal virtual {
-        Lock memory lockObj = locks[lockId];
-        require(lockObj.ownerAddress != address(0x0), "L2Staking: lock does not exist");
-
-        updateGlobalState();
-
-        uint256 today = todayDay();
-
-        if (lockObj.lastClaimDate >= today) {
-            return;
-        }
-
-        uint256 reward = calculateRewards(lockId);
-        lockObj.lastClaimDate = today;
-
-        // update expiration date
-        if (lockObj.unlockingPeriod > 0) {
-            lockObj.expDate = today + lockObj.unlockingPeriod;
-        }
-
-        if (reward == 0) {
-            return;
-        }
-
-        // send reward amount to lock.ownerAddress
-        IL2LiskToken(l2TokenContract).transfer(lockObj.ownerAddress, reward);
-
-        if (lockRewards == true) { // note that staking position has not expired
-                // TODO implemented by Hassaan increaseAmount(stake, reward)
-        }
-    }
-
-    /// @notice Calculates the penalty for a given staking position.
-    /// @param stakeAmount   The amount of the staking position.
-    /// @param stakeExpDate  The expiration date of the staking position.
-    /// @return The penalty for the staking position.
-    function calculatePenalty(uint256 stakeAmount, uint256 stakeExpDate) internal view virtual returns (uint256) {
-        uint256 penaltyFactorDuration = ((stakeExpDate - todayDay()) / 2) / MAX_LOCKING_DURATION;
-        return stakeAmount * penaltyFactorDuration;
-    }
-
-    /// @notice Adjusts the voting power for a given staking position.
-    /// @param ownerAddress   The address of the staking position owner.
-    /// @param positionBefore The staking position before the adjustment.
-    /// @param positionAfter  The staking position after the adjustment.
-    function adjustVotingPower(
-        address ownerAddress,
-        LockingPosition memory positionBefore,
-        LockingPosition memory positionAfter
+    function canLockingPositionBeModified(
+        uint256 lockId,
+        LockingPosition memory lock
     )
         internal
+        view
+        virtual
+        returns (bool)
     {
-        if (votingPowerContract != address(0)) {
-            IL2VotingPower(votingPowerContract).adjustVotingPower(ownerAddress, positionBefore, positionAfter);
+        address ownerOfLock = (IL2LockingPosition(lockingPositionContract)).ownerOf(lockId);
+        bool condition1 = allowedCreators[msg.sender] && lock.creator == msg.sender;
+        bool condition2 = ownerOfLock == msg.sender && lock.creator == address(this);
+
+        if (condition1 || condition2) {
+            return true;
         }
+        return false;
     }
 
-    /// @notice Checks if a locking position is null. Locking position is null if all its fields are zero.
-    /// @param position The locking position to check.
-    /// @return True if the locking position is null, otherwise false.
-    function isLockingPositionNull(LockingPosition memory position) internal pure virtual returns (bool) {
-        return position.amount == 0 && position.pausedLockingDuration == 0 && position.expDate == 0;
+    function calculatePenalty(uint256 amount, uint256 expDate) internal view virtual returns (uint256) {
+        uint256 penaltyFraction = (expDate - todayDay()) / (MAX_LOCKING_DURATION * PENALTY_DENOMINATOR);
+        return amount * penaltyFraction;
     }
 
-    /// @notice Initializes the Voting Power contract by setting the address of the Voting Power contract.
-    /// @param _votingPowerContract The address of the Voting Power contract.
-    function initializeVotingPower(address _votingPowerContract) public virtual onlyOwner {
-        require(votingPowerContract == address(0), "L2Staking: Voting Power contract already initialized");
-        votingPowerContract = _votingPowerContract;
-    }
-
-    /// @notice Initializes the Rewards contract by setting the address of the Rewards contract.
-    /// @param _rewardsContract The address of the Rewards contract.
-    function initializeRewards(address _rewardsContract) public virtual onlyRewards {
-        rewardsContract = _rewardsContract;
-    }
-
-    /// @notice Locks a staking position.
-    /// @param amount The amount to be locked.
-    /// @param unlockingPeriod The duration of the locking postion.
-    function lockAmount(uint256 amount, uint256 unlockingPeriod) public virtual returns (uint32) {
+    function lockAmount(address owner, uint256 amount, uint256 lockingDuration) public virtual returns (uint256) {
         require(
-            unlockingPeriod >= MIN_LOCKING_DURATION,
-            "L2Staking: unlockingPeriod should be at least MIN_UNLOCKING_PEROID"
+            lockingDuration >= MIN_LOCKING_DURATION,
+            "L2Staking: lockingDuration should be at least MIN_LOCKING_DURATION"
         );
         require(
-            unlockingPeriod <= MAX_LOCKING_DURATION,
-            "L2Staking: unlockingPeriod can not be greater than MAX_LOCKING_DURATION"
-        );
-        updateGlobalState();
-
-        IL2LiskToken(l2TokenContract).transferFrom(msg.sender, address(this), amount);
-
-        Lock memory lockObj = Lock(msg.sender, amount, unlockingPeriod, 0, todayDay());
-
-        totalWeight += amount * (OFFSET + unlockingPeriod);
-        totalAmountLocked += amount;
-
-        adjustVotingPower(
-            lockObj.ownerAddress,
-            LockingPosition(0, 0, 0),
-            LockingPosition(lockObj.amount, lockObj.unlockingPeriod, lockObj.expDate)
+            lockingDuration <= MAX_LOCKING_DURATION,
+            "L2Staking: lockingDuration can not be greater than MAX_LOCKING_DURATION"
         );
 
-        uint32 lockID = getLockID();
-        locks[lockID] = lockObj;
-
-        return lockID;
-    }
-
-    /// @notice Increase locked amount for an exisiting locking postion.
-    /// @param lockId  The ID of the staking position.
-    /// @param amountIncrease Increased amount.
-    /// @param lockUnclaimedRewards Whether the unclaimed rewards should be locked or not.
-    function increaseLockingAmount(uint32 lockId, uint256 amountIncrease, bool lockUnclaimedRewards) public virtual {
-        Lock memory lockObj = locks[lockId];
-        require(lockObj.ownerAddress != address(0x0), "L2Staking: Lock does not exist");
-        require(msg.sender == lockObj.ownerAddress, "L2Staking: Only owner can unlock");
-        require(amountIncrease > 0, "L2Staking: Increased amout should be greater than zero");
-    require(lockObj.expDate == 0 || lockObj.expDate > todayDay(), "L2Staking: Locking position is already expired");
-
-        if (lockObj.lastClaimDate < todayDay()) {
-            claimRewards(lockId, lockUnclaimedRewards);
-        }
-
-        increaseAmount(lockId, amountIncrease);
-    }
-
-    function increaseAmount(uint32 lockId, uint256 amountIncrease) private {
-        Lock memory lockObj = locks[lockId];
-
-        IL2LiskToken(l2TokenContract).transferFrom(lockObj.ownerAddress, address(this), amountIncrease);
-
-        LockingPosition memory previousLocking =
-            LockingPosition(lockObj.amount, lockObj.unlockingPeriod, lockObj.expDate);
-
-        lockObj.amount += amountIncrease;
-
-        totalAmountLocked += amountIncrease;
-
-        uint256 duration;
-
-        if (lockObj.expDate == 0) {
-            duration = lockObj.unlockingPeriod;
+        address creator = address(0);
+        if (allowedCreators[msg.sender]) {
+            creator = msg.sender;
         } else {
-            duration = lockObj.expDate - todayDay();
+            creator = address(this);
         }
 
-        totalWeight += amountIncrease + (duration + OFFSET);
+        bool success = IL2LiskToken(l2LiskTokenContract).transferFrom(owner, address(this), amount);
+        require(success, "L2Staking: LSK token transfer from owner to Staking contract failed");
 
-        if (lockObj.unlockingPeriod == 0) {
-            pendingUnlockAmount += amountIncrease;
-            totalUnlocked[lockObj.expDate] += amountIncrease;
-        }
+        uint256 lockId =
+            (IL2LockingPosition(lockingPositionContract)).createLockingPosition(creator, owner, amount, lockingDuration);
 
-        adjustVotingPower(
-            lockObj.ownerAddress,
-            previousLocking,
-            LockingPosition(lockObj.amount, lockObj.unlockingPeriod, lockObj.expDate)
-        );
+        return lockId;
     }
 
-    /// @notice Extends unlocking period for an existing locking position.
-    /// @param lockId The ID of the staking position.
-    /// @param extendDays The duration by which the staking position is to be extended.
-    /// @param lockUnclaimedRewards Whether the unclaimed rewards should be locked or not.
-    function extendUnlockingPeriod(uint32 lockId, uint256 extendDays, bool lockUnclaimedRewards) public virtual {
-        Lock memory lockObj = locks[lockId];
-        require(lockObj.ownerAddress != address(0x0), "L2Staking: Lock does not exist");
-        require(msg.sender == lockObj.ownerAddress, "L2Staking: Only owner can unlock");
+    function unlock(uint256 lockId) public virtual {
+        LockingPosition memory lock = (IL2LockingPosition(lockingPositionContract)).getLockingPosition(lockId);
+        require(isLockingPositionNull(lock) == false, "L2Staking: locking position does not exist");
+        require(canLockingPositionBeModified(lockId, lock), "L2Staking: only owner or creator can call this function");
 
-        claimRewards(lockId, lockUnclaimedRewards);
-
-        LockingPosition memory previousLocking =
-            LockingPosition(lockObj.amount, lockObj.unlockingPeriod, lockObj.expDate);
-
-        if (lockObj.expDate == 0) {
-            lockObj.unlockingPeriod += extendDays;
+        if (lock.expDate <= todayDay() && lock.pausedLockingDuration == 0) {
+            (IL2LockingPosition(lockingPositionContract)).removeLockingPosition(lockId);
+            address ownerOfLock = (IL2LockingPosition(lockingPositionContract)).ownerOf(lockId);
+            bool success = IL2LiskToken(l2LiskTokenContract).transfer(ownerOfLock, lock.amount);
+            require(success, "L2Staking: LSK token transfer from Staking contract to owner failed");
         } else {
-            if (lockObj.expDate > todayDay()) {
-                totalUnlocked[lockObj.expDate] -= lockObj.amount;
-            } else {
-                totalAmountLocked += lockObj.amount;
-            }
-        }
-
-        uint256 baseExpiry = Math.max(lockObj.expDate, todayDay());
-        lockObj.expDate = baseExpiry + extendDays;
-
-        totalUnlocked[lockObj.expDate] += lockObj.amount;
-
-        totalWeight += extendDays * lockObj.amount;
-
-        adjustVotingPower(
-            lockObj.ownerAddress,
-            previousLocking,
-            LockingPosition(lockObj.amount, lockObj.unlockingPeriod, lockObj.expDate)
-        );
-    }
-
-    /// @notice Resume locking for an existing staking position.
-    /// @param lockId The ID of the staking postion.
-    /// @param lockUnclaimedRewards Whether the unclaimed rewards should be locked or not.
-    function resumeLocking(uint32 lockId, bool lockUnclaimedRewards) public virtual {
-        Lock memory lockObj = locks[lockId];
-        require(lockObj.ownerAddress != address(0x0), "L2Staking: Lock does not exist");
-        require(msg.sender == lockObj.ownerAddress, "L2Staking: Only owner can unlock");
-        require(lockObj.expDate != 0, "L2Staking: Unlocking period has not started");
-        require(lockObj.expDate > todayDay(), "L2Staking: Unlocking period has ended, amount unlocked");
-
-        claimRewards(lockId, lockUnclaimedRewards);
-
-        LockingPosition memory previousLocking =
-            LockingPosition(lockObj.amount, lockObj.unlockingPeriod, lockObj.expDate);
-
-        lockObj.unlockingPeriod = lockObj.expDate - todayDay();
-        lockObj.expDate = 0;
-
-        pendingUnlockAmount -= lockObj.amount;
-        totalUnlocked[lockObj.expDate] -= lockObj.amount;
-
-        adjustVotingPower(
-            lockObj.ownerAddress,
-            previousLocking,
-            LockingPosition(lockObj.amount, lockObj.unlockingPeriod, lockObj.expDate)
-        );
-    }
-
-    /// @notice Returns daily reward for a given day.
-    /// @param day The day for which to calculate the reward.
-    /// @return The daily reward for the given day.
-    function dailyReward(uint256 day) public view virtual returns (uint256) {
-        uint256 reward = BASE_DAILY_REWARD / 365;
-        uint256 cap = totalAmountsLocked[day] / 365;
-
-        return Math.min(reward, cap);
-    }
-
-    /// @notice Unlock a staking position.
-    /// @param lockId      The ID of the staking position.
-    function unlock(uint32 lockId) public virtual {
-        Lock memory lockObj = locks[lockId];
-        require(lockObj.ownerAddress != address(0x0), "L2Staking: lock does not exist");
-        require(msg.sender == lockObj.ownerAddress, "L2Staking: only owner can unlock");
-
-        // assign any unclaimed rewards
-        claimRewards(lockId, true);
-
-        // update staking position
-        LockingPosition memory previousLocking =
-            LockingPosition(lockObj.amount, lockObj.unlockingPeriod, lockObj.expDate);
-        lockObj.expDate = todayDay() + lockObj.unlockingPeriod;
-
-        // update global variables and arrays
-        pendingUnlockAmount += lockObj.amount;
-        totalUnlocked[lockObj.expDate] += lockObj.amount;
-
-        // call voting power contract to update voting power
-    LockingPosition memory newLocking = LockingPosition(lockObj.amount, lockObj.unlockingPeriod, lockObj.expDate);
-        adjustVotingPower(lockObj.ownerAddress, previousLocking, newLocking);
-    }
-
-    /// @notice Claim the unlocked amount of a staking position.
-    /// @param lockId      The ID of the staking position.
-    function claimUnlockedAmount(uint256 lockId) public virtual {
-        Lock memory lockObj = locks[lockId];
-        require(lockObj.ownerAddress != address(0x0), "L2Staking: lock does not exist");
-        require(msg.sender == lockObj.ownerAddress, "L2Staking: only owner can claim");
-        require(lockObj.unlockingPeriod == 0, "L2Staking: unlocking period has not started");
-
-        if (lockObj.expDate <= todayDay()) {
-            // unlocking is valid
-            claimRewards(lockId, false); // send unclaimed rewards
-            LockingPosition memory previousLocking =
-                LockingPosition(lockObj.amount, lockObj.unlockingPeriod, lockObj.expDate);
-
-            //remove lock from staking entries data structure;
-            delete locks[lockId];
-
-            adjustVotingPower(lockObj.ownerAddress, previousLocking, LockingPosition(0, 0, 0));
-
-            // send lockObj.amount to lock.ownerAddress
-            IL2LiskToken(l2TokenContract).transfer(lockObj.ownerAddress, lockObj.amount);
-        } else {
-            // stake did not expire
             emit LockingPeriodNotEnded();
         }
     }
 
-    /// @notice Claim the rewards for a staking position before the expiration date. Because of the early claim,
-    ///         the user will be penalized.
-    /// @param lockId      The ID of the staking position.
-    function claimBeforeExpiration(uint32 lockId) public virtual {
-        // get locking position owner
-        address owner = (IL2LockingPosition(lockingPositionContract)).ownerOf(lockId);
-        require(msg.sender == owner, "L2Staking: only owner can claim before expiration");
-
-        // get LockingPosition from L2LockingPosition contract
-        LockingPosition memory lockObj = (IL2LockingPosition(lockingPositionContract)).getLockingPosition(lockId);
-        require(isLockingPositionNull(lockObj) == false, "L2Staking: lock does not exist");
+    function fastUnlock(uint256 lockId) public virtual {
+        LockingPosition memory lock = (IL2LockingPosition(lockingPositionContract)).getLockingPosition(lockId);
+        require(isLockingPositionNull(lock) == false, "L2Staking: locking position does not exist");
+        require(canLockingPositionBeModified(lockId, lock), "L2Staking: only owner or creator can call this function");
 
         uint256 today = todayDay();
+        require(lock.expDate - today > FAST_UNLOCK_DURATION, "L2Staking: less than 3 days until unlock");
 
-        require(lockObj.expDate == 0, "L2Staking: unlocking period has not started");
-        require(lockObj.expDate - today >= FAST_UNLOCK_DURATION, "L2Staking: less than 14 days until unlock");
+        // calculate penalty
+        uint256 penalty = calculatePenalty(lock.amount, lock.expDate);
 
-        claimRewards(lockId, false);
+        uint256 amount = lock.amount - penalty;
+        uint256 expDate = today + FAST_UNLOCK_DURATION;
 
-        //calculate penalty, update global variables and arrays
-        uint256 penalty = calculatePenalty(lockObj.amount, lockObj.expDate);
-        totalUnlocked[lockObj.expDate] -= lockObj.amount;
-        totalUnlocked[today + FAST_UNLOCK_DURATION] += lockObj.amount - penalty;
-        totalWeight -= ((lockObj.expDate - today) + OFFSET) * lockObj.amount;
-        totalWeight += (FAST_UNLOCK_DURATION + OFFSET) * (lockObj.amount - penalty);
-        totalAmountLocked -= penalty;
-        pendingUnlockAmount -= penalty;
+        // update locking position
+        (IL2LockingPosition(lockingPositionContract)).modifyLockingPosition(lockId, amount, expDate, 0);
 
-        //update locking position
-        LockingPosition memory previousLocking =
-            LockingPosition(lockObj.amount, lockObj.pausedLockingDuration, lockObj.expDate);
-        lockObj.amount -= penalty;
-        lockObj.expDate = today + FAST_UNLOCK_DURATION;
-        LockingPosition memory newLocking =
-            LockingPosition(lockObj.amount, lockObj.pausedLockingDuration, lockObj.expDate);
+        if (lock.creator == address(this)) {
+            // send penalty amount to the DAO contract
+            bool success = IL2LiskToken(l2LiskTokenContract).transfer(daoContract, penalty);
+            require(success, "L2Staking: LSK token transfer from Staking contract to DAO failed");
+        } else {
+            // send penalty amount to the creator
+            bool success = IL2LiskToken(l2LiskTokenContract).transfer(lock.creator, penalty);
+            require(success, "L2Staking: LSK token transfer from Staking contract to creator failed");
+        }
+    }
 
-        //remove voting power
-        adjustVotingPower(owner, previousLocking, newLocking);
+    function increaseLockingAmount(uint256 lockId, uint256 amountIncrease) public virtual {
+        LockingPosition memory lock = (IL2LockingPosition(lockingPositionContract)).getLockingPosition(lockId);
+        require(isLockingPositionNull(lock) == false, "L2Staking: locking position does not exist");
+        require(canLockingPositionBeModified(lockId, lock), "L2Staking: only owner or creator can call this function");
+        require(amountIncrease > 0, "L2Staking: increased amount should be greater than zero");
+        // TODO check if this condition is true. Should there be maybe || instead of && ???
+        require(
+            lock.pausedLockingDuration > 0 && lock.expDate > todayDay(),
+            "L2Staking: can not increase amount for expired locking position"
+        );
 
-        //send penalty amount to DAO treasury;
-        IL2LiskToken(l2TokenContract).transfer(daoContract, penalty);
-    }*/
+        // update locking position
+        (IL2LockingPosition(lockingPositionContract)).modifyLockingPosition(
+            lockId, lock.amount + amountIncrease, lock.expDate, lock.pausedLockingDuration
+        );
+    }
+
+    function extendLockingDuration(uint256 lockId, uint256 extendDays) public virtual {
+        LockingPosition memory lock = (IL2LockingPosition(lockingPositionContract)).getLockingPosition(lockId);
+        require(isLockingPositionNull(lock) == false, "L2Staking: locking position does not exist");
+        require(canLockingPositionBeModified(lockId, lock), "L2Staking: only owner or creator can call this function");
+        require(extendDays > 0, "L2Staking: extendDays should be greater than zero");
+
+        if (lock.pausedLockingDuration > 0) {
+            // remaining duration is paused
+            lock.pausedLockingDuration += extendDays;
+        } else {
+            // remaining duration not paused, if expired, assume expDate is today
+            lock.expDate += Math.max(lock.expDate, todayDay()) + extendDays;
+        }
+
+        // update locking position
+        (IL2LockingPosition(lockingPositionContract)).modifyLockingPosition(
+            lockId, lock.amount, lock.expDate, lock.pausedLockingDuration
+        );
+    }
+
+    function pauseRemainingLockingDuration(uint256 lockId) public virtual {
+        LockingPosition memory lock = (IL2LockingPosition(lockingPositionContract)).getLockingPosition(lockId);
+        require(isLockingPositionNull(lock) == false, "L2Staking: locking position does not exist");
+        require(canLockingPositionBeModified(lockId, lock), "L2Staking: only owner or creator can call this function");
+        require(lock.pausedLockingDuration == 0, "L2Staking: remaining duration is already paused");
+
+        uint256 today = todayDay();
+        require(lock.expDate > today, "L2Staking: locking period has ended");
+
+        // update locking position
+        lock.pausedLockingDuration = lock.expDate - today;
+        (IL2LockingPosition(lockingPositionContract)).modifyLockingPosition(
+            lockId, lock.amount, lock.expDate, lock.pausedLockingDuration
+        );
+    }
+
+    function resumeCountdown(uint256 lockId) public virtual {
+        LockingPosition memory lock = (IL2LockingPosition(lockingPositionContract)).getLockingPosition(lockId);
+        require(isLockingPositionNull(lock) == false, "L2Staking: locking position does not exist");
+        require(canLockingPositionBeModified(lockId, lock), "L2Staking: only owner or creator can call this function");
+        require(lock.pausedLockingDuration > 0, "L2Staking: remaining duration is not paused");
+
+        // update locking position
+        lock.expDate = todayDay() + lock.pausedLockingDuration;
+        lock.pausedLockingDuration = 0;
+        (IL2LockingPosition(lockingPositionContract)).modifyLockingPosition(lockId, lock.amount, lock.expDate, 0);
+    }
 }

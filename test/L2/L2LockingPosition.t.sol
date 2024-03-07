@@ -25,15 +25,8 @@ contract L2LockingPositionTest is Test {
         // deploy L2Staking implementation contract
         l2StakingImplementation = new L2Staking();
 
-        // deploy L2Staking contract via proxy and initialize it at the same time
-        l2Staking = L2Staking(
-            address(
-                new ERC1967Proxy(
-                    address(l2StakingImplementation),
-                    abi.encodeWithSelector(l2Staking.initialize.selector, address(0x0), address(0x0))
-                )
-            )
-        );
+        // deploy L2Staking contract via proxy
+        l2Staking = L2Staking(address(new ERC1967Proxy(address(l2StakingImplementation), "")));
 
         assert(address(l2Staking) != address(0x0));
 
@@ -50,6 +43,9 @@ contract L2LockingPositionTest is Test {
 
         // deploy L2LockingPosition contract via proxy
         l2LockingPosition = L2LockingPosition(address(new ERC1967Proxy(address(l2LockingPositionImplementation), "")));
+
+        // initialize L2Staking contract
+        l2Staking.initialize(address(0), address(l2LockingPosition), address(0));
 
         // initialize L2VotingPower contract
         l2VotingPower.initialize(address(l2LockingPosition));
