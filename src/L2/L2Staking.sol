@@ -224,9 +224,8 @@ contract L2Staking is Initializable, OwnableUpgradeable, UUPSUpgradeable, ISemve
         require(isLockingPositionNull(lock) == false, "L2Staking: locking position does not exist");
         require(canLockingPositionBeModified(lockId, lock), "L2Staking: only owner or creator can call this function");
         require(amountIncrease > 0, "L2Staking: increased amount should be greater than zero");
-        // TODO check if this condition is true. Should there be maybe || instead of && ???
         require(
-            lock.pausedLockingDuration > 0 && lock.expDate > todayDay(),
+            lock.pausedLockingDuration > 0 || lock.expDate > todayDay(),
             "L2Staking: can not increase amount for expired locking position"
         );
 
