@@ -1,269 +1,146 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.23;
 
+import { OwnableUpgradeable } from "@openzeppelin-upgradeable/contracts/access/OwnableUpgradeable.sol";
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import { Test, console2 } from "forge-std/Test.sol";
-import { stdStorage, StdStorage } from "forge-std/StdStorage.sol";
+import { L2LockingPosition, LockingPosition } from "src/L2/L2LockingPosition.sol";
+import { L2LiskToken } from "src/L2/L2LiskToken.sol";
 import { L2Staking } from "src/L2/L2Staking.sol";
+import { L2VotingPower } from "src/L2/L2VotingPower.sol";
 
 contract L2StakingTest is Test {
-/*using stdStorage for StdStorage;
-
-    L2Staking public l2StakingImplementation;
+    L2LiskToken public l2LiskToken;
+    address public remoteToken;
+    address public bridge;
     L2Staking public l2Staking;
+    L2Staking public l2StakingImplementation;
+    L2VotingPower public l2VotingPower;
+    L2VotingPower public l2VotingPowerImplementation;
+    L2LockingPosition public l2LockingPosition;
+    L2LockingPosition public l2LockingPositionImplementation;
 
-    uint256 private constant OFFSET = 150;
+    address daoContractAddress;
 
-    uint256 deploymentDay = 19740;
-
-    address l2TokenContractAddress = address(0x0);
-    address daoContractAddress = address(0x0);
+    address alice;
+    address bob;
 
     function setUp() public {
-        skip(deploymentDay * 1 days);
+        daoContractAddress = address(0xDeaDbeefdEAdbeefdEadbEEFdeadbeEFdEaDbeeF);
+
+        alice = address(0x1);
+        bob = address(0x2);
+
+        bridge = vm.addr(uint256(bytes32("bridge")));
+        remoteToken = vm.addr(uint256(bytes32("remoteToken")));
+
+        // deploy L2LiskToken contract
+        // msg.sender and tx.origin needs to be the same for the contract to be able to call initialize()
+        vm.prank(address(this), address(this));
+        l2LiskToken = new L2LiskToken(remoteToken);
+        l2LiskToken.initialize(bridge);
+        vm.stopPrank();
+
+        assert(address(l2LiskToken) != address(0x0));
 
         // deploy L2Staking implementation contract
         l2StakingImplementation = new L2Staking();
 
-        // deploy L2Staking contract via proxy and initialize it at the same time
-        l2Staking = L2Staking(
-            address(
-                new ERC1967Proxy(
-                    address(l2StakingImplementation),
-                    abi.encodeWithSelector(l2Staking.initialize.selector, l2TokenContractAddress, daoContractAddress)
-                )
-            )
-        );
+        // deploy L2Staking contract via proxy
+        l2Staking = L2Staking(address(new ERC1967Proxy(address(l2StakingImplementation), "")));
 
-        assertEq(l2Staking.OFFSET(), OFFSET);
-        assertEq(l2Staking.lastTxDate(), deploymentDay);
+        assert(address(l2Staking) != address(0x0));
+
+        // deploy L2VotingPower implementation contract
+        l2VotingPowerImplementation = new L2VotingPower();
+
+        // deploy L2VotingPower contract via proxy
+        l2VotingPower = L2VotingPower(address(new ERC1967Proxy(address(l2VotingPowerImplementation), "")));
+
+        assert(address(l2VotingPower) != address(0x0));
+
+        // deploy L2LockingPosition implementation contract
+        l2LockingPositionImplementation = new L2LockingPosition();
+
+        // deploy L2LockingPosition contract via proxy
+        l2LockingPosition = L2LockingPosition(address(new ERC1967Proxy(address(l2LockingPositionImplementation), "")));
+
+        assert(address(l2LockingPosition) != address(0x0));
+
+        // initialize L2Staking contract
+        l2Staking.initialize(address(l2LiskToken), address(l2LockingPosition), daoContractAddress);
+
+        // initialize L2VotingPower contract
+        l2VotingPower.initialize(address(l2LockingPosition));
+
+        assertEq(l2VotingPower.lockingPositionAddress(), address(l2LockingPosition));
+
+        // initialize L2LockingPosition contract
+        l2LockingPosition.initialize(address(l2Staking), address(l2VotingPower));
+
+        assertEq(l2LockingPosition.name(), "Lisk Locking Position");
+        assertEq(l2LockingPosition.symbol(), "LLP");
+        assertEq(l2LockingPosition.owner(), address(this));
+        assertEq(l2LockingPosition.stakingContract(), address(l2Staking));
+        assertEq(l2LockingPosition.powerVotingContract(), address(l2VotingPower));
+        assertEq(l2LockingPosition.totalSupply(), 0);
+
+        // add alice to the creator list
+        l2Staking.addCreator(alice);
+        assert(l2Staking.allowedCreators(alice));
+
+        // fund bob with 100 L2LiskToken
+        vm.prank(bridge);
+        l2LiskToken.mint(bob, 100 * 10 ** 18);
+        assertEq(l2LiskToken.balanceOf(bob), 100 * 10 ** 18);
+
+        // approve L2Staking to spend 100 L2LiskToken
+        vm.prank(bob);
+        l2LiskToken.approve(address(l2Staking), 100 * 10 ** 18);
+        assertEq(l2LiskToken.allowance(bob, address(l2Staking)), 100 * 10 ** 18);
     }
 
-    function test_DailyReward_RewardIsUsed() public {
-        uint256 day = 123;
-        // set totalAmountsLocked for a specific day bigger than yearly rewards amount
-        stdstore.target(address(l2Staking)).sig(l2Staking.totalAmountsLocked.selector).with_key(day).checked_write(
-            l2Staking.BASE_DAILY_REWARD() + 1 * 10 ** 18
-        );
-
-        //assertEq(l2Staking.dailyReward(day), 16438356164383561643835);
+    function test_AddCreator() public {
+        l2Staking.addCreator(bob);
+        assert(l2Staking.allowedCreators(bob));
     }
 
-    function test_DailyReward_CapIsUsed() public {
-        uint256 day = 123;
-        uint256 reward = 365000 * 10 ** 18;
-        stdstore.target(address(l2Staking)).sig(l2Staking.totalAmountsLocked.selector).with_key(day).checked_write(
-            reward
-        );
-
-        //assertEq(l2Staking.dailyReward(day), 1000 * 10 ** 18);
-    }*/
-
-/*function test_StakeIsAddedForTheSender() public {
-        uint256 creationDate = deploymentDay + 2;
-        uint256 amount = 1000;
-        uint256 duration = 450;
-        bool autoExtend = true;
-        uint256 creationTotalWeight = amount * (duration + OFFSET);
-
-        skip(2 days);
-
-        l2Staking.createStake(amount, duration, autoExtend);
-
-        Stake[] memory stakes = l2Staking.getStakes(address(this));
-
-        assertEq(stakes.length, 1);
-        assertEq(
-            abi.encode(stakes[0]),
-            abi.encode(
-                Stake(address(0x0), amount, creationDate + duration, creationDate, duration, creationTotalWeight)
-                Stake(address(0x0), amount, creationDate + duration, creationDate, duration, creationTotalWeight)
-            )
-            abi.encode(
-                L2Staking.Stake(
-                    address(0x0), amount, creationDate + duration, creationDate, duration, creationTotalWeight
-                )
-            )
-        );
-
-        l2Staking.createStake(amount, duration, !autoExtend);
-
-        stakes = l2Staking.getStakes(address(this));
-        assertEq(stakes.length, 2);
-        assertEq(
-            abi.encode(stakes[1]),
-    abi.encode(Stake(address(0x0), amount, creationDate + duration, creationDate, 0, creationTotalWeight * 2))
-        );
+    function test_AddCreator_OnlyOwnerCanCall() public {
+        vm.prank(bob);
+        vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, bob));
+        l2Staking.addCreator(bob);
     }
 
-    function test_TotalWeightIsAggregatedWhenStakeIsCreated() public {
-        uint256 amount = 1000;
-        uint256 duration = 450;
-        bool autoExtend = false;
-        uint256 totalWeight = amount * (duration + OFFSET);
-
-        l2Staking.createStake(amount, duration, autoExtend);
-
-        assertEq(l2Staking.totalWeight(), totalWeight);
-
-        duration = 150;
-        totalWeight += (amount * (duration + OFFSET));
-        l2Staking.createStake(amount, duration, autoExtend);
-
-        assertEq(l2Staking.totalWeight(), totalWeight);
+    function test_RemoveCreator() public {
+        l2Staking.addCreator(bob);
+        assert(l2Staking.allowedCreators(bob));
+        l2Staking.removeCreator(bob);
+        assert(!l2Staking.allowedCreators(bob));
     }
 
-    function test_totalAmountLockedIsAggregatedWhenStakeIsCreated() public {
-        uint256 amount = 1000;
-        uint256 duration = 450;
-        bool autoExtend = false;
+    function test_RemoveCreator_OnlyOwnerCanCall() public {
+        l2Staking.addCreator(bob);
+        assert(l2Staking.allowedCreators(bob));
 
-        l2Staking.createStake(amount, duration, autoExtend);
-
-        assertEq(l2Staking.totalAmountLocked(), amount);
-
-        uint256 anotherAmount = 5000;
-        l2Staking.createStake(anotherAmount, duration, autoExtend);
-
-        assertEq(l2Staking.totalAmountLocked(), amount + anotherAmount);
+        vm.prank(bob);
+        vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, bob));
+        l2Staking.removeCreator(bob);
     }
 
-    function test_pendingUnlockAmountIsAggregatedWhenCreatingAnExtendedState() public {
-        uint256 amount = 1000;
-        uint256 duration = 450;
+    function test_LockAmount() public {
+        assertEq(l2LockingPosition.totalSupply(), 0);
+        assertEq(l2VotingPower.totalSupply(), 0);
 
-        l2Staking.createStake(amount, duration, true);
+        vm.prank(bob);
+        l2Staking.lockAmount(bob, 100 * 10 ** 18, 365);
 
-        assertEq(l2Staking.pendingUnlockAmount(), amount);
+        assertEq(l2LockingPosition.totalSupply(), 1);
+        assertEq(l2LockingPosition.balanceOf(bob), 1);
+        assertEq(l2LockingPosition.getLockingPosition(1).amount, 100 * 10 ** 18);
+        assertEq(l2LockingPosition.getLockingPosition(1).expDate, 365);
+        assertEq(l2LockingPosition.getLockingPosition(1).pausedLockingDuration, 0);
 
-        uint256 anotherAmount = 5000;
-        l2Staking.createStake(anotherAmount, duration, true);
-
-        assertEq(l2Staking.pendingUnlockAmount(), amount + anotherAmount);
+        assertEq(l2VotingPower.totalSupply(), 100 * 10 ** 18);
+        assertEq(l2VotingPower.balanceOf(bob), 100 * 10 ** 18);
     }
-
-    function test_LastTxDateIsUpdatedWhenCreatingAStake() public {
-        uint256 day = deploymentDay + 3;
-
-        skip(3 days);
-
-        l2Staking.createStake(1000, 150, true);
-
-        assertEq(l2Staking.lastTxDate(), day);
-
-        day += 1;
-
-        skip(1 days);
-
-        l2Staking.createStake(1000, 150, true);
-
-        assertEq(l2Staking.lastTxDate(), day);
-    }
-
-    function test_TotalUnlockedAmountForExpiryDateIsAggregatedIfStakeIsNotExtended() public {
-        uint256 day = deploymentDay + 1;
-
-        skip(1 days);
-
-        l2Staking.createStake(1000, 450, false);
-
-        assertEq(l2Staking.totalUnlocked(day + 450), 1000);
-
-        l2Staking.createStake(1000, 450, false);
-
-        assertEq(l2Staking.totalUnlocked(day + 450), 1000 * 2);
-    }
-
-    function test_totalAmountLockedIsSetForTheDayWhenStakeIsCreated() public {
-        uint256 day = deploymentDay + 1;
-        uint256 amount = 1000;
-
-        skip(1 days);
-
-        l2Staking.createStake(amount, 450, false);
-        l2Staking.createStake(amount, 450, false);
-
-        assertEq(l2Staking.totalAmountsLocked(day), 2000);
-
-        skip(2 days);
-        day += 2;
-
-        l2Staking.createStake(amount, 450, true);
-
-        assertEq(l2Staking.totalAmountsLocked(day), 3000);
-    }
-
-    function test_TotalWeightIsSetForTheDayWhenStakeIsCreated() public {
-        uint256 day = deploymentDay + 1;
-        uint256 amount = 1000;
-        uint256 duration = 450;
-        uint256 creationTotalWeight = amount * (duration + OFFSET) * 2;
-
-        skip(1 days);
-
-        l2Staking.createStake(amount, duration, false);
-        l2Staking.createStake(amount, duration, true);
-
-        assertEq(l2Staking.totalWeights(day), creationTotalWeight);
-
-        day += 2;
-        skip(2 days);
-
-        duration = 150;
-        creationTotalWeight += amount * (duration + OFFSET);
-
-        l2Staking.createStake(amount, duration, false);
-
-        assertEq(l2Staking.totalWeights(day), creationTotalWeight);
-    }
-
-    function test_MissingPositionsAreSetWhenStakeIsCreated() public {
-        uint256 day = deploymentDay + 1;
-        uint256 amount = 1000;
-        uint256 duration = 450;
-        uint256 creationTotalWeight = amount * (duration + OFFSET);
-
-        skip(1 days);
-
-        l2Staking.createStake(amount, duration, false);
-
-        console2.logUint(l2Staking.lastTxDate());
-
-        assertEq(l2Staking.totalAmountsLocked(day - 1), 0);
-        assertEq(l2Staking.totalAmountsLocked(day), amount);
-
-        assertEq(l2Staking.totalWeights(day - 1), 0);
-        assertEq(l2Staking.totalWeights(day), creationTotalWeight);
-
-        skip(3 days);
-        day += 3;
-
-        l2Staking.createStake(amount, duration, false);
-
-        assertEq(l2Staking.totalAmountsLocked(deploymentDay + 2), amount);
-        assertEq(l2Staking.totalAmountsLocked(deploymentDay + 3), amount);
-
-        assertEq(l2Staking.totalWeights(deploymentDay + 2), creationTotalWeight);
-        assertEq(l2Staking.totalWeights(deploymentDay + 3), creationTotalWeight);
-
-        console2.logUint(l2Staking.lastTxDate());
-
-        assertEq(l2Staking.totalAmountsLocked(day), amount * 2);
-        assertEq(l2Staking.totalWeights(day), creationTotalWeight * 2);
-    }
-
-    function test_StakedAmountIsTransferredToEscrowContractWhenStakeIsCreated() public {
-        //assertTrue(false);
-    }
-
-    function test_dailyRewardIsCapped() public {
-        uint256 amount = 1000;
-        l2Staking.createStake(amount, 150, false);
-
-        assertEq(l2Staking.dailyReward(deploymentDay), 2);
-
-        l2Staking.createStake(l2Staking.YEARLY_REWARDS_AMOUNT(), 150, false);
-
-        assertEq(l2Staking.dailyReward(deploymentDay), l2Staking.YEARLY_REWARDS_AMOUNT() / 365);
-    }*/
 }

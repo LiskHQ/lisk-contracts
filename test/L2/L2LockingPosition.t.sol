@@ -44,6 +44,8 @@ contract L2LockingPositionTest is Test {
         // deploy L2LockingPosition contract via proxy
         l2LockingPosition = L2LockingPosition(address(new ERC1967Proxy(address(l2LockingPositionImplementation), "")));
 
+        assert(address(l2LockingPosition) != address(0x0));
+
         // initialize L2Staking contract
         l2Staking.initialize(address(0), address(l2LockingPosition), address(0));
 
