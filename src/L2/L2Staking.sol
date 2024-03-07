@@ -142,6 +142,14 @@ contract L2Staking is Initializable, OwnableUpgradeable, UUPSUpgradeable, ISemve
         return amount * penaltyFraction;
     }
 
+    function addCreator(address newCreator) public virtual onlyOwner {
+        allowedCreators[newCreator] = true;
+    }
+
+    function removeCreator(address creator) public virtual onlyOwner {
+        allowedCreators[creator] = false;
+    }
+
     function lockAmount(address owner, uint256 amount, uint256 lockingDuration) public virtual returns (uint256) {
         require(
             lockingDuration >= MIN_LOCKING_DURATION,
