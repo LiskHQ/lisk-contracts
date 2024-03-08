@@ -115,6 +115,10 @@ contract L2Staking is Initializable, OwnableUpgradeable, UUPSUpgradeable, ISemve
             && position.pausedLockingDuration == 0;
     }
 
+    /// @notice Returns whether the locking position can be modified by the caller.
+    /// @param lockId The ID of the locking position.
+    /// @param lock The locking position to be checked.
+    /// @return Whether the locking position can be modified by the caller.
     function canLockingPositionBeModified(
         uint256 lockId,
         LockingPosition memory lock
@@ -134,6 +138,10 @@ contract L2Staking is Initializable, OwnableUpgradeable, UUPSUpgradeable, ISemve
         return false;
     }
 
+    /// @notice Calculates the penalty for the given amount and expiration date.
+    /// @param amount The amount for which the penalty is calculated.
+    /// @param expDate The expiration date for which the penalty is calculated.
+    /// @return The penalty for the given amount and expiration date.
     function calculatePenalty(uint256 amount, uint256 expDate) internal view virtual returns (uint256) {
         uint256 today = todayDay();
         if (expDate <= today) {
@@ -142,14 +150,26 @@ contract L2Staking is Initializable, OwnableUpgradeable, UUPSUpgradeable, ISemve
         return (amount * (expDate - today)) / (MAX_LOCKING_DURATION * PENALTY_DENOMINATOR);
     }
 
+    /// @notice Adds a new creator to the list of allowed creators.
+    /// @param newCreator The address of the new creator to be added.
+    /// @dev Only the owner can call this function.
     function addCreator(address newCreator) public virtual onlyOwner {
         allowedCreators[newCreator] = true;
     }
 
+    /// @notice Removes a creator from the list of allowed creators.
+    /// @param creator The address of the creator to be removed.
+    /// @dev Only the owner can call this function.
     function removeCreator(address creator) public virtual onlyOwner {
         allowedCreators[creator] = false;
     }
 
+    /// @notice Locks the given amount for the given owner for the given locking duration and creates a new locking
+    ///         position and returns its ID.
+    /// @param owner The address of the owner for whom the amount is locked.
+    /// @param amount The amount to be locked.
+    /// @param lockingDuration The duration for which the amount is locked (in days).
+    /// @return The ID of the newly created locking position.
     function lockAmount(address owner, uint256 amount, uint256 lockingDuration) public virtual returns (uint256) {
         require(
             lockingDuration >= MIN_LOCKING_DURATION,
@@ -176,6 +196,8 @@ contract L2Staking is Initializable, OwnableUpgradeable, UUPSUpgradeable, ISemve
         return lockId;
     }
 
+    /// @notice Unlocks the given locking position and transfers the locked amount back to the owner.
+    /// @param lockId The ID of the locking position to be unlocked.
     function unlock(uint256 lockId) public virtual {
         LockingPosition memory lock = (IL2LockingPosition(lockingPositionContract)).getLockingPosition(lockId);
         require(isLockingPositionNull(lock) == false, "L2Staking: locking position does not exist");
@@ -193,6 +215,9 @@ contract L2Staking is Initializable, OwnableUpgradeable, UUPSUpgradeable, ISemve
         }
     }
 
+    /// @notice Unlocks the given locking position and apply a penalty to the locked amount. Sends the penalty amount
+    ///         to the DAO contract or the creator of the locking position.
+    /// @param lockId The ID of the locking position to be unlocked.
     function fastUnlock(uint256 lockId) public virtual {
         LockingPosition memory lock = (IL2LockingPosition(lockingPositionContract)).getLockingPosition(lockId);
         require(isLockingPositionNull(lock) == false, "L2Staking: locking position does not exist");
@@ -221,6 +246,9 @@ contract L2Staking is Initializable, OwnableUpgradeable, UUPSUpgradeable, ISemve
         }
     }
 
+    /// @notice Increases the amount of the given locking position.
+    /// @param lockId The ID of the locking position to be increased.
+    /// @param amountIncrease The amount by which the locking position is increased.
     function increaseLockingAmount(uint256 lockId, uint256 amountIncrease) public virtual {
         LockingPosition memory lock = (IL2LockingPosition(lockingPositionContract)).getLockingPosition(lockId);
         require(isLockingPositionNull(lock) == false, "L2Staking: locking position does not exist");
@@ -241,6 +269,9 @@ contract L2Staking is Initializable, OwnableUpgradeable, UUPSUpgradeable, ISemve
         );
     }
 
+    /// @notice Extends the duration of the given locking position.
+    /// @param lockId The ID of the locking position to be extended.
+    /// @param extendDays The number of days by which the locking position is extended.
     function extendLockingDuration(uint256 lockId, uint256 extendDays) public virtual {
         LockingPosition memory lock = (IL2LockingPosition(lockingPositionContract)).getLockingPosition(lockId);
         require(isLockingPositionNull(lock) == false, "L2Staking: locking position does not exist");
@@ -261,6 +292,8 @@ contract L2Staking is Initializable, OwnableUpgradeable, UUPSUpgradeable, ISemve
         );
     }
 
+    /// @notice Pauses the remaining locking duration of the given locking position.
+    /// @param lockId The ID of the locking position for which the remaining locking duration is paused.
     function pauseRemainingLockingDuration(uint256 lockId) public virtual {
         LockingPosition memory lock = (IL2LockingPosition(lockingPositionContract)).getLockingPosition(lockId);
         require(isLockingPositionNull(lock) == false, "L2Staking: locking position does not exist");
@@ -277,6 +310,8 @@ contract L2Staking is Initializable, OwnableUpgradeable, UUPSUpgradeable, ISemve
         );
     }
 
+    /// @notice Resumes the remaining locking duration of the given locking position.
+    /// @param lockId The ID of the locking position for which the remaining locking duration is resumed.
     function resumeCountdown(uint256 lockId) public virtual {
         LockingPosition memory lock = (IL2LockingPosition(lockingPositionContract)).getLockingPosition(lockId);
         require(isLockingPositionNull(lock) == false, "L2Staking: locking position does not exist");
