@@ -70,9 +70,6 @@ contract L2Staking is Initializable, OwnableUpgradeable, UUPSUpgradeable, ISemve
     /// @notice Semantic version of the contract.
     string public version;
 
-    /// @notice Event emitted when a user tries to unlock a staking position before the locking period ends.
-    event LockingPeriodNotEnded();
-
     /// @notice Disabling initializers on implementation contract to prevent misuse.
     constructor() {
         _disableInitializers();
@@ -138,8 +135,11 @@ contract L2Staking is Initializable, OwnableUpgradeable, UUPSUpgradeable, ISemve
     }
 
     function calculatePenalty(uint256 amount, uint256 expDate) internal view virtual returns (uint256) {
-        uint256 penaltyFraction = (expDate - todayDay()) / (MAX_LOCKING_DURATION * PENALTY_DENOMINATOR);
-        return amount * penaltyFraction;
+        uint256 today = todayDay();
+        if (expDate <= today) {
+            return 0;
+        }
+        return (amount * (expDate - today)) / (MAX_LOCKING_DURATION * PENALTY_DENOMINATOR);
     }
 
     function addCreator(address newCreator) public virtual onlyOwner {
@@ -182,12 +182,14 @@ contract L2Staking is Initializable, OwnableUpgradeable, UUPSUpgradeable, ISemve
         require(canLockingPositionBeModified(lockId, lock), "L2Staking: only owner or creator can call this function");
 
         if (lock.expDate <= todayDay() && lock.pausedLockingDuration == 0) {
-            (IL2LockingPosition(lockingPositionContract)).removeLockingPosition(lockId);
+            // unlocking is valid
             address ownerOfLock = (IL2LockingPosition(lockingPositionContract)).ownerOf(lockId);
             bool success = IL2LiskToken(l2LiskTokenContract).transfer(ownerOfLock, lock.amount);
             require(success, "L2Staking: LSK token transfer from Staking contract to owner failed");
+            (IL2LockingPosition(lockingPositionContract)).removeLockingPosition(lockId);
         } else {
-            emit LockingPeriodNotEnded();
+            // stake did not expire
+            revert("L2Staking: locking duration active, can not unlock");
         }
     }
 
@@ -229,6 +231,10 @@ contract L2Staking is Initializable, OwnableUpgradeable, UUPSUpgradeable, ISemve
             "L2Staking: can not increase amount for expired locking position"
         );
 
+        address owner = (IL2LockingPosition(lockingPositionContract)).ownerOf(lockId);
+        bool success = IL2LiskToken(l2LiskTokenContract).transferFrom(owner, address(this), amountIncrease);
+        require(success, "L2Staking: LSK token transfer from owner to Staking contract failed");
+
         // update locking position
         (IL2LockingPosition(lockingPositionContract)).modifyLockingPosition(
             lockId, lock.amount + amountIncrease, lock.expDate, lock.pausedLockingDuration
@@ -246,7 +252,7 @@ contract L2Staking is Initializable, OwnableUpgradeable, UUPSUpgradeable, ISemve
             lock.pausedLockingDuration += extendDays;
         } else {
             // remaining duration not paused, if expired, assume expDate is today
-            lock.expDate += Math.max(lock.expDate, todayDay()) + extendDays;
+            lock.expDate = Math.max(lock.expDate, todayDay()) + extendDays;
         }
 
         // update locking position
@@ -275,7 +281,7 @@ contract L2Staking is Initializable, OwnableUpgradeable, UUPSUpgradeable, ISemve
         LockingPosition memory lock = (IL2LockingPosition(lockingPositionContract)).getLockingPosition(lockId);
         require(isLockingPositionNull(lock) == false, "L2Staking: locking position does not exist");
         require(canLockingPositionBeModified(lockId, lock), "L2Staking: only owner or creator can call this function");
-        require(lock.pausedLockingDuration > 0, "L2Staking: remaining duration is not paused");
+        require(lock.pausedLockingDuration > 0, "L2Staking: countdown is not paused");
 
         // update locking position
         lock.expDate = todayDay() + lock.pausedLockingDuration;
