@@ -570,4 +570,131 @@ contract L2StakingTest is Test {
         vm.expectRevert("L2Staking: extendDays should be greater than zero");
         l2Staking.extendLockingDuration(1, 0);
     }
+
+    function test_PauseRemainingLockingDuration() public {
+        l2Staking.lockAmount(alice, 100 * 10 ** 18, 365);
+        assertEq(l2LockingPosition.balanceOf(alice), 1);
+        assertEq(l2LockingPosition.getLockingPosition(1).amount, 100 * 10 ** 18);
+        assertEq(l2LockingPosition.getLockingPosition(1).expDate, 365);
+        assertEq(l2LockingPosition.getLockingPosition(1).pausedLockingDuration, 0);
+
+        // advance block time by 100 days
+        vm.warp(100 days);
+
+        vm.prank(alice);
+        l2Staking.pauseRemainingLockingDuration(1);
+
+        assertEq(l2LockingPosition.getLockingPosition(1).amount, 100 * 10 ** 18);
+        assertEq(l2LockingPosition.getLockingPosition(1).expDate, 365);
+        assertEq(l2LockingPosition.getLockingPosition(1).pausedLockingDuration, 265); // 365 - 100 days
+    }
+
+    function test_PauseRemainingLockingDuration_InvalidLockingPositionId() public {
+        vm.prank(alice);
+        vm.expectRevert("L2Staking: locking position does not exist");
+        l2Staking.pauseRemainingLockingDuration(1);
+    }
+
+    function test_PauseRemainingLockingDuration_NotCreator() public {
+        l2Staking.lockAmount(alice, 100 * 10 ** 18, 365);
+        assertEq(l2LockingPosition.balanceOf(alice), 1);
+        assertEq(l2LockingPosition.getLockingPosition(1).creator, address(l2Staking));
+
+        // address is inside the allowedCreators list but is not the creator of the locking position
+        vm.prank(rewardsContract);
+        vm.expectRevert("L2Staking: only owner or creator can call this function");
+        l2Staking.pauseRemainingLockingDuration(1);
+
+        // address is not inside the allowedCreators list and is not the creator of the locking position
+        vm.prank(address(0x3));
+        vm.expectRevert("L2Staking: only owner or creator can call this function");
+        l2Staking.pauseRemainingLockingDuration(1);
+    }
+
+    function test_PauseRemainingLockingDuration_AlreadyPaused() public {
+        l2Staking.lockAmount(alice, 100 * 10 ** 18, 365);
+        assertEq(l2LockingPosition.balanceOf(alice), 1);
+        assertEq(l2LockingPosition.getLockingPosition(1).pausedLockingDuration, 0);
+
+        // advance block time by 100 days
+        vm.warp(100 days);
+
+        vm.prank(alice);
+        l2Staking.pauseRemainingLockingDuration(1);
+        assertEq(l2LockingPosition.getLockingPosition(1).pausedLockingDuration, 265); // 365 - 100 days
+
+        vm.prank(alice);
+        vm.expectRevert("L2Staking: remaining duration is already paused");
+        l2Staking.pauseRemainingLockingDuration(1);
+    }
+
+    function test_PauseRemainingLockingDuration_ExpiredLockingPosition() public {
+        l2Staking.lockAmount(alice, 100 * 10 ** 18, 365);
+        assertEq(l2LockingPosition.balanceOf(alice), 1);
+        assertEq(l2LockingPosition.getLockingPosition(1).pausedLockingDuration, 0);
+
+        // advance block time by 365 days so that the locking position is already expired
+        vm.warp(365 days);
+
+        vm.prank(alice);
+        vm.expectRevert("L2Staking: locking period has ended");
+        l2Staking.pauseRemainingLockingDuration(1);
+    }
+
+    function test_ResumeCountdown() public {
+        l2Staking.lockAmount(alice, 100 * 10 ** 18, 365);
+        assertEq(l2LockingPosition.balanceOf(alice), 1);
+        assertEq(l2LockingPosition.getLockingPosition(1).amount, 100 * 10 ** 18);
+        assertEq(l2LockingPosition.getLockingPosition(1).expDate, 365);
+        assertEq(l2LockingPosition.getLockingPosition(1).pausedLockingDuration, 0);
+
+        // advance block time by 100 days
+        vm.warp(100 days);
+
+        vm.prank(alice);
+        l2Staking.pauseRemainingLockingDuration(1);
+        assertEq(l2LockingPosition.getLockingPosition(1).pausedLockingDuration, 265); // 365 - 100 days
+
+        // advance block time by another 50 days
+        vm.warp(150 days);
+
+        vm.prank(alice);
+        l2Staking.resumeCountdown(1);
+
+        assertEq(l2LockingPosition.getLockingPosition(1).amount, 100 * 10 ** 18);
+        assertEq(l2LockingPosition.getLockingPosition(1).expDate, 415); // 150 + 265 days (today + paused duration)
+        assertEq(l2LockingPosition.getLockingPosition(1).pausedLockingDuration, 0);
+    }
+
+    function test_ResumeCountdown_InvalidLockingPositionId() public {
+        vm.prank(alice);
+        vm.expectRevert("L2Staking: locking position does not exist");
+        l2Staking.resumeCountdown(1);
+    }
+
+    function test_ResumeCountdown_NotCreator() public {
+        l2Staking.lockAmount(alice, 100 * 10 ** 18, 365);
+        assertEq(l2LockingPosition.balanceOf(alice), 1);
+        assertEq(l2LockingPosition.getLockingPosition(1).creator, address(l2Staking));
+
+        // address is inside the allowedCreators list but is not the creator of the locking position
+        vm.prank(rewardsContract);
+        vm.expectRevert("L2Staking: only owner or creator can call this function");
+        l2Staking.resumeCountdown(1);
+
+        // address is not inside the allowedCreators list and is not the creator of the locking position
+        vm.prank(address(0x3));
+        vm.expectRevert("L2Staking: only owner or creator can call this function");
+        l2Staking.resumeCountdown(1);
+    }
+
+    function test_ResumeCountdown_ZeroPausedLockingDuration() public {
+        l2Staking.lockAmount(alice, 100 * 10 ** 18, 365);
+        assertEq(l2LockingPosition.balanceOf(alice), 1);
+        assertEq(l2LockingPosition.getLockingPosition(1).pausedLockingDuration, 0);
+
+        vm.prank(alice);
+        vm.expectRevert("L2Staking: countdown is not paused");
+        l2Staking.resumeCountdown(1);
+    }
 }
