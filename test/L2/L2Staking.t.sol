@@ -3,6 +3,7 @@ pragma solidity 0.8.23;
 
 import { OwnableUpgradeable } from "@openzeppelin-upgradeable/contracts/access/OwnableUpgradeable.sol";
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import { IERC20Errors } from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
 import { Test, console2 } from "forge-std/Test.sol";
 import { L2LockingPosition, LockingPosition } from "src/L2/L2LockingPosition.sol";
 import { L2LiskToken } from "src/L2/L2LiskToken.sol";
@@ -22,14 +23,14 @@ contract L2StakingTest is Test {
 
     address daoContractAddress;
 
+    address rewardsContract;
     address alice;
-    address bob;
 
     function setUp() public {
         daoContractAddress = address(0xDeaDbeefdEAdbeefdEadbEEFdeadbeEFdEaDbeeF);
 
-        alice = address(0x1);
-        bob = address(0x2);
+        rewardsContract = address(0x1);
+        alice = address(0x2);
 
         bridge = vm.addr(uint256(bytes32("bridge")));
         remoteToken = vm.addr(uint256(bytes32("remoteToken")));
@@ -85,62 +86,103 @@ contract L2StakingTest is Test {
         assertEq(l2LockingPosition.powerVotingContract(), address(l2VotingPower));
         assertEq(l2LockingPosition.totalSupply(), 0);
 
-        // add alice to the creator list
-        l2Staking.addCreator(alice);
-        assert(l2Staking.allowedCreators(alice));
+        // add rewardsContract to the creator list
+        l2Staking.addCreator(rewardsContract);
+        assert(l2Staking.allowedCreators(rewardsContract));
 
-        // fund bob with 100 L2LiskToken
+        // fund alice with 100 L2LiskToken
         vm.prank(bridge);
-        l2LiskToken.mint(bob, 100 * 10 ** 18);
-        assertEq(l2LiskToken.balanceOf(bob), 100 * 10 ** 18);
+        l2LiskToken.mint(alice, 100 * 10 ** 18);
+        assertEq(l2LiskToken.balanceOf(alice), 100 * 10 ** 18);
 
-        // approve L2Staking to spend 100 L2LiskToken
-        vm.prank(bob);
+        // approve L2Staking to spend alice's 100 L2LiskToken
+        vm.prank(alice);
         l2LiskToken.approve(address(l2Staking), 100 * 10 ** 18);
-        assertEq(l2LiskToken.allowance(bob, address(l2Staking)), 100 * 10 ** 18);
+        assertEq(l2LiskToken.allowance(alice, address(l2Staking)), 100 * 10 ** 18);
     }
 
     function test_AddCreator() public {
-        l2Staking.addCreator(bob);
-        assert(l2Staking.allowedCreators(bob));
+        l2Staking.addCreator(alice);
+        assert(l2Staking.allowedCreators(alice));
     }
 
     function test_AddCreator_OnlyOwnerCanCall() public {
-        vm.prank(bob);
-        vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, bob));
-        l2Staking.addCreator(bob);
+        vm.prank(alice);
+        vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, alice));
+        l2Staking.addCreator(alice);
     }
 
     function test_RemoveCreator() public {
-        l2Staking.addCreator(bob);
-        assert(l2Staking.allowedCreators(bob));
-        l2Staking.removeCreator(bob);
-        assert(!l2Staking.allowedCreators(bob));
+        l2Staking.addCreator(alice);
+        assert(l2Staking.allowedCreators(alice));
+        l2Staking.removeCreator(alice);
+        assert(!l2Staking.allowedCreators(alice));
     }
 
     function test_RemoveCreator_OnlyOwnerCanCall() public {
-        l2Staking.addCreator(bob);
-        assert(l2Staking.allowedCreators(bob));
+        l2Staking.addCreator(alice);
+        assert(l2Staking.allowedCreators(alice));
 
-        vm.prank(bob);
-        vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, bob));
-        l2Staking.removeCreator(bob);
+        vm.prank(alice);
+        vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, alice));
+        l2Staking.removeCreator(alice);
     }
 
     function test_LockAmount() public {
+        assertEq(l2LiskToken.balanceOf(alice), 100 * 10 ** 18);
         assertEq(l2LockingPosition.totalSupply(), 0);
         assertEq(l2VotingPower.totalSupply(), 0);
 
-        vm.prank(bob);
-        l2Staking.lockAmount(bob, 100 * 10 ** 18, 365);
+        vm.prank(alice);
+        l2Staking.lockAmount(alice, 100 * 10 ** 18, 365);
+
+        assertEq(l2LiskToken.balanceOf(alice), 0);
+        assertEq(l2LiskToken.balanceOf(address(l2Staking)), 100 * 10 ** 18);
 
         assertEq(l2LockingPosition.totalSupply(), 1);
-        assertEq(l2LockingPosition.balanceOf(bob), 1);
+        assertEq(l2LockingPosition.balanceOf(alice), 1);
+        assertEq(l2LockingPosition.getLockingPosition(1).creator, address(l2Staking));
         assertEq(l2LockingPosition.getLockingPosition(1).amount, 100 * 10 ** 18);
         assertEq(l2LockingPosition.getLockingPosition(1).expDate, 365);
         assertEq(l2LockingPosition.getLockingPosition(1).pausedLockingDuration, 0);
 
         assertEq(l2VotingPower.totalSupply(), 100 * 10 ** 18);
-        assertEq(l2VotingPower.balanceOf(bob), 100 * 10 ** 18);
+        assertEq(l2VotingPower.balanceOf(alice), 100 * 10 ** 18);
+    }
+
+    function test_LockAmount_CreatorNotStakingContract() public {
+        // execute the lockAmount function from a contract that is not the staking contract but is in the creator list
+        vm.prank(rewardsContract);
+        l2Staking.lockAmount(alice, 100 * 10 ** 18, 365);
+
+        assertEq(l2LockingPosition.getLockingPosition(1).creator, rewardsContract);
+    }
+
+    function test_LockAmount_DurationIsLessThanMinDuration() public {
+        uint256 invalidDuration = l2Staking.MIN_LOCKING_DURATION() - 1;
+        vm.prank(alice);
+        vm.expectRevert("L2Staking: lockingDuration should be at least MIN_LOCKING_DURATION");
+        l2Staking.lockAmount(alice, 100 * 10 ** 18, invalidDuration);
+    }
+
+    function test_LockAmount_DurationIsMoreThanMaxDuration() public {
+        uint256 invalidDuration = l2Staking.MAX_LOCKING_DURATION() + 1;
+        vm.prank(alice);
+        vm.expectRevert("L2Staking: lockingDuration can not be greater than MAX_LOCKING_DURATION");
+        l2Staking.lockAmount(alice, 100 * 10 ** 18, invalidDuration);
+    }
+
+    function test_LockAmount_InsufficientUserBalance() public {
+        uint256 invalidAmount = l2LiskToken.balanceOf(alice) + 1;
+        vm.prank(alice);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IERC20Errors.ERC20InsufficientAllowance.selector,
+                address(l2Staking),
+                l2LiskToken.balanceOf(alice),
+                invalidAmount
+            )
+        );
+        l2Staking.lockAmount(alice, invalidAmount, 365);
     }
 }
