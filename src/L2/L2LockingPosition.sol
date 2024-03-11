@@ -80,6 +80,7 @@ contract L2LockingPosition is Initializable, OwnableUpgradeable, UUPSUpgradeable
     }
 
     /// @notice Initializes the Voting Power contract address.
+    /// @param _votingPowerContract Address of the Voting Power contract.
     function initializeVotingPower(address _votingPowerContract) public onlyOwner {
         require(votingPowerContract == address(0), "L2LockingPosition: Voting Power contract is already initialized");
         require(_votingPowerContract != address(0), "L2LockingPosition: Voting Power contract address can not be zero");
