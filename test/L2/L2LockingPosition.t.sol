@@ -25,43 +25,64 @@ contract L2LockingPositionTest is Test {
         // deploy L2Staking implementation contract
         l2StakingImplementation = new L2Staking();
 
-        // deploy L2Staking contract via proxy
-        l2Staking = L2Staking(address(new ERC1967Proxy(address(l2StakingImplementation), "")));
-
+        // deploy L2Staking contract via proxy and initialize it at the same time
+        l2Staking = L2Staking(
+            address(
+                new ERC1967Proxy(
+                    address(l2StakingImplementation),
+                    abi.encodeWithSelector(
+                        l2Staking.initialize.selector, address(0xbABEBABEBabeBAbEBaBeBabeBABEBabEBAbeBAbe)
+                    )
+                )
+            )
+        );
         assert(address(l2Staking) != address(0x0));
-
-        // deploy L2VotingPower implementation contract
-        l2VotingPowerImplementation = new L2VotingPower();
-
-        // deploy L2VotingPower contract via proxy
-        l2VotingPower = L2VotingPower(address(new ERC1967Proxy(address(l2VotingPowerImplementation), "")));
-
-        assert(address(l2VotingPower) != address(0x0));
 
         // deploy L2LockingPosition implementation contract
         l2LockingPositionImplementation = new L2LockingPosition();
 
-        // deploy L2LockingPosition contract via proxy
-        l2LockingPosition = L2LockingPosition(address(new ERC1967Proxy(address(l2LockingPositionImplementation), "")));
-
+        // deploy L2LockingPosition contract via proxy and initialize it at the same time
+        l2LockingPosition = L2LockingPosition(
+            address(
+                new ERC1967Proxy(
+                    address(l2LockingPositionImplementation),
+                    abi.encodeWithSelector(l2LockingPosition.initialize.selector, address(l2Staking))
+                )
+            )
+        );
         assert(address(l2LockingPosition) != address(0x0));
 
-        // initialize L2Staking contract
-        l2Staking.initialize(address(0), address(l2LockingPosition), address(0));
+        // deploy L2VotingPower implementation contract
+        l2VotingPowerImplementation = new L2VotingPower();
 
-        // initialize L2VotingPower contract
-        l2VotingPower.initialize(address(l2LockingPosition));
+        // deploy L2VotingPower contract via proxy and initialize it at the same time
+        l2VotingPower = L2VotingPower(
+            address(
+                new ERC1967Proxy(
+                    address(l2VotingPowerImplementation),
+                    abi.encodeWithSelector(l2VotingPower.initialize.selector, address(l2LockingPosition))
+                )
+            )
+        );
+        assert(address(l2VotingPower) != address(0x0));
+        assert(l2VotingPower.lockingPositionAddress() == address(l2LockingPosition));
 
-        assertEq(l2VotingPower.lockingPositionAddress(), address(l2LockingPosition));
+        // initialize LockingPosition contract inside L2Staking contract
+        l2Staking.initializeLockingPosition(address(l2LockingPosition));
+        assert(l2Staking.lockingPositionContract() == address(l2LockingPosition));
 
-        // initialize L2LockingPosition contract
-        l2LockingPosition.initialize(address(l2Staking), address(l2VotingPower));
+        // initialize DAO contract inside L2Staking contract
+        l2Staking.initializeDao(address(0xbABEBABEBabeBAbEBaBeBabeBABEBabEBAbeBAbe));
+        assert(l2Staking.daoContract() == address(0xbABEBABEBabeBAbEBaBeBabeBABEBabEBAbeBAbe));
+
+        // initialize VotingPower contract inside L2LockingPosition contract
+        l2LockingPosition.initializeVotingPower(address(l2VotingPower));
 
         assertEq(l2LockingPosition.name(), "Lisk Locking Position");
         assertEq(l2LockingPosition.symbol(), "LLP");
         assertEq(l2LockingPosition.owner(), address(this));
         assertEq(l2LockingPosition.stakingContract(), address(l2Staking));
-        assertEq(l2LockingPosition.powerVotingContract(), address(l2VotingPower));
+        assertEq(l2LockingPosition.votingPowerContract(), address(l2VotingPower));
         assertEq(l2LockingPosition.totalSupply(), 0);
     }
 
@@ -75,23 +96,7 @@ contract L2LockingPositionTest is Test {
             address(
                 new ERC1967Proxy(
                     address(l2LockingPositionImplementation),
-                    abi.encodeWithSelector(l2LockingPosition.initialize.selector, address(0x0), address(l2VotingPower))
-                )
-            )
-        );
-    }
-
-    function test_Initialize_ZeroPowerVotingContractAddress() public {
-        // deploy L2LockingPosition implementation contract
-        l2LockingPositionImplementation = new L2LockingPosition();
-
-        // deploy L2LockingPosition contract via proxy and initialize it at the same time
-        vm.expectRevert("L2LockingPosition: Power Voting contract address is required");
-        l2LockingPosition = L2LockingPosition(
-            address(
-                new ERC1967Proxy(
-                    address(l2LockingPositionImplementation),
-                    abi.encodeWithSelector(l2LockingPosition.initialize.selector, address(l2Staking), address(0x0))
+                    abi.encodeWithSelector(l2LockingPosition.initialize.selector, address(0x0))
                 )
             )
         );
@@ -150,6 +155,29 @@ contract L2LockingPositionTest is Test {
         position.expDate = 365;
         position.pausedLockingDuration = 50;
         assert(!l2LockingPositionHarness.exposedIsLockingPositionNull(position));
+    }
+
+    function test_InitializeVotingPower_VotingPowerContractAlreadyInitialized() public {
+        vm.expectRevert("L2LockingPosition: Voting Power contract is already initialized");
+        l2LockingPosition.initializeVotingPower(address(l2VotingPower));
+    }
+
+    function test_InitializeVotingPower_ZeroVotingPowerContractAddress() public {
+        // deploy L2LockingPosition implementation contract
+        l2LockingPositionImplementation = new L2LockingPosition();
+
+        // deploy L2LockingPosition contract via proxy and initialize it at the same time
+        l2LockingPosition = L2LockingPosition(
+            address(
+                new ERC1967Proxy(
+                    address(l2LockingPositionImplementation),
+                    abi.encodeWithSelector(l2LockingPosition.initialize.selector, address(l2Staking))
+                )
+            )
+        );
+
+        vm.expectRevert("L2LockingPosition: Voting Power contract address can not be zero");
+        l2LockingPosition.initializeVotingPower(address(0x0));
     }
 
     function test_CreateLockingPosition() public {

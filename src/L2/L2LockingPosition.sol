@@ -39,8 +39,8 @@ contract L2LockingPosition is Initializable, OwnableUpgradeable, UUPSUpgradeable
     /// @notice Address of the Staking contract.
     address public stakingContract;
 
-    /// @notice Address of the Power Voting contract.
-    address public powerVotingContract;
+    /// @notice Address of the Voting Power contract.
+    address public votingPowerContract;
 
     /// @notice Modifier to allow only Staking contract to call the function.
     modifier onlyStaking() {
@@ -50,16 +50,13 @@ contract L2LockingPosition is Initializable, OwnableUpgradeable, UUPSUpgradeable
 
     /// @notice Initialize the contract.
     /// @param _stakingContract Address of the Staking contract.
-    /// @param _powerVotingContract Address of the Power Voting contract.
-    function initialize(address _stakingContract, address _powerVotingContract) public initializer {
+    function initialize(address _stakingContract) public initializer {
         require(_stakingContract != address(0), "L2LockingPosition: Staking contract address is required");
-        require(_powerVotingContract != address(0), "L2LockingPosition: Power Voting contract address is required");
         __Ownable_init(msg.sender);
         __UUPSUpgradeable_init();
         __ERC721_init("Lisk Locking Position", "LLP");
         nextId = 1;
         stakingContract = _stakingContract;
-        powerVotingContract = _powerVotingContract;
     }
 
     /// @notice Ensures that only the owner can authorize a contract upgrade. It reverts if called by any address other
@@ -82,6 +79,13 @@ contract L2LockingPosition is Initializable, OwnableUpgradeable, UUPSUpgradeable
             && position.pausedLockingDuration == 0;
     }
 
+    /// @notice Initializes the Voting Power contract address.
+    function initializeVotingPower(address _votingPowerContract) public onlyOwner {
+        require(votingPowerContract == address(0), "L2LockingPosition: Voting Power contract is already initialized");
+        require(_votingPowerContract != address(0), "L2LockingPosition: Voting Power contract address can not be zero");
+        votingPowerContract = _votingPowerContract;
+    }
+
     /// @notice Change owner of the locking position and adjust voting power.
     /// @param from Address of the current owner of the locking position.
     /// @param to Address of the new owner of the locking position.
@@ -100,12 +104,12 @@ contract L2LockingPosition is Initializable, OwnableUpgradeable, UUPSUpgradeable
         super.transferFrom(from, to, tokenId);
 
         // remove voting power for an old owner
-        IL2VotingPower(powerVotingContract).adjustVotingPower(
+        IL2VotingPower(votingPowerContract).adjustVotingPower(
             from, lockingPositions[tokenId], LockingPosition(address(0), 0, 0, 0)
         );
 
         // add voting power to a new owner
-        IL2VotingPower(powerVotingContract).adjustVotingPower(
+        IL2VotingPower(votingPowerContract).adjustVotingPower(
             to, LockingPosition(address(0), 0, 0, 0), lockingPositions[tokenId]
         );
     }
@@ -162,7 +166,7 @@ contract L2LockingPosition is Initializable, OwnableUpgradeable, UUPSUpgradeable
         });
 
         // call Voting Power contract to set voting power
-        IL2VotingPower(powerVotingContract).adjustVotingPower(
+        IL2VotingPower(votingPowerContract).adjustVotingPower(
             owner, LockingPosition(address(0), 0, 0, 0), lockingPositions[nextId]
         );
 
@@ -199,7 +203,7 @@ contract L2LockingPosition is Initializable, OwnableUpgradeable, UUPSUpgradeable
         });
 
         // call Voting Power contract to update voting power
-        IL2VotingPower(powerVotingContract).adjustVotingPower(
+        IL2VotingPower(votingPowerContract).adjustVotingPower(
             ownerOf(positionId), oldPosition, lockingPositions[positionId]
         );
     }
@@ -212,7 +216,7 @@ contract L2LockingPosition is Initializable, OwnableUpgradeable, UUPSUpgradeable
         );
 
         // inform Voting Power contract
-        IL2VotingPower(powerVotingContract).adjustVotingPower(
+        IL2VotingPower(votingPowerContract).adjustVotingPower(
             ownerOf(positionId), lockingPositions[positionId], LockingPosition(address(0), 0, 0, 0)
         );
 

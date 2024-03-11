@@ -77,21 +77,11 @@ contract L2Staking is Initializable, OwnableUpgradeable, UUPSUpgradeable, ISemve
 
     /// @notice Setting global params.
     /// @param _l2LiskTokenContract The address of the L2LiskToken contract.
-    /// @param _lockingPositionContract The address of the L2LockingPosition contract.
-    /// @param _daoContract The address of the DAO contract.
-    function initialize(
-        address _l2LiskTokenContract,
-        address _lockingPositionContract,
-        address _daoContract
-    )
-        public
-        initializer
-    {
+    function initialize(address _l2LiskTokenContract) public initializer {
+        require(_l2LiskTokenContract != address(0), "L2Staking: LSK token contract address can not be zero");
         __Ownable_init(msg.sender);
         __UUPSUpgradeable_init();
         l2LiskTokenContract = _l2LiskTokenContract;
-        lockingPositionContract = _lockingPositionContract;
-        daoContract = _daoContract;
         version = "1.0.0";
     }
 
@@ -148,6 +138,22 @@ contract L2Staking is Initializable, OwnableUpgradeable, UUPSUpgradeable, ISemve
             return 0;
         }
         return (amount * (expDate - today)) / (MAX_LOCKING_DURATION * PENALTY_DENOMINATOR);
+    }
+
+    /// @notice Initializes the L2LockingPosition contract address.
+    /// @param _lockingPositionContract The address of the L2LockingPosition contract.
+    function initializeLockingPosition(address _lockingPositionContract) public onlyOwner {
+        require(lockingPositionContract == address(0), "L2Staking: Locking Position contract is already initialized");
+        require(_lockingPositionContract != address(0), "L2Staking: Locking Position contract address can not be zero");
+        lockingPositionContract = _lockingPositionContract;
+    }
+
+    /// @notice Initializes the DAO contract address.
+    /// @param _daoContract The address of the DAO contract.
+    function initializeDao(address _daoContract) public onlyOwner {
+        require(daoContract == address(0), "L2Staking: DAO contract is already initialized");
+        require(_daoContract != address(0), "L2Staking: DAO contract address can not be zero");
+        daoContract = _daoContract;
     }
 
     /// @notice Adds a new creator to the list of allowed creators.
