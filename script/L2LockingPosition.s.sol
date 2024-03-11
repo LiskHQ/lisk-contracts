@@ -36,10 +36,6 @@ contract L2LockingPositionScript is Script {
         console2.log("L2 Staking address: %s", l2AddressesConfig.L2Staking);
         IL2Staking stakingContract = IL2Staking(l2AddressesConfig.L2Staking);
 
-        // Get L2LockingPosition contract owner address. Ownership is transferred to this address after deployment.
-        address ownerAddress = vm.envAddress("L2_STAKING_OWNER_ADDRESS");
-        console2.log("L2 Locking Position future owner address: %s", ownerAddress);
-
         // deploy L2LockingPosition implementation contract
         vm.startBroadcast(deployerPrivateKey);
         L2LockingPosition l2LockingPositionImplementation = new L2LockingPosition();
@@ -73,15 +69,9 @@ contract L2LockingPositionScript is Script {
         vm.stopBroadcast();
         assert(stakingContract.lockingPositionContract() == address(l2LockingPosition));
 
-        // transfer ownership of the L2LockingPosition contract to the owner address
-        /*vm.startBroadcast(deployerPrivateKey);
-        l2LockingPosition.transferOwnership(ownerAddress);
-        vm.stopBroadcast();
-        assert(l2LockingPosition.owner() == ownerAddress);*/
-
-        console2.log("L2 L2LockingPosition (implementation) address: %s", address(l2LockingPositionImplementation));
-        console2.log("L2 L2LockingPosition (proxy) address: %s", address(l2LockingPosition));
-        console2.log("L2 L2LockingPosition owner address: %s", l2LockingPosition.owner());
+        console2.log("L2 Locking Position (implementation) address: %s", address(l2LockingPositionImplementation));
+        console2.log("L2 Locking Position (proxy) address: %s", address(l2LockingPosition));
+        console2.log("L2 Locking Position owner address: %s", l2LockingPosition.owner());
 
         // write L2 Locking Position address to l2addresses.json
         l2AddressesConfig.L2LockingPositionImplementation = address(l2LockingPositionImplementation);

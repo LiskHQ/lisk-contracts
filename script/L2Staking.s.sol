@@ -28,10 +28,6 @@ contract L2StakingScript is Script {
         assert(l2AddressesConfig.L2LiskToken != address(0));
         console2.log("L2 Lisk Token address: %s", l2AddressesConfig.L2LiskToken);
 
-        // Get L2Staking contract owner address. Ownership is transferred to this address after deployment.
-        address ownerAddress = vm.envAddress("L2_STAKING_OWNER_ADDRESS");
-        console2.log("L2 Staking future owner address: %s", ownerAddress);
-
         // deploy L2Staking implementation contract
         vm.startBroadcast(deployerPrivateKey);
         L2Staking l2StakingImplementation = new L2Staking();
@@ -58,12 +54,6 @@ contract L2StakingScript is Script {
         assert(keccak256(bytes(l2Staking.version())) == keccak256(bytes("1.0.0")));
         assert(l2Staking.owner() == vm.addr(deployerPrivateKey));
         assert(l2Staking.l2LiskTokenContract() == l2AddressesConfig.L2LiskToken);
-
-        // transfer ownership of the L2Staking contract to the owner address
-        /*vm.startBroadcast(deployerPrivateKey);
-        l2Staking.transferOwnership(ownerAddress);
-        vm.stopBroadcast();
-        assert(l2Staking.owner() == ownerAddress);*/
 
         console2.log("L2 Staking (implementation) address: %s", address(l2StakingImplementation));
         console2.log("L2 Staking (proxy) address: %s", address(l2Staking));

@@ -38,6 +38,7 @@ contract L2VotingPowerScript is Script {
 
         // Get L2VotingPower contract owner address. Ownership is transferred to this address after deployment.
         address ownerAddress = vm.envAddress("L2_VOTING_POWER_OWNER_ADDRESS");
+        assert(ownerAddress != address(0));
         console2.log("L2 Voting Power owner address: %s (after ownership will be accepted)", ownerAddress);
 
         // deploy L2VotingPower implementation contract

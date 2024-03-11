@@ -50,6 +50,7 @@ contract L2GovernorScript is Script {
 
         // Get L2Governor contract owner address. Ownership is transferred to this address after deployment.
         address ownerAddress = vm.envAddress("L2_GOVERNOR_OWNER_ADDRESS");
+        assert(ownerAddress != address(0));
         console2.log("L2 Governor owner address: %s (after ownership will be accepted)", ownerAddress);
 
         // deploy TimelockController contract
