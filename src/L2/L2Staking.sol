@@ -161,7 +161,7 @@ contract L2Staking is Initializable, OwnableUpgradeable, UUPSUpgradeable, ISemve
     /// @param creator The address of the creator to be removed.
     /// @dev Only the owner can call this function.
     function removeCreator(address creator) public virtual onlyOwner {
-        allowedCreators[creator] = false;
+        delete allowedCreators[creator];
     }
 
     /// @notice Locks the given amount for the given owner for the given locking duration and creates a new locking
