@@ -61,7 +61,7 @@ contract L2Staking is Initializable, OwnableUpgradeable, UUPSUpgradeable, ISemve
     /// @notice  Address of the L2LiskToken contract.
     address public l2LiskTokenContract;
 
-    /// @notice Address of the Locking position contract.
+    /// @notice Address of the Locking Position contract.
     address public lockingPositionContract;
 
     /// @notice Address of the DAO contract.

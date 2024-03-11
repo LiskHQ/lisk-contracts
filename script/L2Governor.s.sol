@@ -8,6 +8,13 @@ import { Script, console2 } from "forge-std/Script.sol";
 import { L2Governor } from "src/L2/L2Governor.sol";
 import "script/Utils.sol";
 
+/// @title IL2Staking
+/// @notice Interface for L2 Staking contract. Used to initialize Staking contract.
+interface IL2Staking {
+    function initializeDao(address daoContract) external;
+    function daoContract() external view returns (address);
+}
+
 /// @title L2GovernorScript - L2 Timelock Controller and Governor contracts deployment script
 /// @notice This contract is used to deploy L2 TimelockController and Governor contracts.
 contract L2GovernorScript is Script {
@@ -30,8 +37,13 @@ contract L2GovernorScript is Script {
 
         console2.log("Deploying L2 TimelockController and Governor contracts...");
 
-        // get L2VotingPower contract address
+        // get L2Staking contract address
         Utils.L2AddressesConfig memory l2AddressesConfig = utils.readL2AddressesFile();
+        assert(l2AddressesConfig.L2Staking != address(0));
+        console2.log("L2 Staking address: %s", l2AddressesConfig.L2Staking);
+        IL2Staking stakingContract = IL2Staking(l2AddressesConfig.L2Staking);
+
+        // get L2VotingPower contract address
         assert(l2AddressesConfig.L2VotingPower != address(0));
         console2.log("L2 Voting Power address: %s", l2AddressesConfig.L2VotingPower);
         IVotes votingPower = IVotes(l2AddressesConfig.L2VotingPower);
@@ -83,6 +95,12 @@ contract L2GovernorScript is Script {
         assert(l2Governor.quorum(0) == 24_000_000 * 10 ** 18);
         assert(address(l2Governor.token()) == address(votingPower));
         assert(l2Governor.owner() == vm.addr(deployerPrivateKey));
+
+        // initialize the L2Staking contract by calling initializeDao of the L2Staking contract
+        vm.startBroadcast(deployerPrivateKey);
+        stakingContract.initializeDao(address(timelock));
+        vm.stopBroadcast();
+        assert(stakingContract.daoContract() == address(timelock));
 
         // grant the proposer role to the Governor contract
         vm.startBroadcast(deployerPrivateKey);

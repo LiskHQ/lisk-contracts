@@ -27,6 +27,10 @@ contract Utils is Script {
         address L2GovernorImplementation;
         /// @notice L2 Lisk token address.
         address L2LiskToken;
+        /// @notice L2 Locking Position contract (in Proxy), which users interact with.
+        address L2LockingPosition;
+        /// @notice The Current implementation of L2 Locking Position Contract.
+        address L2LockingPositionImplementation;
         /// @notice L2 Staking contract (in proxy), which users interact with.
         address L2Staking;
         /// @notice The current implementation of L2 Staking contract.
@@ -115,6 +119,8 @@ contract Utils is Script {
         vm.serializeAddress(json, "L2Governor", cfg.L2Governor);
         vm.serializeAddress(json, "L2GovernorImplementation", cfg.L2GovernorImplementation);
         vm.serializeAddress(json, "L2LiskToken", cfg.L2LiskToken);
+        vm.serializeAddress(json, "L2LockingPosition", cfg.L2LockingPosition);
+        vm.serializeAddress(json, "L2LockingPositionImplementation", cfg.L2LockingPositionImplementation);
         vm.serializeAddress(json, "L2Staking", cfg.L2Staking);
         vm.serializeAddress(json, "L2StakingImplementation", cfg.L2StakingImplementation);
         vm.serializeAddress(json, "L2TimelockController", cfg.L2TimelockController);

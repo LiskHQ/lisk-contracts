@@ -28,10 +28,6 @@ contract L2StakingScript is Script {
         assert(l2AddressesConfig.L2LiskToken != address(0));
         console2.log("L2 Lisk Token address: %s", l2AddressesConfig.L2LiskToken);
 
-        // DAO Address, will be used for reward distribution
-        address daoAddress = vm.envAddress("DAO_ADDRESS");
-        console2.log("DAO address: %s", daoAddress);
-
         // Get L2Staking contract owner address. Ownership is transferred to this address after deployment.
         address ownerAddress = vm.envAddress("L2_STAKING_OWNER_ADDRESS");
         console2.log("L2 Staking future owner address: %s", ownerAddress);
@@ -52,9 +48,7 @@ contract L2StakingScript is Script {
         vm.startBroadcast(deployerPrivateKey);
         ERC1967Proxy l2StakingProxy = new ERC1967Proxy(
             address(l2StakingImplementation),
-            abi.encodeWithSelector(
-                l2StakingImplementation.initialize.selector, l2AddressesConfig.L2LiskToken, daoAddress
-            )
+            abi.encodeWithSelector(l2StakingImplementation.initialize.selector, l2AddressesConfig.L2LiskToken)
         );
         vm.stopBroadcast();
         assert(address(l2StakingProxy) != address(0));
@@ -63,12 +57,13 @@ contract L2StakingScript is Script {
         L2Staking l2Staking = L2Staking(payable(address(l2StakingProxy)));
         assert(keccak256(bytes(l2Staking.version())) == keccak256(bytes("1.0.0")));
         assert(l2Staking.owner() == vm.addr(deployerPrivateKey));
+        assert(l2Staking.l2LiskTokenContract() == l2AddressesConfig.L2LiskToken);
 
         // transfer ownership of the L2Staking contract to the owner address
-        vm.startBroadcast(deployerPrivateKey);
+        /*vm.startBroadcast(deployerPrivateKey);
         l2Staking.transferOwnership(ownerAddress);
         vm.stopBroadcast();
-        assert(l2Staking.owner() == ownerAddress);
+        assert(l2Staking.owner() == ownerAddress);*/
 
         console2.log("L2 Staking (implementation) address: %s", address(l2StakingImplementation));
         console2.log("L2 Staking (proxy) address: %s", address(l2Staking));

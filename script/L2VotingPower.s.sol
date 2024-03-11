@@ -6,10 +6,10 @@ import { Script, console2 } from "forge-std/Script.sol";
 import { L2VotingPower } from "src/L2/L2VotingPower.sol";
 import "script/Utils.sol";
 
-/// @title IL2Staking
-/// @notice Interface for L2 Staking contract. Used to initialize Voting Power contract.
-interface IL2Staking {
-    function initializeVotingPower(address votingPowerContract) external view;
+/// @title IL2LockingPosition
+/// @notice Interface for L2 Locking Position contract. Used to initialize Voting Power contract.
+interface IL2LockingPosition {
+    function initializeVotingPower(address votingPowerContract) external;
     function votingPowerContract() external view returns (address);
 }
 
@@ -30,11 +30,11 @@ contract L2VotingPowerScript is Script {
 
         console2.log("Deploying L2 Voting Power...");
 
-        // get L2Staking contract address
+        // get L2LockingPosition contract address
         Utils.L2AddressesConfig memory l2AddressesConfig = utils.readL2AddressesFile();
-        assert(l2AddressesConfig.L2Staking != address(0));
-        console2.log("L2 Staking address: %s", l2AddressesConfig.L2Staking);
-        IL2Staking stakingContract = IL2Staking(l2AddressesConfig.L2Staking);
+        assert(l2AddressesConfig.L2LockingPosition != address(0));
+        console2.log("L2 Locking Position address: %s", l2AddressesConfig.L2LockingPosition);
+        IL2LockingPosition lockingPositionContract = IL2LockingPosition(l2AddressesConfig.L2LockingPosition);
 
         // Get L2VotingPower contract owner address. Ownership is transferred to this address after deployment.
         address ownerAddress = vm.envAddress("L2_VOTING_POWER_OWNER_ADDRESS");
@@ -57,7 +57,7 @@ contract L2VotingPowerScript is Script {
         vm.startBroadcast(deployerPrivateKey);
         ERC1967Proxy l2VotingPowerProxy = new ERC1967Proxy(
             address(l2VotingPowerImplementation),
-            abi.encodeWithSelector(l2VotingPowerImplementation.initialize.selector, stakingContract)
+            abi.encodeWithSelector(l2VotingPowerImplementation.initialize.selector, lockingPositionContract)
         );
         vm.stopBroadcast();
         assert(address(l2VotingPowerProxy) != address(0));
@@ -69,9 +69,11 @@ contract L2VotingPowerScript is Script {
         assert(keccak256(bytes(l2VotingPower.version())) == keccak256(bytes("1.0.0")));
         assert(l2VotingPower.owner() == vm.addr(deployerPrivateKey));
 
-        // initialize the Voting Power contract by calling initializeVotingPower of the Staking contract
-        stakingContract.initializeVotingPower(address(l2VotingPower));
-        assert(stakingContract.votingPowerContract() == address(l2VotingPower));
+        // initialize the Voting Power contract by calling initializeVotingPower of the Locking Position contract
+        vm.startBroadcast(deployerPrivateKey);
+        lockingPositionContract.initializeVotingPower(address(l2VotingPower));
+        vm.stopBroadcast();
+        assert(lockingPositionContract.votingPowerContract() == address(l2VotingPower));
 
         // transfer ownership of the L2VotingPower contract to the owner address; because of using
         // Ownable2StepUpgradeable contract, new owner has to accept ownership
