@@ -320,19 +320,34 @@ contract L2ClaimTest is Test {
     }
 
     function test_ClaimMultisigAccount_RevertWhenSigLengthIsZero() public {
+        // claim as multisig account
         uint256 accountIndex = 50;
         MerkleTreeLeaf memory leaf = getMerkleLeaves().leaves[accountIndex];
-
-        ED25519Signature[] memory ed25519Signatures = new ED25519Signature[](0);
 
         vm.expectRevert("L2Claim: signatures array is empty");
         l2Claim.claimMultisigAccount(
             leaf.proof,
             bytes20(leaf.b32Address << 96),
             leaf.balanceBeddows,
-            MultisigKeys(leaf.mandatoryKeys, leaf.optionalKeys),
+            MultisigKeys(new bytes32[](0), new bytes32[](0)),
             address(this),
-            ed25519Signatures
+            new ED25519Signature[](0)
+        );
+    }
+
+    function test_ClaimMultisigAccount_RevertWhenClaimAsRegularAccount() public {
+        // claim as regular account
+        uint256 accountIndex = 0;
+        MerkleTreeLeaf memory leaf = getMerkleLeaves().leaves[accountIndex];
+
+        vm.expectRevert("L2Claim: signatures array is empty");
+        l2Claim.claimMultisigAccount(
+            leaf.proof,
+            bytes20(leaf.b32Address << 96),
+            leaf.balanceBeddows,
+            MultisigKeys(new bytes32[](0), new bytes32[](0)),
+            address(this),
+            new ED25519Signature[](0)
         );
     }
 
