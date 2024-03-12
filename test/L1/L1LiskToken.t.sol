@@ -32,6 +32,8 @@ contract L1LiskTokenTest is Test {
         assertEq(l1LiskToken.decimals(), 18);
         assertTrue(l1LiskToken.hasRole(l1LiskToken.DEFAULT_ADMIN_ROLE(), address(this)));
         assertFalse(l1LiskToken.hasRole(l1LiskToken.BURNER_ROLE(), address(this)));
+        assertEq(l1LiskToken.owner(), address(this));
+        assertEq(l1LiskToken.pendingOwner(), address(0));
     }
 
     function test_OnlyOwnerAddsOrRenouncesBurner() public {
@@ -171,14 +173,45 @@ contract L1LiskTokenTest is Test {
         l1LiskToken.transferOwnership(bob);
         vm.stopPrank();
 
-        vm.expectEmit(true, true, true, true, address(l1LiskToken));
-        emit RoleGranted(l1LiskToken.DEFAULT_ADMIN_ROLE(), alice, address(this));
-        vm.expectEmit(true, true, true, true, address(l1LiskToken));
-        emit RoleRevoked(l1LiskToken.DEFAULT_ADMIN_ROLE(), address(this), address(this));
+        assertEq(l1LiskToken.owner(), address(this));
+        assertEq(l1LiskToken.pendingOwner(), address(0));
         l1LiskToken.transferOwnership(alice);
+        assertEq(l1LiskToken.owner(), address(this));
+        assertEq(l1LiskToken.pendingOwner(), alice);
+
+        vm.expectEmit(true, true, true, true, address(l1LiskToken));
+        emit RoleGranted(l1LiskToken.DEFAULT_ADMIN_ROLE(), alice, alice);
+        vm.expectEmit(true, true, true, true, address(l1LiskToken));
+        emit RoleRevoked(l1LiskToken.DEFAULT_ADMIN_ROLE(), address(this), alice);
+        vm.prank(alice);
+        l1LiskToken.acceptOwnership();
 
         assertFalse(l1LiskToken.hasRole(l1LiskToken.DEFAULT_ADMIN_ROLE(), address(this)));
         assertTrue(l1LiskToken.hasRole(l1LiskToken.DEFAULT_ADMIN_ROLE(), alice));
+        assertEq(l1LiskToken.owner(), alice);
+        assertEq(l1LiskToken.pendingOwner(), address(0));
+    }
+
+    function test_OnlyOwnerTransfersTheOwnership_AcceptNotCalledByPendingOwner() public {
+        address alice = address(0x1);
+        address bob = address(0x2);
+
+        assertEq(l1LiskToken.owner(), address(this));
+        assertEq(l1LiskToken.pendingOwner(), address(0));
+        l1LiskToken.transferOwnership(alice);
+        assertEq(l1LiskToken.owner(), address(this));
+        assertEq(l1LiskToken.pendingOwner(), alice);
+
+        // call acceptOwnership without being the pending owner
+        vm.prank(bob);
+        vm.expectRevert("L1LiskToken: not pending owner");
+        l1LiskToken.acceptOwnership();
+
+        assertTrue(l1LiskToken.hasRole(l1LiskToken.DEFAULT_ADMIN_ROLE(), address(this)));
+        assertFalse(l1LiskToken.hasRole(l1LiskToken.DEFAULT_ADMIN_ROLE(), alice));
+        assertFalse(l1LiskToken.hasRole(l1LiskToken.DEFAULT_ADMIN_ROLE(), bob));
+        assertEq(l1LiskToken.owner(), address(this));
+        assertEq(l1LiskToken.pendingOwner(), alice);
     }
 
     function test_DefaultAdminRoleIsRoleAdminForBurnerRole() public {

@@ -25,13 +25,14 @@ contract L1LiskTokenScript is Script {
         console2.log("Deploying L1 Lisk token...");
 
         // address, the ownership of L1 Lisk token contract is transferred to after deployment
-        address ownerAddress = vm.envAddress("L1_TOKEN_OWNER_ADDRESS");
-        console2.log("L1 Lisk token owner address: %s", ownerAddress);
+        address newOwnerAddress = vm.envAddress("L1_TOKEN_OWNER_ADDRESS");
+        console2.log("L1 Lisk token owner address: %s (after ownership will be accepted)", newOwnerAddress);
 
-        // deploy L1LiskToken contract and transfer its ownership
+        // deploy L1LiskToken contract and transfer its ownership; new owner has to accept ownership to become the owner
+        // of the contract
         vm.startBroadcast(deployerPrivateKey);
         L1LiskToken l1LiskToken = new L1LiskToken();
-        l1LiskToken.transferOwnership(ownerAddress);
+        l1LiskToken.transferOwnership(newOwnerAddress);
         vm.stopBroadcast();
 
         assert(address(l1LiskToken) != address(0));
@@ -40,11 +41,13 @@ contract L1LiskTokenScript is Script {
         assert(l1LiskToken.decimals() == 18);
         assert(l1LiskToken.totalSupply() == 300000000 * 10 ** 18);
         assert(l1LiskToken.balanceOf(vm.addr(deployerPrivateKey)) == 300000000 * 10 ** 18);
-        assert(l1LiskToken.hasRole(l1LiskToken.DEFAULT_ADMIN_ROLE(), vm.addr(deployerPrivateKey)) == false);
+        assert(l1LiskToken.owner() == vm.addr(deployerPrivateKey));
+        assert(l1LiskToken.pendingOwner() == newOwnerAddress);
+        assert(l1LiskToken.hasRole(l1LiskToken.DEFAULT_ADMIN_ROLE(), vm.addr(deployerPrivateKey)) == true);
+        assert(l1LiskToken.hasRole(l1LiskToken.DEFAULT_ADMIN_ROLE(), newOwnerAddress) == false);
         assert(l1LiskToken.hasRole(l1LiskToken.BURNER_ROLE(), vm.addr(deployerPrivateKey)) == false);
-        assert(l1LiskToken.hasRole(l1LiskToken.DEFAULT_ADMIN_ROLE(), ownerAddress) == true);
-        assert(l1LiskToken.hasRole(l1LiskToken.BURNER_ROLE(), ownerAddress) == false);
-        assert(l1LiskToken.balanceOf(ownerAddress) == 0);
+        assert(l1LiskToken.hasRole(l1LiskToken.BURNER_ROLE(), newOwnerAddress) == false);
+        assert(l1LiskToken.balanceOf(newOwnerAddress) == 0);
 
         console2.log("L1 Lisk token successfully deployed!");
         console2.log("L1 Lisk token address: %s", address(l1LiskToken));

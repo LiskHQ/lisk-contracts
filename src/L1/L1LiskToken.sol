@@ -24,18 +24,35 @@ contract L1LiskToken is ERC20Burnable, AccessControl, ERC20Permit {
     /// @notice A unique role identifier for accounts with the ability to burn tokens.
     bytes32 public constant BURNER_ROLE = keccak256("BURNER_ROLE");
 
+    /// @notice The address of the account that currently has ownership of the contract.
+    address public owner;
+
+    /// @notice The address of the account pending to be the new owner.
+    address public pendingOwner;
+
     /// @notice Constructs the L1LiskToken contract.
     constructor() ERC20(NAME, SYMBOL) ERC20Permit(NAME) {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _mint(msg.sender, TOTAL_SUPPLY);
+        owner = msg.sender;
     }
 
-    /// @notice Transfer the contract ownership to a new account.
+    /// @notice Transfer the contract ownership to a new account. New owner must accept the ownership.
     /// @param account The address of the new owner.
     /// @dev Requires DEFAULT_ADMIN_ROLE.
     function transferOwnership(address account) public onlyRole(DEFAULT_ADMIN_ROLE) {
-        _grantRole(DEFAULT_ADMIN_ROLE, account);
-        _revokeRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        pendingOwner = account;
+    }
+
+    /// @notice Accept the ownership of the contract. The caller must be the pending owner. Current owner will be
+    ///         removed from the ownership.
+    /// @dev Requires the caller to be the pending owner.
+    function acceptOwnership() public {
+        require(msg.sender == pendingOwner, "L1LiskToken: not pending owner");
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _revokeRole(DEFAULT_ADMIN_ROLE, owner);
+        owner = msg.sender;
+        pendingOwner = address(0);
     }
 
     /// @notice Check if an account has the burner role.
