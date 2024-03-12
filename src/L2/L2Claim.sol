@@ -179,6 +179,7 @@ contract L2Claim is Initializable, OwnableUpgradeable, UUPSUpgradeable, ISemver 
         external
         virtual
     {
+        require(_sigs.length > 0, "L2Claim: signatures array is empty");
         require(
             _sigs.length == _keys.optionalKeys.length + _keys.mandatoryKeys.length,
             "L2Claim: signatures array has invalid length"
