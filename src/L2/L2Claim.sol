@@ -4,7 +4,7 @@ pragma solidity 0.8.23;
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { MerkleProof } from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import { Initializable } from "@openzeppelin-upgradeable/contracts/proxy/utils/Initializable.sol";
-import { OwnableUpgradeable } from "@openzeppelin-upgradeable/contracts/access/OwnableUpgradeable.sol";
+import { Ownable2StepUpgradeable } from "@openzeppelin-upgradeable/contracts/access/Ownable2StepUpgradeable.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
 import { Ed25519 } from "../utils/Ed25519.sol";
 import { ISemver } from "../utils/ISemver.sol";
@@ -24,7 +24,7 @@ struct ED25519Signature {
 /// @title L2Claim
 /// @notice Enables users to claim their LSK tokens from Lisk Chain on L2 using Merkle proofs, with support for both
 ///         regular and multisig accounts.
-contract L2Claim is Initializable, OwnableUpgradeable, UUPSUpgradeable, ISemver {
+contract L2Claim is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, ISemver {
     /// @notice LSK originally has 8 decimal places, L2 LSK has 18 decimal places.
     uint256 public constant LSK_MULTIPLIER = 10 ** 10;
 
@@ -70,6 +70,7 @@ contract L2Claim is Initializable, OwnableUpgradeable, UUPSUpgradeable, ISemver 
         public
         initializer
     {
+        __Ownable2Step_init();
         __Ownable_init(msg.sender);
         l2LiskToken = IERC20(_l2LiskToken);
         merkleRoot = _merkleRoot;

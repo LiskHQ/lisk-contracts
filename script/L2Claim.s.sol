@@ -33,7 +33,7 @@ contract L2ClaimScript is Script {
 
         // owner Address, the ownership of L2Claim Proxy Contract is transferred to after deployment
         address ownerAddress = vm.envAddress("L2_CLAIM_OWNER_ADDRESS");
-        console2.log("L2 Claim contract owner address: %s", ownerAddress);
+        console2.log("L2 Claim contract owner address: %s (after ownership will be accepted)", ownerAddress);
 
         // get L2LiskToken contract address
         Utils.L2AddressesConfig memory l2AddressesConfig = utils.readL2AddressesFile();
@@ -79,17 +79,18 @@ contract L2ClaimScript is Script {
         vm.stopBroadcast();
         assert(l2Claim.daoAddress() == daoAddress);
 
-        // transfer ownership of L2Claim Proxy
+        // transfer ownership of L2Claim Proxy; because of using Ownable2StepUpgradeable contract, new owner has to
+        // accept ownership
         vm.startBroadcast(deployerPrivateKey);
         l2Claim.transferOwnership(ownerAddress);
         vm.stopBroadcast();
-        assert(l2Claim.owner() == ownerAddress);
+        assert(l2Claim.owner() == vm.addr(deployerPrivateKey)); // ownership is not yet accepted
 
         console2.log("L2 Claim contract successfully deployed!");
         console2.log("L2 Claim (Implementation) address: %s", address(l2ClaimImplementation));
         console2.log("L2 Claim (Proxy) address: %s", address(l2Claim));
         console2.log("DAO Address of L2 Claim (Proxy) address: %s", l2Claim.daoAddress());
-        console2.log("Owner of L2 Claim (Proxy) address: %s", l2Claim.owner());
+        console2.log("Owner of L2 Claim (Proxy) address: %s (after ownership will be accepted)", ownerAddress);
 
         // write L2ClaimContract address to l2addresses.json
         l2AddressesConfig.L2ClaimImplementation = address(l2ClaimImplementation);
