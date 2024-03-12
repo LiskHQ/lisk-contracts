@@ -553,6 +553,10 @@ contract L2ClaimTest is Test {
     }
 
     function test_SetDAOAddress_SuccessSet() public {
+        // check that the DaoAddressSet event is emitted
+        vm.expectEmit(true, true, true, true);
+        emit L2Claim.DaoAddressSet(daoAddress);
+
         l2Claim.setDAOAddress(daoAddress);
         assertEq(l2Claim.daoAddress(), daoAddress);
     }
