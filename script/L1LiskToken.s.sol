@@ -43,7 +43,7 @@ contract L1LiskTokenScript is Script {
         assert(l1LiskToken.balanceOf(vm.addr(deployerPrivateKey)) == 300000000 * 10 ** 18);
         assert(l1LiskToken.owner() == vm.addr(deployerPrivateKey));
         assert(l1LiskToken.pendingOwner() == newOwnerAddress);
-        assert(l1LiskToken.hasRole(l1LiskToken.DEFAULT_ADMIN_ROLE(), vm.addr(deployerPrivateKey)) == true);
+        assert(l1LiskToken.hasRole(l1LiskToken.DEFAULT_ADMIN_ROLE(), vm.addr(deployerPrivateKey)) == false);
         assert(l1LiskToken.hasRole(l1LiskToken.DEFAULT_ADMIN_ROLE(), newOwnerAddress) == false);
         assert(l1LiskToken.hasRole(l1LiskToken.BURNER_ROLE(), vm.addr(deployerPrivateKey)) == false);
         assert(l1LiskToken.hasRole(l1LiskToken.BURNER_ROLE(), newOwnerAddress) == false);
