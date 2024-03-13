@@ -8,23 +8,24 @@ echo "Navigating to the root directory of the project..."
 cd ../
 echo "Done."
 
-#echo "Removing files inside deployment directory if they exists..."
-#rm -rf deployment/*
-#echo "Done."
-
 echo "Setting environment variables..."
 source .env
 echo "Done."
 
-#echo "Creating $NETWORK directory inside deployment directory..."
-#if [ -z "$NETWORK" ]
-#then
-#      echo "NETWORK variable inside .env file is not set. Please set NETWORK environment variable."
-#      exit 1
-#else
-#      mkdir deployment/$NETWORK      
-#fi
-#echo "Done."
+echo "Creating $NETWORK directory inside deployment directory..."
+if [ -z "$NETWORK" ]
+then
+      echo "NETWORK variable inside .env file is not set. Please set NETWORK environment variable."
+      exit 1
+else
+      if [ -d "deployment/$NETWORK" ]
+      then
+            echo "Directory deployment/$NETWORK already exists."
+      else
+            mkdir deployment/$NETWORK
+      fi
+fi
+echo "Done."
 
 echo "Deploying and if enabled verifying L2Staking smart contract..."
 if [ -z "$CONTRACT_VERIFIER" ]
