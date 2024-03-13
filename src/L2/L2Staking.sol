@@ -101,6 +101,8 @@ contract L2Staking is Initializable, OwnableUpgradeable, UUPSUpgradeable, ISemve
     /// @param position Locking position to be checked.
     /// @return Whether the given locking position is null.
     function isLockingPositionNull(LockingPosition memory position) internal view virtual returns (bool) {
+        // We are using == to compare with 0 because we want to check if the fields are initialized to 0 or address(0).
+        // slither-disable-next-line incorrect-equality
         return position.creator == address(0) && position.amount == 0 && position.expDate == 0
             && position.pausedLockingDuration == 0;
     }
@@ -172,11 +174,11 @@ contract L2Staking is Initializable, OwnableUpgradeable, UUPSUpgradeable, ISemve
 
     /// @notice Locks the given amount for the given owner for the given locking duration and creates a new locking
     ///         position and returns its ID.
-    /// @param owner The address of the owner for whom the amount is locked.
+    /// @param lockOwner The address of the owner for whom the amount is locked.
     /// @param amount The amount to be locked.
     /// @param lockingDuration The duration for which the amount is locked (in days).
     /// @return The ID of the newly created locking position.
-    function lockAmount(address owner, uint256 amount, uint256 lockingDuration) public virtual returns (uint256) {
+    function lockAmount(address lockOwner, uint256 amount, uint256 lockingDuration) public virtual returns (uint256) {
         require(
             lockingDuration >= MIN_LOCKING_DURATION,
             "L2Staking: lockingDuration should be at least MIN_LOCKING_DURATION"
@@ -193,11 +195,16 @@ contract L2Staking is Initializable, OwnableUpgradeable, UUPSUpgradeable, ISemve
             creator = address(this);
         }
 
-        bool success = IL2LiskToken(l2LiskTokenContract).transferFrom(owner, address(this), amount);
+        // We assume that the owner has already approved the Staking contract to transfer the amount and in most cases
+        // lockAmount will be called from a smart contract, so msg.sender will NOT be an address from which the amount
+        // will be transferred. That's why we use lockOwner as the sender for the transferFrom function.
+        // slither-disable-next-line arbitrary-send-erc20
+        bool success = IL2LiskToken(l2LiskTokenContract).transferFrom(lockOwner, address(this), amount);
         require(success, "L2Staking: LSK token transfer from owner to Staking contract failed");
 
-        uint256 lockId =
-            (IL2LockingPosition(lockingPositionContract)).createLockingPosition(creator, owner, amount, lockingDuration);
+        uint256 lockId = (IL2LockingPosition(lockingPositionContract)).createLockingPosition(
+            creator, lockOwner, amount, lockingDuration
+        );
 
         return lockId;
     }
@@ -265,8 +272,12 @@ contract L2Staking is Initializable, OwnableUpgradeable, UUPSUpgradeable, ISemve
             "L2Staking: can not increase amount for expired locking position"
         );
 
-        address owner = (IL2LockingPosition(lockingPositionContract)).ownerOf(lockId);
-        bool success = IL2LiskToken(l2LiskTokenContract).transferFrom(owner, address(this), amountIncrease);
+        address ownerOfLock = (IL2LockingPosition(lockingPositionContract)).ownerOf(lockId);
+        // We assume that the owner has already approved the Staking contract to transfer the amount and in most cases
+        // lockAmount will be called from a smart contract, so msg.sender will NOT be an address from which the amount
+        // will be transferred. That's why we use ownerOfLock as the sender for the transferFrom function.
+        // slither-disable-next-line arbitrary-send-erc20
+        bool success = IL2LiskToken(l2LiskTokenContract).transferFrom(ownerOfLock, address(this), amountIncrease);
         require(success, "L2Staking: LSK token transfer from owner to Staking contract failed");
 
         // update locking position

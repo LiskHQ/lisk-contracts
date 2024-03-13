@@ -211,7 +211,7 @@ contract L2LockingPositionTest is Test {
     function test_CreateLockingPosition_OwnerIsZero() public {
         address alice = address(0x0);
         vm.prank(address(l2Staking));
-        vm.expectRevert("L2LockingPosition: owner address is required");
+        vm.expectRevert("L2LockingPosition: lockOwner address is required");
         l2LockingPosition.createLockingPosition(address(l2Staking), alice, 100 * 10 ** 18, 365);
     }
 

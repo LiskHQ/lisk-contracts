@@ -48,6 +48,11 @@ contract L2LockingPosition is Initializable, OwnableUpgradeable, UUPSUpgradeable
         _;
     }
 
+    /// @notice Disabling initializers on implementation contract to prevent misuse.
+    constructor() {
+        _disableInitializers();
+    }
+
     /// @notice Initialize the contract.
     /// @param _stakingContract Address of the Staking contract.
     function initialize(address _stakingContract) public initializer {
@@ -75,6 +80,8 @@ contract L2LockingPosition is Initializable, OwnableUpgradeable, UUPSUpgradeable
     /// @param position Locking position to be checked.
     /// @return Whether the given locking position is null.
     function isLockingPositionNull(LockingPosition memory position) internal view virtual returns (bool) {
+        // We are using == to compare with 0 because we want to check if the fields are initialized to 0 or address(0).
+        // slither-disable-next-line incorrect-equality
         return position.creator == address(0) && position.amount == 0 && position.expDate == 0
             && position.pausedLockingDuration == 0;
     }
@@ -136,13 +143,13 @@ contract L2LockingPosition is Initializable, OwnableUpgradeable, UUPSUpgradeable
 
     /// @notice Creates a new locking position.
     /// @param creator Address of the creator of the locking position.
-    /// @param owner Address of the owner of the locking position.
+    /// @param lockOwner Address of the owner of the locking position.
     /// @param amount Amount to be locked.
     /// @param lockingDuration Duration for which the amount should be locked.
     /// @return ID of the created locking position.
     function createLockingPosition(
         address creator,
-        address owner,
+        address lockOwner,
         uint256 amount,
         uint256 lockingDuration
     )
@@ -151,12 +158,12 @@ contract L2LockingPosition is Initializable, OwnableUpgradeable, UUPSUpgradeable
         onlyStaking
         returns (uint256)
     {
-        require(owner != address(0), "L2LockingPosition: owner address is required");
+        require(lockOwner != address(0), "L2LockingPosition: lockOwner address is required");
         require(amount > 0, "L2LockingPosition: amount should be greater than 0");
         require(lockingDuration > 0, "L2LockingPosition: locking duration should be greater than 0");
 
         // mint a new NFT token
-        _mint(owner, nextId);
+        _mint(lockOwner, nextId);
 
         // create entry for this locking position
         lockingPositions[nextId] = LockingPosition({
@@ -168,7 +175,7 @@ contract L2LockingPosition is Initializable, OwnableUpgradeable, UUPSUpgradeable
 
         // call Voting Power contract to set voting power
         IL2VotingPower(votingPowerContract).adjustVotingPower(
-            owner, LockingPosition(address(0), 0, 0, 0), lockingPositions[nextId]
+            lockOwner, LockingPosition(address(0), 0, 0, 0), lockingPositions[nextId]
         );
 
         // update nextID and return the created locking position ID
@@ -236,13 +243,13 @@ contract L2LockingPosition is Initializable, OwnableUpgradeable, UUPSUpgradeable
     }
 
     /// @notice Returns all locking positions for the given owner.
-    /// @param owner Owner address.
+    /// @param lockOwner Owner address.
     /// @return All locking positions for the given owner.
-    function getAllLockingPositionsByOwner(address owner) public view virtual returns (LockingPosition[] memory) {
-        uint256 tokenCount = balanceOf(owner);
+    function getAllLockingPositionsByOwner(address lockOwner) public view virtual returns (LockingPosition[] memory) {
+        uint256 tokenCount = balanceOf(lockOwner);
         LockingPosition[] memory result = new LockingPosition[](tokenCount);
         for (uint256 i = 0; i < tokenCount; i++) {
-            result[i] = lockingPositions[tokenOfOwnerByIndex(owner, i)];
+            result[i] = lockingPositions[tokenOfOwnerByIndex(lockOwner, i)];
         }
         return result;
     }
