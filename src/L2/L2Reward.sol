@@ -83,7 +83,7 @@ contract L2Reward {
     uint256[] public totalLockedAmounts;
 
     /// @notice Total of amount expiring for each day.
-    uint256[] public dailyUnlockedAmounts;
+    mapping(uint256 => uint256) public dailyUnlockedAmounts;
 
     /// @notice Total of rewards provided for each day.
     uint256[] public dailyRewards;
@@ -147,7 +147,7 @@ contract L2Reward {
     /// @param amount Amount to be locked.
     /// @param duration Duration of the locking position in days.
     /// @return  The ID of the newly created locking position.
-    function createPostion(uint256 amount, uint256 duration) public virtual returns (uint256) {
+    function createPosition(uint256 amount, uint256 duration) public virtual returns (uint256) {
         updateGlobalState();
 
         uint256 ID = IL2Staking(stakingContract).lockAmount(msg.sender, amount, duration);
