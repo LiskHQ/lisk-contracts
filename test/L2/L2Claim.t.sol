@@ -417,6 +417,11 @@ contract L2ClaimTest is Test {
         }
 
         bytes20 lskAddress = bytes20(leaf.b32Address << 96);
+
+        // check that the LSKClaimed event is emitted
+        vm.expectEmit(true, true, true, true);
+        emit L2Claim.LSKClaimed(lskAddress, address(this), leaf.balanceBeddows);
+
         l2Claim.claimMultisigAccount(
             leaf.proof,
             lskAddress,
@@ -444,6 +449,11 @@ contract L2ClaimTest is Test {
         ed25519Signatures[1] = ED25519Signature(bytes32(0), bytes32(0));
 
         bytes20 lskAddress = bytes20(leaf.b32Address << 96);
+
+        // check that the LSKClaimed event is emitted
+        vm.expectEmit(true, true, true, true);
+        emit L2Claim.LSKClaimed(lskAddress, address(this), leaf.balanceBeddows);
+
         l2Claim.claimMultisigAccount(
             leaf.proof,
             lskAddress,
@@ -472,6 +482,11 @@ contract L2ClaimTest is Test {
         ed25519Signatures[4] = ED25519Signature(bytes32(0), bytes32(0));
 
         bytes20 lskAddress = bytes20(leaf.b32Address << 96);
+
+        // check that the LSKClaimed event is emitted
+        vm.expectEmit(true, true, true, true);
+        emit L2Claim.LSKClaimed(lskAddress, address(this), leaf.balanceBeddows);
+
         l2Claim.claimMultisigAccount(
             leaf.proof,
             lskAddress,
@@ -498,6 +513,11 @@ contract L2ClaimTest is Test {
         }
 
         bytes20 lskAddress = bytes20(leaf.b32Address << 96);
+
+        // check that the LSKClaimed event is emitted
+        vm.expectEmit(true, true, true, true);
+        emit L2Claim.LSKClaimed(lskAddress, address(this), leaf.balanceBeddows);
+
         l2Claim.claimMultisigAccount(
             leaf.proof,
             bytes20(leaf.b32Address << 96),
