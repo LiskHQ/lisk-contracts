@@ -9,10 +9,10 @@ import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol";
 
 /// @title L1LiskToken
-/// @notice L1LiskToken is an implementation of ERC20 token and is an extension of AccessControl, ERC20Permit and
-///         ERC20Burnable token contracts. It maintains the ownership of the deployed contract and only allows the
-///         owners to transfer the ownership. The L1LiskToken exclusively authorizes burners to reduce the total supply,
-///         while the management of burner accounts is solely under the domain of the owner.
+/// @notice L1LiskToken is an implementation of ERC20 token and is an extension of AccessControl, Ownable2Step,
+/// ERC20Permit and ERC20Burnable token contracts. It maintains the ownership of the deployed contract and only allows
+/// the owners to transfer the ownership. The L1LiskToken exclusively authorizes burners to reduce the total supply,
+/// while the management of burner accounts is solely under the domain of the owner.
 contract L1LiskToken is ERC20Burnable, AccessControl, Ownable2Step, ERC20Permit {
     /// @notice Name of the token.
     string private constant NAME = "Lisk";
