@@ -77,16 +77,16 @@ contract L2Reward {
     bool rewardsEnabled;
 
     /// @notice Total of weights of all stakes for each day.
-    uint256[] public totalWeights;
+    mapping(uint256 => uint256) public totalWeights;
 
     /// @notice Total of staked amount for each day.
-    uint256[] public totalLockedAmounts;
+    mapping(uint256 => uint256) public totalLockedAmounts;
 
     /// @notice Total of amount expiring for each day.
     mapping(uint256 => uint256) public dailyUnlockedAmounts;
 
     /// @notice Total of rewards provided for each day.
-    uint256[] public dailyRewards;
+    mapping(uint256 => uint256) public dailyRewards;
 
     /// @notice Reward cap.
     uint256 public cappedRewards;
@@ -170,9 +170,9 @@ contract L2Reward {
         updateGlobalState();
         require(
             IL2LockingPosition(lockingPositionContract).ownerOf(lockID) == msg.sender,
-            "msg.sender does not own the locking postion"
+            "L2Reward: msg.sender does not own the locking postion"
         );
-        require(lastClaimDate[lockID] != 0, "Locking postion does not exist");
+        require(lastClaimDate[lockID] != 0, "L2Reward: Locking postion does not exist");
 
         claimReward(lockID, false);
 
