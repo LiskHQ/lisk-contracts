@@ -5,6 +5,7 @@ import { Test, console2 } from "forge-std/Test.sol";
 import { IL2LiskToken, IL2LockingPosition, IL2Staking, L2Reward } from "src/L2/L2Reward.sol";
 import { ERC721Upgradeable } from "@openzeppelin-upgradeable/contracts/token/ERC721/ERC721Upgradeable.sol";
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import { L2VotingPower } from "src/L2/L2VotingPower.sol";
 
 import { L2LiskToken } from "src/L2/L2LiskToken.sol";
 import { L2LockingPosition } from "src/L2/L2LockingPosition.sol";
@@ -16,6 +17,8 @@ contract L2RewardTest is Test {
     L2Staking public l2StakingImplementation;
     L2LockingPosition public l2LockingPosition;
     L2LockingPosition public l2LockingPositionImplementation;
+    L2VotingPower public l2VotingPowerImplementation;
+    L2VotingPower public l2VotingPower;
     L2Reward public l2Reward;
 
     address public remoteToken;
@@ -35,7 +38,6 @@ contract L2RewardTest is Test {
 
         vm.stopPrank();
 
-        // deploy L2Staking implementation contract
         l2StakingImplementation = new L2Staking();
         l2Staking = L2Staking(
             address(
@@ -56,6 +58,19 @@ contract L2RewardTest is Test {
             )
         );
 
+        l2VotingPowerImplementation = new L2VotingPower();
+
+        l2VotingPower = L2VotingPower(
+            address(
+                new ERC1967Proxy(
+                    address(l2VotingPowerImplementation),
+                    abi.encodeWithSelector(l2VotingPower.initialize.selector, address(l2LockingPosition))
+                )
+            )
+        );
+
+        l2Staking.initializeLockingPosition(address(l2LockingPosition));
+        l2LockingPosition.initializeVotingPower(address(l2VotingPower));
         l2Reward = new L2Reward(address(l2Staking), address(l2LockingPosition), address(l2LiskToken));
     }
 
@@ -71,9 +86,13 @@ contract L2RewardTest is Test {
         uint256 amount = convertLiskToBeddows(10);
         uint256 ID;
 
-        vm.mockCall(address(l2Staking), abi.encodeWithSelector(L2Staking.lockAmount.selector), abi.encode(1));
+        vm.startPrank(bridge);
+        l2LiskToken.mint(address(l2Reward), convertLiskToBeddows(1000));
+        l2LiskToken.mint(alice, convertLiskToBeddows(1000));
+        vm.stopPrank();
 
         vm.startPrank(alice);
+        l2LiskToken.approve(address(l2Staking), convertLiskToBeddows(100));
         ID = l2Reward.createPosition(amount, duration);
         vm.stopPrank();
 
@@ -90,11 +109,11 @@ contract L2RewardTest is Test {
         vm.mockCall(
             address(l2LockingPosition),
             abi.encodeWithSelector(ERC721Upgradeable.ownerOf.selector),
-            abi.encode(address(0))
+            abi.encode(address(0x0))
         );
 
         vm.prank(alice);
-        vm.expectRevert("L2Reward: msg.sender does not own the locking postion");
+        vm.expectRevert("L2Reward: msg.sender does not own the locking position");
         l2Reward.deletePosition(1);
     }
 
@@ -107,8 +126,8 @@ contract L2RewardTest is Test {
             abi.encode(address(0x1))
         );
 
+        vm.expectRevert("L2Reward: Locking position does not exist");
         vm.prank(alice);
-        vm.expectRevert("L2Reward: Locking postion does not exist");
         l2Reward.deletePosition(1);
     }
 

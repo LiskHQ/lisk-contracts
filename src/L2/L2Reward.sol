@@ -170,9 +170,9 @@ contract L2Reward {
         updateGlobalState();
         require(
             IL2LockingPosition(lockingPositionContract).ownerOf(lockID) == msg.sender,
-            "L2Reward: msg.sender does not own the locking postion"
+            "L2Reward: msg.sender does not own the locking position"
         );
-        require(lastClaimDate[lockID] != 0, "L2Reward: Locking postion does not exist");
+        require(lastClaimDate[lockID] != 0, "L2Reward: Locking position does not exist");
 
         claimReward(lockID, false);
 
@@ -182,13 +182,13 @@ contract L2Reward {
     }
 
     /// @notice Pauses the locking position.
-    /// @param lockID The ID of the locking postion.
+    /// @param lockID The ID of the locking position.
     function fastUnlock(uint256 lockID) public virtual {
         updateGlobalState();
 
         require(
             IL2LockingPosition(lockingPositionContract).ownerOf(lockID) == msg.sender,
-            "msg.sender does not own the locking postion"
+            "msg.sender does not own the locking position"
         );
 
         IL2LockingPosition.LockingPosition memory lockingPosition =
@@ -268,7 +268,7 @@ contract L2Reward {
     }
 
     /// @notice Claim reward against a locking position.
-    /// @param lockID THe ID of the locking postion.
+    /// @param lockID THe ID of the locking position.
     function claimReward(uint256 lockID, bool lockRewards) public virtual {
         updateGlobalState();
 
@@ -278,10 +278,10 @@ contract L2Reward {
     function _claimRewards(uint256 lockID, bool lockRewards) internal virtual {
         require(
             IL2LockingPosition(lockingPositionContract).ownerOf(lockID) == msg.sender,
-            "msg.sender does not own the locking postion"
+            "msg.sender does not own the locking position"
         );
 
-        require(lastClaimDate[lockID] != 0, "Locking postion does not exist");
+        require(lastClaimDate[lockID] != 0, "Locking position does not exist");
 
         IL2LockingPosition.LockingPosition memory lockingPosition =
             IL2LockingPosition(lockingPositionContract).getLockingPosition(lockID);
@@ -327,7 +327,7 @@ contract L2Reward {
 
         require(
             IL2LockingPosition(lockingPositionContract).ownerOf(lockID) == msg.sender,
-            "msg.sender does not own the locking postion"
+            "msg.sender does not own the locking position"
         );
 
         IL2LockingPosition.LockingPosition memory lockingPosition =
@@ -362,7 +362,7 @@ contract L2Reward {
 
         require(
             IL2LockingPosition(lockingPositionContract).ownerOf(lockID) == msg.sender,
-            "msg.sender does not own the locking postion"
+            "msg.sender does not own the locking position"
         );
 
         claimReward(lockID, restakeUnclaimedRewards);
@@ -394,7 +394,7 @@ contract L2Reward {
 
         require(
             IL2LockingPosition(lockingPositionContract).ownerOf(lockID) == msg.sender,
-            "msg.sender does not own the locking postion"
+            "msg.sender does not own the locking position"
         );
 
         claimReward(lockID, restakeUnclaimedRewards);
@@ -416,7 +416,7 @@ contract L2Reward {
 
         require(
             IL2LockingPosition(lockingPositionContract).ownerOf(lockID) == msg.sender,
-            "msg.sender does not own the locking postion"
+            "msg.sender does not own the locking position"
         );
 
         claimReward(lockID, restakeUnclaimedRewards);
@@ -437,7 +437,7 @@ contract L2Reward {
 
         require(
             IL2LockingPosition(lockingPositionContract).ownerOf(lockID) == msg.sender,
-            "msg.sender does not own the locking postion"
+            "msg.sender does not own the locking position"
         );
 
         uint256 today = todayDay();
