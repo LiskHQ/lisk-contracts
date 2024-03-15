@@ -25,6 +25,10 @@ contract L2StakingHarness is L2Staking {
     {
         return canLockingPositionBeModified(lockId, lock);
     }
+
+    function exposedRemainingLockingDuration(LockingPosition memory lock) public view returns (uint256) {
+        return remainingLockingDuration(lock);
+    }
 }
 
 contract L2StakingTest is Test {
@@ -252,6 +256,38 @@ contract L2StakingTest is Test {
         // advance block time to exactly one day after the expiration date
         vm.warp(366 days);
         assertEq(l2StakingHarness.exposedCalculatePenalty(100 * 10 ** 18, 365), 0);
+    }
+
+    function test_RemainingLockingDuration_ZeroPausedLockingDuration() public {
+        L2StakingHarness l2StakingHarness = new L2StakingHarness();
+
+        // create a locking position with pausedLockingDuration set to zero
+        LockingPosition memory lock =
+            LockingPosition({ creator: address(0x1), amount: 100 * 10 ** 18, expDate: 365, pausedLockingDuration: 0 });
+        assertEq(lock.pausedLockingDuration, 0);
+
+        // same day
+        assertEq(l2StakingHarness.exposedRemainingLockingDuration(lock), 365);
+
+        // advance block time by 100 days
+        vm.warp(100 days);
+        assertEq(l2StakingHarness.exposedRemainingLockingDuration(lock), 265);
+    }
+
+    function test_RemainingLockingDuration_PausedLockingDurationNotZero() public {
+        L2StakingHarness l2StakingHarness = new L2StakingHarness();
+
+        // create a locking position with pausedLockingDuration set to 100
+        LockingPosition memory lock =
+            LockingPosition({ creator: address(0x1), amount: 100 * 10 ** 18, expDate: 365, pausedLockingDuration: 100 });
+        assertEq(lock.pausedLockingDuration, 100);
+
+        // same day
+        assertEq(l2StakingHarness.exposedRemainingLockingDuration(lock), 100);
+
+        // advance block time by 150 days
+        vm.warp(150 days);
+        assertEq(l2StakingHarness.exposedRemainingLockingDuration(lock), 100);
     }
 
     function test_InitializeLockingPosition_LockingPositionContractAlreadyInitialized() public {

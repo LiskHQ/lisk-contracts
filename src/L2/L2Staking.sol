@@ -142,6 +142,17 @@ contract L2Staking is Initializable, OwnableUpgradeable, UUPSUpgradeable, ISemve
         return (amount * (expDate - today)) / (MAX_LOCKING_DURATION * PENALTY_DENOMINATOR);
     }
 
+    /// @notice Returns the remaining locking duration for the given locking position.
+    /// @param lock The locking position for which the remaining locking duration is returned.
+    /// @return The remaining locking duration for the given locking position.
+    function remainingLockingDuration(LockingPosition memory lock) internal view virtual returns (uint256) {
+        if (lock.pausedLockingDuration == 0) {
+            return lock.expDate - todayDay();
+        } else {
+            return lock.pausedLockingDuration;
+        }
+    }
+
     /// @notice Initializes the L2LockingPosition contract address.
     /// @param _lockingPositionContract The address of the L2LockingPosition contract.
     function initializeLockingPosition(address _lockingPositionContract) public onlyOwner {
@@ -235,15 +246,13 @@ contract L2Staking is Initializable, OwnableUpgradeable, UUPSUpgradeable, ISemve
         LockingPosition memory lock = (IL2LockingPosition(lockingPositionContract)).getLockingPosition(lockId);
         require(isLockingPositionNull(lock) == false, "L2Staking: locking position does not exist");
         require(canLockingPositionBeModified(lockId, lock), "L2Staking: only owner or creator can call this function");
-
-        uint256 today = todayDay();
-        require(lock.expDate - today > FAST_UNLOCK_DURATION, "L2Staking: less than 3 days until unlock");
+        require(remainingLockingDuration(lock) > FAST_UNLOCK_DURATION, "L2Staking: less than 3 days until unlock");
 
         // calculate penalty
         uint256 penalty = calculatePenalty(lock.amount, lock.expDate);
 
         uint256 amount = lock.amount - penalty;
-        uint256 expDate = today + FAST_UNLOCK_DURATION;
+        uint256 expDate = todayDay() + FAST_UNLOCK_DURATION;
 
         // update locking position
         (IL2LockingPosition(lockingPositionContract)).modifyLockingPosition(lockId, amount, expDate, 0);
