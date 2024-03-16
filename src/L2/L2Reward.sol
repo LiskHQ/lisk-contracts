@@ -70,12 +70,6 @@ contract L2Reward {
     /// @notice Date of the last user-made action that updated the global variables.
     uint256 public lastTrsDate;
 
-    /// @notice The first date when rewards are provided to users.
-    uint256 public startingDate;
-
-    /// @notice Indicates if an initial funding for rewards has been provided.
-    bool rewardsEnabled;
-
     /// @notice Total of weights of all stakes for each day.
     mapping(uint256 => uint256) public totalWeights;
 
@@ -110,8 +104,6 @@ contract L2Reward {
         stakingContract = _stakingContract;
         lockingPositionContract = _lockingPositionContract;
         l2TokenContract = _l2TokenContract;
-
-        startingDate = todayDay();
     }
 
     /// @notice Updates global state against user actions.
@@ -119,7 +111,7 @@ contract L2Reward {
     function updateGlobalState() internal virtual {
         uint256 today = todayDay();
 
-        uint256 d = Math.max(lastTrsDate, startingDate);
+        uint256 d = lastTrsDate;
         if (today > d) {
             for (; d < today; d++) {
                 totalWeights[d] = totalWeight;
@@ -152,13 +144,13 @@ contract L2Reward {
 
         uint256 ID = IL2Staking(stakingContract).lockAmount(msg.sender, amount, duration);
         uint256 today = todayDay();
-        uint256 start = Math.max(today, startingDate);
+        uint256 start = Math.max(today, lastTrsDate);
 
         lastClaimDate[ID] = start;
 
         totalWeight += amount * (duration + OFFSET);
         totalAmountLocked += amount;
-        dailyUnlockedAmounts[startingDate + duration] += amount;
+        dailyUnlockedAmounts[lastTrsDate + duration] += amount;
         pendingUnlockAmount += amount;
 
         return ID;
@@ -240,13 +232,13 @@ contract L2Reward {
         }
 
         if (remainingLockingDuration > 0) {
-            weight = remainingLockingDuration + OFFSET;
+            weight = lockingPosition.amount * (remainingLockingDuration + OFFSET);
         }
 
         uint256 reward = 0;
 
         for (uint256 d = lastClaimDate[lockID]; d < lastRewardDay; d++) {
-            reward += (weight / totalWeights[d]) * dailyRewards[d];
+            reward += (weight / dailyRewards[d]) * totalWeights[d];
 
             if (lockingPosition.pausedLockingDuration == 0) {
                 weight -= lockingPosition.amount;
@@ -306,7 +298,7 @@ contract L2Reward {
             }
 
             if (lockRewards) {
-                IL2LiskToken(l2TokenContract).transfer(msg.sender, reward);
+                IL2Staking(stakingContract).increaseLockingAmount(lockID, reward);
             }
         }
     }
@@ -427,37 +419,6 @@ contract L2Reward {
         dailyUnlockedAmounts[lockingPosition.expDate] += lockingPosition.amount;
     }
 
-    /// @notice Registers existing locking position.
-    /// @param lockID The ID of the locking position.
-    function registerLockingID(uint256 lockID) public virtual {
-        updateGlobalState();
-
-        IL2LockingPosition.LockingPosition memory lockingPosition =
-            IL2LockingPosition(lockingPositionContract).getLockingPosition(lockID);
-
-        require(
-            IL2LockingPosition(lockingPositionContract).ownerOf(lockID) == msg.sender,
-            "msg.sender does not own the locking position"
-        );
-
-        uint256 today = todayDay();
-        uint256 start = Math.max(today, startingDate);
-        lastClaimDate[lockID] = start;
-
-        uint256 duration;
-
-        if (lockingPosition.pausedLockingDuration == 0) {
-            duration = lockingPosition.expDate - today;
-        } else {
-            duration = lockingPosition.pausedLockingDuration;
-        }
-
-        totalWeight += lockingPosition.amount * (duration + OFFSET);
-        totalAmountLocked += lockingPosition.amount;
-        dailyUnlockedAmounts[startingDate + duration] += lockingPosition.amount;
-        pendingUnlockAmount += lockingPosition.amount;
-    }
-
     /// @notice Adds daily rewards between provided duration.
     /// @param amount Amount to be added to daily rewards.
     /// @param duration Duration in days for which the daily rewards is to be added.
@@ -493,7 +454,7 @@ contract L2Reward {
 
     /// @notice Returns the current day.
     /// @return The current day.
-    function todayDay() internal view virtual returns (uint256) {
+    function todayDay() public view virtual returns (uint256) {
         return block.timestamp / 1 days;
     }
 }
