@@ -238,7 +238,7 @@ contract L2Reward {
         uint256 reward = 0;
 
         for (uint256 d = lastClaimDate[lockID]; d < lastRewardDay; d++) {
-            reward += (weight / dailyRewards[d]) * totalWeights[d];
+            reward += (weight * dailyRewards[d]) / totalWeights[d];
 
             if (lockingPosition.pausedLockingDuration == 0) {
                 weight -= lockingPosition.amount / 10 ** 18;
