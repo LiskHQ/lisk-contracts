@@ -97,8 +97,8 @@ contract SwapAndBridge {
 
     /// @notice Swap ETH to wrapped LST and bridge it to the recipient address on the L2.
     /// @param recipient The address to bridge the wrapped LST to.
-    function swapAndBridgeTo(address recipient, uint256 minL1TokensPerETH) public payable {
-        swapAndBridgeTo(recipient, 0);
+    function swapAndBridgeTo(address recipient) public payable {
+        swapAndBridgeToWithMinimumAmount(recipient, 0);
     }
 
     /// @notice Shortcut function to swap and bridge wrapped LST to the sender address on the L2.
