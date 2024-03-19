@@ -5,11 +5,7 @@ set -e
 echo "Done."
 
 echo "Navigating to the root directory of the project..."
-cd ./
-echo "Done."
-
-echo "Removing files inside deployment directory if they exists..."
-rm -rf deployment/*
+cd ../
 echo "Done."
 
 echo "Setting environment variables..."
@@ -22,9 +18,12 @@ then
       echo "NETWORK variable inside .env file is not set. Please set NETWORK environment variable."
       exit 1
 else
-      mkdir deployment/$NETWORK   
-    #   touch deployment/$NETWORK/l1addresses.json
-    #   touch deployment/$NETWORK/l2addresses.json
+      if [ -d "deployment/$NETWORK" ]
+      then
+            echo "Directory deployment/$NETWORK already exists."
+      else
+            mkdir deployment/$NETWORK
+      fi
 fi
 echo "Done."
 
@@ -43,7 +42,3 @@ else
       fi
 fi
 echo "Done."
-
-# echo "Transferring funds to L1 and L2 addresses and L2Claim smart contract..."
-# forge script --rpc-url="$L1_RPC_URL" --broadcast -vvvv script/TransferFunds.s.sol:TransferFundsScript
-# echo "Done."
