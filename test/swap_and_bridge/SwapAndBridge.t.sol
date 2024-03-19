@@ -2,9 +2,6 @@
 pragma solidity 0.8.23;
 
 import { Test, console2, Vm } from "forge-std/Test.sol";
-import "forge-std/StdJson.sol";
-
-using stdJson for string;
 
 import { WstETH } from "src/L1/lido/WstETH.sol";
 import { SwapAndBridge } from "src/L1/SwapAndBridge.sol";
@@ -29,14 +26,6 @@ interface IL2CrossDomainMessenger {
         bytes calldata _message
     )
         external;
-}
-
-struct BridgeData {
-    address sender;
-    address target;
-    bytes message;
-    uint256 messageNonce;
-    uint256 gasLimit;
 }
 
 // event SentMessage(address indexed target, address sender, bytes message, uint256 messageNonce, uint256 gasLimit);
