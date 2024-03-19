@@ -231,9 +231,11 @@ contract L2Reward {
             lastRewardDay = today;
         }
 
-        if (remainingLockingDuration > 0) {
-            weight = (lockingPosition.amount * (remainingLockingDuration + OFFSET)) / 10 ** 18;
+        if (remainingLockingDuration < 1) {
+            return 0;
         }
+
+        weight = (lockingPosition.amount * (remainingLockingDuration + OFFSET)) / 10 ** 18;
 
         uint256 reward = 0;
 
@@ -270,10 +272,10 @@ contract L2Reward {
     function _claimRewards(uint256 lockID, bool lockRewards) internal virtual {
         require(
             IL2LockingPosition(lockingPositionContract).ownerOf(lockID) == msg.sender,
-            "msg.sender does not own the locking position"
+            "L2Reward: msg.sender does not own the locking position"
         );
 
-        require(lastClaimDate[lockID] != 0, "Locking position does not exist");
+        require(this.lastClaimDate(lockID) != 0, "L2Reward: Locking position does not exist");
 
         IL2LockingPosition.LockingPosition memory lockingPosition =
             IL2LockingPosition(lockingPositionContract).getLockingPosition(lockID);
@@ -281,7 +283,7 @@ contract L2Reward {
         uint256 today = todayDay();
         uint256 reward;
 
-        if (lastClaimDate[lockID] < today) {
+        if (this.lastClaimDate(lockID) < today) {
             reward = calculateRewards(lockID);
 
             lastClaimDate[lockID] = today;
@@ -424,14 +426,13 @@ contract L2Reward {
     /// @param duration Duration in days for which the daily rewards is to be added.
     /// @param delay Determines the start day from today till duration for whom rewards should be added.
     /// @param newReward Whether it is a new reward, updates surplus if not a new reward.
-    function addRewards(uint256 amount, uint8 duration, uint16 delay, bool newReward) internal virtual {
+    function addRewards(uint256 amount, uint16 duration, uint16 delay, bool newReward) internal virtual {
         require(delay > 0, "Funding should start from next day or later");
 
         uint256 dailyReward = amount / duration;
-
         uint256 today = todayDay();
         uint256 endDate = today + delay + duration;
-        for (uint256 d = today + duration; d < endDate; d++) {
+        for (uint256 d = today + delay; d < endDate; d++) {
             dailyRewards[d] += dailyReward;
         }
 
@@ -440,12 +441,13 @@ contract L2Reward {
         }
     }
 
-    /// @notice Adds a new daily rewards between provided duration.
+    /// @notice Adds new daily rewards between provided duration.
     /// @param amount Amount to be added to daily rewards.
     /// @param duration Duration in days for which the daily rewards is to be added.
     /// @param delay Determines the start day from today till duration for whom rewards should be added.
-    function fundStakingRewards(uint256 amount, uint8 duration, uint16 delay) public virtual {
-        require(delay > 0, "Funding should start from next day or later");
+
+    function fundStakingRewards(uint256 amount, uint16 duration, uint16 delay) public virtual {
+        require(delay > 0, "L2Reward: Funding should start from next day or later");
 
         IL2LiskToken(l2TokenContract).transferFrom(msg.sender, address(this), amount);
 
