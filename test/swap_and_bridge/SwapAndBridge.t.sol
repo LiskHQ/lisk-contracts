@@ -53,7 +53,6 @@ contract TestBridgingScript is Test {
 
     function setUp() public {
         utils = new Utils();
-        vm.setNonce(vm.addr(vm.envUint("PRIVATE_KEY")), 1234);
 
         l2Messenger = IL2CrossDomainMessenger(vm.envAddress("L2_CROSS_DOMAIN_MESSENGER_ADDR"));
 
@@ -72,9 +71,40 @@ contract TestBridgingScript is Test {
         console2.log("SwapAndBridge (Lido) address: %s", address(swapAndBridgeLido));
     }
 
+    function test_lido_minL1TokensPerETH() public {
+        uint256 token_holder_priv_key = vm.envUint("TOKEN_HOLDER_PRIV_KEY");
+        console2.log("Token holder address: %s", vm.addr(token_holder_priv_key));
+
+        // The conversion rate is 1 ETH = 1e18 wstETH.
+        // Any value of minL1TokensPerETH larger than 1e18 will revert the transaction.
+        vm.startBroadcast(token_holder_priv_key);
+        swapAndBridgeLido.swapAndBridgeToWithMinimumAmount{ value: 1 ether }(vm.addr(token_holder_priv_key), 0);
+        swapAndBridgeLido.swapAndBridgeToWithMinimumAmount{ value: 1 ether }(vm.addr(token_holder_priv_key), 1e18);
+        vm.expectRevert("Insufficient L1 tokens minted.");
+        swapAndBridgeLido.swapAndBridgeToWithMinimumAmount{ value: 1 ether }(vm.addr(token_holder_priv_key), 1e18 + 1);
+        vm.stopBroadcast();
+    }
+
+    function test_lido_valueTooLarge() public {
+        uint256 token_holder_priv_key = vm.envUint("TOKEN_HOLDER_PRIV_KEY");
+        console2.log("Token holder address: %s", vm.addr(token_holder_priv_key));
+
+        // The current value of getCurrentStakeLimit from
+        // https://eth-sepolia.blockscout.com/address/0x3e3FE7dBc6B4C189E7128855dD526361c49b40Af?tab=read_proxy
+        uint256 currentStakeLimit = 150000 ether;
+        vm.startBroadcast(token_holder_priv_key);
+        swapAndBridgeLido.swapAndBridgeToWithMinimumAmount{ value: currentStakeLimit }(
+            vm.addr(token_holder_priv_key), 0
+        );
+        vm.expectRevert();
+        swapAndBridgeLido.swapAndBridgeToWithMinimumAmount{ value: currentStakeLimit + 1 }(
+            vm.addr(token_holder_priv_key), 0
+        );
+        vm.stopBroadcast();
+    }
+
     function test_lido_L1() public {
         uint256 token_holder_priv_key = vm.envUint("TOKEN_HOLDER_PRIV_KEY");
-        vm.setNonce(vm.addr(token_holder_priv_key), 1234);
         console2.log("Token holder address: %s", vm.addr(token_holder_priv_key));
         console2.log("Transferring ETH tokens from L1 to wstETH on L2 network...");
 
