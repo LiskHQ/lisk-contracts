@@ -2,53 +2,41 @@
 pragma solidity 0.8.23;
 
 import { Test, console2, Vm } from "forge-std/Test.sol";
+import "forge-std/StdJson.sol";
+
+using stdJson for string;
+
 import { WstETH } from "src/L1/lido/WstETH.sol";
 import { SwapAndBridge } from "src/L1/SwapAndBridge.sol";
 import "script/Utils.sol";
 
-/// @title IL1StandardBridge - L1 Standard Bridge interface
-/// @notice This contract is used to transfer L1 Lisk tokens to the L2 network as L2 Lisk tokens.
-interface IL1StandardBridge {
-    /// Deposits L1 Lisk tokens into a target account on L2 network.
-    /// @param _l1Token L1 Lisk token address.
-    /// @param _l2Token L2 Lisk token address.
-    /// @param _to Target account address on L2 network.
-    /// @param _amount Amount of L1 Lisk tokens to be transferred.
-    /// @param _minGasLimit Minimum gas limit for the deposit message on L2.
-    /// @param _extraData Optional data to forward to L2. Data supplied here will not be used to
-    ///                   execute any code on L2 and is only emitted as extra data for the
-    ///                   convenience of off-chain tooling.
-    function depositERC20To(
-        address _l1Token,
-        address _l2Token,
-        address _to,
-        uint256 _amount,
-        uint32 _minGasLimit,
-        bytes calldata _extraData
-    )
-        external;
-
-    function finalizeERC20Withdrawal(
-        address _l1Token,
-        address _l2Token,
-        address _to,
-        uint256 _amount,
-        bytes calldata _data
+/// @title IL2CrossDomainMessenger - L2 Cross Domain Messenger interface
+/// @notice This contract is used to relay messages from L1 to L2 network.
+interface IL2CrossDomainMessenger {
+    /// @notice Sends a message to the target contract on L2 network.
+    /// @param _nonce Unique nonce for the message.
+    /// @param _sender Address of the sender on L1 network.
+    /// @param _target Address of the target contract on L2 network.
+    /// @param _value Amount of Ether to be sent to the target contract on L2 network.
+    /// @param _minGasLimit Minimum gas limit for the message on L2 network.
+    /// @param _message Message to be sent to the target contract on L2 network.
+    function relayMessage(
+        uint256 _nonce,
+        address _sender,
+        address _target,
+        uint256 _value,
+        uint256 _minGasLimit,
+        bytes calldata _message
     )
         external;
 }
 
-struct finalizeERC20WithdrawalData {
-    bytes4 selector;
-    // Because this call will be executed on the remote chain, we reverse the order of
-    // the remote and local token addresses relative to their order in the
-    // finalizeBridgeERC20 function.
-    address remoteToken;
-    address localToken;
-    address from;
-    address to;
-    uint256 amount;
-    bytes extraData;
+struct BridgeData {
+    address sender;
+    address target;
+    bytes message;
+    uint256 messageNonce;
+    uint256 gasLimit;
 }
 
 // event SentMessage(address indexed target, address sender, bytes message, uint256 messageNonce, uint256 gasLimit);
@@ -60,7 +48,7 @@ contract TestBridgingScript is Test {
     /// @notice Utils contract which provides functions to read and write JSON files containing L1 and L2 addresses.
     Utils utils;
 
-    // IL1StandardBridge l1bridge;
+    IL2CrossDomainMessenger l2Messenger;
 
     SwapAndBridge swapAndBridgeLido;
     WstETH l1WstETH;
@@ -76,7 +64,9 @@ contract TestBridgingScript is Test {
 
     function setUp() public {
         utils = new Utils();
-        // l1bridge = IL1StandardBridge(vm.envAddress("L1_STANDARD_BRIDGE_ADDR"));
+        vm.setNonce(vm.addr(vm.envUint("PRIVATE_KEY")), 1234);
+
+        l2Messenger = IL2CrossDomainMessenger(vm.envAddress("L2_CROSS_DOMAIN_MESSENGER_ADDR"));
 
         swapAndBridgeLido = new SwapAndBridge(
             vm.envAddress("L1_LIDO_BRIDGE_ADDR"),
@@ -95,6 +85,7 @@ contract TestBridgingScript is Test {
 
     function test_lido_L1() public {
         uint256 token_holder_priv_key = vm.envUint("TOKEN_HOLDER_PRIV_KEY");
+        vm.setNonce(vm.addr(token_holder_priv_key), 1234);
         console2.log("Token holder address: %s", vm.addr(token_holder_priv_key));
         console2.log("Transferring ETH tokens from L1 to wstETH on L2 network...");
 
@@ -124,7 +115,7 @@ contract TestBridgingScript is Test {
         uint256 mintedAmount = uint256(bytes32(entries[3].data));
         assertEq(mintedAmount, 10000 ether, "Transfer: Invalid amount");
 
-        //entries[4] is the approve event
+        // entries[4] is the approve event
         // Approval(address indexed owner, address indexed spender, uint256 value)
         assertEq(entries[4].topics.length, 3, "Approval: Invalid number of topics");
         assertEq(
@@ -141,7 +132,7 @@ contract TestBridgingScript is Test {
             "Approval: Invalid spender address topic"
         );
 
-        //entries[5] is the transfer event from swapAndBridge to L1_LIDO_BRIDGE_ADDR
+        // entries[5] is the transfer event from swapAndBridge to L1_LIDO_BRIDGE_ADDR
         // Transfer(address indexed from, address indexed to, uint256 value)
         assertEq(entries[5].topics.length, 3, "Transfer: Invalid number of topics");
         assertEq(
@@ -178,22 +169,14 @@ contract TestBridgingScript is Test {
         assertEq(sender, vm.envAddress("L1_LIDO_BRIDGE_ADDR"), "SentMessage: Invalid sender address");
         assertEq(gasLimit, 200000, "SentMessage: Invalid gas limit");
 
-        // console2.log("Sender");
-        // console2.log(sender);
-
-        // console2.log("Message");
-        // console2.logBytes(message);
-
-        // console2.log("MessageNonce");
-        // console2.log(messageNonce);
-
-        // console2.log("GasLimit");
-        // console2.log(gasLimit);
-
         // The message is encoded in a weird way: bytes 4 is packed, the addresses are not
         // Hence, we slice the message to remove the bytes4 selector.
         bytes memory selectorBytes = getSlice(1, 5, message);
-        assertEq(bytes4(selectorBytes), bytes4(0x662a633a), "SentMessage: Invalid selector");
+        assertEq(
+            bytes4(selectorBytes),
+            bytes4(keccak256("finalizeDeposit(address,address,address,address,uint256,bytes)")),
+            "SentMessage: Invalid selector"
+        );
 
         bytes memory slicedMessage = getSlice(5, message.length, message);
         (address remoteToken, address localToken, address from, address to, uint256 amount, bytes memory extraData) =
@@ -204,27 +187,46 @@ contract TestBridgingScript is Test {
         assertEq(from, address(swapAndBridgeLido), "SentMessage: Invalid sender address");
         assertEq(to, vm.addr(vm.envUint("TOKEN_HOLDER_PRIV_KEY")), "SentMessage: Invalid recipient address");
         assertEq(amount, 10000 ether, "SentMessage: Invalid amount");
+        assertEq(extraData.length, 2, "SentMessage: Invalid extra data");
+
+        vm.serializeAddress("", "sender", sender);
+        vm.serializeAddress("", "target", vm.envAddress("L2_LIDO_BRIDGE_ADDR"));
+        vm.serializeBytes("", "message", message);
+        vm.serializeUint("", "messageNonce", messageNonce);
+        string memory json = vm.serializeUint("", "gasLimit", gasLimit);
+        console2.log("Saved JSON: %s", json);
+        vm.writeJson(json, string.concat(vm.projectRoot(), "/test/data/swap_and_bridge_data_l1.json"));
+
+        bytes memory data = abi.encode(sender, vm.envAddress("L2_LIDO_BRIDGE_ADDR"), message, messageNonce, gasLimit);
+        vm.writeFileBinary(string.concat(vm.projectRoot(), "/test/data/swap_and_bridge_data_l1.data"), data);
     }
 
     function test_lido_L2() public {
-        uint256 token_holder_priv_key = vm.envUint("TOKEN_HOLDER_PRIV_KEY");
-        address token_holder_addr = vm.addr(token_holder_priv_key);
+        address sequencer = vm.envAddress("SEQUENCER_ADDR");
 
-        console2.log("Finalizing transfer on L2 network...");
+        string memory root = vm.projectRoot();
+        string memory path = string.concat(root, "/test/data/swap_and_bridge_data_l1.json");
+        console2.log("Reading JSON from path: %s", path);
+        string memory json = vm.readFile(path);
+        console2.log("Loaded JSON: %s", json);
 
-        uint256 balanceBefore = l2WstETH.balanceOf(token_holder_addr);
+        bytes memory data = vm.readFileBinary(string.concat(root, "/test/data/swap_and_bridge_data_l1.data"));
+        (address payable sender, address payable target, bytes memory message, uint256 messageNonce, uint256 gasLimit) =
+            abi.decode(data, (address, address, bytes, uint256, uint256));
+
+        uint256 balanceBefore = l2WstETH.balanceOf(vm.addr(vm.envUint("TOKEN_HOLDER_PRIV_KEY")));
 
         vm.recordLogs();
 
-        // Test bridging for Lido
-        vm.startBroadcast(token_holder_priv_key);
-        (bool sent,) = address(swapAndBridgeLido).call{ value: 10000 ether }("");
-        assertEq(sent, true, "Failed to send Ether.");
+        vm.startBroadcast(sequencer);
+        // vm.prank(sequencer);
+        console2.log("Relaying message to L2 network...");
+        l2Messenger.relayMessage(messageNonce, sender, target, 0, gasLimit, message);
         vm.stopBroadcast();
 
-        uint256 balanceAfter = l2WstETH.balanceOf(token_holder_addr);
+        uint256 balanceAfter = l2WstETH.balanceOf(vm.addr(vm.envUint("TOKEN_HOLDER_PRIV_KEY")));
         console2.log("balanceBefore: %d", balanceBefore);
         console2.log("balanceAfter: %d", balanceAfter);
-        // assertEq(balanceAfter - balanceBefore, 10000 ether);
+        assertEq(balanceAfter - balanceBefore, 10000 ether);
     }
 }
