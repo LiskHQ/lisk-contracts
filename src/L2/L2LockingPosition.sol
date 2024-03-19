@@ -23,7 +23,9 @@ interface IL2VotingPower {
 /// @title LockingPosition
 /// @notice Struct for locking position.
 struct LockingPosition {
-    /// @notice Address of the creator of the locking position. Only creator can modify the locking position.
+    /// @notice This can be, for instance, the staking contract or the rewards contract. The staking contract - the only
+    ///         contract allowed to modify a position - uses this property to determine who should be allowed to trigger
+    ///         a modification.
     address creator;
     /// @notice Amount to be locked.
     uint256 amount;

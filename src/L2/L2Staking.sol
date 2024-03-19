@@ -317,8 +317,8 @@ contract L2Staking is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, I
             // remaining duration not paused, if expired, assume expDate is today
             lock.expDate = Math.max(lock.expDate, todayDay()) + extendDays;
             require(
-                lock.expDate <= MAX_LOCKING_DURATION,
-                "L2Staking: expiration date can not be greater than MAX_LOCKING_DURATION"
+                lock.expDate - todayDay() <= MAX_LOCKING_DURATION,
+                "L2Staking: expiration date can not be more than MAX_LOCKING_DURATION in the future"
             );
         }
 
