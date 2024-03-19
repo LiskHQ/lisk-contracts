@@ -231,11 +231,9 @@ contract L2Reward {
             lastRewardDay = today;
         }
 
-        if (remainingLockingDuration < 1) {
-            return 0;
+        if (remainingLockingDuration > 0) {
+            weight = (lockingPosition.amount * (remainingLockingDuration + OFFSET)) / 10 ** 18;
         }
-
-        weight = (lockingPosition.amount * (remainingLockingDuration + OFFSET)) / 10 ** 18;
 
         uint256 reward = 0;
 
