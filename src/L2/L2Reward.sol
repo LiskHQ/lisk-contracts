@@ -192,7 +192,7 @@ contract L2Reward {
 
         IL2Staking(stakingContract).fastUnlock(lockID);
 
-        addRewards(penalty, 30, 1, true);
+        addRewards(penalty, 30, 1);
 
         uint256 today = todayDay();
 
@@ -423,8 +423,7 @@ contract L2Reward {
     /// @param amount Amount to be added to daily rewards.
     /// @param duration Duration in days for which the daily rewards is to be added.
     /// @param delay Determines the start day from today till duration for whom rewards should be added.
-    /// @param newReward Whether it is a new reward, updates surplus if not a new reward.
-    function addRewards(uint256 amount, uint16 duration, uint16 delay, bool newReward) internal virtual {
+    function addRewards(uint256 amount, uint16 duration, uint16 delay) internal virtual {
         require(delay > 0, "Funding should start from next day or later");
 
         uint256 dailyReward = amount / duration;
@@ -432,10 +431,6 @@ contract L2Reward {
         uint256 endDate = today + delay + duration;
         for (uint256 d = today + delay; d < endDate; d++) {
             dailyRewards[d] += dailyReward;
-        }
-
-        if (!newReward) {
-            rewardsSurplus -= amount;
         }
     }
 
@@ -449,7 +444,7 @@ contract L2Reward {
 
         IL2LiskToken(l2TokenContract).transferFrom(msg.sender, address(this), amount);
 
-        addRewards(amount, duration, delay, true);
+        addRewards(amount, duration, delay);
     }
 
     /// @notice Returns the current day.

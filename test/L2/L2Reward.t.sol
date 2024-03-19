@@ -8,7 +8,7 @@ import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy
 import { L2VotingPower } from "src/L2/L2VotingPower.sol";
 
 import { L2LiskToken } from "src/L2/L2LiskToken.sol";
-import { L2LockingPosition } from "src/L2/L2LockingPosition.sol";
+import { L2LockingPosition, LockingPosition } from "src/L2/L2LockingPosition.sol";
 import { L2Staking } from "src/L2/L2Staking.sol";
 
 contract L2RewardTest is Test {
@@ -75,7 +75,7 @@ contract L2RewardTest is Test {
     }
 
     function test_initialize() public {
-        assertEq(l2Reward.startingDate(), deploymentDate);
+        assertEq(l2Reward.lastTrsDate(), 0);
         assertEq(l2Reward.OFFSET(), 150);
     }
 
@@ -96,10 +96,11 @@ contract L2RewardTest is Test {
         ID = l2Reward.createPosition(amount, duration);
         vm.stopPrank();
 
-        assertEq(l2Reward.totalWeight(), amount * (duration + l2Reward.OFFSET()));
+        console2.logUint(ID);
+        assertEq(l2Reward.totalWeight(), (amount * (duration + l2Reward.OFFSET())) / convertLiskToBeddows(1));
         assertEq(l2Reward.lastClaimDate(ID), deploymentDate);
         assertEq(l2Reward.totalAmountLocked(), amount);
-        assertEq(l2Reward.dailyUnlockedAmounts(l2Reward.startingDate() + duration), amount);
+        assertEq(l2Reward.dailyUnlockedAmounts(l2Reward.lastTrsDate() + duration), amount);
         assertEq(l2Reward.pendingUnlockAmount(), amount);
     }
 
@@ -129,6 +130,155 @@ contract L2RewardTest is Test {
         vm.expectRevert("L2Reward: Locking position does not exist");
         vm.prank(alice);
         l2Reward.deletePosition(1);
+    }
+
+    function test_calculateRewardsForNotPausedLockingPosition() public {
+        skip(deploymentDate + 150 days);
+        address alice = address(0x1);
+
+        uint256 amount = convertLiskToBeddows(100);
+        uint256 expDate = deploymentDate + 300;
+        uint256 pausedLockingDuration = 0;
+
+        LockingPosition memory lockingPosition = LockingPosition(alice, amount, expDate, pausedLockingDuration);
+
+        vm.mockCall(
+            address(l2LockingPosition),
+            abi.encodeWithSelector(L2LockingPosition.getLockingPosition.selector),
+            abi.encode(lockingPosition)
+        );
+
+        LockingPosition memory result = l2LockingPosition.getLockingPosition(10);
+
+        vm.mockCall(address(l2Reward), abi.encodeWithSelector(l2Reward.lastClaimDate.selector), abi.encode(333));
+
+        console2.logUint(l2Reward.lastClaimDate(1));
+
+        console2.logUint(l2Reward.todayDay());
+
+        console2.logUint(result.amount);
+    }
+
+    function test_onlyExistingLockingPositionCanBeClaimedByTheOwner() public {
+        address alice = address(0x1);
+        uint256 lockID = 1;
+
+        vm.mockCall(
+            address(l2LockingPosition),
+            abi.encodeWithSelector(ERC721Upgradeable.ownerOf.selector),
+            abi.encode(address(0x0))
+        );
+
+        vm.prank(alice);
+        vm.expectRevert("L2Reward: msg.sender does not own the locking position");
+        l2Reward.claimReward(lockID, false);
+
+        vm.mockCall(
+            address(l2LockingPosition), abi.encodeWithSelector(ERC721Upgradeable.ownerOf.selector), abi.encode(alice)
+        );
+        vm.mockCall(address(l2Reward), abi.encodeWithSelector(l2Reward.lastClaimDate.selector), abi.encode(0));
+        vm.prank(alice);
+        vm.expectRevert("L2Reward: Locking position does not exist");
+        l2Reward.claimReward(lockID, true);
+    }
+
+    function test_rewardsIsZeroIfLastClaimDateIsToday() public {
+        address alice = address(0x1);
+        uint256 lockID = 1;
+        uint256 amount = convertLiskToBeddows(100);
+        uint256 expDate = deploymentDate + 300;
+        uint256 pausedLockingDuration = 0;
+
+        LockingPosition memory lockingPosition = LockingPosition(alice, amount, expDate, pausedLockingDuration);
+
+        vm.mockCall(
+            address(l2LockingPosition), abi.encodeWithSelector(ERC721Upgradeable.ownerOf.selector), abi.encode(alice)
+        );
+
+        vm.mockCall(address(l2Reward), abi.encodeWithSelector(l2Reward.lastClaimDate.selector), abi.encode(20000));
+
+        vm.mockCall(
+            address(l2LockingPosition),
+            abi.encodeWithSelector(L2LockingPosition.getLockingPosition.selector),
+            abi.encode(lockingPosition)
+        );
+
+        LockingPosition memory result = l2LockingPosition.getLockingPosition(10);
+
+        vm.prank(alice);
+        l2Reward.claimReward(lockID, false);
+        assertEq(l2LiskToken.balanceOf(alice), 0);
+    }
+
+    function test_delayShouldBeGreaterThanZeroWhenFundingStakingRewards() public {
+        address alice = address(0x1);
+
+        vm.startPrank(bridge);
+        l2LiskToken.mint(alice, convertLiskToBeddows(1000));
+        vm.stopPrank();
+
+        vm.expectRevert("L2Reward: Funding should start from next day or later");
+        l2Reward.fundStakingRewards(convertLiskToBeddows(3550), 255, 0);
+    }
+
+    function test_dailyRewardsShouldBeAddedForTheDuration() public {
+        address alice = address(0x1);
+        uint256 balanceOfAlice = convertLiskToBeddows(1000);
+        vm.startPrank(bridge);
+        l2LiskToken.mint(alice, balanceOfAlice);
+        vm.stopPrank();
+
+        uint256 amount = convertLiskToBeddows(35);
+        uint16 duration = 350;
+        uint16 delay = 1;
+        vm.startPrank(alice);
+        l2LiskToken.approve(address(l2Reward), amount);
+        l2Reward.fundStakingRewards(amount, duration, delay);
+        vm.stopPrank();
+
+        uint256 dailyReward = amount / duration;
+        uint256 today = l2Reward.todayDay();
+        uint256 endDate = today + delay + duration;
+
+        for (uint256 d = today + delay; d < endDate; d++) {
+            assertEq(l2Reward.dailyRewards(d), convertLiskToBeddows(1) / 10);
+        }
+
+        assertEq(l2LiskToken.balanceOf(address(alice)), balanceOfAlice - amount);
+        assertEq(l2LiskToken.balanceOf(address(l2Reward)), amount);
+    }
+
+    function test_claimRewards() public {
+        address alice = address(0x1);
+        uint256 duration = 300;
+
+        vm.startPrank(bridge);
+        l2LiskToken.mint(address(l2Reward), convertLiskToBeddows(1000));
+        l2LiskToken.mint(alice, convertLiskToBeddows(1000));
+        vm.stopPrank();
+
+        uint256 amount = convertLiskToBeddows(100);
+        uint256 expDate = deploymentDate + 300;
+        uint256 pausedLockingDuration = 0;
+        uint256 lockID;
+
+        // skip(deploymentDate + 150 days);
+
+        vm.startPrank(alice);
+        l2LiskToken.approve(address(l2Staking), amount);
+        lockID = l2Reward.createPosition(amount, duration);
+        vm.stopPrank();
+
+        console2.logUint(l2Reward.lastTrsDate());
+
+        skip(deploymentDate + 150 days);
+        vm.prank(alice);
+        l2Reward.claimReward(lockID, false);
+
+        LockingPosition memory position = l2LockingPosition.getLockingPosition(lockID);
+        console2.logUint(l2Reward.todayDay());
+        console2.logUint(l2Reward.lastClaimDate(lockID));
+        console2.logUint(l2Reward.totalWeights(19889));
     }
 
     function convertLiskToBeddows(uint256 lisk) internal pure returns (uint256) {
