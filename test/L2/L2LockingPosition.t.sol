@@ -71,9 +71,9 @@ contract L2LockingPositionTest is Test {
         l2Staking.initializeLockingPosition(address(l2LockingPosition));
         assert(l2Staking.lockingPositionContract() == address(l2LockingPosition));
 
-        // initialize DAO contract inside L2Staking contract
-        l2Staking.initializeDao(address(0xbABEBABEBabeBAbEBaBeBabeBABEBabEBAbeBAbe));
-        assert(l2Staking.daoContract() == address(0xbABEBABEBabeBAbEBaBeBabeBABEBabEBAbeBAbe));
+        // initialize Lisk DAO Treasury contract inside L2Staking contract
+        l2Staking.initializeDaoTreasury(address(0xbABEBABEBabeBAbEBaBeBabeBABEBabEBAbeBAbe));
+        assert(l2Staking.daoTreasury() == address(0xbABEBABEBabeBAbEBaBeBabeBABEBabEBAbeBAbe));
 
         // initialize VotingPower contract inside L2LockingPosition contract
         l2LockingPosition.initializeVotingPower(address(l2VotingPower));
@@ -91,7 +91,7 @@ contract L2LockingPositionTest is Test {
         l2LockingPositionImplementation = new L2LockingPosition();
 
         // deploy L2LockingPosition contract via proxy and initialize it at the same time
-        vm.expectRevert("L2LockingPosition: Staking contract address is required");
+        vm.expectRevert("L2LockingPosition: Staking contract address cannot be zero");
         l2LockingPosition = L2LockingPosition(
             address(
                 new ERC1967Proxy(

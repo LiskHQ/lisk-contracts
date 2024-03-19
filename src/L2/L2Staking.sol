@@ -64,8 +64,8 @@ contract L2Staking is Initializable, OwnableUpgradeable, UUPSUpgradeable, ISemve
     /// @notice Address of the Locking Position contract.
     address public lockingPositionContract;
 
-    /// @notice Address of the DAO contract.
-    address public daoContract;
+    /// @notice The treasury address of the Lisk DAO.
+    address public daoTreasury;
 
     /// @notice Semantic version of the contract.
     string public version;
@@ -161,12 +161,12 @@ contract L2Staking is Initializable, OwnableUpgradeable, UUPSUpgradeable, ISemve
         lockingPositionContract = _lockingPositionContract;
     }
 
-    /// @notice Initializes the DAO contract address.
-    /// @param _daoContract The address of the DAO contract.
-    function initializeDao(address _daoContract) public onlyOwner {
-        require(daoContract == address(0), "L2Staking: DAO contract is already initialized");
-        require(_daoContract != address(0), "L2Staking: DAO contract address can not be zero");
-        daoContract = _daoContract;
+    /// @notice Initializes the Lisk DAO Treasury address.
+    /// @param _daoTreasury The treasury address of the Lisk DAO.
+    function initializeDaoTreasury(address _daoTreasury) public onlyOwner {
+        require(daoTreasury == address(0), "L2Staking: Lisk DAO Treasury contract is already initialized");
+        require(_daoTreasury != address(0), "L2Staking: Lisk DAO Treasury contract address can not be zero");
+        daoTreasury = _daoTreasury;
     }
 
     /// @notice Adds a new creator to the list of allowed creators.
@@ -207,8 +207,8 @@ contract L2Staking is Initializable, OwnableUpgradeable, UUPSUpgradeable, ISemve
         }
 
         // We assume that the owner has already approved the Staking contract to transfer the amount and in most cases
-        // lockAmount will be called from a smart contract, so msg.sender will NOT be an address from which the amount
-        // will be transferred. That's why we use lockOwner as the sender for the transferFrom function.
+        // increaseLockingAmount will be called from a smart contract, so msg.sender will NOT be an address from which
+        // the amount will be transferred. That's why we use lockOwner as the sender for the transferFrom function.
         // slither-disable-next-line arbitrary-send-erc20
         bool success = IL2LiskToken(l2LiskTokenContract).transferFrom(lockOwner, address(this), amount);
         require(success, "L2Staking: LSK token transfer from owner to Staking contract failed");
@@ -240,7 +240,7 @@ contract L2Staking is Initializable, OwnableUpgradeable, UUPSUpgradeable, ISemve
     }
 
     /// @notice Unlocks the given locking position and apply a penalty to the locked amount. Sends the penalty amount
-    ///         to the DAO contract or the creator of the locking position.
+    ///         to the Lisk DAO Treasury or the creator of the locking position.
     /// @param lockId The ID of the locking position to be unlocked.
     function fastUnlock(uint256 lockId) public virtual {
         LockingPosition memory lock = (IL2LockingPosition(lockingPositionContract)).getLockingPosition(lockId);
@@ -258,8 +258,8 @@ contract L2Staking is Initializable, OwnableUpgradeable, UUPSUpgradeable, ISemve
         (IL2LockingPosition(lockingPositionContract)).modifyLockingPosition(lockId, amount, expDate, 0);
 
         if (lock.creator == address(this)) {
-            // send penalty amount to the DAO contract
-            bool success = IL2LiskToken(l2LiskTokenContract).transfer(daoContract, penalty);
+            // send penalty amount to the Lisk DAO Treasury contract
+            bool success = IL2LiskToken(l2LiskTokenContract).transfer(daoTreasury, penalty);
             require(success, "L2Staking: LSK token transfer from Staking contract to DAO failed");
         } else {
             // send penalty amount to the creator
@@ -283,8 +283,8 @@ contract L2Staking is Initializable, OwnableUpgradeable, UUPSUpgradeable, ISemve
 
         address ownerOfLock = (IL2LockingPosition(lockingPositionContract)).ownerOf(lockId);
         // We assume that the owner has already approved the Staking contract to transfer the amount and in most cases
-        // lockAmount will be called from a smart contract, so msg.sender will NOT be an address from which the amount
-        // will be transferred. That's why we use ownerOfLock as the sender for the transferFrom function.
+        // increaseLockingAmount will be called from a smart contract, so msg.sender will NOT be an address from which
+        // the amount will be transferred. That's why we use ownerOfLock as the sender for the transferFrom function.
         // slither-disable-next-line arbitrary-send-erc20
         bool success = IL2LiskToken(l2LiskTokenContract).transferFrom(ownerOfLock, address(this), amountIncrease);
         require(success, "L2Staking: LSK token transfer from owner to Staking contract failed");
@@ -318,7 +318,7 @@ contract L2Staking is Initializable, OwnableUpgradeable, UUPSUpgradeable, ISemve
         );
     }
 
-    /// @notice Pauses the remaining locking duration of the given locking position.
+    /// @notice Pauses the countdown of the remaining locking duration of the given locking position.
     /// @param lockId The ID of the locking position for which the remaining locking duration is paused.
     function pauseRemainingLockingDuration(uint256 lockId) public virtual {
         LockingPosition memory lock = (IL2LockingPosition(lockingPositionContract)).getLockingPosition(lockId);

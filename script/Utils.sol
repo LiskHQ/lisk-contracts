@@ -31,7 +31,7 @@ contract Utils is Script {
         address L2LockingPosition;
         /// @notice The Current implementation of L2 Locking Position Contract.
         address L2LockingPositionImplementation;
-        /// @notice L2 Staking contract (in proxy), which users interact with.
+        /// @notice L2 Staking contract (in Proxy), which users interact with.
         address L2Staking;
         /// @notice The current implementation of L2 Staking contract.
         address L2StakingImplementation;
@@ -90,9 +90,7 @@ contract Utils is Script {
 
         try vm.parseJsonAddress(addressJson, ".L1LiskToken") returns (address l1LiskToken) {
             l1AddressesConfig.L1LiskToken = l1LiskToken;
-        } catch {
-            l1AddressesConfig.L1LiskToken = address(0);
-        }
+        } catch { }
 
         return l1AddressesConfig;
     }
@@ -118,79 +116,55 @@ contract Utils is Script {
 
         try vm.parseJsonAddress(addressJson, ".L2ClaimContract") returns (address l2ClaimContract) {
             l2AddressesConfig.L2ClaimContract = l2ClaimContract;
-        } catch {
-            l2AddressesConfig.L2ClaimContract = address(0);
-        }
+        } catch { }
 
         try vm.parseJsonAddress(addressJson, ".L2ClaimImplementation") returns (address l2ClaimImplementation) {
             l2AddressesConfig.L2ClaimImplementation = l2ClaimImplementation;
-        } catch {
-            l2AddressesConfig.L2ClaimImplementation = address(0);
-        }
+        } catch { }
 
         try vm.parseJsonAddress(addressJson, ".L2Governor") returns (address l2Governor) {
             l2AddressesConfig.L2Governor = l2Governor;
-        } catch {
-            l2AddressesConfig.L2Governor = address(0);
-        }
+        } catch { }
 
         try vm.parseJsonAddress(addressJson, ".L2GovernorImplementation") returns (address l2GovernorImplementation) {
             l2AddressesConfig.L2GovernorImplementation = l2GovernorImplementation;
-        } catch {
-            l2AddressesConfig.L2GovernorImplementation = address(0);
-        }
+        } catch { }
 
         try vm.parseJsonAddress(addressJson, ".L2LiskToken") returns (address l2LiskToken) {
             l2AddressesConfig.L2LiskToken = l2LiskToken;
-        } catch {
-            l2AddressesConfig.L2LiskToken = address(0);
-        }
+        } catch { }
 
         try vm.parseJsonAddress(addressJson, ".L2LockingPosition") returns (address l2LockingPosition) {
             l2AddressesConfig.L2LockingPosition = l2LockingPosition;
-        } catch {
-            l2AddressesConfig.L2LockingPosition = address(0);
-        }
+        } catch { }
 
         try vm.parseJsonAddress(addressJson, ".L2LockingPositionImplementation") returns (
             address l2LockingPositionImplementation
         ) {
             l2AddressesConfig.L2LockingPositionImplementation = l2LockingPositionImplementation;
-        } catch {
-            l2AddressesConfig.L2LockingPositionImplementation = address(0);
-        }
+        } catch { }
 
         try vm.parseJsonAddress(addressJson, ".L2Staking") returns (address l2Staking) {
             l2AddressesConfig.L2Staking = l2Staking;
-        } catch {
-            l2AddressesConfig.L2Staking = address(0);
-        }
+        } catch { }
 
         try vm.parseJsonAddress(addressJson, ".L2StakingImplementation") returns (address l2StakingImplementation) {
             l2AddressesConfig.L2StakingImplementation = l2StakingImplementation;
-        } catch {
-            l2AddressesConfig.L2StakingImplementation = address(0);
-        }
+        } catch { }
 
         try vm.parseJsonAddress(addressJson, ".L2TimelockController") returns (address l2TimelockController) {
             l2AddressesConfig.L2TimelockController = l2TimelockController;
-        } catch {
-            l2AddressesConfig.L2TimelockController = address(0);
-        }
+        } catch { }
 
         try vm.parseJsonAddress(addressJson, ".L2VotingPower") returns (address l2VotingPower) {
             l2AddressesConfig.L2VotingPower = l2VotingPower;
-        } catch {
-            l2AddressesConfig.L2VotingPower = address(0);
-        }
+        } catch { }
 
         try vm.parseJsonAddress(addressJson, ".L2VotingPowerImplementation") returns (
             address l2VotingPowerImplementation
         ) {
             l2AddressesConfig.L2VotingPowerImplementation = l2VotingPowerImplementation;
-        } catch {
-            l2AddressesConfig.L2VotingPowerImplementation = address(0);
-        }
+        } catch { }
 
         return l2AddressesConfig;
     }

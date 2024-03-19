@@ -56,7 +56,7 @@ contract L2LockingPosition is Initializable, OwnableUpgradeable, UUPSUpgradeable
     /// @notice Initialize the contract.
     /// @param _stakingContract Address of the Staking contract.
     function initialize(address _stakingContract) public initializer {
-        require(_stakingContract != address(0), "L2LockingPosition: Staking contract address is required");
+        require(_stakingContract != address(0), "L2LockingPosition: Staking contract address cannot be zero");
         __Ownable_init(msg.sender);
         __UUPSUpgradeable_init();
         __ERC721_init("Lisk Locking Position", "LLP");
@@ -122,7 +122,7 @@ contract L2LockingPosition is Initializable, OwnableUpgradeable, UUPSUpgradeable
         );
     }
 
-    /// @notice Safetly change owner of the locking position and adjust voting power.
+    /// @notice Safely change owner of the locking position and adjust voting power.
     /// @param from Address of the current owner of the locking position.
     /// @param to Address of the new owner of the locking position.
     /// @param tokenId ID of the locking position.
@@ -145,7 +145,7 @@ contract L2LockingPosition is Initializable, OwnableUpgradeable, UUPSUpgradeable
     /// @param creator Address of the creator of the locking position.
     /// @param lockOwner Address of the owner of the locking position.
     /// @param amount Amount to be locked.
-    /// @param lockingDuration Duration for which the amount should be locked.
+    /// @param lockingDuration Duration for which the amount should be locked (in days).
     /// @return ID of the created locking position.
     function createLockingPosition(
         address creator,
@@ -153,7 +153,7 @@ contract L2LockingPosition is Initializable, OwnableUpgradeable, UUPSUpgradeable
         uint256 amount,
         uint256 lockingDuration
     )
-        public
+        external
         virtual
         onlyStaking
         returns (uint256)
@@ -194,7 +194,7 @@ contract L2LockingPosition is Initializable, OwnableUpgradeable, UUPSUpgradeable
         uint256 expDate,
         uint256 pausedLockingDuration
     )
-        public
+        external
         virtual
         onlyStaking
     {
@@ -218,7 +218,7 @@ contract L2LockingPosition is Initializable, OwnableUpgradeable, UUPSUpgradeable
 
     /// @notice Removes the locking position.
     /// @param positionId ID of the locking position to be removed.
-    function removeLockingPosition(uint256 positionId) public virtual onlyStaking {
+    function removeLockingPosition(uint256 positionId) external virtual onlyStaking {
         require(
             !isLockingPositionNull(lockingPositions[positionId]), "L2LockingPosition: locking position does not exist"
         );

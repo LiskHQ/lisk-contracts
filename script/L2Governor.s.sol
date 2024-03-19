@@ -11,8 +11,8 @@ import "script/Utils.sol";
 /// @title IL2Staking
 /// @notice Interface for L2 Staking contract. Used to initialize Staking contract.
 interface IL2Staking {
-    function initializeDao(address daoContract) external;
-    function daoContract() external view returns (address);
+    function initializeDaoTreasury(address daoTreasuryContract) external;
+    function daoTreasury() external view returns (address);
 }
 
 /// @title L2GovernorScript - L2 Timelock Controller and Governor contracts deployment script
@@ -97,11 +97,11 @@ contract L2GovernorScript is Script {
         assert(address(l2Governor.token()) == address(votingPower));
         assert(l2Governor.owner() == vm.addr(deployerPrivateKey));
 
-        // initialize the L2Staking contract by calling initializeDao of the L2Staking contract
+        // initialize the L2Staking contract by calling initializeDaoTreasury of the L2Staking contract
         vm.startBroadcast(deployerPrivateKey);
-        stakingContract.initializeDao(address(timelock));
+        stakingContract.initializeDaoTreasury(address(timelock));
         vm.stopBroadcast();
-        assert(stakingContract.daoContract() == address(timelock));
+        assert(stakingContract.daoTreasury() == address(timelock));
 
         // grant the proposer role to the Governor contract
         vm.startBroadcast(deployerPrivateKey);

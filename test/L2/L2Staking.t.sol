@@ -42,13 +42,13 @@ contract L2StakingTest is Test {
     L2LockingPosition public l2LockingPosition;
     L2LockingPosition public l2LockingPositionImplementation;
 
-    address daoContractAddress;
+    address daoTreasuryAddress;
 
     address rewardsContract;
     address alice;
 
     function setUp() public {
-        daoContractAddress = address(0xDeaDbeefdEAdbeefdEadbEEFdeadbeEFdEaDbeeF);
+        daoTreasuryAddress = address(0xDeaDbeefdEAdbeefdEadbEEFdeadbeEFdEaDbeeF);
 
         rewardsContract = address(0x1);
         alice = address(0x2);
@@ -117,9 +117,9 @@ contract L2StakingTest is Test {
         l2Staking.initializeLockingPosition(address(l2LockingPosition));
         assert(l2Staking.lockingPositionContract() == address(l2LockingPosition));
 
-        // initialize DAO contract inside L2Staking contract
-        l2Staking.initializeDao(daoContractAddress);
-        assert(l2Staking.daoContract() == daoContractAddress);
+        // initialize Lisk DAO Treasury contract inside L2Staking contract
+        l2Staking.initializeDaoTreasury(daoTreasuryAddress);
+        assert(l2Staking.daoTreasury() == daoTreasuryAddress);
 
         // add rewardsContract to the creator list
         l2Staking.addCreator(rewardsContract);
@@ -156,7 +156,7 @@ contract L2StakingTest is Test {
 
         l2LockingPosition.initializeVotingPower(address(l2VotingPower));
         l2StakingHarness.initializeLockingPosition(address(l2LockingPosition));
-        l2StakingHarness.initializeDao(daoContractAddress);
+        l2StakingHarness.initializeDaoTreasury(daoTreasuryAddress);
 
         // add rewardsContract to the creator list
         l2StakingHarness.addCreator(rewardsContract);
@@ -313,12 +313,12 @@ contract L2StakingTest is Test {
         l2Staking.initializeLockingPosition(address(0x0));
     }
 
-    function test_InitializeDao_DaoContractAlreadyInitialized() public {
-        vm.expectRevert("L2Staking: DAO contract is already initialized");
-        l2Staking.initializeDao(daoContractAddress);
+    function test_initializeDaoTreasury_DaoTreasuryAlreadyInitialized() public {
+        vm.expectRevert("L2Staking: Lisk DAO Treasury contract is already initialized");
+        l2Staking.initializeDaoTreasury(daoTreasuryAddress);
     }
 
-    function test_InitializeDao_ZeroDaoContractAddress() public {
+    function test_initializeDaoTreasury_ZeroDaoTreasuryAddress() public {
         // deploy L2Staking implementation contract
         l2StakingImplementation = new L2Staking();
 
@@ -332,8 +332,8 @@ contract L2StakingTest is Test {
             )
         );
 
-        vm.expectRevert("L2Staking: DAO contract address can not be zero");
-        l2Staking.initializeDao(address(0x0));
+        vm.expectRevert("L2Staking: Lisk DAO Treasury contract address can not be zero");
+        l2Staking.initializeDaoTreasury(address(0x0));
     }
 
     function test_AddCreator() public {
@@ -487,7 +487,7 @@ contract L2StakingTest is Test {
     function test_FastUnlock() public {
         l2Staking.lockAmount(alice, 100 * 10 ** 18, 365);
         assertEq(l2LiskToken.balanceOf(alice), 0);
-        assertEq(l2LiskToken.balanceOf(daoContractAddress), 0);
+        assertEq(l2LiskToken.balanceOf(daoTreasuryAddress), 0);
         assertEq(l2LiskToken.balanceOf(rewardsContract), 0);
         assertEq(l2LiskToken.balanceOf(address(l2Staking)), 100 * 10 ** 18);
         assertEq(l2LockingPosition.totalSupply(), 1);
@@ -502,8 +502,8 @@ contract L2StakingTest is Test {
         l2Staking.fastUnlock(1);
 
         assertEq(l2LiskToken.balanceOf(alice), 0);
-        // penalty is sent to the DAO contract
-        assertEq(l2LiskToken.balanceOf(daoContractAddress), 18150684931506849315);
+        // penalty is sent to the Lisk DAO Treasury contract
+        assertEq(l2LiskToken.balanceOf(daoTreasuryAddress), 18150684931506849315);
         assertEq(l2LiskToken.balanceOf(rewardsContract), 0);
         assertEq(l2LiskToken.balanceOf(address(l2Staking)), 100 * 10 ** 18 - 18150684931506849315);
 
@@ -521,7 +521,7 @@ contract L2StakingTest is Test {
     function test_FastUnlock_CreatorNotStakingContract() public {
         vm.prank(rewardsContract);
         l2Staking.lockAmount(alice, 100 * 10 ** 18, 365);
-        assertEq(l2LiskToken.balanceOf(daoContractAddress), 0);
+        assertEq(l2LiskToken.balanceOf(daoTreasuryAddress), 0);
         assertEq(l2LiskToken.balanceOf(rewardsContract), 0);
         assertEq(l2LockingPosition.getLockingPosition(1).creator, rewardsContract);
 
@@ -532,7 +532,7 @@ contract L2StakingTest is Test {
         l2Staking.fastUnlock(1);
 
         assertEq(l2LiskToken.balanceOf(alice), 0);
-        assertEq(l2LiskToken.balanceOf(daoContractAddress), 0);
+        assertEq(l2LiskToken.balanceOf(daoTreasuryAddress), 0);
         // penalty is sent to the Rewards contract
         assertEq(l2LiskToken.balanceOf(address(rewardsContract)), 18150684931506849315);
         assertEq(l2LiskToken.balanceOf(address(l2Staking)), 100 * 10 ** 18 - 18150684931506849315);

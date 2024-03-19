@@ -19,7 +19,7 @@ interface IL2LockingPosition {
 }
 
 /// @title TransferStakingOwnershipScript
-/// @notice This contract is used to transfer ownership of the L2 staking contracts (Staking and LockingPosition) to a
+/// @notice This contract is used to transfer ownership of the L2 staking contracts (Staking and LockingPosition) to
 ///         different addresses.
 contract TransferStakingOwnershipScript is Script {
     /// @notice Utils contract which provides functions to read and write JSON files containing L2 addresses.
