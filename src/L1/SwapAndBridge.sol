@@ -44,6 +44,10 @@ contract SwapAndBridge {
     /// @notice Address of the wrapped LST on L2.
     address public immutable L2_TOKEN_ADDRESS;
 
+    /// @notice Constructor
+    /// @param _l1Bridge The L1 bridge contract address.
+    /// @param _l1Token The wrapped LST contract address on L1.
+    /// @param _l2Token The wrapped LST contract address on L2.
     constructor(address _l1Bridge, address _l1Token, address _l2Token) {
         require(_l1Bridge != address(0), "Invalid L1 bridge address.");
         require(_l1Token != address(0), "Invalid L1 token address.");
