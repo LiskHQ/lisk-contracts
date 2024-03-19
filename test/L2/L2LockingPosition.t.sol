@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.23;
 
+import { OwnableUpgradeable } from "@openzeppelin-upgradeable/contracts/access/OwnableUpgradeable.sol";
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import { Test, console2 } from "forge-std/Test.sol";
 import { L2LockingPosition, LockingPosition } from "src/L2/L2LockingPosition.sol";
@@ -493,5 +494,28 @@ contract L2LockingPositionTest is Test {
         vm.prank(alice);
         vm.expectRevert("L2LockingPosition: locking position does not exist");
         l2LockingPosition.safeTransferFrom(alice, bob, 1, "");
+    }
+
+    function test_TransferOwnership() public {
+        address newOwner = vm.addr(100);
+
+        l2LockingPosition.transferOwnership(newOwner);
+        assertEq(l2LockingPosition.owner(), address(this));
+
+        vm.prank(newOwner);
+        l2LockingPosition.acceptOwnership();
+        assertEq(l2LockingPosition.owner(), newOwner);
+    }
+
+    function test_TransferOwnership_RevertWhenNotCalledByPendingOwner() public {
+        address newOwner = vm.addr(100);
+
+        l2LockingPosition.transferOwnership(newOwner);
+        assertEq(l2LockingPosition.owner(), address(this));
+
+        address nobody = vm.addr(200);
+        vm.prank(nobody);
+        vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, nobody));
+        l2LockingPosition.acceptOwnership();
     }
 }

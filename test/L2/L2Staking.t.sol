@@ -1004,4 +1004,27 @@ contract L2StakingTest is Test {
         vm.expectRevert("L2Staking: countdown is not paused");
         l2Staking.resumeCountdown(1);
     }
+
+    function test_TransferOwnership() public {
+        address newOwner = vm.addr(100);
+
+        l2Staking.transferOwnership(newOwner);
+        assertEq(l2Staking.owner(), address(this));
+
+        vm.prank(newOwner);
+        l2Staking.acceptOwnership();
+        assertEq(l2Staking.owner(), newOwner);
+    }
+
+    function test_TransferOwnership_RevertWhenNotCalledByPendingOwner() public {
+        address newOwner = vm.addr(100);
+
+        l2Staking.transferOwnership(newOwner);
+        assertEq(l2Staking.owner(), address(this));
+
+        address nobody = vm.addr(200);
+        vm.prank(nobody);
+        vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, nobody));
+        l2Staking.acceptOwnership();
+    }
 }

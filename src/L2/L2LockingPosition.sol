@@ -3,7 +3,7 @@ pragma solidity 0.8.23;
 
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import { Initializable } from "@openzeppelin-upgradeable/contracts/proxy/utils/Initializable.sol";
-import { OwnableUpgradeable } from "@openzeppelin-upgradeable/contracts/access/OwnableUpgradeable.sol";
+import { Ownable2StepUpgradeable } from "@openzeppelin-upgradeable/contracts/access/Ownable2StepUpgradeable.sol";
 import { UUPSUpgradeable } from "@openzeppelin-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
 import { ERC721Upgradeable } from "@openzeppelin-upgradeable/contracts/token/ERC721/ERC721Upgradeable.sol";
 import { ERC721EnumerableUpgradeable } from
@@ -29,7 +29,7 @@ struct LockingPosition {
     uint256 pausedLockingDuration;
 }
 
-contract L2LockingPosition is Initializable, OwnableUpgradeable, UUPSUpgradeable, ERC721EnumerableUpgradeable {
+contract L2LockingPosition is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, ERC721EnumerableUpgradeable {
     /// @notice Next id for the locking position to be created.
     uint256 private nextId;
 
@@ -57,6 +57,7 @@ contract L2LockingPosition is Initializable, OwnableUpgradeable, UUPSUpgradeable
     /// @param _stakingContract Address of the Staking contract.
     function initialize(address _stakingContract) public initializer {
         require(_stakingContract != address(0), "L2LockingPosition: Staking contract address cannot be zero");
+        __Ownable2Step_init();
         __Ownable_init(msg.sender);
         __UUPSUpgradeable_init();
         __ERC721_init("Lisk Locking Position", "LLP");

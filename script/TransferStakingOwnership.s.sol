@@ -50,27 +50,34 @@ contract TransferStakingOwnershipScript is Script {
         // Get L2Staking contract new owner address. Ownership is transferred to this address.
         address newStakingOwnerAddress = vm.envAddress("L2_STAKING_OWNER_ADDRESS");
         assert(newStakingOwnerAddress != address(0));
-        console2.log("L2 Staking future owner address: %s", newStakingOwnerAddress);
+        console2.log("L2 Staking future owner address: %s (after ownership will be accepted)", newStakingOwnerAddress);
 
         // Get L2LockingPosition contract new owner address. Ownership is transferred to this address.
         address newLockingPositionOwnerAddress = vm.envAddress("L2_LOCKING_POSITION_OWNER_ADDRESS");
         assert(newLockingPositionOwnerAddress != address(0));
-        console2.log("L2 Locking Position future owner address: %s", newLockingPositionOwnerAddress);
+        console2.log(
+            "L2 Locking Position future owner address: %s (after ownership will be accepted))",
+            newLockingPositionOwnerAddress
+        );
 
-        // transfer ownership of the L2 Staking contract
+        // transfer ownership of the L2 Staking contract; because of using Ownable2StepUpgradeable contract, new owner
+        // has to accept ownership
         vm.startBroadcast(deployerPrivateKey);
         l2Staking.transferOwnership(newStakingOwnerAddress);
         vm.stopBroadcast();
-        assert(l2Staking.owner() == newStakingOwnerAddress);
+        assert(l2Staking.owner() == vm.addr(deployerPrivateKey)); // ownership is not yet accepted
 
-        // transfer ownership of the L2 LockingPosition contract
+        // transfer ownership of the L2 LockingPosition contract; because of using Ownable2StepUpgradeable contract, new
+        // owner has to accept ownership
         vm.startBroadcast(deployerPrivateKey);
         l2LockingPosition.transferOwnership(newLockingPositionOwnerAddress);
         vm.stopBroadcast();
-        assert(l2LockingPosition.owner() == newLockingPositionOwnerAddress);
+        assert(l2LockingPosition.owner() == vm.addr(deployerPrivateKey)); // ownership is not yet accepted
 
-        console2.log("L2 Staking owner address: %s", l2Staking.owner());
-        console2.log("L2 L2LockingPosition owner address: %s", l2LockingPosition.owner());
+        console2.log("L2 Staking owner address: %s (after ownership will be accepted)", newStakingOwnerAddress);
+        console2.log(
+            "L2 L2LockingPosition owner address: %s (after ownership will be accepted)", newLockingPositionOwnerAddress
+        );
 
         console2.log("Ownership of the L2 Staking and LockingPosition contracts successfully transferred!");
     }

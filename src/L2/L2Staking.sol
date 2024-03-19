@@ -2,7 +2,7 @@
 pragma solidity 0.8.23;
 
 import { Initializable } from "@openzeppelin-upgradeable/contracts/proxy/utils/Initializable.sol";
-import { OwnableUpgradeable } from "@openzeppelin-upgradeable/contracts/access/OwnableUpgradeable.sol";
+import { Ownable2StepUpgradeable } from "@openzeppelin-upgradeable/contracts/access/Ownable2StepUpgradeable.sol";
 import { UUPSUpgradeable } from "@openzeppelin-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 import { LockingPosition } from "./L2LockingPosition.sol";
@@ -41,7 +41,7 @@ interface IL2LockingPosition {
 
 /// @title L2Staking
 /// @notice This contract handles the staking functionality for the L2 network.
-contract L2Staking is Initializable, OwnableUpgradeable, UUPSUpgradeable, ISemver {
+contract L2Staking is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, ISemver {
     /// @notice Minimum possible locking duration (in days).
     uint32 public constant MIN_LOCKING_DURATION = 14;
 
@@ -79,6 +79,7 @@ contract L2Staking is Initializable, OwnableUpgradeable, UUPSUpgradeable, ISemve
     /// @param _l2LiskTokenContract The address of the L2LiskToken contract.
     function initialize(address _l2LiskTokenContract) public initializer {
         require(_l2LiskTokenContract != address(0), "L2Staking: LSK token contract address can not be zero");
+        __Ownable2Step_init();
         __Ownable_init(msg.sender);
         __UUPSUpgradeable_init();
         l2LiskTokenContract = _l2LiskTokenContract;
