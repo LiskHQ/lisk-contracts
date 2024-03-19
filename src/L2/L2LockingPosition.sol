@@ -23,9 +23,14 @@ interface IL2VotingPower {
 /// @title LockingPosition
 /// @notice Struct for locking position.
 struct LockingPosition {
+    /// @notice Address of the creator of the locking position. Only creator can modify the locking position.
     address creator;
+    /// @notice Amount to be locked.
     uint256 amount;
+    /// @notice The expiration date, i.e., the day when locked amount would be claimable from the user.
     uint256 expDate;
+    /// @notice The remaining locking duration (in days). It is used only when the unlocking countdown is paused,
+    ///         otherwise it is set to 0.
     uint256 pausedLockingDuration;
 }
 
@@ -121,25 +126,6 @@ contract L2LockingPosition is Initializable, Ownable2StepUpgradeable, UUPSUpgrad
         IL2VotingPower(votingPowerContract).adjustVotingPower(
             to, LockingPosition(address(0), 0, 0, 0), lockingPositions[tokenId]
         );
-    }
-
-    /// @notice Safely change owner of the locking position and adjust voting power.
-    /// @param from Address of the current owner of the locking position.
-    /// @param to Address of the new owner of the locking position.
-    /// @param tokenId ID of the locking position.
-    function safeTransferFrom(
-        address from,
-        address to,
-        uint256 tokenId,
-        bytes memory data
-    )
-        public
-        virtual
-        override(ERC721Upgradeable, IERC721)
-    {
-        super.safeTransferFrom(from, to, tokenId, data);
-        // check if locking position exists is done in transferFrom because it is called by safeTransferFrom
-        // voting power is adjusted in transferFrom because it is called by safeTransferFrom
     }
 
     /// @notice Creates a new locking position.

@@ -347,6 +347,11 @@ contract L2StakingTest is Test {
         l2Staking.addCreator(alice);
     }
 
+    function test_AddCreator_PreventAddingStakingContractAsCreator() public {
+        vm.expectRevert("L2Staking: Staking contract can not be added as a creator");
+        l2Staking.addCreator(address(l2Staking));
+    }
+
     function test_RemoveCreator() public {
         l2Staking.addCreator(alice);
         assert(l2Staking.allowedCreators(alice));
@@ -484,7 +489,7 @@ contract L2StakingTest is Test {
         l2Staking.unlock(1);
     }
 
-    function test_FastUnlock() public {
+    function test_InitiateFastUnlock() public {
         l2Staking.lockAmount(alice, 100 * 10 ** 18, 365);
         assertEq(l2LiskToken.balanceOf(alice), 0);
         assertEq(l2LiskToken.balanceOf(daoTreasuryAddress), 0);
@@ -499,7 +504,7 @@ contract L2StakingTest is Test {
         vm.warp(100 days);
 
         vm.prank(alice);
-        l2Staking.fastUnlock(1);
+        l2Staking.initiateFastUnlock(1);
 
         assertEq(l2LiskToken.balanceOf(alice), 0);
         // penalty is sent to the Lisk DAO Treasury contract
@@ -518,7 +523,7 @@ contract L2StakingTest is Test {
         assertEq(l2VotingPower.balanceOf(alice), 81849315068493150685);
     }
 
-    function test_FastUnlock_CreatorNotStakingContract() public {
+    function test_InitiateFastUnlock_CreatorNotStakingContract() public {
         vm.prank(rewardsContract);
         l2Staking.lockAmount(alice, 100 * 10 ** 18, 365);
         assertEq(l2LiskToken.balanceOf(daoTreasuryAddress), 0);
@@ -529,7 +534,7 @@ contract L2StakingTest is Test {
         vm.warp(100 days);
 
         vm.prank(rewardsContract);
-        l2Staking.fastUnlock(1);
+        l2Staking.initiateFastUnlock(1);
 
         assertEq(l2LiskToken.balanceOf(alice), 0);
         assertEq(l2LiskToken.balanceOf(daoTreasuryAddress), 0);
@@ -548,13 +553,13 @@ contract L2StakingTest is Test {
         assertEq(l2VotingPower.balanceOf(alice), 81849315068493150685);
     }
 
-    function test_FastUnlock_InvalidLockingPositionId() public {
+    function test_InitiateFastUnlock_InvalidLockingPositionId() public {
         vm.prank(alice);
         vm.expectRevert("L2Staking: locking position does not exist");
-        l2Staking.fastUnlock(1);
+        l2Staking.initiateFastUnlock(1);
     }
 
-    function test_FastUnlock_NotCreator() public {
+    function test_InitiateFastUnlock_NotCreator() public {
         l2Staking.lockAmount(alice, 100 * 10 ** 18, 365);
         assertEq(l2LockingPosition.balanceOf(alice), 1);
         assertEq(l2LockingPosition.getLockingPosition(1).creator, address(l2Staking));
@@ -562,12 +567,12 @@ contract L2StakingTest is Test {
         // address is inside the allowedCreators list but is not the creator of the locking position
         vm.prank(rewardsContract);
         vm.expectRevert("L2Staking: only owner or creator can call this function");
-        l2Staking.fastUnlock(1);
+        l2Staking.initiateFastUnlock(1);
 
         // address is not inside the allowedCreators list and is not the creator of the locking position
         vm.prank(address(0x3));
         vm.expectRevert("L2Staking: only owner or creator can call this function");
-        l2Staking.fastUnlock(1);
+        l2Staking.initiateFastUnlock(1);
     }
 
     function test_IncreaseLockingAmount() public {

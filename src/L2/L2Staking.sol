@@ -174,6 +174,7 @@ contract L2Staking is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, I
     /// @param newCreator The address of the new creator to be added.
     /// @dev Only the owner can call this function.
     function addCreator(address newCreator) public virtual onlyOwner {
+        require(newCreator != address(this), "L2Staking: Staking contract can not be added as a creator");
         allowedCreators[newCreator] = true;
     }
 
@@ -240,10 +241,10 @@ contract L2Staking is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, I
         }
     }
 
-    /// @notice Unlocks the given locking position and apply a penalty to the locked amount. Sends the penalty amount
-    ///         to the Lisk DAO Treasury or the creator of the locking position.
+    /// @notice Initiates a fast unlock and apply a penalty to the locked amount. Sends the penalty amount to the Lisk
+    ///         DAO Treasury or the creator of the locking position.
     /// @param lockId The ID of the locking position to be unlocked.
-    function fastUnlock(uint256 lockId) public virtual {
+    function initiateFastUnlock(uint256 lockId) public virtual {
         LockingPosition memory lock = (IL2LockingPosition(lockingPositionContract)).getLockingPosition(lockId);
         require(isLockingPositionNull(lock) == false, "L2Staking: locking position does not exist");
         require(canLockingPositionBeModified(lockId, lock), "L2Staking: only owner or creator can call this function");
@@ -308,9 +309,17 @@ contract L2Staking is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, I
         if (lock.pausedLockingDuration > 0) {
             // remaining duration is paused
             lock.pausedLockingDuration += extendDays;
+            require(
+                lock.pausedLockingDuration <= MAX_LOCKING_DURATION,
+                "L2Staking: paused locking duration can not be greater than MAX_LOCKING_DURATION"
+            );
         } else {
             // remaining duration not paused, if expired, assume expDate is today
             lock.expDate = Math.max(lock.expDate, todayDay()) + extendDays;
+            require(
+                lock.expDate <= MAX_LOCKING_DURATION,
+                "L2Staking: expiration date can not be greater than MAX_LOCKING_DURATION"
+            );
         }
 
         // update locking position
@@ -348,6 +357,8 @@ contract L2Staking is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, I
         // update locking position
         lock.expDate = todayDay() + lock.pausedLockingDuration;
         lock.pausedLockingDuration = 0;
-        (IL2LockingPosition(lockingPositionContract)).modifyLockingPosition(lockId, lock.amount, lock.expDate, 0);
+        (IL2LockingPosition(lockingPositionContract)).modifyLockingPosition(
+            lockId, lock.amount, lock.expDate, lock.pausedLockingDuration
+        );
     }
 }
