@@ -74,6 +74,10 @@ contract L2Claim is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, ISe
         public
         initializer
     {
+        require(_l2LiskToken != address(0), "L2Claim: L2 Lisk Token address cannot be zero");
+        require(_merkleRoot != bytes32(0), "L2Claim: Merkle Root cannot be zero");
+        require(_recoverPeriodTimestamp >= block.timestamp, "L2Claim: recover period must be in the future");
+
         __Ownable2Step_init();
         __Ownable_init(msg.sender);
         l2LiskToken = IERC20(_l2LiskToken);

@@ -152,6 +152,36 @@ contract L2ClaimTest is Test {
         lsk.transfer(address(l2Claim), lsk.balanceOf(address(this)));
     }
 
+    function test_Initialize_RevertWhenL2LiskTokenIsZero() public {
+        l2Claim = L2Claim(address(new ERC1967Proxy(address(l2ClaimImplementation), "")));
+        Utils.MerkleRoot memory merkleRoot = getMerkleRoot();
+
+        vm.expectRevert("L2Claim: L2 Lisk Token address cannot be zero");
+        l2Claim.initialize(address(0), merkleRoot.merkleRoot, block.timestamp + RECOVER_PERIOD);
+    }
+
+    function test_Initialize_RevertWhenMerkleRootIsZero() public {
+        l2Claim = L2Claim(address(new ERC1967Proxy(address(l2ClaimImplementation), "")));
+
+        vm.expectRevert("L2Claim: Merkle Root cannot be zero");
+        l2Claim.initialize(address(lsk), bytes32(0), block.timestamp + RECOVER_PERIOD);
+    }
+
+    function test_Initialize_RevertWhenRecoveredPeriodIsNotInFuture() public {
+        l2Claim = L2Claim(address(new ERC1967Proxy(address(l2ClaimImplementation), "")));
+        Utils.MerkleRoot memory merkleRoot = getMerkleRoot();
+
+        // recover period is now, hence it should still pass
+        l2Claim.initialize(address(lsk), merkleRoot.merkleRoot, block.timestamp);
+        assertEq(l2Claim.recoverPeriodTimestamp(), block.timestamp);
+
+        l2Claim = L2Claim(address(new ERC1967Proxy(address(l2ClaimImplementation), "")));
+
+        // recover period is in the past, hence it should revert
+        vm.expectRevert("L2Claim: recover period must be in the future");
+        l2Claim.initialize(address(lsk), merkleRoot.merkleRoot, block.timestamp - 1);
+    }
+
     function test_Initialize_RevertWhenCalledAtImplementationContract() public {
         vm.expectRevert();
         l2ClaimImplementation.initialize(address(lsk), bytes32(0), block.timestamp + RECOVER_PERIOD);
