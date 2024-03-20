@@ -211,6 +211,10 @@ contract L2Staking is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, I
             creator = msg.sender;
         } else {
             creator = address(this);
+            require(
+                msg.sender == lockOwner,
+                "L2Staking: owner different than message sender, can not create locking position"
+            );
         }
 
         // We assume that the owner has already approved the Staking contract to transfer the amount and in most cases

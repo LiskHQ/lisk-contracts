@@ -173,6 +173,7 @@ contract L2StakingTest is Test {
         assertEq(l2LiskToken.allowance(alice, address(l2StakingHarness)), 200 * 10 ** 18);
 
         // creator is the staking contract
+        vm.prank(alice);
         l2StakingHarness.lockAmount(alice, 100 * 10 ** 18, 365);
         assertEq(l2LockingPosition.balanceOf(alice), 1);
         assertEq(l2LockingPosition.getLockingPosition(1).creator, address(l2StakingHarness));
@@ -420,6 +421,14 @@ contract L2StakingTest is Test {
         assertEq(l2LockingPosition.getLockingPosition(1).creator, rewardsContract);
     }
 
+    function test_LockAmount_OwnerDifferentThanMessageSender() public {
+        address bob = address(0x3);
+        // execute the lockAmount function directly from the staking contract as alice but with the owner being bob
+        vm.prank(alice);
+        vm.expectRevert("L2Staking: owner different than message sender, can not create locking position");
+        l2Staking.lockAmount(bob, 100 * 10 ** 18, 365);
+    }
+
     function test_LockAmount_DurationIsLessThanMinDuration() public {
         uint256 invalidDuration = l2Staking.MIN_LOCKING_DURATION() - 1;
         vm.prank(alice);
@@ -447,6 +456,7 @@ contract L2StakingTest is Test {
     }
 
     function test_Unlock() public {
+        vm.prank(alice);
         l2Staking.lockAmount(alice, 100 * 10 ** 18, 365);
         assertEq(l2LiskToken.balanceOf(alice), 0);
         assertEq(l2LiskToken.balanceOf(address(l2Staking)), 100 * 10 ** 18);
@@ -472,6 +482,7 @@ contract L2StakingTest is Test {
     }
 
     function test_Unlock_StakeDidNotExpire() public {
+        vm.prank(alice);
         l2Staking.lockAmount(alice, 100 * 10 ** 18, 365);
         assertEq(l2LiskToken.balanceOf(alice), 0);
         assertEq(l2LiskToken.balanceOf(address(l2Staking)), 100 * 10 ** 18);
@@ -495,6 +506,7 @@ contract L2StakingTest is Test {
     }
 
     function test_Unlock_NotCreator() public {
+        vm.prank(alice);
         l2Staking.lockAmount(alice, 100 * 10 ** 18, 365);
         assertEq(l2LockingPosition.balanceOf(alice), 1);
         assertEq(l2LockingPosition.getLockingPosition(1).creator, address(l2Staking));
@@ -511,6 +523,7 @@ contract L2StakingTest is Test {
     }
 
     function test_InitiateFastUnlock() public {
+        vm.prank(alice);
         l2Staking.lockAmount(alice, 100 * 10 ** 18, 365);
         assertEq(l2LiskToken.balanceOf(alice), 0);
         assertEq(l2LiskToken.balanceOf(daoTreasuryAddress), 0);
@@ -581,6 +594,7 @@ contract L2StakingTest is Test {
     }
 
     function test_InitiateFastUnlock_NotCreator() public {
+        vm.prank(alice);
         l2Staking.lockAmount(alice, 100 * 10 ** 18, 365);
         assertEq(l2LockingPosition.balanceOf(alice), 1);
         assertEq(l2LockingPosition.getLockingPosition(1).creator, address(l2Staking));
@@ -597,6 +611,7 @@ contract L2StakingTest is Test {
     }
 
     function test_IncreaseLockingAmount() public {
+        vm.prank(alice);
         l2Staking.lockAmount(alice, 100 * 10 ** 18, 365);
         assertEq(l2LiskToken.balanceOf(alice), 0);
         assertEq(l2LiskToken.balanceOf(address(l2Staking)), 100 * 10 ** 18);
@@ -632,6 +647,7 @@ contract L2StakingTest is Test {
     }
 
     function test_IncreaseLockingAmount_PausedLockingDurationNotZero() public {
+        vm.prank(alice);
         l2Staking.lockAmount(alice, 100 * 10 ** 18, 365);
         assertEq(l2LiskToken.balanceOf(alice), 0);
         assertEq(l2LiskToken.balanceOf(address(l2Staking)), 100 * 10 ** 18);
@@ -680,6 +696,7 @@ contract L2StakingTest is Test {
     }
 
     function test_IncreaseLockingAmount_NotCreator() public {
+        vm.prank(alice);
         l2Staking.lockAmount(alice, 100 * 10 ** 18, 365);
         assertEq(l2LockingPosition.balanceOf(alice), 1);
         assertEq(l2LockingPosition.getLockingPosition(1).creator, address(l2Staking));
@@ -696,6 +713,7 @@ contract L2StakingTest is Test {
     }
 
     function test_IncreaseLockingAmount_ZeroAmountIncrease() public {
+        vm.prank(alice);
         l2Staking.lockAmount(alice, 100 * 10 ** 18, 365);
         assertEq(l2LockingPosition.balanceOf(alice), 1);
 
@@ -705,6 +723,7 @@ contract L2StakingTest is Test {
     }
 
     function test_IncreaseLockingAmount_ExpiredLockingPosition() public {
+        vm.prank(alice);
         l2Staking.lockAmount(alice, 100 * 10 ** 18, 365);
         assertEq(l2LockingPosition.balanceOf(alice), 1);
 
@@ -718,6 +737,7 @@ contract L2StakingTest is Test {
     }
 
     function test_IncreaseLockingAmount_ExpiredLockingPosition_PausedLockingDurationNotZero() public {
+        vm.prank(alice);
         l2Staking.lockAmount(alice, 100 * 10 ** 18, 365);
         assertEq(l2LockingPosition.balanceOf(alice), 1);
 
@@ -754,6 +774,7 @@ contract L2StakingTest is Test {
     }
 
     function test_IncreaseLockingAmount_InsufficientUserBalance() public {
+        vm.prank(alice);
         l2Staking.lockAmount(alice, 100 * 10 ** 18, 365);
         assertEq(l2LockingPosition.balanceOf(alice), 1);
 
@@ -769,6 +790,7 @@ contract L2StakingTest is Test {
     }
 
     function test_ExtendLockingDuration_PausedLockingDurationIsZero() public {
+        vm.prank(alice);
         l2Staking.lockAmount(alice, 100 * 10 ** 18, 365);
         assertEq(l2LiskToken.balanceOf(alice), 0);
         assertEq(l2LiskToken.balanceOf(address(l2Staking)), 100 * 10 ** 18);
@@ -799,6 +821,7 @@ contract L2StakingTest is Test {
     }
 
     function test_ExtendLockingDuration_PausedLockingDurationIsZero_PositionAlreadyExpired() public {
+        vm.prank(alice);
         l2Staking.lockAmount(alice, 100 * 10 ** 18, 365);
         assertEq(l2LiskToken.balanceOf(alice), 0);
         assertEq(l2LiskToken.balanceOf(address(l2Staking)), 100 * 10 ** 18);
@@ -829,6 +852,7 @@ contract L2StakingTest is Test {
     }
 
     function test_ExtendLockingDuration_PausedLockingDurationNotZero() public {
+        vm.prank(alice);
         l2Staking.lockAmount(alice, 100 * 10 ** 18, 365);
         assertEq(l2LiskToken.balanceOf(alice), 0);
         assertEq(l2LiskToken.balanceOf(address(l2Staking)), 100 * 10 ** 18);
@@ -870,6 +894,7 @@ contract L2StakingTest is Test {
     }
 
     function test_ExtendLockingDuration_NotCreator() public {
+        vm.prank(alice);
         l2Staking.lockAmount(alice, 100 * 10 ** 18, 365);
         assertEq(l2LockingPosition.balanceOf(alice), 1);
         assertEq(l2LockingPosition.getLockingPosition(1).creator, address(l2Staking));
@@ -886,6 +911,7 @@ contract L2StakingTest is Test {
     }
 
     function test_ExtendLockingDuration_ZeroExtendedDays() public {
+        vm.prank(alice);
         l2Staking.lockAmount(alice, 100 * 10 ** 18, 365);
         assertEq(l2LockingPosition.balanceOf(alice), 1);
 
@@ -895,6 +921,7 @@ contract L2StakingTest is Test {
     }
 
     function test_PauseRemainingLockingDuration() public {
+        vm.prank(alice);
         l2Staking.lockAmount(alice, 100 * 10 ** 18, 365);
         assertEq(l2LockingPosition.balanceOf(alice), 1);
         assertEq(l2LockingPosition.getLockingPosition(1).amount, 100 * 10 ** 18);
@@ -924,6 +951,7 @@ contract L2StakingTest is Test {
     }
 
     function test_PauseRemainingLockingDuration_NotCreator() public {
+        vm.prank(alice);
         l2Staking.lockAmount(alice, 100 * 10 ** 18, 365);
         assertEq(l2LockingPosition.balanceOf(alice), 1);
         assertEq(l2LockingPosition.getLockingPosition(1).creator, address(l2Staking));
@@ -940,6 +968,7 @@ contract L2StakingTest is Test {
     }
 
     function test_PauseRemainingLockingDuration_AlreadyPaused() public {
+        vm.prank(alice);
         l2Staking.lockAmount(alice, 100 * 10 ** 18, 365);
         assertEq(l2LockingPosition.balanceOf(alice), 1);
         assertEq(l2LockingPosition.getLockingPosition(1).pausedLockingDuration, 0);
@@ -957,6 +986,7 @@ contract L2StakingTest is Test {
     }
 
     function test_PauseRemainingLockingDuration_ExpiredLockingPosition() public {
+        vm.prank(alice);
         l2Staking.lockAmount(alice, 100 * 10 ** 18, 365);
         assertEq(l2LockingPosition.balanceOf(alice), 1);
         assertEq(l2LockingPosition.getLockingPosition(1).pausedLockingDuration, 0);
@@ -970,6 +1000,7 @@ contract L2StakingTest is Test {
     }
 
     function test_ResumeCountdown() public {
+        vm.prank(alice);
         l2Staking.lockAmount(alice, 100 * 10 ** 18, 365);
         assertEq(l2LockingPosition.balanceOf(alice), 1);
         assertEq(l2LockingPosition.getLockingPosition(1).amount, 100 * 10 ** 18);
@@ -1006,6 +1037,7 @@ contract L2StakingTest is Test {
     }
 
     function test_ResumeCountdown_NotCreator() public {
+        vm.prank(alice);
         l2Staking.lockAmount(alice, 100 * 10 ** 18, 365);
         assertEq(l2LockingPosition.balanceOf(alice), 1);
         assertEq(l2LockingPosition.getLockingPosition(1).creator, address(l2Staking));
@@ -1022,6 +1054,7 @@ contract L2StakingTest is Test {
     }
 
     function test_ResumeCountdown_ZeroPausedLockingDuration() public {
+        vm.prank(alice);
         l2Staking.lockAmount(alice, 100 * 10 ** 18, 365);
         assertEq(l2LockingPosition.balanceOf(alice), 1);
         assertEq(l2LockingPosition.getLockingPosition(1).pausedLockingDuration, 0);
