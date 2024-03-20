@@ -248,37 +248,110 @@ contract L2RewardTest is Test {
         assertEq(l2LiskToken.balanceOf(address(l2Reward)), amount);
     }
 
-    function test_claimRewards() public {
+    function test_claimReward_rewardsAreNotLocked() public {
         address alice = address(0x1);
-        uint256 duration = 300;
+        uint256 balanceOfAlice = convertLiskToBeddows(1000);
 
-        vm.startPrank(bridge);
-        l2LiskToken.mint(address(l2Reward), convertLiskToBeddows(1000));
-        l2LiskToken.mint(alice, convertLiskToBeddows(1000));
-        vm.stopPrank();
+        uint256 funds = convertLiskToBeddows(35);
+        uint16 fundingDuration = 350;
+        uint16 delay = 1;
 
-        uint256 amount = convertLiskToBeddows(100);
-        uint256 expDate = deploymentDate + 300;
-        uint256 pausedLockingDuration = 0;
-        uint256 lockID;
+        uint256 lockedAmount = convertLiskToBeddows(100);
+        uint256 lockingDuration = 120;
 
-        // skip(deploymentDate + 150 days);
+        // alice gets balance
+        vm.prank(bridge);
+        l2LiskToken.mint(alice, balanceOfAlice);
 
+        // alice funds staking
+        // alice creates a position on deploymentDate, 19740.
         vm.startPrank(alice);
-        l2LiskToken.approve(address(l2Staking), amount);
-        lockID = l2Reward.createPosition(amount, duration);
+        l2LiskToken.approve(address(l2Reward), funds);
+        l2Reward.fundStakingRewards(funds, fundingDuration, delay);
+
+        l2LiskToken.approve(address(l2Staking), lockedAmount);
+        uint256 lockID = l2Reward.createPosition(lockedAmount, lockingDuration);
         vm.stopPrank();
 
-        console2.logUint(l2Reward.lastTrsDate());
+        // for an active locking position if rewards are not to be locked further
+        // rewards are claimed from lastClaimDate for the lock (19740) till today if expiry date of locking position is
+        // in future
 
-        skip(deploymentDate + 150 days);
+        // today is 19800
+        skip(60 days);
+
+        uint256 preRewardBalanceOfAlice = l2LiskToken.balanceOf(alice);
+        uint256 expectedRewards = 59 * 10 ** 17;
+
+        balanceOfAlice = preRewardBalanceOfAlice + expectedRewards;
+
         vm.prank(alice);
         l2Reward.claimReward(lockID, false);
 
-        LockingPosition memory position = l2LockingPosition.getLockingPosition(lockID);
-        console2.logUint(l2Reward.todayDay());
-        console2.logUint(l2Reward.lastClaimDate(lockID));
-        console2.logUint(l2Reward.totalWeights(19889));
+        // lastClaimDate against lockID is updated to today
+        assertEq(l2Reward.lastClaimDate(lockID), 19800);
+
+        // alice receives the reward
+        assertEq(balanceOfAlice, l2LiskToken.balanceOf(alice));
+
+        // rewards are calculated from lastClaimDate for the lock (19800) till expiry date of locking position if it is
+        // in past
+        skip(200 days);
+
+        preRewardBalanceOfAlice = l2LiskToken.balanceOf(alice);
+        expectedRewards = convertLiskToBeddows(6);
+
+        balanceOfAlice = preRewardBalanceOfAlice + expectedRewards;
+
+        vm.prank(alice);
+        l2Reward.claimReward(lockID, false);
+
+        // lastClaimDate against lockID is updated to today
+        assertEq(l2Reward.lastClaimDate(lockID), 19800 + 200);
+
+        // alice receives the rewards
+        assertEq(balanceOfAlice, l2LiskToken.balanceOf(alice));
+    }
+
+    function test_claimReward_rewardsAreNotLockedForExpiredPosition() public {
+        address alice = address(0x1);
+        uint256 balanceOfAlice = convertLiskToBeddows(1000);
+
+        uint256 funds = convertLiskToBeddows(35);
+        uint16 fundingDuration = 350;
+        uint16 delay = 1;
+
+        uint256 lockedAmount = convertLiskToBeddows(100);
+        uint256 lockingDuration = 120;
+
+        // alice gets balance
+        vm.prank(bridge);
+        l2LiskToken.mint(alice, balanceOfAlice);
+
+        // alice funds staking
+        // alice creates a position on deploymentDate, 19740.
+        vm.startPrank(alice);
+        l2LiskToken.approve(address(l2Reward), funds);
+        l2Reward.fundStakingRewards(funds, fundingDuration, delay);
+
+        l2LiskToken.approve(address(l2Staking), lockedAmount);
+        uint256 lockID = l2Reward.createPosition(lockedAmount, lockingDuration);
+        vm.stopPrank();
+
+        // today is 19890
+        skip(150 days);
+
+        uint256 preRewardBalanceOfAlice = l2LiskToken.balanceOf(alice);
+        uint256 expectedRewards = 119 * 10 ** 17;
+
+        balanceOfAlice = preRewardBalanceOfAlice + expectedRewards;
+
+        vm.prank(alice);
+        l2Reward.claimReward(lockID, true);
+
+        assertEq(l2Reward.lastClaimDate(lockID), 19890);
+
+        assertEq(l2LiskToken.balanceOf(alice), balanceOfAlice);
     }
 
     function convertLiskToBeddows(uint256 lisk) internal pure returns (uint256) {
