@@ -290,6 +290,27 @@ contract L2StakingTest is Test {
         assertEq(l2StakingHarness.exposedRemainingLockingDuration(lock), 100);
     }
 
+    function test_RemainingLockingDuration_ExpirationDayAlreadyExpired() public {
+        L2StakingHarness l2StakingHarness = new L2StakingHarness();
+
+        // create a locking position with expDate set to 365
+        LockingPosition memory lock =
+            LockingPosition({ creator: address(0x1), amount: 100 * 10 ** 18, expDate: 365, pausedLockingDuration: 0 });
+        assertEq(lock.expDate, 365);
+
+        // advance block time to exactly one day before the expiration date
+        vm.warp(364 days);
+        assertEq(l2StakingHarness.exposedRemainingLockingDuration(lock), 1);
+
+        // advance block time to exactly the expiration date
+        vm.warp(365 days);
+        assertEq(l2StakingHarness.exposedRemainingLockingDuration(lock), 0);
+
+        // advance block time to exactly one day after the expiration date
+        vm.warp(366 days);
+        assertEq(l2StakingHarness.exposedRemainingLockingDuration(lock), 0);
+    }
+
     function test_InitializeLockingPosition_LockingPositionContractAlreadyInitialized() public {
         vm.expectRevert("L2Staking: Locking Position contract is already initialized");
         l2Staking.initializeLockingPosition(address(l2LockingPosition));

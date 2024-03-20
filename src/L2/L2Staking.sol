@@ -148,7 +148,12 @@ contract L2Staking is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, I
     /// @return The remaining locking duration for the given locking position.
     function remainingLockingDuration(LockingPosition memory lock) internal view virtual returns (uint256) {
         if (lock.pausedLockingDuration == 0) {
-            return lock.expDate - todayDay();
+            uint256 today = todayDay();
+            if (lock.expDate <= today) {
+                return 0;
+            } else {
+                return lock.expDate - today;
+            }
         } else {
             return lock.pausedLockingDuration;
         }
@@ -305,21 +310,17 @@ contract L2Staking is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, I
         require(isLockingPositionNull(lock) == false, "L2Staking: locking position does not exist");
         require(canLockingPositionBeModified(lockId, lock), "L2Staking: only owner or creator can call this function");
         require(extendDays > 0, "L2Staking: extendDays should be greater than zero");
+        require(
+            remainingLockingDuration(lock) + extendDays <= MAX_LOCKING_DURATION,
+            "L2Staking: locking duration can not be extended to more than MAX_LOCKING_DURATION"
+        );
 
         if (lock.pausedLockingDuration > 0) {
             // remaining duration is paused
             lock.pausedLockingDuration += extendDays;
-            require(
-                lock.pausedLockingDuration <= MAX_LOCKING_DURATION,
-                "L2Staking: paused locking duration can not be greater than MAX_LOCKING_DURATION"
-            );
         } else {
             // remaining duration not paused, if expired, assume expDate is today
             lock.expDate = Math.max(lock.expDate, todayDay()) + extendDays;
-            require(
-                lock.expDate - todayDay() <= MAX_LOCKING_DURATION,
-                "L2Staking: expiration date can not be more than MAX_LOCKING_DURATION in the future"
-            );
         }
 
         // update locking position
