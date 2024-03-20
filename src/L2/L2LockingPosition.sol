@@ -187,6 +187,11 @@ contract L2LockingPosition is Initializable, Ownable2StepUpgradeable, UUPSUpgrad
         virtual
         onlyStaking
     {
+        require(amount > 0, "L2LockingPosition: amount should be greater than 0");
+        require(
+            expDate >= todayDay() || pausedLockingDuration > 0,
+            "L2LockingPosition: expDate should be greater than or equal to today or pausedLockingDuration > 0"
+        );
         require(
             !isLockingPositionNull(lockingPositions[positionId]), "L2LockingPosition: locking position does not exist"
         );

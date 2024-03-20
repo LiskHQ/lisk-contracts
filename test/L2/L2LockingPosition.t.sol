@@ -295,6 +295,36 @@ contract L2LockingPositionTest is Test {
         assertEq(l2VotingPower.balanceOf(alice), 227397260273972602739);
     }
 
+    function test_ModifyLockingPosition_AmountIsZero() public {
+        address alice = address(0x1);
+
+        vm.prank(address(l2Staking));
+        l2LockingPosition.createLockingPosition(address(l2Staking), alice, 100 * 10 ** 18, 365);
+        assertEq(l2LockingPosition.balanceOf(alice), 1);
+
+        vm.prank(address(l2Staking));
+        vm.expectRevert("L2LockingPosition: amount should be greater than 0");
+        l2LockingPosition.modifyLockingPosition(1, 0, 730, 50);
+    }
+
+    function test_ModifyLockingPosition_ExpDateShouldBeGreaterThanCurrentDate() public {
+        address alice = address(0x1);
+
+        vm.prank(address(l2Staking));
+        l2LockingPosition.createLockingPosition(address(l2Staking), alice, 100 * 10 ** 18, 100);
+        assertEq(l2LockingPosition.balanceOf(alice), 1);
+
+        // advance block time by 50 days
+        vm.warp(50 days);
+
+        // expDate is less than current date (49 days) and pausedLockingDuration is 0
+        vm.prank(address(l2Staking));
+        vm.expectRevert(
+            "L2LockingPosition: expDate should be greater than or equal to today or pausedLockingDuration > 0"
+        );
+        l2LockingPosition.modifyLockingPosition(1, 200 * 10 ** 18, 49, 0);
+    }
+
     function test_ModifyLockingPosition_PositionDoesNotExist() public {
         vm.prank(address(l2Staking));
         vm.expectRevert("L2LockingPosition: locking position does not exist");
