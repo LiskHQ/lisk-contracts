@@ -159,58 +159,7 @@ contract L2RewardTest is Test {
         console2.logUint(result.amount);
     }
 
-    function test_onlyExistingLockingPositionCanBeClaimedByTheOwner() public {
-        address alice = address(0x1);
-        uint256 lockID = 1;
-
-        vm.mockCall(
-            address(l2LockingPosition),
-            abi.encodeWithSelector(ERC721Upgradeable.ownerOf.selector),
-            abi.encode(address(0x0))
-        );
-
-        vm.prank(alice);
-        vm.expectRevert("L2Reward: msg.sender does not own the locking position");
-        l2Reward.claimReward(lockID, false);
-
-        vm.mockCall(
-            address(l2LockingPosition), abi.encodeWithSelector(ERC721Upgradeable.ownerOf.selector), abi.encode(alice)
-        );
-        vm.mockCall(address(l2Reward), abi.encodeWithSelector(l2Reward.lastClaimDate.selector), abi.encode(0));
-        vm.prank(alice);
-        vm.expectRevert("L2Reward: Locking position does not exist");
-        l2Reward.claimReward(lockID, true);
-    }
-
-    function test_rewardsIsZeroIfLastClaimDateIsToday() public {
-        address alice = address(0x1);
-        uint256 lockID = 1;
-        uint256 amount = convertLiskToBeddows(100);
-        uint256 expDate = deploymentDate + 300;
-        uint256 pausedLockingDuration = 0;
-
-        LockingPosition memory lockingPosition = LockingPosition(alice, amount, expDate, pausedLockingDuration);
-
-        vm.mockCall(
-            address(l2LockingPosition), abi.encodeWithSelector(ERC721Upgradeable.ownerOf.selector), abi.encode(alice)
-        );
-
-        vm.mockCall(address(l2Reward), abi.encodeWithSelector(l2Reward.lastClaimDate.selector), abi.encode(20000));
-
-        vm.mockCall(
-            address(l2LockingPosition),
-            abi.encodeWithSelector(L2LockingPosition.getLockingPosition.selector),
-            abi.encode(lockingPosition)
-        );
-
-        LockingPosition memory result = l2LockingPosition.getLockingPosition(10);
-
-        vm.prank(alice);
-        l2Reward.claimReward(lockID, false);
-        assertEq(l2LiskToken.balanceOf(alice), 0);
-    }
-
-    function test_delayShouldBeGreaterThanZeroWhenFundingStakingRewards() public {
+    function test_fundStakingRewards_delayShouldBeGreaterThanZeroWhenFundingStakingRewards() public {
         address alice = address(0x1);
 
         vm.startPrank(bridge);
@@ -221,7 +170,7 @@ contract L2RewardTest is Test {
         l2Reward.fundStakingRewards(convertLiskToBeddows(3550), 255, 0);
     }
 
-    function test_dailyRewardsShouldBeAddedForTheDuration() public {
+    function test_fundStakingRewards_dailyRewardsShouldBeAddedForTheDuration() public {
         address alice = address(0x1);
         uint256 balanceOfAlice = convertLiskToBeddows(1000);
         vm.startPrank(bridge);
@@ -248,7 +197,60 @@ contract L2RewardTest is Test {
         assertEq(l2LiskToken.balanceOf(address(l2Reward)), amount);
     }
 
-    function test_claimReward_rewardsAreNotLocked() public {
+    function test_claimRewards_onlyExistingLockingPositionCanBeClaimedByTheOwner() public {
+        address alice = address(0x1);
+        uint256 lockID = 1;
+
+        vm.mockCall(
+            address(l2LockingPosition),
+            abi.encodeWithSelector(ERC721Upgradeable.ownerOf.selector),
+            abi.encode(address(0x0))
+        );
+
+        vm.prank(alice);
+        vm.expectRevert("L2Reward: msg.sender does not own the locking position");
+        l2Reward.claimReward(lockID, false);
+
+        vm.mockCall(
+            address(l2LockingPosition), abi.encodeWithSelector(ERC721Upgradeable.ownerOf.selector), abi.encode(alice)
+        );
+        vm.mockCall(address(l2Reward), abi.encodeWithSelector(l2Reward.lastClaimDate.selector), abi.encode(0));
+        vm.prank(alice);
+        vm.expectRevert("L2Reward: Locking position does not exist");
+        l2Reward.claimReward(lockID, true);
+    }
+
+    function test_claimRewards_rewardsIsZeroIfLastClaimDateIsToday() public {
+        address alice = address(0x1);
+        uint256 lockID = 1;
+        uint256 amount = convertLiskToBeddows(100);
+        uint256 expDate = deploymentDate + 300;
+        uint256 pausedLockingDuration = 0;
+
+        LockingPosition memory lockingPosition = LockingPosition(alice, amount, expDate, pausedLockingDuration);
+
+        vm.mockCall(
+            address(l2LockingPosition), abi.encodeWithSelector(ERC721Upgradeable.ownerOf.selector), abi.encode(alice)
+        );
+
+        vm.mockCall(
+            address(l2Reward), abi.encodeWithSelector(l2Reward.lastClaimDate.selector), abi.encode(deploymentDate)
+        );
+
+        vm.mockCall(
+            address(l2LockingPosition),
+            abi.encodeWithSelector(L2LockingPosition.getLockingPosition.selector),
+            abi.encode(lockingPosition)
+        );
+
+        LockingPosition memory result = l2LockingPosition.getLockingPosition(10);
+
+        vm.prank(alice);
+        l2Reward.claimReward(lockID, false);
+        assertEq(l2LiskToken.balanceOf(alice), 0);
+    }
+
+    function test_claimRewards_rewardsAreNotLocked() public {
         address alice = address(0x1);
         uint256 balanceOfAlice = convertLiskToBeddows(1000);
 
@@ -313,7 +315,7 @@ contract L2RewardTest is Test {
         assertEq(balanceOfAlice, l2LiskToken.balanceOf(alice));
     }
 
-    function test_claimReward_rewardsAreNotLockedForExpiredPosition() public {
+    function test_claimRewards_rewardsAreNotLockedForExpiredPosition() public {
         address alice = address(0x1);
         uint256 balanceOfAlice = convertLiskToBeddows(1000);
 
@@ -354,7 +356,7 @@ contract L2RewardTest is Test {
         assertEq(l2LiskToken.balanceOf(alice), balanceOfAlice);
     }
 
-    function test_claimReward_rewardsAreLockedForActivePosition() public {
+    function test_claimRewards_rewardsAreLockedForActivePosition() public {
         address alice = address(0x1);
         uint256 balanceOfAlice = convertLiskToBeddows(1000);
 
@@ -364,6 +366,8 @@ contract L2RewardTest is Test {
 
         uint256 lockedAmount = convertLiskToBeddows(100);
         uint256 lockingDuration = 120;
+
+        l2Staking.addCreator(address(l2Reward));
 
         // alice gets balance
         vm.prank(bridge);
@@ -385,8 +389,14 @@ contract L2RewardTest is Test {
         uint256 preRewardBalanceOfAlice = l2LiskToken.balanceOf(alice);
         uint256 expectedRewards = 59 * 10 ** 17;
 
-        vm.prank(alice);
+        vm.startPrank(alice);
+        // alice approves staking contract the rewards amount
+        l2LiskToken.approve(address(l2Staking), expectedRewards);
         l2Reward.claimReward(lockID, true);
+        vm.stopPrank();
+
+        LockingPosition memory lockingPosition = l2LockingPosition.getLockingPosition(lockID);
+        assertEq(lockingPosition.amount, lockedAmount + expectedRewards);
     }
 
     function convertLiskToBeddows(uint256 lisk) internal pure returns (uint256) {
