@@ -184,7 +184,7 @@ contract L2StakingTest is Test {
         vm.prank(alice);
         assertEq(l2StakingHarness.exposedCanLockingPositionBeModified(1, lock), true);
 
-        // call the function as creator
+        // call the function as creator (staking contract) which is not inside the allowedCreators list
         vm.prank(address(l2StakingHarness));
         assertEq(l2StakingHarness.exposedCanLockingPositionBeModified(1, lock), false);
 
@@ -317,6 +317,12 @@ contract L2StakingTest is Test {
         l2Staking.initializeLockingPosition(address(l2LockingPosition));
     }
 
+    function test_InitializeLockingPosition_NotCalledByOwner() public {
+        vm.prank(alice);
+        vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, alice));
+        l2Staking.initializeLockingPosition(address(l2LockingPosition));
+    }
+
     function test_InitializeLockingPosition_ZeroLockingPositionContractAddress() public {
         // deploy L2Staking implementation contract
         l2StakingImplementation = new L2Staking();
@@ -340,6 +346,12 @@ contract L2StakingTest is Test {
         l2Staking.initializeDaoTreasury(daoTreasuryAddress);
     }
 
+    function test_initializeDaoTreasury_NotCalledByOwner() public {
+        vm.prank(alice);
+        vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, alice));
+        l2Staking.initializeDaoTreasury(daoTreasuryAddress);
+    }
+
     function test_initializeDaoTreasury_ZeroDaoTreasuryAddress() public {
         // deploy L2Staking implementation contract
         l2StakingImplementation = new L2Staking();
@@ -359,6 +371,8 @@ contract L2StakingTest is Test {
     }
 
     function test_AddCreator() public {
+        assert(!l2Staking.allowedCreators(alice));
+
         l2Staking.addCreator(alice);
         assert(l2Staking.allowedCreators(alice));
     }

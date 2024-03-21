@@ -108,7 +108,9 @@ contract L2Staking is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, I
             && position.pausedLockingDuration == 0;
     }
 
-    /// @notice Returns whether the locking position can be modified by the caller.
+    /// @notice Returns whether the locking position can be modified by the caller. A position can only be modified by
+    ///         the owner if the staking contract is the creator. If the position was not created by the staking
+    ///         contract, it can only be modified by the creator.
     /// @param lockId The ID of the locking position.
     /// @param lock The locking position to be checked.
     /// @return Whether the locking position can be modified by the caller.
