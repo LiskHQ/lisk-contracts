@@ -354,6 +354,41 @@ contract L2RewardTest is Test {
         assertEq(l2LiskToken.balanceOf(alice), balanceOfAlice);
     }
 
+    function test_claimReward_rewardsAreLockedForActivePosition() public {
+        address alice = address(0x1);
+        uint256 balanceOfAlice = convertLiskToBeddows(1000);
+
+        uint256 funds = convertLiskToBeddows(35);
+        uint16 fundingDuration = 350;
+        uint16 delay = 1;
+
+        uint256 lockedAmount = convertLiskToBeddows(100);
+        uint256 lockingDuration = 120;
+
+        // alice gets balance
+        vm.prank(bridge);
+        l2LiskToken.mint(alice, balanceOfAlice);
+
+        // alice funds staking
+        // alice creates a position on deploymentDate, 19740.
+        vm.startPrank(alice);
+        l2LiskToken.approve(address(l2Reward), funds);
+        l2Reward.fundStakingRewards(funds, fundingDuration, delay);
+
+        l2LiskToken.approve(address(l2Staking), lockedAmount);
+        uint256 lockID = l2Reward.createPosition(lockedAmount, lockingDuration);
+        vm.stopPrank();
+
+        // today is 19800
+        skip(60 days);
+
+        uint256 preRewardBalanceOfAlice = l2LiskToken.balanceOf(alice);
+        uint256 expectedRewards = 59 * 10 ** 17;
+
+        vm.prank(alice);
+        l2Reward.claimReward(lockID, true);
+    }
+
     function convertLiskToBeddows(uint256 lisk) internal pure returns (uint256) {
         return lisk * 10 ** 18;
     }
