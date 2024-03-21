@@ -593,6 +593,68 @@ contract L2StakingTest is Test {
         assertEq(l2VotingPower.balanceOf(alice), 81849315068493150685);
     }
 
+    function test_InitiateFastUnlock_PausedLockingPosition() public {
+        vm.prank(alice);
+        l2Staking.lockAmount(alice, 100 * 10 ** 18, 365);
+        assertEq(l2LiskToken.balanceOf(alice), 0);
+        assertEq(l2LiskToken.balanceOf(daoTreasuryAddress), 0);
+        assertEq(l2LiskToken.balanceOf(rewardsContract), 0);
+        assertEq(l2LiskToken.balanceOf(address(l2Staking)), 100 * 10 ** 18);
+        assertEq(l2LockingPosition.totalSupply(), 1);
+        assertEq(l2LockingPosition.balanceOf(alice), 1);
+        assertEq(l2VotingPower.totalSupply(), 100 * 10 ** 18);
+        assertEq(l2VotingPower.balanceOf(alice), 100 * 10 ** 18);
+
+        // advance block time by 100 days
+        vm.warp(100 days);
+
+        // pause the locking position
+        vm.prank(alice);
+        l2Staking.pauseRemainingLockingDuration(1);
+
+        // advance block time by additional 30 days
+        vm.warp(130 days);
+
+        vm.prank(alice);
+        l2Staking.initiateFastUnlock(1);
+
+        assertEq(l2LiskToken.balanceOf(alice), 0);
+        // penalty is sent to the Lisk DAO Treasury contract
+        assertEq(l2LiskToken.balanceOf(daoTreasuryAddress), 16095890410958904109);
+        assertEq(l2LiskToken.balanceOf(rewardsContract), 0);
+        assertEq(l2LiskToken.balanceOf(address(l2Staking)), 100 * 10 ** 18 - 16095890410958904109);
+
+        assertEq(l2LockingPosition.totalSupply(), 1);
+        assertEq(l2LockingPosition.balanceOf(alice), 1);
+        assertEq(l2LockingPosition.getLockingPosition(1).amount, 100 * 10 ** 18 - 16095890410958904109); // 100 LSK
+            // tokens - penalty
+        assertEq(l2LockingPosition.getLockingPosition(1).expDate, 133); // 130 + 3 days
+        assertEq(l2LockingPosition.getLockingPosition(1).pausedLockingDuration, 0);
+
+        assertEq(l2VotingPower.totalSupply(), 83904109589041095891);
+        assertEq(l2VotingPower.balanceOf(alice), 83904109589041095891);
+    }
+
+    function test_InitiateFastUnlock_LockingPositionExpiresInLessThanThreeDays() public {
+        vm.prank(alice);
+        l2Staking.lockAmount(alice, 100 * 10 ** 18, 365);
+        assertEq(l2LiskToken.balanceOf(alice), 0);
+        assertEq(l2LiskToken.balanceOf(daoTreasuryAddress), 0);
+        assertEq(l2LiskToken.balanceOf(rewardsContract), 0);
+        assertEq(l2LiskToken.balanceOf(address(l2Staking)), 100 * 10 ** 18);
+        assertEq(l2LockingPosition.totalSupply(), 1);
+        assertEq(l2LockingPosition.balanceOf(alice), 1);
+        assertEq(l2VotingPower.totalSupply(), 100 * 10 ** 18);
+        assertEq(l2VotingPower.balanceOf(alice), 100 * 10 ** 18);
+
+        // advance block time by 363 days (2 days before the expiration date)
+        vm.warp(363 days);
+
+        vm.prank(alice);
+        vm.expectRevert("L2Staking: less than 3 days until unlock");
+        l2Staking.initiateFastUnlock(1);
+    }
+
     function test_InitiateFastUnlock_CreatorNotStakingContract() public {
         vm.prank(rewardsContract);
         l2Staking.lockAmount(alice, 100 * 10 ** 18, 365);
