@@ -45,7 +45,11 @@ contract L2Claim is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, ISe
     mapping(bytes20 => address) public claimedTo;
 
     /// @notice Emitted when an address has claimed the LSK.
-    event LSKClaimed(bytes20 lskAddress, address recipient, uint256 amount);
+    event LSKClaimed(bytes20 indexed lskAddress, address indexed recipient, uint256 amount);
+
+    /// @notice Emitted when the DAO address is set.
+    /// @param daoAddress Address of the DAO.
+    event DaoAddressSet(address indexed daoAddress);
 
     /// @notice Event indicating the end of the claiming period.
     event ClaimingEnded();
@@ -235,6 +239,7 @@ contract L2Claim is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, ISe
         require(daoAddress == address(0), "L2Claim: DAO Address has already been set");
         require(_daoAddress != address(0), "L2Claim: DAO Address cannot be zero");
         daoAddress = _daoAddress;
+        emit DaoAddressSet(_daoAddress);
     }
 
     /// @notice Allows the contract owner to recover unclaimed LSK tokens to the DAO address after the claim period is

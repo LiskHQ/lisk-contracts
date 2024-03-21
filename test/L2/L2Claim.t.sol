@@ -95,6 +95,11 @@ contract L2ClaimTest is Test {
         Signature memory signature = getSignature(_accountIndex);
 
         bytes32 pubKey = signature.sigs[0].pubKey;
+
+        // check that the LSKClaimed event is emitted
+        vm.expectEmit(true, true, true, true);
+        emit L2Claim.LSKClaimed(bytes20(sha256(abi.encode(pubKey))), address(this), leaf.balanceBeddows);
+
         l2Claim.claimRegularAccount(
             leaf.proof,
             pubKey,
@@ -412,6 +417,11 @@ contract L2ClaimTest is Test {
         }
 
         bytes20 lskAddress = bytes20(leaf.b32Address << 96);
+
+        // check that the LSKClaimed event is emitted
+        vm.expectEmit(true, true, true, true);
+        emit L2Claim.LSKClaimed(lskAddress, address(this), leaf.balanceBeddows);
+
         l2Claim.claimMultisigAccount(
             leaf.proof,
             lskAddress,
@@ -439,6 +449,11 @@ contract L2ClaimTest is Test {
         ed25519Signatures[1] = ED25519Signature(bytes32(0), bytes32(0));
 
         bytes20 lskAddress = bytes20(leaf.b32Address << 96);
+
+        // check that the LSKClaimed event is emitted
+        vm.expectEmit(true, true, true, true);
+        emit L2Claim.LSKClaimed(lskAddress, address(this), leaf.balanceBeddows);
+
         l2Claim.claimMultisigAccount(
             leaf.proof,
             lskAddress,
@@ -467,6 +482,11 @@ contract L2ClaimTest is Test {
         ed25519Signatures[4] = ED25519Signature(bytes32(0), bytes32(0));
 
         bytes20 lskAddress = bytes20(leaf.b32Address << 96);
+
+        // check that the LSKClaimed event is emitted
+        vm.expectEmit(true, true, true, true);
+        emit L2Claim.LSKClaimed(lskAddress, address(this), leaf.balanceBeddows);
+
         l2Claim.claimMultisigAccount(
             leaf.proof,
             lskAddress,
@@ -493,6 +513,11 @@ contract L2ClaimTest is Test {
         }
 
         bytes20 lskAddress = bytes20(leaf.b32Address << 96);
+
+        // check that the LSKClaimed event is emitted
+        vm.expectEmit(true, true, true, true);
+        emit L2Claim.LSKClaimed(lskAddress, address(this), leaf.balanceBeddows);
+
         l2Claim.claimMultisigAccount(
             leaf.proof,
             bytes20(leaf.b32Address << 96),
@@ -553,6 +578,10 @@ contract L2ClaimTest is Test {
     }
 
     function test_SetDAOAddress_SuccessSet() public {
+        // check that the DaoAddressSet event is emitted
+        vm.expectEmit(true, true, true, true);
+        emit L2Claim.DaoAddressSet(daoAddress);
+
         l2Claim.setDAOAddress(daoAddress);
         assertEq(l2Claim.daoAddress(), daoAddress);
     }
@@ -581,11 +610,18 @@ contract L2ClaimTest is Test {
 
     function test_RecoverLSK_SuccessRecover() public {
         l2Claim.setDAOAddress(daoAddress);
-        uint256 claimContractBalance = lsk.balanceOf(daoAddress);
+        uint256 claimContractBalance = lsk.balanceOf(address(l2Claim));
+        assert(claimContractBalance > 0);
 
         vm.warp(RECOVER_PERIOD + 1 seconds);
 
+        // check that the ClaimingEnded event is emitted
+        vm.expectEmit(true, true, true, true);
+        emit L2Claim.ClaimingEnded();
+
+        l2Claim.recoverLSK();
         assertEq(lsk.balanceOf(daoAddress), claimContractBalance);
+        assertEq(lsk.balanceOf(address(l2Claim)), 0);
     }
 
     function test_TransferOwnership() public {
