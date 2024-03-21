@@ -599,6 +599,20 @@ contract L2ClaimTest is Test {
         assertEq(l2Claim.owner(), newOwner);
     }
 
+    function test_TransferOwnership_RevertWhenNotCalledByOwner() public {
+        address newOwner = vm.addr(1);
+        address nobody = vm.addr(2);
+
+        // owner is this contract
+        assertEq(l2Claim.owner(), address(this));
+
+        // address nobody is not the owner so it cannot call transferOwnership
+        vm.startPrank(nobody);
+        vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, nobody));
+        l2Claim.transferOwnership(newOwner);
+        vm.stopPrank();
+    }
+
     function test_TransferOwnership_RevertWhenNotCalledByPendingOwner() public {
         address newOwner = vm.addr(1);
 
