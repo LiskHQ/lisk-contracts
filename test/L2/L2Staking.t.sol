@@ -47,6 +47,45 @@ contract L2StakingTest is Test {
     address rewardsContract;
     address alice;
 
+    function prepareL2StakingHarnessContract() private returns (L2StakingHarness) {
+        L2StakingHarness l2StakingImplementationHarness = new L2StakingHarness();
+        L2StakingHarness l2StakingHarness =
+            L2StakingHarness(address(new ERC1967Proxy(address(l2StakingImplementationHarness), "")));
+
+        vm.prank(address(this), address(this));
+        l2LiskToken = new L2LiskToken(remoteToken);
+        l2LiskToken.initialize(bridge);
+        vm.stopPrank();
+        l2VotingPowerImplementation = new L2VotingPower();
+        l2VotingPower = L2VotingPower(address(new ERC1967Proxy(address(l2VotingPowerImplementation), "")));
+        l2LockingPositionImplementation = new L2LockingPosition();
+        l2LockingPosition = L2LockingPosition(address(new ERC1967Proxy(address(l2LockingPositionImplementation), "")));
+
+        l2StakingHarness.initialize(address(l2LiskToken));
+        l2VotingPower.initialize(address(l2LockingPosition));
+        l2LockingPosition.initialize(address(l2StakingHarness));
+
+        l2LockingPosition.initializeVotingPower(address(l2VotingPower));
+        l2StakingHarness.initializeLockingPosition(address(l2LockingPosition));
+        l2StakingHarness.initializeDaoTreasury(daoTreasuryAddress);
+
+        // add rewardsContract to the creator list
+        l2StakingHarness.addCreator(rewardsContract);
+        assert(l2StakingHarness.allowedCreators(rewardsContract));
+
+        // fund alice with 200 L2LiskToken
+        vm.prank(bridge);
+        l2LiskToken.mint(alice, 200 * 10 ** 18);
+        assertEq(l2LiskToken.balanceOf(alice), 200 * 10 ** 18);
+
+        // approve l2StakingHarness to spend alice's 200 L2LiskToken
+        vm.prank(alice);
+        l2LiskToken.approve(address(l2StakingHarness), 200 * 10 ** 18);
+        assertEq(l2LiskToken.allowance(alice, address(l2StakingHarness)), 200 * 10 ** 18);
+
+        return l2StakingHarness;
+    }
+
     function setUp() public {
         daoTreasuryAddress = address(0xDeaDbeefdEAdbeefdEadbEEFdeadbeEFdEaDbeeF);
 
@@ -136,43 +175,9 @@ contract L2StakingTest is Test {
         assertEq(l2LiskToken.allowance(alice, address(l2Staking)), 100 * 10 ** 18);
     }
 
-    function test_CanLockingPositionBeModified() public {
-        L2StakingHarness l2StakingImplementationHarness = new L2StakingHarness();
-        L2StakingHarness l2StakingHarness =
-            L2StakingHarness(address(new ERC1967Proxy(address(l2StakingImplementationHarness), "")));
+    function test_CanLockingPositionBeModified_CreatorIsStakingContract() public {
+        L2StakingHarness l2StakingHarness = prepareL2StakingHarnessContract();
 
-        vm.prank(address(this), address(this));
-        l2LiskToken = new L2LiskToken(remoteToken);
-        l2LiskToken.initialize(bridge);
-        vm.stopPrank();
-        l2VotingPowerImplementation = new L2VotingPower();
-        l2VotingPower = L2VotingPower(address(new ERC1967Proxy(address(l2VotingPowerImplementation), "")));
-        l2LockingPositionImplementation = new L2LockingPosition();
-        l2LockingPosition = L2LockingPosition(address(new ERC1967Proxy(address(l2LockingPositionImplementation), "")));
-
-        l2StakingHarness.initialize(address(l2LiskToken));
-        l2VotingPower.initialize(address(l2LockingPosition));
-        l2LockingPosition.initialize(address(l2StakingHarness));
-
-        l2LockingPosition.initializeVotingPower(address(l2VotingPower));
-        l2StakingHarness.initializeLockingPosition(address(l2LockingPosition));
-        l2StakingHarness.initializeDaoTreasury(daoTreasuryAddress);
-
-        // add rewardsContract to the creator list
-        l2StakingHarness.addCreator(rewardsContract);
-        assert(l2StakingHarness.allowedCreators(rewardsContract));
-
-        // fund alice with 200 L2LiskToken
-        vm.prank(bridge);
-        l2LiskToken.mint(alice, 200 * 10 ** 18);
-        assertEq(l2LiskToken.balanceOf(alice), 200 * 10 ** 18);
-
-        // approve l2StakingHarness to spend alice's 200 L2LiskToken
-        vm.prank(alice);
-        l2LiskToken.approve(address(l2StakingHarness), 200 * 10 ** 18);
-        assertEq(l2LiskToken.allowance(alice, address(l2StakingHarness)), 200 * 10 ** 18);
-
-        // creator is the staking contract
         vm.prank(alice);
         l2StakingHarness.lockAmount(alice, 100 * 10 ** 18, 365);
         assertEq(l2LockingPosition.balanceOf(alice), 1);
@@ -191,25 +196,26 @@ contract L2StakingTest is Test {
         // call the function as not owner or creator
         vm.prank(address(0x3));
         assertEq(l2StakingHarness.exposedCanLockingPositionBeModified(1, lock), false);
+    }
 
-        // below is the same test but with the creator being the rewards contract
+    function test_CanLockingPositionBeModified_CreatorIsRewardsContract() public {
+        L2StakingHarness l2StakingHarness = prepareL2StakingHarnessContract();
 
-        // creator is the rewards contract
         vm.prank(rewardsContract);
         l2StakingHarness.lockAmount(alice, 100 * 10 ** 18, 365);
-        assertEq(l2LockingPosition.balanceOf(alice), 2);
-        assertEq(l2LockingPosition.getLockingPosition(2).creator, rewardsContract);
+        assertEq(l2LockingPosition.balanceOf(alice), 1);
+        assertEq(l2LockingPosition.getLockingPosition(1).creator, rewardsContract);
 
-        lock = l2LockingPosition.getLockingPosition(2);
+        LockingPosition memory lock = l2LockingPosition.getLockingPosition(1);
 
         // call the function as owner
         vm.prank(alice);
-        assertEq(l2StakingHarness.exposedCanLockingPositionBeModified(2, lock), false); // alice can not directly call
+        assertEq(l2StakingHarness.exposedCanLockingPositionBeModified(1, lock), false); // alice can not directly call
             // the function
 
         // call the function as creator
         vm.prank(rewardsContract);
-        assertEq(l2StakingHarness.exposedCanLockingPositionBeModified(2, lock), true);
+        assertEq(l2StakingHarness.exposedCanLockingPositionBeModified(1, lock), true);
     }
 
     function test_CalculatePenalty() public {
