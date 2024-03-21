@@ -4,6 +4,8 @@ pragma solidity 0.8.23;
 import { Test, console2 } from "forge-std/Test.sol";
 import { IAccessControl } from "@openzeppelin/contracts/access/IAccessControl.sol";
 import { IERC20Errors } from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
+import { Ownable2Step } from "@openzeppelin/contracts/access/Ownable2Step.sol";
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { L1LiskToken } from "src/L1/L1LiskToken.sol";
 import { SigUtils } from "test/SigUtils.sol";
 
@@ -30,8 +32,10 @@ contract L1LiskTokenTest is Test {
         assertEq(l1LiskToken.totalSupply(), TOTAL_SUPPLY);
         assertEq(l1LiskToken.balanceOf(address(this)), TOTAL_SUPPLY);
         assertEq(l1LiskToken.decimals(), 18);
-        assertTrue(l1LiskToken.hasRole(l1LiskToken.DEFAULT_ADMIN_ROLE(), address(this)));
+        assertFalse(l1LiskToken.hasRole(l1LiskToken.DEFAULT_ADMIN_ROLE(), address(this)));
         assertFalse(l1LiskToken.hasRole(l1LiskToken.BURNER_ROLE(), address(this)));
+        assertEq(l1LiskToken.owner(), address(this));
+        assertEq(l1LiskToken.pendingOwner(), address(0));
     }
 
     function test_OnlyOwnerAddsOrRenouncesBurner() public {
@@ -39,18 +43,10 @@ contract L1LiskTokenTest is Test {
 
         vm.startPrank(alice);
 
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                IAccessControl.AccessControlUnauthorizedAccount.selector, alice, l1LiskToken.DEFAULT_ADMIN_ROLE()
-            )
-        );
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, alice));
         l1LiskToken.addBurner(alice);
 
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                IAccessControl.AccessControlUnauthorizedAccount.selector, alice, l1LiskToken.DEFAULT_ADMIN_ROLE()
-            )
-        );
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, alice));
         l1LiskToken.renounceBurner(alice);
 
         vm.stopPrank();
@@ -163,22 +159,44 @@ contract L1LiskTokenTest is Test {
         address alice = address(0x1);
         address bob = address(0x2);
         vm.startPrank(alice);
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                IAccessControl.AccessControlUnauthorizedAccount.selector, alice, l1LiskToken.DEFAULT_ADMIN_ROLE()
-            )
-        );
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, alice));
         l1LiskToken.transferOwnership(bob);
         vm.stopPrank();
 
-        vm.expectEmit(true, true, true, true, address(l1LiskToken));
-        emit RoleGranted(l1LiskToken.DEFAULT_ADMIN_ROLE(), alice, address(this));
-        vm.expectEmit(true, true, true, true, address(l1LiskToken));
-        emit RoleRevoked(l1LiskToken.DEFAULT_ADMIN_ROLE(), address(this), address(this));
+        assertEq(l1LiskToken.owner(), address(this));
+        assertEq(l1LiskToken.pendingOwner(), address(0));
+        vm.expectEmit(true, true, true, true);
+        emit Ownable2Step.OwnershipTransferStarted(address(this), alice);
         l1LiskToken.transferOwnership(alice);
+        assertEq(l1LiskToken.owner(), address(this));
+        assertEq(l1LiskToken.pendingOwner(), alice);
 
-        assertFalse(l1LiskToken.hasRole(l1LiskToken.DEFAULT_ADMIN_ROLE(), address(this)));
-        assertTrue(l1LiskToken.hasRole(l1LiskToken.DEFAULT_ADMIN_ROLE(), alice));
+        vm.expectEmit(true, true, true, true);
+        emit Ownable.OwnershipTransferred(address(this), alice);
+        vm.prank(alice);
+        l1LiskToken.acceptOwnership();
+
+        assertEq(l1LiskToken.owner(), alice);
+        assertEq(l1LiskToken.pendingOwner(), address(0));
+    }
+
+    function test_OnlyOwnerTransfersTheOwnership_AcceptNotCalledByPendingOwner() public {
+        address alice = address(0x1);
+        address bob = address(0x2);
+
+        assertEq(l1LiskToken.owner(), address(this));
+        assertEq(l1LiskToken.pendingOwner(), address(0));
+        l1LiskToken.transferOwnership(alice);
+        assertEq(l1LiskToken.owner(), address(this));
+        assertEq(l1LiskToken.pendingOwner(), alice);
+
+        // call acceptOwnership without being the pending owner
+        vm.prank(bob);
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, bob));
+        l1LiskToken.acceptOwnership();
+
+        assertEq(l1LiskToken.owner(), address(this));
+        assertEq(l1LiskToken.pendingOwner(), alice);
     }
 
     function test_DefaultAdminRoleIsRoleAdminForBurnerRole() public {

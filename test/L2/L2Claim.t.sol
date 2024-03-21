@@ -588,6 +588,43 @@ contract L2ClaimTest is Test {
         assertEq(lsk.balanceOf(daoAddress), claimContractBalance);
     }
 
+    function test_TransferOwnership() public {
+        address newOwner = vm.addr(1);
+
+        l2Claim.transferOwnership(newOwner);
+        assertEq(l2Claim.owner(), address(this));
+
+        vm.prank(newOwner);
+        l2Claim.acceptOwnership();
+        assertEq(l2Claim.owner(), newOwner);
+    }
+
+    function test_TransferOwnership_RevertWhenNotCalledByOwner() public {
+        address newOwner = vm.addr(1);
+        address nobody = vm.addr(2);
+
+        // owner is this contract
+        assertEq(l2Claim.owner(), address(this));
+
+        // address nobody is not the owner so it cannot call transferOwnership
+        vm.startPrank(nobody);
+        vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, nobody));
+        l2Claim.transferOwnership(newOwner);
+        vm.stopPrank();
+    }
+
+    function test_TransferOwnership_RevertWhenNotCalledByPendingOwner() public {
+        address newOwner = vm.addr(1);
+
+        l2Claim.transferOwnership(newOwner);
+        assertEq(l2Claim.owner(), address(this));
+
+        address nobody = vm.addr(2);
+        vm.prank(nobody);
+        vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, nobody));
+        l2Claim.acceptOwnership();
+    }
+
     function test_UpgradeToAndCall_RevertWhenNotOwner() public {
         // deploy L2Claim Implementation contract
         L2ClaimV2Mock l2ClaimV2Implementation = new L2ClaimV2Mock();
