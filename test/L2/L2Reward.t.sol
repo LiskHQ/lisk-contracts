@@ -389,14 +389,21 @@ contract L2RewardTest is Test {
         uint256 preRewardBalanceOfAlice = l2LiskToken.balanceOf(alice);
         uint256 expectedRewards = 59 * 10 ** 17;
 
+        uint256[] memory lockIDs = new uint256[](1);
+        lockIDs[0] = lockID;
         vm.startPrank(alice);
         // alice approves staking contract the rewards amount
-        l2LiskToken.approve(address(l2Staking), expectedRewards);
-        l2Reward.claimReward(lockID, true);
+        // l2LiskToken.approve(address(l2Staking), expectedRewards);
+        l2Reward.claimRewards(lockIDs, true);
         vm.stopPrank();
 
         LockingPosition memory lockingPosition = l2LockingPosition.getLockingPosition(lockID);
         assertEq(lockingPosition.amount, lockedAmount + expectedRewards);
+    }
+
+    function test_approveTest() public {
+        vm.prank(address(0x1));
+        l2LiskToken.approve(address(0x2), 10000);
     }
 
     function convertLiskToBeddows(uint256 lisk) internal pure returns (uint256) {

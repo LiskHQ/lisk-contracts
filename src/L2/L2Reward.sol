@@ -9,6 +9,17 @@ interface IL2LiskToken {
     function transfer(address to, uint256 value) external returns (bool);
 
     function transferFrom(address from, address to, uint256 value) external returns (bool);
+
+    function permit(
+        address owner,
+        address spender,
+        uint256 value,
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    )
+        external;
 }
 
 /// @title IL2LiskToken
@@ -255,7 +266,45 @@ contract L2Reward {
         updateGlobalState();
 
         for (uint8 i = 0; i < lockIDs.length; i++) {
-            _claimRewards(lockIDs[i], lockRewards);
+            uint256 lockID = lockIDs[i];
+            require(
+                IL2LockingPosition(lockingPositionContract).ownerOf(lockID) == msg.sender,
+                "L2Reward: msg.sender does not own the locking position"
+            );
+
+            require(this.lastClaimDate(lockID) != 0, "L2Reward: Locking position does not exist");
+
+            IL2LockingPosition.LockingPosition memory lockingPosition =
+                IL2LockingPosition(lockingPositionContract).getLockingPosition(lockID);
+
+            uint256 today = todayDay();
+            uint256 reward;
+
+            if (this.lastClaimDate(lockID) < today) {
+                reward = calculateRewards(lockID);
+
+                lastClaimDate[lockID] = today;
+
+                if (reward == 0) {
+                    return;
+                }
+
+                IL2LiskToken(l2TokenContract).transfer(msg.sender, reward);
+
+                // stake is expired
+                if (lockingPosition.pausedLockingDuration == 0 && lockingPosition.expDate < today) {
+                    return;
+                }
+
+                if (lockRewards) {
+                    (bool success, bytes memory returndata) = l2TokenContract.delegatecall(
+                        abi.encodeWithSignature("approve(address,uint256)", stakingContract, reward)
+                    );
+
+                    require(success, "L2Reward: Delegate call failed");
+                    IL2Staking(stakingContract).increaseLockingAmount(lockID, reward);
+                }
+            }
         }
     }
 
