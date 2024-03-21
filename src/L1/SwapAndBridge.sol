@@ -32,7 +32,7 @@ interface IL1StandardBridge {
 ///         It is designed to be used as a part of the Lisk L2 ecosystem.
 contract SwapAndBridge {
     /// @notice Amount of gas to be used for the deposit message on L2.
-    uint32 public DEPOSIT_GAS = 200000;
+    uint32 public DEPOSIT_GAS = 30_000;
 
     /// @notice The L1 bridge contract. This is configurable since not all tokens are bridged
     /// using the standard bridge.
