@@ -443,6 +443,28 @@ contract L2StakingTest is Test {
         l2Staking.lockAmount(bob, 100 * 10 ** 18, 365);
     }
 
+    function test_LockAmount_DurationIsExactlyMinOrMaxDuration() public {
+        // minimum duration
+        uint256 validDuration = l2Staking.MIN_LOCKING_DURATION();
+        vm.prank(alice);
+        l2Staking.lockAmount(alice, 30 * 10 ** 18, validDuration);
+
+        assertEq(l2LockingPosition.getLockingPosition(1).creator, address(l2Staking));
+        assertEq(l2LockingPosition.getLockingPosition(1).amount, 30 * 10 ** 18);
+        assertEq(l2LockingPosition.getLockingPosition(1).expDate, validDuration);
+        assertEq(l2LockingPosition.getLockingPosition(1).pausedLockingDuration, 0);
+
+        // maximum duration
+        validDuration = l2Staking.MAX_LOCKING_DURATION();
+        vm.prank(alice);
+        l2Staking.lockAmount(alice, 50 * 10 ** 18, validDuration);
+
+        assertEq(l2LockingPosition.getLockingPosition(2).creator, address(l2Staking));
+        assertEq(l2LockingPosition.getLockingPosition(2).amount, 50 * 10 ** 18);
+        assertEq(l2LockingPosition.getLockingPosition(2).expDate, validDuration);
+        assertEq(l2LockingPosition.getLockingPosition(2).pausedLockingDuration, 0);
+    }
+
     function test_LockAmount_DurationIsLessThanMinDuration() public {
         uint256 invalidDuration = l2Staking.MIN_LOCKING_DURATION() - 1;
         vm.prank(alice);
@@ -775,7 +797,8 @@ contract L2StakingTest is Test {
         l2LiskToken.approve(address(l2Staking), 100 * 10 ** 18);
         assertEq(l2LiskToken.allowance(alice, address(l2Staking)), 100 * 10 ** 18);
 
-        // position is already expired but the remaining locking duration is paused so increasing the amount is allowed
+        // expDate is in the past, but there is still some remaining locking duration and its countdown is paused;
+        // increasing amount is therefore allowed
         vm.prank(alice);
         l2Staking.increaseLockingAmount(1, 100 * 10 ** 18);
 
