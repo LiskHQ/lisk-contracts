@@ -9,17 +9,6 @@ interface IL2LiskToken {
     function transfer(address to, uint256 value) external returns (bool);
 
     function transferFrom(address from, address to, uint256 value) external returns (bool);
-
-    function permit(
-        address owner,
-        address spender,
-        uint256 value,
-        uint256 deadline,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    )
-        external;
 }
 
 /// @title IL2LiskToken
@@ -177,7 +166,9 @@ contract L2Reward {
         );
         require(lastClaimDate[lockID] != 0, "L2Reward: Locking position does not exist");
 
-        claimReward(lockID, false);
+        uint256[] memory lockIDs = new uint256[](1);
+        lockIDs[0] = lockID;
+        claimRewards(lockIDs);
 
         IL2Staking(stakingContract).unlock(lockID);
 
@@ -197,7 +188,9 @@ contract L2Reward {
         IL2LockingPosition.LockingPosition memory lockingPosition =
             IL2LockingPosition(lockingPositionContract).getLockingPosition(lockID);
 
-        claimReward(lockID, false);
+        uint256[] memory lockIDs = new uint256[](1);
+        lockIDs[0] = lockID;
+        claimRewards(lockIDs);
 
         uint256 penalty = IL2Staking(lockingPositionContract).calculatePenalty(lockID);
 
@@ -221,6 +214,8 @@ contract L2Reward {
 
         pendingUnlockAmount -= penalty;
     }
+
+    uint256 public ddd;
 
     /// @notice Calculate rewards of a locking position.
     /// @param lockID The ID of the locking position.
@@ -254,6 +249,8 @@ contract L2Reward {
             if (lockingPosition.pausedLockingDuration == 0) {
                 weight -= lockingPosition.amount / 10 ** 18;
             }
+
+            ddd = d;
         }
 
         return reward;
@@ -261,109 +258,48 @@ contract L2Reward {
 
     /// @notice Claim rewads against multiple locking position.
     /// @param lockIDs The IDs of locking position.
-    /// @param lockRewards If rewards are to locked.
-    function claimRewards(uint256[] calldata lockIDs, bool lockRewards) public virtual {
+    function claimRewards(uint256[] memory lockIDs) public virtual returns (uint256[] memory) {
         updateGlobalState();
 
+        uint256[] memory rewards = new uint256[](lockIDs.length);
+
         for (uint8 i = 0; i < lockIDs.length; i++) {
-            uint256 lockID = lockIDs[i];
             require(
-                IL2LockingPosition(lockingPositionContract).ownerOf(lockID) == msg.sender,
+                IL2LockingPosition(lockingPositionContract).ownerOf(lockIDs[i]) == msg.sender,
                 "L2Reward: msg.sender does not own the locking position"
             );
 
-            require(this.lastClaimDate(lockID) != 0, "L2Reward: Locking position does not exist");
-
-            IL2LockingPosition.LockingPosition memory lockingPosition =
-                IL2LockingPosition(lockingPositionContract).getLockingPosition(lockID);
-
-            uint256 today = todayDay();
-            uint256 reward;
-
-            if (this.lastClaimDate(lockID) < today) {
-                reward = calculateRewards(lockID);
-
-                lastClaimDate[lockID] = today;
-
-                if (reward == 0) {
-                    return;
-                }
-
-                IL2LiskToken(l2TokenContract).transfer(msg.sender, reward);
-
-                // stake is expired
-                if (lockingPosition.pausedLockingDuration == 0 && lockingPosition.expDate < today) {
-                    return;
-                }
-
-                if (lockRewards) {
-                    (bool success, bytes memory returndata) = l2TokenContract.delegatecall(
-                        abi.encodeWithSignature("approve(address,uint256)", stakingContract, reward)
-                    );
-
-                    require(success, "L2Reward: Delegate call failed");
-                    IL2Staking(stakingContract).increaseLockingAmount(lockID, reward);
-                }
-            }
+            rewards[i] = _claimReward(lockIDs[i]);
         }
+
+        return rewards;
     }
 
-    /// @notice Claim reward against a locking position.
-    /// @param lockID THe ID of the locking position.
-    function claimReward(uint256 lockID, bool lockRewards) public virtual {
-        updateGlobalState();
-
-        _claimRewards(lockID, lockRewards);
-    }
-
-    function _claimRewards(uint256 lockID, bool lockRewards) internal virtual {
-        require(
-            IL2LockingPosition(lockingPositionContract).ownerOf(lockID) == msg.sender,
-            "L2Reward: msg.sender does not own the locking position"
-        );
-
+    function _claimReward(uint256 lockID) internal virtual returns (uint256) {
         require(this.lastClaimDate(lockID) != 0, "L2Reward: Locking position does not exist");
-
-        IL2LockingPosition.LockingPosition memory lockingPosition =
-            IL2LockingPosition(lockingPositionContract).getLockingPosition(lockID);
 
         uint256 today = todayDay();
         uint256 reward;
 
-        if (this.lastClaimDate(lockID) < today) {
-            reward = calculateRewards(lockID);
-
-            lastClaimDate[lockID] = today;
-
-            if (reward == 0) {
-                return;
-            }
-
-            IL2LiskToken(l2TokenContract).transfer(msg.sender, reward);
-
-            // stake is expired
-            if (lockingPosition.pausedLockingDuration == 0 && lockingPosition.expDate < today) {
-                return;
-            }
-
-            if (lockRewards) {
-                IL2Staking(stakingContract).increaseLockingAmount(lockID, reward);
-            }
+        if (this.lastClaimDate(lockID) >= today) {
+            return reward;
         }
+
+        reward = calculateRewards(lockID);
+
+        lastClaimDate[lockID] = today;
+
+        if (reward != 0) {
+            IL2LiskToken(l2TokenContract).transfer(msg.sender, reward);
+        }
+
+        return reward;
     }
 
     /// @notice Increases locked amount against a locking position.
     /// @param lockID The ID of the locking position.
     /// @param amountIncrease The amount to be increased.
-    /// @param restakeUnclaimedRewards If any unclaimed rewards should be restaked.
-    function increaseLockingAmount(
-        uint256 lockID,
-        uint256 amountIncrease,
-        bool restakeUnclaimedRewards
-    )
-        public
-        virtual
-    {
+    function increaseLockingAmount(uint256 lockID, uint256 amountIncrease) public virtual {
         updateGlobalState();
 
         require(
@@ -374,7 +310,7 @@ contract L2Reward {
         IL2LockingPosition.LockingPosition memory lockingPosition =
             IL2LockingPosition(lockingPositionContract).getLockingPosition(lockID);
 
-        claimReward(lockID, restakeUnclaimedRewards);
+        _claimReward(lockID);
 
         IL2Staking(stakingContract).increaseLockingAmount(lockID, amountIncrease);
 
@@ -394,8 +330,7 @@ contract L2Reward {
     /// @notice Extends duration of a locking position.
     /// @param lockID The ID of the locking position.
     /// @param durationExtension The duration to be extended in days.
-    /// @param restakeUnclaimedRewards If any unclaimed rewards should be restaked.
-    function extendDuration(uint256 lockID, uint256 durationExtension, bool restakeUnclaimedRewards) public virtual {
+    function extendDuration(uint256 lockID, uint256 durationExtension) public virtual {
         updateGlobalState();
 
         IL2LockingPosition.LockingPosition memory lockingPosition =
@@ -406,7 +341,7 @@ contract L2Reward {
             "msg.sender does not own the locking position"
         );
 
-        claimReward(lockID, restakeUnclaimedRewards);
+        _claimReward(lockID);
 
         IL2Staking(stakingContract).extendDuration(lockID, durationExtension);
 
@@ -426,8 +361,7 @@ contract L2Reward {
 
     /// @notice Pauses unlocking of a locking position.
     /// @param lockID The ID of the locking position.
-    /// @param restakeUnclaimedRewards If any unclaimed rewards should be restaked.
-    function pauseUnlocking(uint256 lockID, bool restakeUnclaimedRewards) public virtual {
+    function pauseUnlocking(uint256 lockID) public virtual {
         updateGlobalState();
 
         IL2LockingPosition.LockingPosition memory lockingPosition =
@@ -438,7 +372,7 @@ contract L2Reward {
             "msg.sender does not own the locking position"
         );
 
-        claimReward(lockID, restakeUnclaimedRewards);
+        _claimReward(lockID);
 
         IL2Staking(stakingContract).pauseRemainingLockingDuration(lockID);
 
@@ -448,8 +382,7 @@ contract L2Reward {
 
     /// @notice Resumes unlocking of a locking position.
     /// @param lockID The ID of the locking position.
-    /// @param restakeUnclaimedRewards If any unclaimed rewards should be restaked.
-    function resumeUnlockingCountdown(uint256 lockID, bool restakeUnclaimedRewards) public virtual {
+    function resumeUnlockingCountdown(uint256 lockID) public virtual {
         updateGlobalState();
 
         IL2LockingPosition.LockingPosition memory lockingPosition =
@@ -460,7 +393,7 @@ contract L2Reward {
             "msg.sender does not own the locking position"
         );
 
-        claimReward(lockID, restakeUnclaimedRewards);
+        _claimReward(lockID);
 
         IL2Staking(stakingContract).resumeUnlockingCountdown(lockID);
 

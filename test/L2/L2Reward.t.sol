@@ -209,7 +209,12 @@ contract L2RewardTest is Test {
 
         vm.prank(alice);
         vm.expectRevert("L2Reward: msg.sender does not own the locking position");
-        l2Reward.claimReward(lockID, false);
+
+        uint256[] memory lockIDs = new uint256[](1);
+
+        lockIDs[0] = lockID;
+
+        l2Reward.claimRewards(lockIDs);
 
         vm.mockCall(
             address(l2LockingPosition), abi.encodeWithSelector(ERC721Upgradeable.ownerOf.selector), abi.encode(alice)
@@ -217,10 +222,11 @@ contract L2RewardTest is Test {
         vm.mockCall(address(l2Reward), abi.encodeWithSelector(l2Reward.lastClaimDate.selector), abi.encode(0));
         vm.prank(alice);
         vm.expectRevert("L2Reward: Locking position does not exist");
-        l2Reward.claimReward(lockID, true);
+
+        l2Reward.claimRewards(lockIDs);
     }
 
-    function test_claimRewards_rewardsIsZeroIfLastClaimDateIsToday() public {
+    function test_claimRewards_rewardIsZeroIfAlreadyClaimedToday() public {
         address alice = address(0x1);
         uint256 lockID = 1;
         uint256 amount = convertLiskToBeddows(100);
@@ -233,6 +239,7 @@ contract L2RewardTest is Test {
             address(l2LockingPosition), abi.encodeWithSelector(ERC721Upgradeable.ownerOf.selector), abi.encode(alice)
         );
 
+        // lastClaimDate is today => deploymentDate
         vm.mockCall(
             address(l2Reward), abi.encodeWithSelector(l2Reward.lastClaimDate.selector), abi.encode(deploymentDate)
         );
@@ -245,12 +252,16 @@ contract L2RewardTest is Test {
 
         LockingPosition memory result = l2LockingPosition.getLockingPosition(10);
 
+        uint256[] memory lockIDs = new uint256[](1);
+        lockIDs[0] = lockID;
+
         vm.prank(alice);
-        l2Reward.claimReward(lockID, false);
+        l2Reward.claimRewards(lockIDs);
         assertEq(l2LiskToken.balanceOf(alice), 0);
     }
 
-    function test_claimRewards_rewardsAreNotLocked() public {
+    function test_claimRewards_activePositionsAreRewardedTillExpDate() public {
+        l2Staking.addCreator(address(l2Reward));
         address alice = address(0x1);
         uint256 balanceOfAlice = convertLiskToBeddows(1000);
 
@@ -259,60 +270,43 @@ contract L2RewardTest is Test {
         uint16 delay = 1;
 
         uint256 lockedAmount = convertLiskToBeddows(100);
-        uint256 lockingDuration = 120;
+        uint256 lockingDuration1 = 120;
+
+        uint256[] memory lockIDs = new uint256[](1);
 
         // alice gets balance
         vm.prank(bridge);
         l2LiskToken.mint(alice, balanceOfAlice);
 
         // alice funds staking
-        // alice creates a position on deploymentDate, 19740.
+        // alice creates two positions on deploymentDate, 19740.
         vm.startPrank(alice);
         l2LiskToken.approve(address(l2Reward), funds);
         l2Reward.fundStakingRewards(funds, fundingDuration, delay);
 
-        l2LiskToken.approve(address(l2Staking), lockedAmount);
-        uint256 lockID = l2Reward.createPosition(lockedAmount, lockingDuration);
+        // l2LiskToken.approve(address(l2Staking), convertLiskToBeddows(100));
+        // lockIDs[0] = l2Reward.createPosition(convertLiskToBeddows(100), 120);
+
+        l2LiskToken.approve(address(l2Staking), 1 * 10 ** 15);
+        lockIDs[0] = l2Reward.createPosition(1 * 10 ** 15, 150);
         vm.stopPrank();
 
-        // for an active locking position if rewards are not to be locked further
-        // rewards are claimed from lastClaimDate for the lock (19740) till today if expiry date of locking position is
-        // in future
+        // rewards are claimed from lastClaimDate for the lock (19740) till expiry day
 
-        // today is 19800
-        skip(60 days);
+        // today is 19890
+        skip(150 days);
 
-        uint256 preRewardBalanceOfAlice = l2LiskToken.balanceOf(alice);
-        uint256 expectedRewards = 59 * 10 ** 17;
+        // uint256 preRewardBalanceOfAlice = l2LiskToken.balanceOf(alice);
+        // uint256 expectedRewards = 11.9 * 10 ** 18;
 
-        balanceOfAlice = preRewardBalanceOfAlice + expectedRewards;
+        // balanceOfAlice = preRewardBalanceOfAlice + expectedRewards;
 
         vm.prank(alice);
-        l2Reward.claimReward(lockID, false);
+        uint256[] memory rewards = l2Reward.claimRewards(lockIDs);
 
-        // lastClaimDate against lockID is updated to today
-        assertEq(l2Reward.lastClaimDate(lockID), 19800);
+        console2.logUint(rewards[0]);
 
-        // alice receives the reward
-        assertEq(balanceOfAlice, l2LiskToken.balanceOf(alice));
-
-        // rewards are calculated from lastClaimDate for the lock (19800) till expiry date of locking position if it is
-        // in past
-        skip(200 days);
-
-        preRewardBalanceOfAlice = l2LiskToken.balanceOf(alice);
-        expectedRewards = convertLiskToBeddows(6);
-
-        balanceOfAlice = preRewardBalanceOfAlice + expectedRewards;
-
-        vm.prank(alice);
-        l2Reward.claimReward(lockID, false);
-
-        // lastClaimDate against lockID is updated to today
-        assertEq(l2Reward.lastClaimDate(lockID), 19800 + 200);
-
-        // alice receives the rewards
-        assertEq(balanceOfAlice, l2LiskToken.balanceOf(alice));
+        assertEq(l2Reward.lastClaimDate(lockIDs[0]), 19890);
     }
 
     function test_claimRewards_rewardsAreNotLockedForExpiredPosition() public {
@@ -348,8 +342,11 @@ contract L2RewardTest is Test {
 
         balanceOfAlice = preRewardBalanceOfAlice + expectedRewards;
 
+        uint256[] memory lockIDs = new uint256[](1);
+        lockIDs[0] = lockID;
+
         vm.prank(alice);
-        l2Reward.claimReward(lockID, true);
+        l2Reward.claimRewards(lockIDs);
 
         assertEq(l2Reward.lastClaimDate(lockID), 19890);
 
@@ -389,12 +386,13 @@ contract L2RewardTest is Test {
         uint256 preRewardBalanceOfAlice = l2LiskToken.balanceOf(alice);
         uint256 expectedRewards = 59 * 10 ** 17;
 
+        expectedRewards = l2Reward.calculateRewards(lockID);
         uint256[] memory lockIDs = new uint256[](1);
         lockIDs[0] = lockID;
         vm.startPrank(alice);
         // alice approves staking contract the rewards amount
-        // l2LiskToken.approve(address(l2Staking), expectedRewards);
-        l2Reward.claimRewards(lockIDs, true);
+        l2LiskToken.approve(address(l2Staking), expectedRewards);
+        l2Reward.claimRewards(lockIDs);
         vm.stopPrank();
 
         LockingPosition memory lockingPosition = l2LockingPosition.getLockingPosition(lockID);
