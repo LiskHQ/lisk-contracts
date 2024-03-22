@@ -11,6 +11,7 @@ import { ISemver } from "../utils/ISemver.sol";
 /// @title IL2LiskToken
 /// @notice Interface for the L2LiskToken contract.
 interface IL2LiskToken {
+    function balanceOf(address account) external view returns (uint256);
     function transfer(address to, uint256 value) external returns (bool);
     function transferFrom(address from, address to, uint256 value) external returns (bool);
 }
@@ -199,6 +200,11 @@ contract L2Staking is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, I
     /// @param lockingDuration The duration for which the amount is locked (in days).
     /// @return The ID of the newly created locking position.
     function lockAmount(address lockOwner, uint256 amount, uint256 lockingDuration) public virtual returns (uint256) {
+        require(amount > 0, "L2Staking: amount should be greater than zero");
+        require(
+            IL2LiskToken(l2LiskTokenContract).balanceOf(lockOwner) >= amount,
+            "L2Staking: lockOwner does not have enough LSK tokens"
+        );
         require(
             lockingDuration >= MIN_LOCKING_DURATION,
             "L2Staking: lockingDuration should be at least MIN_LOCKING_DURATION"
@@ -295,6 +301,11 @@ contract L2Staking is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, I
         );
 
         address ownerOfLock = (IL2LockingPosition(lockingPositionContract)).ownerOf(lockId);
+        require(
+            IL2LiskToken(l2LiskTokenContract).balanceOf(ownerOfLock) >= amountIncrease,
+            "L2Staking: owner of lock does not have enough LSK tokens"
+        );
+
         // We assume that the owner has already approved the Staking contract to transfer the amount and in most cases
         // increaseLockingAmount will be called from a smart contract, so msg.sender will NOT be an address from which
         // the amount will be transferred. That's why we use ownerOfLock as the sender for the transferFrom function.
