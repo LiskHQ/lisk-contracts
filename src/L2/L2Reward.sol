@@ -215,8 +215,6 @@ contract L2Reward {
         pendingUnlockAmount -= penalty;
     }
 
-    uint256 public ddd;
-
     /// @notice Calculate rewards of a locking position.
     /// @param lockID The ID of the locking position.
     /// @return uint256 Rewards amount.
@@ -249,8 +247,6 @@ contract L2Reward {
             if (lockingPosition.pausedLockingDuration == 0) {
                 weight -= lockingPosition.amount / 10 ** 18;
             }
-
-            ddd = d;
         }
 
         return reward;

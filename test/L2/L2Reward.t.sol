@@ -288,7 +288,7 @@ contract L2RewardTest is Test {
         // lockIDs[0] = l2Reward.createPosition(convertLiskToBeddows(100), 120);
 
         l2LiskToken.approve(address(l2Staking), 1 * 10 ** 15);
-        lockIDs[0] = l2Reward.createPosition(1 * 10 ** 15, 150);
+        lockIDs[0] = l2Reward.createPosition(1 * 10 ** 15, 100);
         vm.stopPrank();
 
         // rewards are claimed from lastClaimDate for the lock (19740) till expiry day
