@@ -106,6 +106,10 @@ contract L2StakingTest is Test {
         // deploy L2Staking implementation contract
         l2StakingImplementation = new L2Staking();
 
+        // check that the LiskTokenContractAddressChanged event is emitted
+        vm.expectEmit(true, true, true, true);
+        emit L2Staking.LiskTokenContractAddressChanged(address(0), address(l2LiskToken));
+
         // deploy L2Staking contract via proxy and initialize it at the same time
         l2Staking = L2Staking(
             address(

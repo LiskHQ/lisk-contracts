@@ -75,6 +75,9 @@ contract L2Staking is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, I
     /// @notice Semantic version of the contract.
     string public version;
 
+    /// @notice Emitted when the L2LiskToken contract address is changed.
+    event LiskTokenContractAddressChanged(address indexed oldAddress, address indexed newAddress);
+
     /// @notice Disabling initializers on implementation contract to prevent misuse.
     constructor() {
         _disableInitializers();
@@ -89,6 +92,7 @@ contract L2Staking is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, I
         __UUPSUpgradeable_init();
         l2LiskTokenContract = _l2LiskTokenContract;
         version = "1.0.0";
+        emit LiskTokenContractAddressChanged(address(0), l2LiskTokenContract);
     }
 
     /// @notice Ensures that only the owner can authorize a contract upgrade. It reverts if called by any address other

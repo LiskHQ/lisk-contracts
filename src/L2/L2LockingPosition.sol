@@ -49,6 +49,9 @@ contract L2LockingPosition is Initializable, Ownable2StepUpgradeable, UUPSUpgrad
     /// @notice Address of the Voting Power contract.
     address public votingPowerContract;
 
+    /// @notice Event emitted when Staking contract address is changed.
+    event StakingContractAddressChanged(address indexed oldAddress, address indexed newAddress);
+
     /// @notice Modifier to allow only Staking contract to call the function.
     modifier onlyStaking() {
         require(msg.sender == stakingContract, "L2LockingPosition: only Staking contract can call this function");
@@ -70,6 +73,7 @@ contract L2LockingPosition is Initializable, Ownable2StepUpgradeable, UUPSUpgrad
         __ERC721_init("Lisk Locking Position", "LLP");
         nextId = 1;
         stakingContract = _stakingContract;
+        emit StakingContractAddressChanged(address(0), stakingContract);
     }
 
     /// @notice Ensures that only the owner can authorize a contract upgrade. It reverts if called by any address other

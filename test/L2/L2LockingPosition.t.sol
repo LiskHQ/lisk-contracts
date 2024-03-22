@@ -55,6 +55,10 @@ contract L2LockingPositionTest is Test {
         // deploy L2LockingPosition implementation contract
         l2LockingPositionImplementation = new L2LockingPosition();
 
+        // check that the StakingContractAddressChanged event is emitted
+        vm.expectEmit(true, true, true, true);
+        emit L2LockingPosition.StakingContractAddressChanged(address(0), address(l2Staking));
+
         // deploy L2LockingPosition contract via proxy and initialize it at the same time
         l2LockingPosition = L2LockingPosition(
             address(
