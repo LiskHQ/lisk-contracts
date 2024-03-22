@@ -2,6 +2,7 @@
 pragma solidity 0.8.23;
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { Ownable2Step } from "@openzeppelin/contracts/access/Ownable2Step.sol";
 import { LockingPosition } from "./L2LockingPosition.sol";
 
 /// @title IL2LiskToken
@@ -43,7 +44,7 @@ interface IL2VotingPower {
 ///         The airdrop amount is capped at WHALE_CAP LSK tokens. The airdrop amount is distributed to the recipient's
 ///         L2LiskToken contract. The airdrop status for each recipient is stored in a mapping. The airdrop status
 ///         includes the status of each of the airdrop conditions.
-contract L2Airdrop is Ownable {
+contract L2Airdrop is Ownable2Step {
     /// @notice The total amount of LSK tokens to be given away in the migration airdrop.
     uint256 public constant MIGRATION_AIRDROP_AMOUNT = 3_000_000 * 10 ** 18; // 3 million LSK tokens
 
