@@ -2,7 +2,7 @@
 pragma solidity 0.8.23;
 
 import { Script, console2 } from "forge-std/Script.sol";
-import { L2Airdrop } from "src/L2/L2AirDrop.sol";
+import { L2Airdrop } from "src/L2/L2Airdrop.sol";
 import "script/Utils.sol";
 
 /// @title L2AirdropScript - L2 Airdrop deployment script
