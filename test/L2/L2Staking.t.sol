@@ -117,6 +117,7 @@ contract L2StakingTest is Test {
         );
         assert(address(l2Staking) != address(0x0));
         assert(l2Staking.l2LiskTokenContract() == address(l2LiskToken));
+        assertEq(l2Staking.emergencyExitEnabled(), false);
 
         // deploy L2LockingPosition implementation contract
         l2LockingPositionImplementation = new L2LockingPosition();
@@ -265,6 +266,30 @@ contract L2StakingTest is Test {
         assertEq(l2StakingHarness.exposedCalculatePenalty(100 * 10 ** 18, 365), 0);
     }
 
+    function test_CalculatePenalty_EmergencyExitEnabled() public {
+        L2StakingHarness l2StakingHarness = new L2StakingHarness();
+
+        // enable emergency exit
+        vm.prank(l2StakingHarness.owner());
+        l2StakingHarness.setEmergencyExitEnabled(true);
+        assert(l2StakingHarness.emergencyExitEnabled());
+
+        // penalty in the first day
+        assertEq(l2StakingHarness.exposedCalculatePenalty(100 * 10 ** 18, 365), 0);
+
+        // advance block time by 100 days
+        vm.warp(100 days);
+        assertEq(l2StakingHarness.exposedCalculatePenalty(100 * 10 ** 18, 365), 0);
+
+        // advance block time to exactly one day before the expiration date
+        vm.warp(364 days);
+        assertEq(l2StakingHarness.exposedCalculatePenalty(100 * 10 ** 18, 365), 0);
+
+        // advance block time to exactly the expiration date
+        vm.warp(365 days);
+        assertEq(l2StakingHarness.exposedCalculatePenalty(100 * 10 ** 18, 365), 0);
+    }
+
     function test_RemainingLockingDuration_ZeroPausedLockingDuration() public {
         L2StakingHarness l2StakingHarness = new L2StakingHarness();
 
@@ -408,6 +433,22 @@ contract L2StakingTest is Test {
         vm.prank(alice);
         vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, alice));
         l2Staking.removeCreator(alice);
+    }
+
+    function test_SetEmergencyExitEnabled() public {
+        assert(!l2Staking.emergencyExitEnabled());
+
+        l2Staking.setEmergencyExitEnabled(true);
+        assert(l2Staking.emergencyExitEnabled());
+
+        l2Staking.setEmergencyExitEnabled(false);
+        assert(!l2Staking.emergencyExitEnabled());
+    }
+
+    function test_SetEmergencyExitEnabled_OnlyOwnerCanCall() public {
+        vm.prank(alice);
+        vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, alice));
+        l2Staking.setEmergencyExitEnabled(true);
     }
 
     function test_LockAmount() public {

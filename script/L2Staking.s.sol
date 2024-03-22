@@ -54,6 +54,7 @@ contract L2StakingScript is Script {
         assert(keccak256(bytes(l2Staking.version())) == keccak256(bytes("1.0.0")));
         assert(l2Staking.owner() == vm.addr(deployerPrivateKey));
         assert(l2Staking.l2LiskTokenContract() == l2AddressesConfig.L2LiskToken);
+        assert(l2Staking.emergencyExitEnabled() == false);
 
         console2.log("L2 Staking (implementation) address: %s", address(l2StakingImplementation));
         console2.log("L2 Staking (proxy) address: %s", address(l2Staking));

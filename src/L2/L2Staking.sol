@@ -59,6 +59,10 @@ contract L2Staking is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, I
     ///         positions.
     mapping(address => bool) public allowedCreators;
 
+    /// @notice Whenever this variable is set to True, it is possible to fast unlock (i.e. 3 days of locking period)
+    ///         without paying a penalty and then unlock all staked amounts.
+    bool public emergencyExitEnabled;
+
     /// @notice  Address of the L2LiskToken contract.
     address public l2LiskTokenContract;
 
@@ -139,6 +143,10 @@ contract L2Staking is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, I
     /// @param expDate The expiration date for which the penalty is calculated.
     /// @return The penalty for the given amount and expiration date.
     function calculatePenalty(uint256 amount, uint256 expDate) internal view virtual returns (uint256) {
+        if (emergencyExitEnabled) {
+            return 0;
+        }
+
         uint256 today = todayDay();
         if (expDate <= today) {
             return 0;
@@ -191,6 +199,13 @@ contract L2Staking is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, I
     /// @dev Only the owner can call this function.
     function removeCreator(address creator) public virtual onlyOwner {
         delete allowedCreators[creator];
+    }
+
+    /// @notice Sets the emergency exit enabled flag.
+    /// @param _emergencyExitEnabled The new value of the emergency exit enabled flag.
+    /// @dev Only the owner can call this function.
+    function setEmergencyExitEnabled(bool _emergencyExitEnabled) public onlyOwner {
+        emergencyExitEnabled = _emergencyExitEnabled;
     }
 
     /// @notice Locks the given amount for the given owner for the given locking duration and creates a new locking
