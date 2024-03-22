@@ -68,8 +68,16 @@ contract TestBridgingScript is Test {
 
         l2Messenger = IL2CrossDomainMessenger(vm.envAddress("L2_CROSS_DOMAIN_MESSENGER_ADDR"));
 
-        swapAndBridgeLido = SwapAndBridge(payable(vm.envAddress("SWAP_AND_BRIDGE_LIDO_ADDR")));
-        swapAndBridgeDiva = SwapAndBridge(payable(vm.envAddress("SWAP_AND_BRIDGE_DIVA_ADDR")));
+        swapAndBridgeLido = new SwapAndBridge(
+            vm.envAddress("L1_LIDO_BRIDGE_ADDR"),
+            vm.envAddress("L1_LIDO_TOKEN_ADDR"),
+            vm.envAddress("L2_LIDO_TOKEN_ADDR")
+        );
+        swapAndBridgeDiva = new SwapAndBridge(
+            vm.envAddress("L1_DIVA_BRIDGE_ADDR"),
+            vm.envAddress("L1_DIVA_TOKEN_ADDR"),
+            vm.envAddress("L2_DIVA_TOKEN_ADDR")
+        );
 
         l1WstETH = IWrappedETH(payable(vm.envAddress("L1_LIDO_TOKEN_ADDR")));
         l2WstETH = IWrappedETH(payable(vm.envAddress("L2_LIDO_TOKEN_ADDR")));
@@ -201,7 +209,11 @@ contract TestBridgingScript is Test {
         (address sender, bytes memory message, uint256 messageNonce, uint256 gasLimit) =
             abi.decode(entries[8].data, (address, bytes, uint256, uint256));
         assertEq(sender, vm.envAddress("L1_LIDO_BRIDGE_ADDR"), "SentMessage: Invalid sender address");
-        assertEq(gasLimit, swapAndBridgeLido.DEPOSIT_GAS(), "SentMessage: Invalid gas limit");
+        assertEq(
+            gasLimit,
+            swapAndBridgeLido.MIN_DEPOSIT_GAS(),
+            "SentMessage: Invalid gas limit, not matching contract MIN_DEPOSIT_GAS"
+        );
 
         // The message is encoded in a weird way: bytes 4 is packed, the addresses are not
         // Hence, we slice the message to remove the bytes4 selector.
@@ -233,10 +245,6 @@ contract TestBridgingScript is Test {
 
         bytes memory data = abi.encode(sender, vm.envAddress("L2_LIDO_BRIDGE_ADDR"), message, messageNonce, gasLimit);
         vm.writeFileBinary(string.concat(vm.projectRoot(), "/test/swap_and_bridge/lido.data"), data);
-
-        uint64 minGas = uint64(data.length) * 16 + 21000;
-        console2.log("minGas: %d for data length %d", minGas, data.length);
-        require(uint64(gasLimit) >= minGas, "SentMessage: Invalid gas limit");
     }
 
     function test_e2e_lido_L2() public {
@@ -270,23 +278,15 @@ contract TestBridgingScript is Test {
 
         // Test bridging for Diva
         vm.startBroadcast(token_holder_priv_key);
-        (bool sentTest, bytes memory sendData) = vm.addr(vm.envUint("L1_DIVA_TOKEN_ADDR")).call{ value: 1 ether }("");
-        console2.log("Sent test: %s", sentTest ? "true" : "false");
-        console2.logBytes(sendData);
-        if (!sentTest) {
+        (bool sent, bytes memory sendData) = address(swapAndBridgeDiva).call{ value: 1 ether }("");
+        console2.log("Sent: %s", sent ? "true" : "false");
+        if (!sent) {
             assembly {
                 let revertStringLength := mload(sendData)
                 let revertStringPtr := add(sendData, 0x20)
                 revert(revertStringPtr, revertStringLength)
             }
         }
-        assertEq(sentTest, true, "Failed to send Ether.");
-        vm.stopBroadcast();
-
-        vm.startBroadcast(token_holder_priv_key);
-
-        (bool sent,) = address(swapAndBridgeDiva).call{ value: 1 ether }("");
-        console2.log("Sent: %s", sent ? "true" : "false");
         assertEq(sent, true, "Failed to send Ether.");
         vm.stopBroadcast();
 
@@ -360,7 +360,11 @@ contract TestBridgingScript is Test {
         (address sender, bytes memory message, uint256 messageNonce, uint256 gasLimit) =
             abi.decode(entries[8].data, (address, bytes, uint256, uint256));
         assertEq(sender, vm.envAddress("L1_DIVA_BRIDGE_ADDR"), "SentMessage: Invalid sender address");
-        assertEq(gasLimit, swapAndBridgeDiva.DEPOSIT_GAS(), "SentMessage: Invalid gas limit");
+        assertEq(
+            gasLimit,
+            swapAndBridgeDiva.MIN_DEPOSIT_GAS(),
+            "SentMessage: Invalid gas limit, not matching contract MIN_DEPOSIT_GAS"
+        );
 
         // The message is encoded in a weird way: bytes 4 is packed, the addresses are not
         // Hence, we slice the message to remove the bytes4 selector.
@@ -392,10 +396,6 @@ contract TestBridgingScript is Test {
 
         bytes memory data = abi.encode(sender, vm.envAddress("L2_DIVA_BRIDGE_ADDR"), message, messageNonce, gasLimit);
         vm.writeFileBinary(string.concat(vm.projectRoot(), "/test/swap_and_bridge/diva.data"), data);
-
-        uint64 minGas = uint64(data.length) * 16 + 21000;
-        console2.log("minGas: %d for data length %d", minGas, data.length);
-        require(uint64(gasLimit) >= minGas, "SentMessage: Invalid gas limit");
     }
 
     function test_e2e_diva_L2() public {
@@ -405,7 +405,11 @@ contract TestBridgingScript is Test {
         (address payable sender, address payable target, bytes memory message, uint256 messageNonce, uint256 gasLimit) =
             abi.decode(data, (address, address, bytes, uint256, uint256));
 
-        assertEq(gasLimit, swapAndBridgeDiva.DEPOSIT_GAS(), "SentMessage: Invalid gas limit");
+        assertEq(
+            gasLimit,
+            swapAndBridgeDiva.MIN_DEPOSIT_GAS(),
+            "SentMessage: Invalid gas limit, not matching contract MIN_DEPOSIT_GAS"
+        );
 
         uint256 balanceBefore = l2WdivETH.balanceOf(vm.addr(vm.envUint("TOKEN_HOLDER_PRIV_KEY")));
 

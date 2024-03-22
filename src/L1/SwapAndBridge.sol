@@ -31,8 +31,8 @@ interface IL1StandardBridge {
 /// @notice SwapAndBridge is the utility contract that allows to swap ETH to a wrapped LST and bridge it to L2.
 ///         It is designed to be used as a part of the Lisk L2 ecosystem.
 contract SwapAndBridge {
-    /// @notice Amount of gas to be used for the deposit message on L2.
-    uint32 public DEPOSIT_GAS = 30_000;
+    /// @notice Minimum amount of gas to be used for the deposit message on L2.
+    uint32 public MIN_DEPOSIT_GAS = 0;
 
     /// @notice The L1 bridge contract. This is configurable since not all tokens are bridged
     /// using the standard bridge.
@@ -88,7 +88,7 @@ contract SwapAndBridge {
 
         // Bridge wrapped tokens to L2.
         // We use depositERC20To rather than depositERC20 because the latter can only be called by EOA.
-        L1_BRIDGE.depositERC20To(address(L1_TOKEN), L2_TOKEN_ADDRESS, recipient, balance, DEPOSIT_GAS, "0x");
+        L1_BRIDGE.depositERC20To(address(L1_TOKEN), L2_TOKEN_ADDRESS, recipient, balance, MIN_DEPOSIT_GAS, "0x");
 
         // Check that this contract has no tokens left in its balance.
         require(L1_TOKEN.balanceOf(address(this)) == 0, "Contract still has tokens.");
