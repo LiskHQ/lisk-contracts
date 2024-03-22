@@ -12,10 +12,14 @@ echo "Setting environment variables..."
 source .env
 echo "Done."
 
-# echo "Deploying and if enabled verifying L2WdivETH smart contract..."
-# forge script --rpc-url="$L2_RPC_URL" --broadcast --verify --verifier blockscout --verifier-url $L2_VERIFIER_URL -vvvv script/swap_and_bridge/SwapAndBridge.s.sol:L2WdivETHScript 
-# echo "Done."
+echo "Deploying and if enabled verifying L2WdivETH smart contract..."
+forge script --rpc-url="$L2_RPC_URL" --broadcast --verify --verifier blockscout --verifier-url $L2_VERIFIER_URL -vvvv script/swap_and_bridge/SwapAndBridge.s.sol:L2WdivETHScript 
+echo "Done."
 
 echo "Deploying and if enabled verifying SwapAndBridge smart contract..."
-forge script --rpc-url="$L1_RPC_URL" --broadcast --verify --verifier blockscout --verifier-url $L1_VERIFIER_URL -vvvv script/swap_and_bridge/SwapAndBridge.s.sol:SwapAndBridgeScript
+forge script --rpc-url="$L1_RPC_URL" --broadcast --verify --verifier blockscout --verifier-url $L1_VERIFIER_URL -vvvv script/swap_and_bridge/SwapAndBridge.s.sol:SwapAndBridgeDivaScript
+echo "Done."
+
+echo "Deploying and if enabled verifying SwapAndBridge smart contract..."
+forge script --rpc-url="$L1_RPC_URL" --broadcast --verify --verifier blockscout --verifier-url $L1_VERIFIER_URL -vvvv script/swap_and_bridge/SwapAndBridge.s.sol:SwapAndBridgeLidoScript
 echo "Done."

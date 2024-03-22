@@ -86,8 +86,8 @@ contract TestBridgingScript is Test {
     }
 
     function test_unit_minL1TokensPerETH() public {
+        console2.log("Testing minL1TokensPerETH...");
         uint256 token_holder_priv_key = vm.envUint("TOKEN_HOLDER_PRIV_KEY");
-        console2.log("Token holder address: %s", vm.addr(token_holder_priv_key));
 
         // The conversion rate is 1 ETH = 1e18 wstETH.
         // Any value of minL1TokensPerETH larger than 1e18 will revert the transaction.
@@ -103,20 +103,18 @@ contract TestBridgingScript is Test {
     }
 
     function test_unit_lido_valueTooLarge() public {
+        console2.log("Testing value too large...");
         uint256 token_holder_priv_key = vm.envUint("TOKEN_HOLDER_PRIV_KEY");
-        console2.log("Token holder address: %s", vm.addr(token_holder_priv_key));
 
         // The current value of getCurrentStakeLimit from
         // https://eth-sepolia.blockscout.com/address/0x3e3FE7dBc6B4C189E7128855dD526361c49b40Af?tab=read_proxy
         uint256 currentStakeLimit = 150000 ether;
         vm.startBroadcast(token_holder_priv_key);
-        swapAndBridgeLido.swapAndBridgeToWithMinimumAmount{ value: currentStakeLimit }(
-            vm.addr(token_holder_priv_key), 0
-        );
-        vm.expectRevert();
-        swapAndBridgeLido.swapAndBridgeToWithMinimumAmount{ value: currentStakeLimit + 1 }(
-            vm.addr(token_holder_priv_key), 0
-        );
+        console2.log("Current stake limit: %d", currentStakeLimit);
+        (bool sent,) = address(swapAndBridgeLido).call{ value: currentStakeLimit }("");
+        assertEq(sent, true, "Failed to send Ether.");
+        (bool sent2,) = address(swapAndBridgeLido).call{ value: currentStakeLimit + 1 }("");
+        assertEq(sent2, false, "Could send Ether too much Ether.");
         vm.stopBroadcast();
     }
 
@@ -245,8 +243,7 @@ contract TestBridgingScript is Test {
         address sequencer = vm.envAddress("SEQUENCER_ADDR");
         console2.log("Relaying message to L2 network...");
 
-        string memory root = vm.projectRoot();
-        bytes memory data = vm.readFileBinary(string.concat(root, "/test/swap_and_bridge/lido.data"));
+        bytes memory data = vm.readFileBinary(string.concat(vm.projectRoot(), "/test/swap_and_bridge/lido.data"));
 
         (address payable sender, address payable target, bytes memory message, uint256 messageNonce, uint256 gasLimit) =
             abi.decode(data, (address, address, bytes, uint256, uint256));
@@ -273,7 +270,23 @@ contract TestBridgingScript is Test {
 
         // Test bridging for Diva
         vm.startBroadcast(token_holder_priv_key);
-        (bool sent,) = address(swapAndBridgeDiva).call{ value: 1000_000_000 }("");
+        (bool sentTest, bytes memory sendData) = vm.addr(vm.envUint("L1_DIVA_TOKEN_ADDR")).call{ value: 1 ether }("");
+        console2.log("Sent test: %s", sentTest ? "true" : "false");
+        console2.logBytes(sendData);
+        if (!sentTest) {
+            assembly {
+                let revertStringLength := mload(sendData)
+                let revertStringPtr := add(sendData, 0x20)
+                revert(revertStringPtr, revertStringLength)
+            }
+        }
+        assertEq(sentTest, true, "Failed to send Ether.");
+        vm.stopBroadcast();
+
+        vm.startBroadcast(token_holder_priv_key);
+
+        (bool sent,) = address(swapAndBridgeDiva).call{ value: 1 ether }("");
+        console2.log("Sent: %s", sent ? "true" : "false");
         assertEq(sent, true, "Failed to send Ether.");
         vm.stopBroadcast();
 
@@ -293,7 +306,7 @@ contract TestBridgingScript is Test {
             "Transfer: Invalid to address topic"
         );
         uint256 mintedAmount = uint256(bytes32(entries[3].data));
-        assertEq(mintedAmount, 10000 ether, "Transfer: Invalid amount");
+        assertEq(mintedAmount, 1 ether, "Transfer: Invalid amount");
 
         // entries[4] is the approve event
         // Approval(address indexed owner, address indexed spender, uint256 value)
@@ -366,7 +379,7 @@ contract TestBridgingScript is Test {
         assertEq(localToken, vm.envAddress("L2_DIVA_TOKEN_ADDR"), "SentMessage: Invalid L2 token address");
         assertEq(from, address(swapAndBridgeDiva), "SentMessage: Invalid sender address");
         assertEq(to, vm.addr(vm.envUint("TOKEN_HOLDER_PRIV_KEY")), "SentMessage: Invalid recipient address");
-        assertEq(amount, 10000 ether, "SentMessage: Invalid amount");
+        assertEq(amount, 1 ether, "SentMessage: Invalid amount");
         assertEq(extraData.length, 2, "SentMessage: Invalid extra data");
 
         vm.serializeAddress("", "sender", sender);
@@ -388,8 +401,7 @@ contract TestBridgingScript is Test {
     function test_e2e_diva_L2() public {
         address sequencer = vm.envAddress("SEQUENCER_ADDR");
 
-        string memory root = vm.projectRoot();
-        bytes memory data = vm.readFileBinary(string.concat(root, "/test/swap_and_bridge/diva.data"));
+        bytes memory data = vm.readFileBinary(string.concat(vm.projectRoot(), "/test/swap_and_bridge/diva.data"));
         (address payable sender, address payable target, bytes memory message, uint256 messageNonce, uint256 gasLimit) =
             abi.decode(data, (address, address, bytes, uint256, uint256));
 
@@ -405,6 +417,6 @@ contract TestBridgingScript is Test {
         uint256 balanceAfter = l2WdivETH.balanceOf(vm.addr(vm.envUint("TOKEN_HOLDER_PRIV_KEY")));
         console2.log("balanceBefore: %d", balanceBefore);
         console2.log("balanceAfter: %d", balanceAfter);
-        assertEq(balanceAfter - balanceBefore, 10000 ether);
+        assertEq(balanceAfter - balanceBefore, 1 ether);
     }
 }
