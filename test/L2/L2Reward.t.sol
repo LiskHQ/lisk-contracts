@@ -406,6 +406,44 @@ contract L2RewardTest is Test {
         l2Reward.claimRewards(lockIDs);
     }
 
+    function test_claimRewards_pausedPositionsAreRewardedTillTodayWeightedAgainstThePausedLockingDuration() public {
+        l2Staking.addCreator(address(l2Reward));
+        address staker = address(0x1);
+        uint256 balance = convertLiskToBeddows(1000);
+
+        uint256[] memory lockIDs = new uint256[](2);
+
+        // staker gets balance
+        vm.startPrank(bridge);
+        l2LiskToken.mint(staker, balance);
+        l2LiskToken.mint(address(l2Reward), balance);
+        vm.stopPrank();
+
+        // staker funds staking
+        // staker creates two positions on deploymentDate, 19740.
+        vm.startPrank(staker);
+        l2LiskToken.approve(address(l2Reward), convertLiskToBeddows(35));
+        l2Reward.fundStakingRewards(convertLiskToBeddows(35), 350, 1);
+
+        l2LiskToken.approve(address(l2Staking), convertLiskToBeddows(10));
+        lockIDs[0] = l2Reward.createPosition(convertLiskToBeddows(10), 150);
+
+        l2LiskToken.approve(address(l2Staking), convertLiskToBeddows(10));
+        lockIDs[1] = l2Reward.createPosition(convertLiskToBeddows(10), 300);
+        vm.stopPrank();
+
+        vm.startPrank(address(l2Reward));
+        l2Staking.pauseRemainingLockingDuration(lockIDs[0]);
+        l2Staking.pauseRemainingLockingDuration(lockIDs[1]);
+        vm.stopPrank();
+
+        // totalWeight from day 301 and more is set to zero.
+        // Causing divide by zero error.
+        skip(301 days);
+        vm.prank(staker);
+        l2Reward.claimRewards(lockIDs);
+    }
+
     function test_approveTest() public {
         vm.prank(address(0x1));
         l2LiskToken.approve(address(0x2), 10000);
