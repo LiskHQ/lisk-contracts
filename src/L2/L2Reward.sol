@@ -108,7 +108,7 @@ contract L2Reward {
     }
 
     /// @notice Updates global state against user actions.
-    /// @dev It is the first call in every public function.safda
+    /// @dev It is the first call in every public function.
     function updateGlobalState() internal virtual {
         uint256 today = todayDay();
 
