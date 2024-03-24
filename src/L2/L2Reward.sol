@@ -104,6 +104,7 @@ contract L2Reward {
         stakingContract = _stakingContract;
         lockingPositionContract = _lockingPositionContract;
         l2TokenContract = _l2TokenContract;
+        lastTrsDate = todayDay();
     }
 
     /// @notice Updates global state against user actions.
@@ -166,9 +167,7 @@ contract L2Reward {
         );
         require(lastClaimDate[lockID] != 0, "L2Reward: Locking position does not exist");
 
-        uint256[] memory lockIDs = new uint256[](1);
-        lockIDs[0] = lockID;
-        claimRewards(lockIDs);
+        _claimReward(lockID);
 
         IL2Staking(stakingContract).unlock(lockID);
 
@@ -188,9 +187,7 @@ contract L2Reward {
         IL2LockingPosition.LockingPosition memory lockingPosition =
             IL2LockingPosition(lockingPositionContract).getLockingPosition(lockID);
 
-        uint256[] memory lockIDs = new uint256[](1);
-        lockIDs[0] = lockID;
-        claimRewards(lockIDs);
+        _claimReward(lockID);
 
         uint256 penalty = IL2Staking(lockingPositionContract).calculatePenalty(lockID);
 
