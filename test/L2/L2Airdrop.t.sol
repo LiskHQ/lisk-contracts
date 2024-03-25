@@ -124,6 +124,11 @@ contract L2AirdropTest is Test {
         assertEq(l2Airdrop.l2VotingPowerAddress(), address(l2VotingPower));
         assertEq(l2Airdrop.daoTreasuryAddress(), daoTreasuryAddress);
 
+        // set merkle root for L2Airdrop contract
+        bytes32 merkleRoot = bytes32(0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef);
+        l2Airdrop.setMerkleRoot(merkleRoot);
+        assertEq(l2Airdrop.merkleRoot(), merkleRoot);
+
         // fund L2Airdrop with 10_000 L2LiskToken
         vm.prank(bridge);
         l2LiskToken.mint(address(l2Airdrop), 10000 * 10 ** 18);
@@ -162,13 +167,22 @@ contract L2AirdropTest is Test {
 
     function test_SetMerkleRoot() public {
         bytes32 merkleRoot = bytes32(0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef);
+
+        // re-deploy L2Airdrop contract because merkle root is already set in setup
+        l2Airdrop = new L2Airdrop(
+            address(l2LiskToken),
+            address(l2Claim),
+            address(l2LockingPosition),
+            address(l2VotingPower),
+            daoTreasuryAddress
+        );
+
         l2Airdrop.setMerkleRoot(merkleRoot);
         assertEq(l2Airdrop.merkleRoot(), merkleRoot);
     }
 
     function test_SetMerkleRoot_AlreadySet() public {
         bytes32 merkleRoot = bytes32(0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef);
-        l2Airdrop.setMerkleRoot(merkleRoot);
         vm.expectRevert("L2Airdrop: Merkle root already set");
         l2Airdrop.setMerkleRoot(merkleRoot);
     }
@@ -325,9 +339,6 @@ contract L2AirdropTest is Test {
     }
 
     function test_ClaimAirdrop_MinEth() public {
-        bytes32 merkleRoot = bytes32(0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef);
-        l2Airdrop.setMerkleRoot(merkleRoot);
-
         // check that alice can claim airdrop for min eth condition
         aliceClaimAirdropForMinEth();
     }
@@ -356,9 +367,6 @@ contract L2AirdropTest is Test {
     }
 
     function test_ClaimAirdrop_Delegating() public {
-        bytes32 merkleRoot = bytes32(0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef);
-        l2Airdrop.setMerkleRoot(merkleRoot);
-
         // check that alice can claim airdrop for delegating condition
         aliceClaimAirdropForDelegating();
     }
@@ -387,9 +395,6 @@ contract L2AirdropTest is Test {
     }
 
     function test_ClaimAirdrop_StakingTier1() public {
-        bytes32 merkleRoot = bytes32(0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef);
-        l2Airdrop.setMerkleRoot(merkleRoot);
-
         // check that alice can claim airdrop for staking tier 1 condition
         aliceClaimAirdropForStakingTier1();
     }
@@ -418,9 +423,6 @@ contract L2AirdropTest is Test {
     }
 
     function test_ClaimAirdrop_StakingTier2() public {
-        bytes32 merkleRoot = bytes32(0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef);
-        l2Airdrop.setMerkleRoot(merkleRoot);
-
         // first alice will claim airdrop for staking tier 1 condition that only staking tier 2 condition will be left
         aliceClaimAirdropForStakingTier1();
 
@@ -429,9 +431,6 @@ contract L2AirdropTest is Test {
     }
 
     function test_ClaimAirdrop_MinEth_Delegating() public {
-        bytes32 merkleRoot = bytes32(0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef);
-        l2Airdrop.setMerkleRoot(merkleRoot);
-
         // first alice will claim airdrop for min eth condition
         aliceClaimAirdropForMinEth();
 
@@ -447,9 +446,6 @@ contract L2AirdropTest is Test {
     }
 
     function test_ClaimAirdrop_StakingTier1_StakingTier2() public {
-        bytes32 merkleRoot = bytes32(0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef);
-        l2Airdrop.setMerkleRoot(merkleRoot);
-
         // first alice will claim airdrop for staking tier 1 condition
         aliceClaimAirdropForStakingTier1();
 
@@ -465,9 +461,6 @@ contract L2AirdropTest is Test {
     }
 
     function test_ClaimAirdrop_MinEth_Delegating_StakingTier1() public {
-        bytes32 merkleRoot = bytes32(0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef);
-        l2Airdrop.setMerkleRoot(merkleRoot);
-
         // first alice will claim airdrop for min eth condition
         aliceClaimAirdropForMinEth();
 
@@ -486,9 +479,6 @@ contract L2AirdropTest is Test {
     }
 
     function test_ClaimAirdrop_MinEth_StakingTier1_StakingTier2() public {
-        bytes32 merkleRoot = bytes32(0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef);
-        l2Airdrop.setMerkleRoot(merkleRoot);
-
         // first alice will claim airdrop for min eth condition
         aliceClaimAirdropForMinEth();
 
@@ -507,9 +497,6 @@ contract L2AirdropTest is Test {
     }
 
     function test_ClaimAirdrop_Delegating_StakingTier1_StakingTier2() public {
-        bytes32 merkleRoot = bytes32(0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef);
-        l2Airdrop.setMerkleRoot(merkleRoot);
-
         // then alice will claim airdrop for delegating condition
         aliceClaimAirdropForDelegating();
 
@@ -528,9 +515,6 @@ contract L2AirdropTest is Test {
     }
 
     function test_ClaimAirdrop_FullAirdrop() public {
-        bytes32 merkleRoot = bytes32(0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef);
-        l2Airdrop.setMerkleRoot(merkleRoot);
-
         // first alice will claim airdrop for min eth condition
         aliceClaimAirdropForMinEth();
 
@@ -557,42 +541,39 @@ contract L2AirdropTest is Test {
     }
 
     function test_ClaimAirdrop_NotStartedYet() public {
+        // re-deploy L2Airdrop contract because merkle root is already set in setup
+        l2Airdrop = new L2Airdrop(
+            address(l2LiskToken),
+            address(l2Claim),
+            address(l2LockingPosition),
+            address(l2VotingPower),
+            daoTreasuryAddress
+        );
+
         bytes32[] memory merkleProof = new bytes32[](1);
         vm.expectRevert("L2Airdrop: airdrop has not started yet");
         l2Airdrop.claimAirdrop(bytes20(alice), 20 * 10 ** 18, merkleProof, alice);
     }
 
     function test_ClaimAirdrop_AmountIsZero() public {
-        bytes32 merkleRoot = bytes32(0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef);
-        l2Airdrop.setMerkleRoot(merkleRoot);
-
         bytes32[] memory merkleProof = new bytes32[](1);
         vm.expectRevert("L2Airdrop: amount is zero");
         l2Airdrop.claimAirdrop(bytes20(alice), 0, merkleProof, alice);
     }
 
     function test_ClaimAirdrop_ZeroProofLength() public {
-        bytes32 merkleRoot = bytes32(0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef);
-        l2Airdrop.setMerkleRoot(merkleRoot);
-
         bytes32[] memory merkleProof = new bytes32[](0);
         vm.expectRevert("L2Airdrop: Merkle proof is empty");
         l2Airdrop.claimAirdrop(bytes20(alice), 20 * 10 ** 18, merkleProof, alice);
     }
 
     function test_ClaimAirdrop_ZeroRecipientAddress() public {
-        bytes32 merkleRoot = bytes32(0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef);
-        l2Airdrop.setMerkleRoot(merkleRoot);
-
         bytes32[] memory merkleProof = new bytes32[](1);
         vm.expectRevert("L2Airdrop: recipient is the zero address");
         l2Airdrop.claimAirdrop(bytes20(alice), 20 * 10 ** 18, merkleProof, address(0));
     }
 
     function test_ClaimAirdrop_InvalidRecipient() public {
-        bytes32 merkleRoot = bytes32(0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef);
-        l2Airdrop.setMerkleRoot(merkleRoot);
-
         bytes32[] memory merkleProof = new bytes32[](1);
         vm.expectRevert("L2Airdrop: invalid recipient");
         l2Airdrop.claimAirdrop(bytes20(alice), 20 * 10 ** 18, merkleProof, bob);
