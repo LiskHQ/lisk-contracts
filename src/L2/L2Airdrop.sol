@@ -172,7 +172,7 @@ contract L2Airdrop is Ownable2Step {
     /// @param liskAddress The Lisk v4 address to check if it has claimed the full airdrop.
     /// @return True if the Lisk v4 address has claimed the full airdrop, False otherwise.
     function claimedFullAirdrop(bytes20 liskAddress) public view returns (bool) {
-        return (airdropStatus[liskAddress] & FULL_AIRDROP_CLAIMED) != 0;
+        return (airdropStatus[liskAddress] & FULL_AIRDROP_CLAIMED) == FULL_AIRDROP_CLAIMED;
     }
 
     /// @notice Check if the recipient satisfies the min ETH requirement.

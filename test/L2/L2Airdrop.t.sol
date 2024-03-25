@@ -3,7 +3,7 @@ pragma solidity 0.8.23;
 
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-import { Test, console2, stdJson, stdStorage, StdStorage } from "forge-std/Test.sol";
+import { Test, console2, stdStorage, StdStorage } from "forge-std/Test.sol";
 import { L2Airdrop } from "src/L2/L2Airdrop.sol";
 import { L2Claim } from "src/L2/L2Claim.sol";
 import { L2LockingPosition, LockingPosition } from "src/L2/L2LockingPosition.sol";
@@ -13,7 +13,6 @@ import { L2VotingPower } from "src/L2/L2VotingPower.sol";
 import { Utils } from "script/Utils.sol";
 
 contract L2AirdropTest is Test {
-    using stdJson for string;
     using stdStorage for StdStorage;
 
     L2LiskToken public l2LiskToken;
@@ -444,6 +443,7 @@ contract L2AirdropTest is Test {
         assertEq(l2Airdrop.claimedDelegating(bytes20(alice)), true);
         assertEq(l2Airdrop.claimedStakingTier1(bytes20(alice)), false);
         assertEq(l2Airdrop.claimedStakingTier2(bytes20(alice)), false);
+        assertEq(l2Airdrop.claimedFullAirdrop(bytes20(alice)), false);
     }
 
     function test_ClaimAirdrop_StakingTier1_StakingTier2() public {
@@ -461,6 +461,7 @@ contract L2AirdropTest is Test {
         assertEq(l2Airdrop.claimedDelegating(bytes20(alice)), false);
         assertEq(l2Airdrop.claimedStakingTier1(bytes20(alice)), true);
         assertEq(l2Airdrop.claimedStakingTier2(bytes20(alice)), true);
+        assertEq(l2Airdrop.claimedFullAirdrop(bytes20(alice)), false);
     }
 
     function test_ClaimAirdrop_MinEth_Delegating_StakingTier1() public {
@@ -481,6 +482,7 @@ contract L2AirdropTest is Test {
         assertEq(l2Airdrop.claimedDelegating(bytes20(alice)), true);
         assertEq(l2Airdrop.claimedStakingTier1(bytes20(alice)), true);
         assertEq(l2Airdrop.claimedStakingTier2(bytes20(alice)), false);
+        assertEq(l2Airdrop.claimedFullAirdrop(bytes20(alice)), false);
     }
 
     function test_ClaimAirdrop_MinEth_StakingTier1_StakingTier2() public {
@@ -501,6 +503,7 @@ contract L2AirdropTest is Test {
         assertEq(l2Airdrop.claimedDelegating(bytes20(alice)), false);
         assertEq(l2Airdrop.claimedStakingTier1(bytes20(alice)), true);
         assertEq(l2Airdrop.claimedStakingTier2(bytes20(alice)), true);
+        assertEq(l2Airdrop.claimedFullAirdrop(bytes20(alice)), false);
     }
 
     function test_ClaimAirdrop_Delegating_StakingTier1_StakingTier2() public {
@@ -521,6 +524,7 @@ contract L2AirdropTest is Test {
         assertEq(l2Airdrop.claimedDelegating(bytes20(alice)), true);
         assertEq(l2Airdrop.claimedStakingTier1(bytes20(alice)), true);
         assertEq(l2Airdrop.claimedStakingTier2(bytes20(alice)), true);
+        assertEq(l2Airdrop.claimedFullAirdrop(bytes20(alice)), false);
     }
 
     function test_ClaimAirdrop_FullAirdrop() public {
@@ -544,6 +548,7 @@ contract L2AirdropTest is Test {
         assertEq(l2Airdrop.claimedDelegating(bytes20(alice)), true);
         assertEq(l2Airdrop.claimedStakingTier1(bytes20(alice)), true);
         assertEq(l2Airdrop.claimedStakingTier2(bytes20(alice)), true);
+        assertEq(l2Airdrop.claimedFullAirdrop(bytes20(alice)), true);
 
         // check that alice cannot claim airdrop again
         bytes32[] memory merkleProof = new bytes32[](1);
