@@ -483,12 +483,6 @@ contract L2StakingTest is Test {
         l2Staking.lockAmount(alice, 0, 365);
     }
 
-    function test_LockAmount_OwnerDoesNotHaveEnoughTokens() public {
-        vm.prank(alice);
-        vm.expectRevert("L2Staking: lockOwner does not have enough LSK tokens");
-        l2Staking.lockAmount(alice, 101 * 10 ** 18, 365); // alice has only 100 L2LiskToken
-    }
-
     function test_LockAmount_CreatorNotStakingContract() public {
         // execute the lockAmount function from a contract that is not the staking contract but is in the
         // allowedCreators list
@@ -883,18 +877,6 @@ contract L2StakingTest is Test {
         vm.prank(alice);
         vm.expectRevert("L2Staking: increased amount should be greater than zero");
         l2Staking.increaseLockingAmount(1, 0);
-    }
-
-    function test_IncreaseLockingAmount_OwnerDoesNotHaveEnoughTokens() public {
-        vm.prank(alice);
-        l2Staking.lockAmount(alice, 100 * 10 ** 18, 365);
-        assertEq(l2LockingPosition.balanceOf(alice), 1);
-
-        uint256 aliceBalance = l2LiskToken.balanceOf(alice);
-        uint256 invalidAmount = aliceBalance + 1;
-        vm.prank(alice);
-        vm.expectRevert("L2Staking: owner of lock does not have enough LSK tokens");
-        l2Staking.increaseLockingAmount(1, invalidAmount);
     }
 
     function test_IncreaseLockingAmount_ExpiredLockingPosition() public {

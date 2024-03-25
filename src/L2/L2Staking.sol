@@ -208,7 +208,7 @@ contract L2Staking is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, I
     /// @notice Sets the emergency exit enabled flag.
     /// @param _emergencyExitEnabled The new value of the emergency exit enabled flag.
     /// @dev Only the owner can call this function.
-    function setEmergencyExitEnabled(bool _emergencyExitEnabled) public onlyOwner {
+    function setEmergencyExitEnabled(bool _emergencyExitEnabled) public virtual onlyOwner {
         emergencyExitEnabled = _emergencyExitEnabled;
     }
 
