@@ -78,9 +78,9 @@ contract L2GovernorScript is Script {
         assert(keccak256(bytes(l2Governor.name())) == keccak256(bytes("Lisk Governor")));
         assert(l2Governor.votingDelay() == 0);
         assert(l2Governor.votingPeriod() == 604800);
-        assert(l2Governor.proposalThreshold() == 2e18);
+        assert(l2Governor.proposalThreshold() == 300_000 * 10 ** 18);
         assert(l2Governor.timelock() == address(timelock));
-        assert(l2Governor.quorum(0) == 50000e18);
+        assert(l2Governor.quorum(0) == 24_000_000 * 10 ** 18);
         assert(address(l2Governor.token()) == address(votingPower));
         assert(l2Governor.owner() == vm.addr(deployerPrivateKey));
 
