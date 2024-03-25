@@ -19,9 +19,9 @@ interface IL2LockingPosition {
     function getAllLockingPositionsByOwner(address lockOwner) external view returns (LockingPosition[] memory);
 }
 
-/// @title IL2Staking
-/// @notice Interface for the L2Staking contract.
-interface IL2Staking {
+/// @title IL2Claim
+/// @notice Interface for the L2Claim contract.
+interface IL2Claim {
     function claimedTo(bytes20 liskAddress) external view returns (address);
 }
 
@@ -58,10 +58,10 @@ contract L2Airdrop is Ownable2Step {
     uint256 public constant MIN_ETH = 10 ** 16; // 0.01 ETH
 
     /// @notice Minimal staking duration to satisfy the staking requirement of tier 1.
-    uint32 public constant MIN_STAKING_DURATION_TIER_1 = 30 days; // 1 month
+    uint32 public constant MIN_STAKING_DURATION_TIER_1 = 30; // 1 month
 
     /// @notice Minimal staking duration to satisfy the staking requirement of tier 2.
-    uint32 public constant MIN_STAKING_DURATION_TIER_2 = 90 days; // 3 months
+    uint32 public constant MIN_STAKING_DURATION_TIER_2 = 90; // 3 months
 
     /// @notice Airdrop amount with this multiplier defines the minimum staking amount that must be staked at least for
     ///         MIN_STAKING_DURATION to satisfy the staking requirement. This multiplier should incentivize staking of
@@ -90,38 +90,38 @@ contract L2Airdrop is Ownable2Step {
     /// @notice Address of the L2LiskToken contract.
     address public l2LiskTokenAddress;
 
+    /// @notice Address of the L2Claim contract.
+    address public l2ClaimAddress;
+
     /// @notice Address of the L2LockingPosition contract.
     address public l2LockingPositionAddress;
-
-    /// @notice Address of the L2Staking contract.
-    address public l2StakingAddress;
 
     /// @notice Address of the L2VotingPower contract.
     address public l2VotingPowerAddress;
 
-    /// @notice Address of the DAO contract.
-    address public daoAddress;
+    /// @notice The treasury address of the Lisk DAO.
+    address public daoTreasuryAddress;
 
     /// @notice Constructs the L2Airdrop contract.
     /// @param _l2LiskTokenAddress Address of the L2LiskToken contract.
+    /// @param _l2ClaimAddress Address of the L2Claim contract.
     /// @param _l2LockingPositionAddress Address of the L2LockingPosition contract.
-    /// @param _l2StakingAddress Address of the L2Staking contract.
     /// @param _l2VotingPowerAddress Address of the L2VotingPower contract.
-    /// @param _daoAddress Address of the DAO contract.
+    /// @param _daoTreasuryAddress The treasury address of the Lisk DAO.
     constructor(
         address _l2LiskTokenAddress,
+        address _l2ClaimAddress,
         address _l2LockingPositionAddress,
-        address _l2StakingAddress,
         address _l2VotingPowerAddress,
-        address _daoAddress
+        address _daoTreasuryAddress
     )
         Ownable(msg.sender)
     {
         l2LiskTokenAddress = _l2LiskTokenAddress;
         l2LockingPositionAddress = _l2LockingPositionAddress;
-        l2StakingAddress = _l2StakingAddress;
+        l2ClaimAddress = _l2ClaimAddress;
         l2VotingPowerAddress = _l2VotingPowerAddress;
-        daoAddress = _daoAddress;
+        daoTreasuryAddress = _daoTreasuryAddress;
     }
 
     /// @notice Set Merkle root for the airdrop process.
@@ -132,11 +132,11 @@ contract L2Airdrop is Ownable2Step {
         merkleRoot = _merkleRoot;
     }
 
-    /// @notice Send the remaining LSK tokens to the DAO.
-    /// @dev Only the owner can send the remaining LSK tokens to the DAO.
-    function sendLSKToDao() public onlyOwner {
+    /// @notice Send the remaining LSK tokens to the Lisk DAO treasury.
+    /// @dev Only the owner can send the remaining LSK tokens to the Lisk DAO treasury.
+    function sendLSKToDaoTreasury() public onlyOwner {
         uint256 balance = IL2LiskToken(l2LiskTokenAddress).balanceOf(address(this));
-        bool status = IL2LiskToken(l2LiskTokenAddress).transfer(daoAddress, balance);
+        bool status = IL2LiskToken(l2LiskTokenAddress).transfer(daoTreasuryAddress, balance);
         require(status, "L2Airdrop: LSK token transfer to DAO failed");
     }
 
@@ -265,8 +265,11 @@ contract L2Airdrop is Ownable2Step {
         require(recipient != address(0), "L2Airdrop: recipient is the zero address");
 
         // TODO require merkleProof be a correct proof for liskv4Address and amount against stored merkleRoot
-        require(IL2Staking(l2StakingAddress).claimedTo(liskAddress) == recipient, "L2Airdrop: invalid recipient");
-        require((airdropStatus[liskAddress] & FULL_AIRDROP_CLAIMED) == 0, "L2Airdrop: full airdrop claimed");
+        require(IL2Claim(l2ClaimAddress).claimedTo(liskAddress) == recipient, "L2Airdrop: invalid recipient");
+        require(
+            (airdropStatus[liskAddress] & FULL_AIRDROP_CLAIMED) != FULL_AIRDROP_CLAIMED,
+            "L2Airdrop: full airdrop claimed"
+        );
 
         uint256 airdropAmount = 0;
 
