@@ -432,16 +432,27 @@ contract L2RewardTest is Test {
         lockIDs[1] = l2Reward.createPosition(convertLiskToBeddows(10), 300);
         vm.stopPrank();
 
-        vm.startPrank(address(l2Reward));
-        l2Staking.pauseRemainingLockingDuration(lockIDs[0]);
-        l2Staking.pauseRemainingLockingDuration(lockIDs[1]);
+        vm.startPrank(staker);
+        l2Reward.pauseUnlocking(lockIDs[0]);
+        l2Reward.pauseUnlocking(lockIDs[1]);
         vm.stopPrank();
 
-        // totalWeight from day 301 and more is set to zero.
-        // Causing divide by zero error.
+        uint256 expectedRewards = 6575342465753424600 + 9863013698630136900;
+        uint256 expectedBalance = l2LiskToken.balanceOf(staker) + expectedRewards;
+
+        uint256 today = deploymentDate + 301;
         skip(301 days);
+
         vm.prank(staker);
-        l2Reward.claimRewards(lockIDs);
+        uint256[] memory rewards = l2Reward.claimRewards(lockIDs);
+
+        balance = l2LiskToken.balanceOf(staker);
+
+        assertEq(rewards[0], 6575342465753424600);
+        assertEq(rewards[1], 9863013698630136900);
+        assertEq(l2Reward.lastClaimDate(lockIDs[0]), today);
+        assertEq(l2Reward.lastClaimDate(lockIDs[1]), today);
+        assertEq(balance, expectedBalance);
     }
 
     function test_approveTest() public {
