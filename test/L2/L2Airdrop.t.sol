@@ -282,7 +282,7 @@ contract L2AirdropTest is Test {
         aliceSatifiesStakingTier1();
     }
 
-    function test_SatisfiesStakingTier1_NotAllLockingPositionsSatisfy() public {
+    function test_SatisfiesStakingTier1_NotAllLockingPositionsSatisfy_TooSmallDuration() public {
         // alice stakes 30 L2LiskToken for minimum days in one position
         vm.startPrank(alice);
         l2Staking.lockAmount(alice, 30 * 10 ** 18, l2Airdrop.MIN_STAKING_DURATION_TIER_1());
@@ -294,6 +294,23 @@ contract L2AirdropTest is Test {
 
         // check that alice does not satisfy staking tier 1 because second position is not staked for
         // MIN_STAKING_DURATION_TIER_1 days or more
+        assertEq(l2Airdrop.satisfiesStakingTier1(alice, 16 * 10 ** 18), false);
+    }
+
+    function test_SatisfiesStakingTier1_NotAllLockingPositionsSatisfy_PositionExpired() public {
+        // alice stakes 30 L2LiskToken for minimum + 20 days in one position
+        vm.startPrank(alice);
+        l2Staking.lockAmount(alice, 30 * 10 ** 18, l2Airdrop.MIN_STAKING_DURATION_TIER_1() + 20);
+        // and 50 L2LiskToken for minimum + 40 days in another position
+        l2Staking.lockAmount(alice, 50 * 10 ** 18, l2Airdrop.MIN_STAKING_DURATION_TIER_1() + 40);
+        vm.stopPrank();
+        assertEq(l2LockingPosition.balanceOf(alice), 2);
+        assertEq(l2VotingPower.balanceOf(alice), 80 * 10 ** 18);
+
+        // proceed time to MIN_STAKING_DURATION_TIER_1 + 30 days so that first position does not satisfy staking tier 1
+        vm.warp((l2Airdrop.MIN_STAKING_DURATION_TIER_1() + 30) * 1 days);
+
+        // check that alice does not satisfy staking tier 1 because first position already expired
         assertEq(l2Airdrop.satisfiesStakingTier1(alice, 16 * 10 ** 18), false);
     }
 
@@ -326,7 +343,7 @@ contract L2AirdropTest is Test {
         aliceSatifiesStakingTier2();
     }
 
-    function test_SatisfiesStakingTier2_NotAllLockingPositionsSatisfy() public {
+    function test_SatisfiesStakingTier2_NotAllLockingPositionsSatisfy_TooSmallDuration() public {
         // alice stakes 30 L2LiskToken for minimum days in one position
         vm.startPrank(alice);
         l2Staking.lockAmount(alice, 30 * 10 ** 18, l2Airdrop.MIN_STAKING_DURATION_TIER_2());
@@ -338,6 +355,23 @@ contract L2AirdropTest is Test {
 
         // check that alice does not satisfy staking tier 2 because second position is not staked for
         // MIN_STAKING_DURATION_TIER_2 days or more
+        assertEq(l2Airdrop.satisfiesStakingTier2(alice, 16 * 10 ** 18), false);
+    }
+
+    function test_SatisfiesStakingTier2_NotAllLockingPositionsSatisfy_PositionExpired() public {
+        // alice stakes 30 L2LiskToken for minimum + 20 days in one position
+        vm.startPrank(alice);
+        l2Staking.lockAmount(alice, 30 * 10 ** 18, l2Airdrop.MIN_STAKING_DURATION_TIER_2() + 20);
+        // and 50 L2LiskToken for minimum + 40 days in another position
+        l2Staking.lockAmount(alice, 50 * 10 ** 18, l2Airdrop.MIN_STAKING_DURATION_TIER_2() + 40);
+        vm.stopPrank();
+        assertEq(l2LockingPosition.balanceOf(alice), 2);
+        assertEq(l2VotingPower.balanceOf(alice), 80 * 10 ** 18);
+
+        // proceed time to MIN_STAKING_DURATION_TIER_2 + 30 days so that first position does not satisfy staking tier 2
+        vm.warp((l2Airdrop.MIN_STAKING_DURATION_TIER_2() + 30) * 1 days);
+
+        // check that alice does not satisfy staking tier 2 because first position already expired
         assertEq(l2Airdrop.satisfiesStakingTier2(alice, 16 * 10 ** 18), false);
     }
 

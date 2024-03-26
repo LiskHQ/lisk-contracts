@@ -210,6 +210,10 @@ contract L2Airdrop is Ownable2Step {
         uint256 totalStakedAmount = 0;
         for (uint256 i = 0; i < lockingPositions.length; i++) {
             LockingPosition memory lockingPosition = lockingPositions[i];
+            // is the locking position expired?
+            if (lockingPosition.expDate < (block.timestamp / 1 days)) {
+                continue;
+            }
             if (lockingPosition.expDate - (block.timestamp / 1 days) >= MIN_STAKING_DURATION_TIER_1) {
                 totalStakedAmount += lockingPosition.amount;
             }
@@ -236,6 +240,10 @@ contract L2Airdrop is Ownable2Step {
         uint256 totalStakedAmount = 0;
         for (uint256 i = 0; i < lockingPositions.length; i++) {
             LockingPosition memory lockingPosition = lockingPositions[i];
+            // is the locking position expired?
+            if (lockingPosition.expDate < (block.timestamp / 1 days)) {
+                continue;
+            }
             if (lockingPosition.expDate - (block.timestamp / 1 days) >= MIN_STAKING_DURATION_TIER_2) {
                 totalStakedAmount += lockingPosition.amount;
             }
