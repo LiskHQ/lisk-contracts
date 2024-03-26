@@ -29,12 +29,14 @@ contract L2AirdropTest is Test {
 
     address daoTreasuryAddress;
     address alice;
+    bytes20 aliceLSKAddress;
     address bob;
     address charlie;
 
     function setUp() public {
         daoTreasuryAddress = address(0xDeaDbeefdEAdbeefdEadbEEFdeadbeEFdEaDbeeF);
         alice = address(0x1);
+        aliceLSKAddress = bytes20(alice);
         bob = address(0x2);
         charlie = address(0x3);
 
@@ -163,6 +165,10 @@ contract L2AirdropTest is Test {
         vm.prank(charlie);
         l2LiskToken.approve(address(l2Staking), 100 * 10 ** 18);
         assertEq(l2LiskToken.allowance(charlie, address(l2Staking)), 100 * 10 ** 18);
+
+        // alice has already claimed LSK tokens
+        stdstore.target(address(l2Claim)).sig("claimedTo(bytes20)").with_key(aliceLSKAddress).checked_write(alice);
+        assertEq(l2Claim.claimedTo(aliceLSKAddress), alice);
     }
 
     function test_SetMerkleRoot() public {
@@ -316,12 +322,6 @@ contract L2AirdropTest is Test {
     }
 
     function aliceClaimAirdropForMinEth() internal {
-        bytes20 aliceLSKAddress = bytes20(alice);
-
-        // alice has claimed LSK tokens
-        stdstore.target(address(l2Claim)).sig("claimedTo(bytes20)").with_key(aliceLSKAddress).checked_write(alice);
-        assertEq(l2Claim.claimedTo(aliceLSKAddress), alice);
-
         // alice satisfies min eth condition
         aliceSatisfiesMinEth();
 
@@ -344,12 +344,6 @@ contract L2AirdropTest is Test {
     }
 
     function aliceClaimAirdropForDelegating() internal {
-        bytes20 aliceLSKAddress = bytes20(alice);
-
-        // alice has claimed LSK tokens
-        stdstore.target(address(l2Claim)).sig("claimedTo(bytes20)").with_key(aliceLSKAddress).checked_write(alice);
-        assertEq(l2Claim.claimedTo(aliceLSKAddress), alice);
-
         // alice satisfies delegating condition
         aliceSatisfiesDelegating();
 
@@ -372,12 +366,6 @@ contract L2AirdropTest is Test {
     }
 
     function aliceClaimAirdropForStakingTier1() internal {
-        bytes20 aliceLSKAddress = bytes20(alice);
-
-        // alice has claimed LSK tokens
-        stdstore.target(address(l2Claim)).sig("claimedTo(bytes20)").with_key(aliceLSKAddress).checked_write(alice);
-        assertEq(l2Claim.claimedTo(aliceLSKAddress), alice);
-
         // alice satisfies staking tier 1 condition
         aliceSatifiesStakingTier1();
 
@@ -400,12 +388,6 @@ contract L2AirdropTest is Test {
     }
 
     function aliceClaimAirdropForStakingTier2() internal {
-        bytes20 aliceLSKAddress = bytes20(alice);
-
-        // alice has claimed LSK tokens
-        stdstore.target(address(l2Claim)).sig("claimedTo(bytes20)").with_key(aliceLSKAddress).checked_write(alice);
-        assertEq(l2Claim.claimedTo(aliceLSKAddress), alice);
-
         // alice satisfies staking tier 2 condition
         aliceSatifiesStakingTier2();
 
@@ -431,11 +413,17 @@ contract L2AirdropTest is Test {
     }
 
     function test_ClaimAirdrop_MinEth_Delegating() public {
-        // first alice will claim airdrop for min eth condition
-        aliceClaimAirdropForMinEth();
+        // alice satisfies min eth condition
+        aliceSatisfiesMinEth();
 
-        // then alice will claim airdrop for delegating condition
-        aliceClaimAirdropForDelegating();
+        // alice satisfies delegating condition
+        aliceSatisfiesDelegating();
+
+        // claim airdrop for alice (min eth and delegating conditions are satisfied)
+        uint256 aliceBalanceBefore = l2LiskToken.balanceOf(alice);
+        bytes32[] memory merkleProof = new bytes32[](1);
+        l2Airdrop.claimAirdrop(aliceLSKAddress, 20 * 10 ** 18, merkleProof, alice);
+        assertEq(l2LiskToken.balanceOf(alice), aliceBalanceBefore + 10 * 10 ** 18); // 10 L2LiskToken airdrop
 
         // check airdrop claim status for alice
         assertEq(l2Airdrop.claimedMinEth(bytes20(alice)), true);
@@ -446,11 +434,17 @@ contract L2AirdropTest is Test {
     }
 
     function test_ClaimAirdrop_StakingTier1_StakingTier2() public {
-        // first alice will claim airdrop for staking tier 1 condition
-        aliceClaimAirdropForStakingTier1();
+        // alice satisfies staking tier 1 condition
+        aliceSatifiesStakingTier1();
 
-        // then alice will claim airdrop for staking tier 2 condition
-        aliceClaimAirdropForStakingTier2();
+        // alice satisfies staking tier 2 condition
+        aliceSatifiesStakingTier2();
+
+        // claim airdrop for alice (min eth and delegating conditions are satisfied)
+        uint256 aliceBalanceBefore = l2LiskToken.balanceOf(alice);
+        bytes32[] memory merkleProof = new bytes32[](1);
+        l2Airdrop.claimAirdrop(aliceLSKAddress, 16 * 10 ** 18, merkleProof, alice);
+        assertEq(l2LiskToken.balanceOf(alice), aliceBalanceBefore + 8 * 10 ** 18); // 8 L2LiskToken airdrop
 
         // check airdrop claim status for alice
         assertEq(l2Airdrop.claimedMinEth(bytes20(alice)), false);
@@ -461,14 +455,20 @@ contract L2AirdropTest is Test {
     }
 
     function test_ClaimAirdrop_MinEth_Delegating_StakingTier1() public {
-        // first alice will claim airdrop for min eth condition
-        aliceClaimAirdropForMinEth();
+        // alice satisfies min eth condition
+        aliceSatisfiesMinEth();
 
-        // then alice will claim airdrop for delegating condition
-        aliceClaimAirdropForDelegating();
+        // alice satisfies delegating condition
+        aliceSatisfiesDelegating();
 
-        // then alice will claim airdrop for staking tier 1 condition
-        aliceClaimAirdropForStakingTier1();
+        // alice satisfies staking tier 1 condition
+        aliceSatifiesStakingTier1();
+
+        // claim airdrop for alice (min eth and delegating conditions are satisfied)
+        uint256 aliceBalanceBefore = l2LiskToken.balanceOf(alice);
+        bytes32[] memory merkleProof = new bytes32[](1);
+        l2Airdrop.claimAirdrop(aliceLSKAddress, 16 * 10 ** 18, merkleProof, alice);
+        assertEq(l2LiskToken.balanceOf(alice), aliceBalanceBefore + 12 * 10 ** 18); // 12 L2LiskToken airdrop
 
         // check airdrop claim status for alice
         assertEq(l2Airdrop.claimedMinEth(bytes20(alice)), true);
@@ -479,14 +479,20 @@ contract L2AirdropTest is Test {
     }
 
     function test_ClaimAirdrop_MinEth_StakingTier1_StakingTier2() public {
-        // first alice will claim airdrop for min eth condition
-        aliceClaimAirdropForMinEth();
+        // alice satisfies min eth condition
+        aliceSatisfiesMinEth();
 
-        // then alice will claim airdrop for staking tier 1 condition
-        aliceClaimAirdropForStakingTier1();
+        // alice satisfies staking tier 1 condition
+        aliceSatifiesStakingTier1();
 
-        // then alice will claim airdrop for staking tier 2 condition
-        aliceClaimAirdropForStakingTier2();
+        // alice satisfies staking tier 2 condition
+        aliceSatifiesStakingTier2();
+
+        // claim airdrop for alice (min eth and delegating conditions are satisfied)
+        uint256 aliceBalanceBefore = l2LiskToken.balanceOf(alice);
+        bytes32[] memory merkleProof = new bytes32[](1);
+        l2Airdrop.claimAirdrop(aliceLSKAddress, 16 * 10 ** 18, merkleProof, alice);
+        assertEq(l2LiskToken.balanceOf(alice), aliceBalanceBefore + 12 * 10 ** 18); // 12 L2LiskToken airdrop
 
         // check airdrop claim status for alice
         assertEq(l2Airdrop.claimedMinEth(bytes20(alice)), true);
@@ -497,14 +503,20 @@ contract L2AirdropTest is Test {
     }
 
     function test_ClaimAirdrop_Delegating_StakingTier1_StakingTier2() public {
-        // then alice will claim airdrop for delegating condition
-        aliceClaimAirdropForDelegating();
+        // alice satisfies delegating condition
+        aliceSatisfiesDelegating();
 
-        // then alice will claim airdrop for staking tier 1 condition
-        aliceClaimAirdropForStakingTier1();
+        // alice satisfies staking tier 1 condition
+        aliceSatifiesStakingTier1();
 
-        // then alice will claim airdrop for staking tier 2 condition
-        aliceClaimAirdropForStakingTier2();
+        // alice satisfies staking tier 2 condition
+        aliceSatifiesStakingTier2();
+
+        // claim airdrop for alice (min eth and delegating conditions are satisfied)
+        uint256 aliceBalanceBefore = l2LiskToken.balanceOf(alice);
+        bytes32[] memory merkleProof = new bytes32[](1);
+        l2Airdrop.claimAirdrop(aliceLSKAddress, 16 * 10 ** 18, merkleProof, alice);
+        assertEq(l2LiskToken.balanceOf(alice), aliceBalanceBefore + 12 * 10 ** 18); // 12 L2LiskToken airdrop
 
         // check airdrop claim status for alice
         assertEq(l2Airdrop.claimedMinEth(bytes20(alice)), false);
@@ -514,18 +526,53 @@ contract L2AirdropTest is Test {
         assertEq(l2Airdrop.claimedFullAirdrop(bytes20(alice)), false);
     }
 
-    function test_ClaimAirdrop_FullAirdrop() public {
-        // first alice will claim airdrop for min eth condition
-        aliceClaimAirdropForMinEth();
-
-        // then alice will claim airdrop for delegating condition
-        aliceClaimAirdropForDelegating();
-
-        // then alice will claim airdrop for staking tier 1 condition
+    function test_ClaimAirdrop_MinEth_Delegating_StakingTier2() public {
+        // first alice will claim airdrop for staking tier 1 condition that only staking tier 2 condition will be left
         aliceClaimAirdropForStakingTier1();
+        assertEq(l2Airdrop.claimedStakingTier1(bytes20(alice)), true);
 
-        // then alice will claim airdrop for staking tier 2 condition
-        aliceClaimAirdropForStakingTier2();
+        // alice satisfies min eth condition
+        aliceSatisfiesMinEth();
+
+        // alice satisfies delegating condition
+        aliceSatisfiesDelegating();
+
+        // alice satisfies staking tier 2 condition
+        aliceSatifiesStakingTier2();
+
+        // claim airdrop for alice (min eth and delegating conditions are satisfied)
+        uint256 aliceBalanceBefore = l2LiskToken.balanceOf(alice);
+        bytes32[] memory merkleProof = new bytes32[](1);
+        l2Airdrop.claimAirdrop(aliceLSKAddress, 16 * 10 ** 18, merkleProof, alice);
+        assertEq(l2LiskToken.balanceOf(alice), aliceBalanceBefore + 12 * 10 ** 18); // 12 L2LiskToken airdrop
+
+        // check airdrop claim status for alice
+        assertEq(l2Airdrop.claimedMinEth(bytes20(alice)), true);
+        assertEq(l2Airdrop.claimedDelegating(bytes20(alice)), true);
+        assertEq(l2Airdrop.claimedStakingTier1(bytes20(alice)), true);
+        assertEq(l2Airdrop.claimedStakingTier2(bytes20(alice)), true);
+        assertEq(l2Airdrop.claimedFullAirdrop(bytes20(alice)), true); // full airdrop claimed because also staking tier
+            // 1 condition was satisfied before
+    }
+
+    function test_ClaimAirdrop_FullAirdrop() public {
+        // alice satisfies min eth condition
+        aliceSatisfiesMinEth();
+
+        // alice satisfies delegating condition
+        aliceSatisfiesDelegating();
+
+        // alice satisfies staking tier 1 condition
+        aliceSatifiesStakingTier1();
+
+        // alice satisfies staking tier 2 condition
+        aliceSatifiesStakingTier2();
+
+        // claim airdrop for alice (min eth and delegating conditions are satisfied)
+        uint256 aliceBalanceBefore = l2LiskToken.balanceOf(alice);
+        bytes32[] memory merkleProof = new bytes32[](1);
+        l2Airdrop.claimAirdrop(aliceLSKAddress, 16 * 10 ** 18, merkleProof, alice);
+        assertEq(l2LiskToken.balanceOf(alice), aliceBalanceBefore + 16 * 10 ** 18); // 16 L2LiskToken airdrop
 
         // check airdrop claim status for alice
         assertEq(l2Airdrop.claimedMinEth(bytes20(alice)), true);
@@ -535,7 +582,6 @@ contract L2AirdropTest is Test {
         assertEq(l2Airdrop.claimedFullAirdrop(bytes20(alice)), true);
 
         // check that alice cannot claim airdrop again
-        bytes32[] memory merkleProof = new bytes32[](1);
         vm.expectRevert("L2Airdrop: full airdrop claimed");
         l2Airdrop.claimAirdrop(bytes20(alice), 20 * 10 ** 18, merkleProof, alice);
     }
