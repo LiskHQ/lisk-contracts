@@ -233,6 +233,11 @@ contract L2AirdropTest is Test {
         assertEq(l2Airdrop.satisfiesMinEth(charlie), true);
     }
 
+    function test_SatisfiesMinEth_ZeroRecipientAddress() public {
+        vm.expectRevert("L2Airdrop: recipient is the zero address");
+        l2Airdrop.satisfiesMinEth(address(0x0));
+    }
+
     function aliceSatisfiesDelegating() internal {
         // alice is delegating
         vm.prank(alice);
@@ -251,6 +256,11 @@ contract L2AirdropTest is Test {
         vm.prank(charlie);
         l2VotingPower.delegate(charlie);
         assertEq(l2Airdrop.satisfiesDelegating(charlie), true);
+    }
+
+    function test_SatisfiesDelegating_ZeroRecipientAddress() public {
+        vm.expectRevert("L2Airdrop: recipient is the zero address");
+        l2Airdrop.satisfiesDelegating(address(0x0));
     }
 
     function aliceSatifiesStakingTier1() internal {
@@ -287,6 +297,16 @@ contract L2AirdropTest is Test {
         assertEq(l2Airdrop.satisfiesStakingTier1(alice, 16 * 10 ** 18), false);
     }
 
+    function test_SatisfiesStakingTier1_ZeroRecipientAddress() public {
+        vm.expectRevert("L2Airdrop: recipient is the zero address");
+        l2Airdrop.satisfiesStakingTier1(address(0x0), 0);
+    }
+
+    function test_SatisfiesStakingTier1_ZeroAmount() public {
+        vm.expectRevert("L2Airdrop: airdrop amount is zero");
+        l2Airdrop.satisfiesStakingTier1(alice, 0);
+    }
+
     function aliceSatifiesStakingTier2() internal {
         // alice stakes 30 and 50 L2LiskToken for minimum and minumum plus 1 days respectively in two positions
         vm.startPrank(alice);
@@ -319,6 +339,16 @@ contract L2AirdropTest is Test {
         // check that alice does not satisfy staking tier 2 because second position is not staked for
         // MIN_STAKING_DURATION_TIER_2 days or more
         assertEq(l2Airdrop.satisfiesStakingTier2(alice, 16 * 10 ** 18), false);
+    }
+
+    function test_SatisfiesStakingTier2_ZeroRecipientAddress() public {
+        vm.expectRevert("L2Airdrop: recipient is the zero address");
+        l2Airdrop.satisfiesStakingTier2(address(0x0), 0);
+    }
+
+    function test_SatisfiesStakingTier2_ZeroAmount() public {
+        vm.expectRevert("L2Airdrop: airdrop amount is zero");
+        l2Airdrop.satisfiesStakingTier2(alice, 0);
     }
 
     function aliceClaimAirdropForMinEth() internal {
