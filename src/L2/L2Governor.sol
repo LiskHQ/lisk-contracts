@@ -38,10 +38,10 @@ contract L2Governor is
     uint32 public constant VOTING_PERIOD = 604800; // 7 days
 
     /// @notice Threshold for a proposal to be successful.
-    uint256 public constant PROPOSAL_THRESHOLD = 2e18; // TODO change this value once we have a proper threshold
+    uint256 public constant PROPOSAL_THRESHOLD = 300_000 * 10 ** 18; // 300.000 vpLSK
 
     /// @notice Quorum required for a proposal to be successful (number of tokens).
-    uint256 public constant QUORUM_THRESHOLD = 50000e18; // TODO change this value once we have a proper threshold
+    uint256 public constant QUORUM_THRESHOLD = 24_000_000 * 10 ** 18; // 24.000.000 vpLSK
 
     /// @notice Disabling initializers on implementation contract to prevent misuse.
     constructor() {
