@@ -483,6 +483,38 @@ contract L2StakingTest is Test {
         l2Staking.lockAmount(alice, 0, 365);
     }
 
+    function test_LockAmount_AmountMultipleOf10ToThe16() public {
+        // amount is not multiple of 10^16
+        vm.prank(alice);
+        vm.expectRevert("L2Staking: amount should be multiple of 10^16");
+        l2Staking.lockAmount(alice, 1 * 10 ** 16 - 1, 365);
+
+        // amount is not multiple of 10^16
+        vm.prank(alice);
+        vm.expectRevert("L2Staking: amount should be multiple of 10^16");
+        l2Staking.lockAmount(alice, 2 * 10 ** 16 - 1, 365);
+
+        // amount is not multiple of 10^16
+        vm.prank(alice);
+        vm.expectRevert("L2Staking: amount should be multiple of 10^16");
+        l2Staking.lockAmount(alice, 1 * 10 ** 16 + 1, 365);
+
+        // amount is not multiple of 10^16
+        vm.prank(alice);
+        vm.expectRevert("L2Staking: amount should be multiple of 10^16");
+        l2Staking.lockAmount(alice, 2 * 10 ** 16 + 1, 365);
+
+        // amount is multiple of 10^16
+        vm.prank(alice);
+        l2Staking.lockAmount(alice, 1 * 10 ** 16, 365);
+        assertEq(l2LockingPosition.getLockingPosition(1).amount, 1 * 10 ** 16);
+
+        // amount is multiple of 10^16
+        vm.prank(alice);
+        l2Staking.lockAmount(alice, 2 * 10 ** 16, 365);
+        assertEq(l2LockingPosition.getLockingPosition(2).amount, 2 * 10 ** 16);
+    }
+
     function test_LockAmount_CreatorNotStakingContract() public {
         // execute the lockAmount function from a contract that is not the staking contract but is in the
         // allowedCreators list
@@ -544,7 +576,7 @@ contract L2StakingTest is Test {
 
     function test_LockAmount_InsufficientUserBalance() public {
         uint256 aliceBalance = l2LiskToken.balanceOf(alice);
-        uint256 invalidAmount = aliceBalance + 1;
+        uint256 invalidAmount = aliceBalance + 1 * 10 ** 16;
         vm.prank(alice);
         vm.expectRevert("L2Staking: lockOwner does not have enough LSK tokens");
         l2Staking.lockAmount(alice, invalidAmount, 365);
@@ -879,6 +911,43 @@ contract L2StakingTest is Test {
         l2Staking.increaseLockingAmount(1, 0);
     }
 
+    function test_IncreaseLockingAmount_ZeroAmountMultipleOf10ToThe16() public {
+        vm.prank(alice);
+        l2Staking.lockAmount(alice, 30 * 10 ** 18, 365);
+        assertEq(l2LockingPosition.balanceOf(alice), 1);
+        assertEq(l2LockingPosition.getLockingPosition(1).amount, 30 * 10 ** 18);
+
+        // amount is not multiple of 10^16
+        vm.prank(alice);
+        vm.expectRevert("L2Staking: increased amount should be multiple of 10^16");
+        l2Staking.increaseLockingAmount(1, 1 * 10 ** 16 - 1);
+
+        // amount is not multiple of 10^16
+        vm.prank(alice);
+        vm.expectRevert("L2Staking: increased amount should be multiple of 10^16");
+        l2Staking.increaseLockingAmount(1, 2 * 10 ** 16 - 1);
+
+        // amount is not multiple of 10^16
+        vm.prank(alice);
+        vm.expectRevert("L2Staking: increased amount should be multiple of 10^16");
+        l2Staking.increaseLockingAmount(1, 1 * 10 ** 16 + 1);
+
+        // amount is not multiple of 10^16
+        vm.prank(alice);
+        vm.expectRevert("L2Staking: increased amount should be multiple of 10^16");
+        l2Staking.increaseLockingAmount(1, 2 * 10 ** 16 + 1);
+
+        // amount is multiple of 10^16
+        vm.prank(alice);
+        l2Staking.increaseLockingAmount(1, 1 * 10 ** 16);
+        assertEq(l2LockingPosition.getLockingPosition(1).amount, 30 * 10 ** 18 + 1 * 10 ** 16);
+
+        // amount is multiple of 10^16
+        vm.prank(alice);
+        l2Staking.increaseLockingAmount(1, 2 * 10 ** 16);
+        assertEq(l2LockingPosition.getLockingPosition(1).amount, 30 * 10 ** 18 + 3 * 10 ** 16); // 1 + 2 * 10^16
+    }
+
     function test_IncreaseLockingAmount_ExpiredLockingPosition() public {
         vm.prank(alice);
         l2Staking.lockAmount(alice, 100 * 10 ** 18, 365);
@@ -937,7 +1006,7 @@ contract L2StakingTest is Test {
         assertEq(l2LockingPosition.balanceOf(alice), 1);
 
         uint256 aliceBalance = l2LiskToken.balanceOf(alice);
-        uint256 invalidAmount = aliceBalance + 1;
+        uint256 invalidAmount = aliceBalance + 1 * 10 ** 16;
         vm.prank(alice);
         vm.expectRevert("L2Staking: owner of lock does not have enough LSK tokens");
         l2Staking.increaseLockingAmount(1, invalidAmount);
