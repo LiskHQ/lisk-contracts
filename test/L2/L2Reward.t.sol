@@ -129,7 +129,8 @@ contract L2RewardTest is Test {
         lockIDs[1] = l2Reward.createPosition(1 * 10 ** 18, 100);
         vm.stopPrank();
 
-        uint256 expectedTotalWeight = 27000 + 250;
+        uint256 expectedTotalWeight = ((convertLiskToBeddows(100) * (120 + l2Reward.OFFSET())) / 10 ** 18)
+            + ((convertLiskToBeddows(1) * (100 + l2Reward.OFFSET())) / 10 ** 18);
 
         assertEq(l2Reward.totalWeight(), expectedTotalWeight);
         assertEq(l2Reward.totalAmountLocked(), convertLiskToBeddows(101));
@@ -578,7 +579,7 @@ contract L2RewardTest is Test {
         l2Reward.deletePosition(1);
     }
 
-    function test_resumeUnlocking_onlyExisitingLockingPositionCanBePausedByAnOwner() public {
+    function test_resumeUnlocking_onlyExisitingLockingPositionCanBeResumedByAnOwner() public {
         address staker = address(0x1);
 
         vm.mockCall(
@@ -589,7 +590,7 @@ contract L2RewardTest is Test {
 
         vm.expectRevert("L2Reward: Locking position does not exist");
         vm.prank(staker);
-        l2Reward.pauseUnlocking(1);
+        l2Reward.resumeUnlockingCountdown(1);
     }
 
     function test_resumeUnlocking_issuesRewardAndUpdatesGlobalUnlockAmount() public {
