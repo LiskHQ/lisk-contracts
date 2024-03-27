@@ -222,8 +222,8 @@ contract L2Staking is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, I
         require(amount > 0, "L2Staking: amount should be greater than zero");
         require(amount % 10 ** 16 == 0, "L2Staking: amount should be multiple of 10^16");
         require(
-            IL2LiskToken(l2LiskTokenContract).balanceOf(lockOwner) >= amount,
-            "L2Staking: lockOwner does not have enough LSK tokens"
+            IL2LiskToken(l2LiskTokenContract).balanceOf(msg.sender) >= amount,
+            "L2Staking: sender does not have enough LSK tokens"
         );
         require(
             lockingDuration >= MIN_LOCKING_DURATION,
@@ -245,12 +245,11 @@ contract L2Staking is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, I
             );
         }
 
-        // We assume that the owner has already approved the Staking contract to transfer the amount and in most cases
-        // increaseLockingAmount will be called from a smart contract, so msg.sender will NOT be an address from which
-        // the amount will be transferred. That's why we use lockOwner as the sender for the transferFrom function.
+        // We assume that owner or creator has already approved the Staking contract to transfer the amount and in most
+        // cases lockAmount will be called from a smart contract (creator).
         // slither-disable-next-line arbitrary-send-erc20
-        bool success = IL2LiskToken(l2LiskTokenContract).transferFrom(lockOwner, address(this), amount);
-        require(success, "L2Staking: LSK token transfer from owner to Staking contract failed");
+        bool success = IL2LiskToken(l2LiskTokenContract).transferFrom(msg.sender, address(this), amount);
+        require(success, "L2Staking: LSK token transfer from owner or creator to Staking contract failed");
 
         uint256 lockId = (IL2LockingPosition(lockingPositionContract)).createLockingPosition(
             creator, lockOwner, amount, lockingDuration
@@ -320,19 +319,16 @@ contract L2Staking is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, I
             lock.pausedLockingDuration > 0 || lock.expDate > todayDay(),
             "L2Staking: can not increase amount for expired locking position"
         );
-
-        address ownerOfLock = (IL2LockingPosition(lockingPositionContract)).ownerOf(lockId);
         require(
-            IL2LiskToken(l2LiskTokenContract).balanceOf(ownerOfLock) >= amountIncrease,
-            "L2Staking: owner of lock does not have enough LSK tokens"
+            IL2LiskToken(l2LiskTokenContract).balanceOf(msg.sender) >= amountIncrease,
+            "L2Staking: sender does not have enough LSK tokens"
         );
 
-        // We assume that the owner has already approved the Staking contract to transfer the amount and in most cases
-        // increaseLockingAmount will be called from a smart contract, so msg.sender will NOT be an address from which
-        // the amount will be transferred. That's why we use ownerOfLock as the sender for the transferFrom function.
+        // We assume that owner or creator has already approved the Staking contract to transfer the amount and in most
+        // cases increaseLockingAmount will be called from a smart contract (creator).
         // slither-disable-next-line arbitrary-send-erc20
-        bool success = IL2LiskToken(l2LiskTokenContract).transferFrom(ownerOfLock, address(this), amountIncrease);
-        require(success, "L2Staking: LSK token transfer from owner to Staking contract failed");
+        bool success = IL2LiskToken(l2LiskTokenContract).transferFrom(msg.sender, address(this), amountIncrease);
+        require(success, "L2Staking: LSK token transfer from owner or creator to Staking contract failed");
 
         // update locking position
         (IL2LockingPosition(lockingPositionContract)).modifyLockingPosition(

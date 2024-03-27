@@ -83,6 +83,15 @@ contract L2StakingTest is Test {
         l2LiskToken.approve(address(l2StakingHarness), 200 * 10 ** 18);
         assertEq(l2LiskToken.allowance(alice, address(l2StakingHarness)), 200 * 10 ** 18);
 
+        // fund rewardsContract with 200 L2LiskToken
+        vm.prank(bridge);
+        l2LiskToken.mint(rewardsContract, 200 * 10 ** 18);
+        assertEq(l2LiskToken.balanceOf(rewardsContract), 200 * 10 ** 18);
+
+        // approve l2StakingHarness to spend rewardsContract's 200 L2LiskToken
+        vm.prank(rewardsContract);
+        l2LiskToken.approve(address(l2StakingHarness), 200 * 10 ** 18);
+
         return l2StakingHarness;
     }
 
@@ -178,6 +187,16 @@ contract L2StakingTest is Test {
         vm.prank(alice);
         l2LiskToken.approve(address(l2Staking), 100 * 10 ** 18);
         assertEq(l2LiskToken.allowance(alice, address(l2Staking)), 100 * 10 ** 18);
+
+        // fund rewardsContract with 100 L2LiskToken
+        vm.prank(bridge);
+        l2LiskToken.mint(rewardsContract, 100 * 10 ** 18);
+        assertEq(l2LiskToken.balanceOf(rewardsContract), 100 * 10 ** 18);
+
+        // approve L2Staking to spend rewardsContract's 100 L2LiskToken
+        vm.prank(rewardsContract);
+        l2LiskToken.approve(address(l2Staking), 100 * 10 ** 18);
+        assertEq(l2LiskToken.allowance(rewardsContract, address(l2Staking)), 100 * 10 ** 18);
     }
 
     function test_CanLockingPositionBeModified_CreatorIsStakingContract() public {
@@ -521,6 +540,8 @@ contract L2StakingTest is Test {
         vm.prank(rewardsContract);
         l2Staking.lockAmount(alice, 100 * 10 ** 18, 365);
 
+        assertEq(l2LiskToken.balanceOf(alice), 100 * 10 ** 18); // alice didn't call lockAmount
+        assertEq(l2LiskToken.balanceOf(rewardsContract), 0);
         assertEq(l2LockingPosition.getLockingPosition(1).creator, rewardsContract);
     }
 
@@ -578,7 +599,7 @@ contract L2StakingTest is Test {
         uint256 aliceBalance = l2LiskToken.balanceOf(alice);
         uint256 invalidAmount = aliceBalance + 1 * 10 ** 16;
         vm.prank(alice);
-        vm.expectRevert("L2Staking: lockOwner does not have enough LSK tokens");
+        vm.expectRevert("L2Staking: sender does not have enough LSK tokens");
         l2Staking.lockAmount(alice, invalidAmount, 365);
     }
 
@@ -654,7 +675,7 @@ contract L2StakingTest is Test {
         l2Staking.lockAmount(alice, 100 * 10 ** 18, 365);
         assertEq(l2LiskToken.balanceOf(alice), 0);
         assertEq(l2LiskToken.balanceOf(daoTreasuryAddress), 0);
-        assertEq(l2LiskToken.balanceOf(rewardsContract), 0);
+        assertEq(l2LiskToken.balanceOf(rewardsContract), 100 * 10 ** 18); // rewardsContract didn't call lockAmount
         assertEq(l2LiskToken.balanceOf(address(l2Staking)), 100 * 10 ** 18);
         assertEq(l2LockingPosition.totalSupply(), 1);
         assertEq(l2LockingPosition.balanceOf(alice), 1);
@@ -670,7 +691,7 @@ contract L2StakingTest is Test {
         assertEq(l2LiskToken.balanceOf(alice), 0);
         // penalty is sent to the Lisk DAO Treasury contract
         assertEq(l2LiskToken.balanceOf(daoTreasuryAddress), 18150684931506849315);
-        assertEq(l2LiskToken.balanceOf(rewardsContract), 0);
+        assertEq(l2LiskToken.balanceOf(rewardsContract), 100 * 10 ** 18);
         assertEq(l2LiskToken.balanceOf(address(l2Staking)), 100 * 10 ** 18 - 18150684931506849315);
 
         assertEq(l2LockingPosition.totalSupply(), 1);
@@ -689,7 +710,7 @@ contract L2StakingTest is Test {
         l2Staking.lockAmount(alice, 100 * 10 ** 18, 365);
         assertEq(l2LiskToken.balanceOf(alice), 0);
         assertEq(l2LiskToken.balanceOf(daoTreasuryAddress), 0);
-        assertEq(l2LiskToken.balanceOf(rewardsContract), 0);
+        assertEq(l2LiskToken.balanceOf(rewardsContract), 100 * 10 ** 18); // rewardsContract didn't call lockAmount
         assertEq(l2LiskToken.balanceOf(address(l2Staking)), 100 * 10 ** 18);
         assertEq(l2LockingPosition.totalSupply(), 1);
         assertEq(l2LockingPosition.balanceOf(alice), 1);
@@ -712,7 +733,7 @@ contract L2StakingTest is Test {
         assertEq(l2LiskToken.balanceOf(alice), 0);
         // penalty is sent to the Lisk DAO Treasury contract
         assertEq(l2LiskToken.balanceOf(daoTreasuryAddress), 16095890410958904109);
-        assertEq(l2LiskToken.balanceOf(rewardsContract), 0);
+        assertEq(l2LiskToken.balanceOf(rewardsContract), 100 * 10 ** 18);
         assertEq(l2LiskToken.balanceOf(address(l2Staking)), 100 * 10 ** 18 - 16095890410958904109);
 
         assertEq(l2LockingPosition.totalSupply(), 1);
@@ -731,7 +752,7 @@ contract L2StakingTest is Test {
         l2Staking.lockAmount(alice, 100 * 10 ** 18, 365);
         assertEq(l2LiskToken.balanceOf(alice), 0);
         assertEq(l2LiskToken.balanceOf(daoTreasuryAddress), 0);
-        assertEq(l2LiskToken.balanceOf(rewardsContract), 0);
+        assertEq(l2LiskToken.balanceOf(rewardsContract), 100 * 10 ** 18); // rewardsContract didn't call lockAmount
         assertEq(l2LiskToken.balanceOf(address(l2Staking)), 100 * 10 ** 18);
         assertEq(l2LockingPosition.totalSupply(), 1);
         assertEq(l2LockingPosition.balanceOf(alice), 1);
@@ -749,6 +770,7 @@ contract L2StakingTest is Test {
     function test_InitiateFastUnlock_CreatorNotStakingContract() public {
         vm.prank(rewardsContract);
         l2Staking.lockAmount(alice, 100 * 10 ** 18, 365);
+        assertEq(l2LiskToken.balanceOf(alice), 100 * 10 ** 18); // alice didn't call lockAmount
         assertEq(l2LiskToken.balanceOf(daoTreasuryAddress), 0);
         assertEq(l2LiskToken.balanceOf(rewardsContract), 0);
         assertEq(l2LockingPosition.getLockingPosition(1).creator, rewardsContract);
@@ -759,7 +781,7 @@ contract L2StakingTest is Test {
         vm.prank(rewardsContract);
         l2Staking.initiateFastUnlock(1);
 
-        assertEq(l2LiskToken.balanceOf(alice), 0);
+        assertEq(l2LiskToken.balanceOf(alice), 100 * 10 ** 18); // alice didn't call lockAmount
         assertEq(l2LiskToken.balanceOf(daoTreasuryAddress), 0);
         // penalty is sent to the Rewards contract
         assertEq(l2LiskToken.balanceOf(address(rewardsContract)), 18150684931506849315);
@@ -1008,7 +1030,7 @@ contract L2StakingTest is Test {
         uint256 aliceBalance = l2LiskToken.balanceOf(alice);
         uint256 invalidAmount = aliceBalance + 1 * 10 ** 16;
         vm.prank(alice);
-        vm.expectRevert("L2Staking: owner of lock does not have enough LSK tokens");
+        vm.expectRevert("L2Staking: sender does not have enough LSK tokens");
         l2Staking.increaseLockingAmount(1, invalidAmount);
     }
 
