@@ -159,21 +159,18 @@ contract L2Reward {
 
     /// @notice Deletes a locking position.
     /// @param lockID The ID of the locking position.
-    /// @return Reward amount against the position.
-    function deletePosition(uint256 lockID) public virtual returns (uint256) {
+    function deletePosition(uint256 lockID) public virtual {
         updateGlobalState();
         require(
             IL2LockingPosition(lockingPositionContract).ownerOf(lockID) == msg.sender,
             "L2Reward: msg.sender does not own the locking position"
         );
 
-        uint256 reward = _claimReward(lockID);
+        _claimReward(lockID);
 
         IL2Staking(stakingContract).unlock(lockID);
 
         delete lastClaimDate[lockID];
-
-        return reward;
     }
 
     /// @notice Pauses the locking position.

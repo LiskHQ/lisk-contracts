@@ -460,7 +460,7 @@ contract L2RewardTest is Test {
         address staker = address(0x1);
         uint256 balance = convertLiskToBeddows(1000);
 
-        uint256[] memory lockIDs = new uint256[](1);
+        uint256 lockID;
 
         // staker gets balance
         vm.prank(bridge);
@@ -473,24 +473,22 @@ contract L2RewardTest is Test {
         l2Reward.fundStakingRewards(convertLiskToBeddows(35), 350, 1);
 
         l2LiskToken.approve(address(l2Staking), convertLiskToBeddows(100));
-        lockIDs[0] = l2Reward.createPosition(convertLiskToBeddows(100), 120);
+        lockID = l2Reward.createPosition(convertLiskToBeddows(100), 120);
 
         vm.stopPrank();
 
-        // rewards are claimed from lastClaimDate for the lock (19740) till expiry day
         skip(150 days);
 
-        uint256 expectedRewards = (11.9 * 10 ** 18) + 0;
+        uint256 expectedRewards = 11.9 * 10 ** 18;
         // locked amount gets unlocked
         uint256 expectedBalance = l2LiskToken.balanceOf(staker) + expectedRewards + convertLiskToBeddows(100);
 
         vm.prank(staker);
-        uint256 reward = l2Reward.deletePosition(lockIDs[0]);
+        l2Reward.deletePosition(lockID);
 
         balance = l2LiskToken.balanceOf(staker);
 
-        assertEq(reward, 11.9 * 10 ** 18);
-        assertEq(l2Reward.lastClaimDate(lockIDs[0]), 0);
+        assertEq(l2Reward.lastClaimDate(lockID), 0);
         assertEq(balance, expectedBalance);
     }
 
@@ -544,12 +542,10 @@ contract L2RewardTest is Test {
 
         vm.stopPrank();
 
-        // rewards are claimed from lastClaimDate for the lock (19740) till expiry day
         skip(75 days);
         uint256 today = deploymentDate + 75;
 
         uint256 expectedRewards = 7.4 * 10 ** 18;
-        // amount gets unlocked
         uint256 expectedBalance = l2LiskToken.balanceOf(staker) + expectedRewards;
         uint256 expectedPausedLockingDuration = deploymentDate + 120 - today;
 
@@ -618,21 +614,24 @@ contract L2RewardTest is Test {
 
         vm.stopPrank();
 
-        // rewards are claimed from lastClaimDate for the lock (19740) till expiry day
         skip(50 days);
         uint256 today = deploymentDate + 50;
 
         vm.prank(staker);
         l2Reward.pauseUnlocking(lockIDs[0]);
 
-        // amount gets unlocked
         uint256 expectedPausedLockingDuration = deploymentDate + 120 - today;
+        uint256 expectedRewards = convertLiskToBeddows(5);
+
+        balance = l2LiskToken.balanceOf(staker);
 
         skip(50 days);
         today = deploymentDate + 100;
 
         vm.prank(staker);
-        l2Reward.resumeUnlockingCountdown(lockIDs[0]);
+        uint256 reward = l2Reward.resumeUnlockingCountdown(lockIDs[0]);
+
+        uint256 expectedBalance = balance + expectedRewards;
 
         LockingPosition memory lockingPosition = l2LockingPosition.getLockingPosition(lockIDs[0]);
 
@@ -640,12 +639,8 @@ contract L2RewardTest is Test {
         assertEq(l2Reward.pendingUnlockAmount(), convertLiskToBeddows(100));
         assertEq(l2Reward.dailyUnlockedAmounts(today + expectedPausedLockingDuration), convertLiskToBeddows(100));
         assertEq(l2Reward.lastClaimDate(lockIDs[0]), today);
-        // assertEq(lockingPosition.pausedLockingDuration, expectedPausedLockingDuration);
-    }
-
-    function test_approveTest() public {
-        vm.prank(address(0x1));
-        l2LiskToken.approve(address(0x2), 10000);
+        assertEq(reward, expectedRewards);
+        assertEq(l2LiskToken.balanceOf(staker), expectedBalance);
     }
 
     function convertLiskToBeddows(uint256 lisk) internal pure returns (uint256) {
