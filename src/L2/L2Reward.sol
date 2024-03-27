@@ -28,7 +28,7 @@ interface IL2Staking {
 
     function pauseRemainingLockingDuration(uint256 lockID) external;
 
-    function resumeUnlockingCountdown(uint256 lockID) external;
+    function resumeCountdown(uint256 lockID) external;
 
     function calculatePenalty(uint256 lockID) external returns (uint256);
 
@@ -159,19 +159,21 @@ contract L2Reward {
 
     /// @notice Deletes a locking position.
     /// @param lockID The ID of the locking position.
-    function deletePosition(uint256 lockID) public virtual {
+    /// @return Reward amount against the position.
+    function deletePosition(uint256 lockID) public virtual returns (uint256) {
         updateGlobalState();
         require(
             IL2LockingPosition(lockingPositionContract).ownerOf(lockID) == msg.sender,
             "L2Reward: msg.sender does not own the locking position"
         );
-        require(lastClaimDate[lockID] != 0, "L2Reward: Locking position does not exist");
 
-        _claimReward(lockID);
+        uint256 reward = _claimReward(lockID);
 
         IL2Staking(stakingContract).unlock(lockID);
 
         delete lastClaimDate[lockID];
+
+        return reward;
     }
 
     /// @notice Pauses the locking position.
@@ -300,10 +302,10 @@ contract L2Reward {
             "msg.sender does not own the locking position"
         );
 
+        _claimReward(lockID);
+
         IL2LockingPosition.LockingPosition memory lockingPosition =
             IL2LockingPosition(lockingPositionContract).getLockingPosition(lockID);
-
-        _claimReward(lockID);
 
         IL2Staking(stakingContract).increaseLockingAmount(lockID, amountIncrease);
 
@@ -354,44 +356,50 @@ contract L2Reward {
 
     /// @notice Pauses unlocking of a locking position.
     /// @param lockID The ID of the locking position.
-    function pauseUnlocking(uint256 lockID) public virtual {
+    /// @return Reward amount against the locking position.
+    function pauseUnlocking(uint256 lockID) public virtual returns (uint256) {
         updateGlobalState();
-
-        IL2LockingPosition.LockingPosition memory lockingPosition =
-            IL2LockingPosition(lockingPositionContract).getLockingPosition(lockID);
 
         require(
             IL2LockingPosition(lockingPositionContract).ownerOf(lockID) == msg.sender,
             "msg.sender does not own the locking position"
         );
 
-        _claimReward(lockID);
+        uint256 reward = _claimReward(lockID);
 
         IL2Staking(stakingContract).pauseRemainingLockingDuration(lockID);
 
+        IL2LockingPosition.LockingPosition memory lockingPosition =
+            IL2LockingPosition(lockingPositionContract).getLockingPosition(lockID);
+
         pendingUnlockAmount -= lockingPosition.amount;
         dailyUnlockedAmounts[lockingPosition.expDate] -= lockingPosition.amount;
+
+        return reward;
     }
 
     /// @notice Resumes unlocking of a locking position.
     /// @param lockID The ID of the locking position.
-    function resumeUnlockingCountdown(uint256 lockID) public virtual {
+    /// @return Reward amount against the locking position.
+    function resumeUnlockingCountdown(uint256 lockID) public virtual returns (uint256) {
         updateGlobalState();
-
-        IL2LockingPosition.LockingPosition memory lockingPosition =
-            IL2LockingPosition(lockingPositionContract).getLockingPosition(lockID);
 
         require(
             IL2LockingPosition(lockingPositionContract).ownerOf(lockID) == msg.sender,
             "msg.sender does not own the locking position"
         );
 
-        _claimReward(lockID);
+        uint256 reward = _claimReward(lockID);
 
-        IL2Staking(stakingContract).resumeUnlockingCountdown(lockID);
+        IL2Staking(stakingContract).resumeCountdown(lockID);
+
+        IL2LockingPosition.LockingPosition memory lockingPosition =
+            IL2LockingPosition(lockingPositionContract).getLockingPosition(lockID);
 
         pendingUnlockAmount += lockingPosition.amount;
         dailyUnlockedAmounts[lockingPosition.expDate] += lockingPosition.amount;
+
+        return reward;
     }
 
     /// @notice Adds daily rewards between provided duration.

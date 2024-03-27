@@ -79,34 +79,6 @@ contract L2RewardTest is Test {
         assertEq(l2Reward.OFFSET(), 150);
     }
 
-    function test_onlyOwnerCanDeleteALockingPosition() public {
-        address staker = address(0x1);
-
-        vm.mockCall(
-            address(l2LockingPosition),
-            abi.encodeWithSelector(ERC721Upgradeable.ownerOf.selector),
-            abi.encode(address(0x0))
-        );
-
-        vm.prank(staker);
-        vm.expectRevert("L2Reward: msg.sender does not own the locking position");
-        l2Reward.deletePosition(1);
-    }
-
-    function test_onlyExistingLockingPositionCanBeDeletedByAnOwner() public {
-        address staker = address(0x1);
-
-        vm.mockCall(
-            address(l2LockingPosition),
-            abi.encodeWithSelector(ERC721Upgradeable.ownerOf.selector),
-            abi.encode(address(0x1))
-        );
-
-        vm.expectRevert("L2Reward: Locking position does not exist");
-        vm.prank(staker);
-        l2Reward.deletePosition(1);
-    }
-
     function test_createPosition() public {
         l2Staking.addCreator(address(l2Reward));
 
@@ -453,6 +425,222 @@ contract L2RewardTest is Test {
         assertEq(l2Reward.lastClaimDate(lockIDs[0]), today);
         assertEq(l2Reward.lastClaimDate(lockIDs[1]), today);
         assertEq(balance, expectedBalance);
+    }
+
+    function test_deletePosition_onlyOwnerCanDeleteALockingPosition() public {
+        address staker = address(0x1);
+
+        vm.mockCall(
+            address(l2LockingPosition),
+            abi.encodeWithSelector(ERC721Upgradeable.ownerOf.selector),
+            abi.encode(address(0x0))
+        );
+
+        vm.prank(staker);
+        vm.expectRevert("L2Reward: msg.sender does not own the locking position");
+        l2Reward.deletePosition(1);
+    }
+
+    function test_deletePosition_onlyExistingLockingPositionCanBeDeletedByAnOwner() public {
+        address staker = address(0x1);
+
+        vm.mockCall(
+            address(l2LockingPosition),
+            abi.encodeWithSelector(ERC721Upgradeable.ownerOf.selector),
+            abi.encode(address(0x1))
+        );
+
+        vm.expectRevert("L2Reward: Locking position does not exist");
+        vm.prank(staker);
+        l2Reward.deletePosition(1);
+    }
+
+    function test_deletePosition_issuesRewardAndUnlocksPosition() public {
+        l2Staking.addCreator(address(l2Reward));
+        address staker = address(0x1);
+        uint256 balance = convertLiskToBeddows(1000);
+
+        uint256[] memory lockIDs = new uint256[](1);
+
+        // staker gets balance
+        vm.prank(bridge);
+        l2LiskToken.mint(staker, balance);
+
+        // staker funds staking
+        // staker creates two positions on deploymentDate, 19740.
+        vm.startPrank(staker);
+        l2LiskToken.approve(address(l2Reward), convertLiskToBeddows(35));
+        l2Reward.fundStakingRewards(convertLiskToBeddows(35), 350, 1);
+
+        l2LiskToken.approve(address(l2Staking), convertLiskToBeddows(100));
+        lockIDs[0] = l2Reward.createPosition(convertLiskToBeddows(100), 120);
+
+        vm.stopPrank();
+
+        // rewards are claimed from lastClaimDate for the lock (19740) till expiry day
+        skip(150 days);
+
+        uint256 expectedRewards = (11.9 * 10 ** 18) + 0;
+        // locked amount gets unlocked
+        uint256 expectedBalance = l2LiskToken.balanceOf(staker) + expectedRewards + convertLiskToBeddows(100);
+
+        vm.prank(staker);
+        uint256 reward = l2Reward.deletePosition(lockIDs[0]);
+
+        balance = l2LiskToken.balanceOf(staker);
+
+        assertEq(reward, 11.9 * 10 ** 18);
+        assertEq(l2Reward.lastClaimDate(lockIDs[0]), 0);
+        assertEq(balance, expectedBalance);
+    }
+
+    function test_pauseUnlocking_onlyOwnerCanPauseALockingPosition() public {
+        address staker = address(0x1);
+
+        vm.mockCall(
+            address(l2LockingPosition),
+            abi.encodeWithSelector(ERC721Upgradeable.ownerOf.selector),
+            abi.encode(address(0x0))
+        );
+
+        vm.prank(staker);
+        vm.expectRevert("L2Reward: msg.sender does not own the locking position");
+        l2Reward.deletePosition(1);
+    }
+
+    function test_pauseUnlocking_onlyExisitingLockingPositionCanBePausedByAnOwner() public {
+        address staker = address(0x1);
+
+        vm.mockCall(
+            address(l2LockingPosition),
+            abi.encodeWithSelector(ERC721Upgradeable.ownerOf.selector),
+            abi.encode(address(0x1))
+        );
+
+        vm.expectRevert("L2Reward: Locking position does not exist");
+        vm.prank(staker);
+        l2Reward.pauseUnlocking(1);
+    }
+
+    function test_pauseUnlocking_issuesRewardAndUpdatesGlobalUnlockAmounts() public {
+        l2Staking.addCreator(address(l2Reward));
+        address staker = address(0x1);
+        uint256 balance = convertLiskToBeddows(1000);
+
+        uint256[] memory lockIDs = new uint256[](1);
+
+        // staker gets balance
+        vm.prank(bridge);
+        l2LiskToken.mint(staker, balance);
+
+        // staker funds staking
+        // staker creates two positions on deploymentDate, 19740.
+        vm.startPrank(staker);
+        l2LiskToken.approve(address(l2Reward), convertLiskToBeddows(35));
+        l2Reward.fundStakingRewards(convertLiskToBeddows(35), 350, 1);
+
+        l2LiskToken.approve(address(l2Staking), convertLiskToBeddows(100));
+        lockIDs[0] = l2Reward.createPosition(convertLiskToBeddows(100), 120);
+
+        vm.stopPrank();
+
+        // rewards are claimed from lastClaimDate for the lock (19740) till expiry day
+        skip(75 days);
+        uint256 today = deploymentDate + 75;
+
+        uint256 expectedRewards = 7.4 * 10 ** 18;
+        // amount gets unlocked
+        uint256 expectedBalance = l2LiskToken.balanceOf(staker) + expectedRewards;
+        uint256 expectedPausedLockingDuration = deploymentDate + 120 - today;
+
+        vm.prank(staker);
+        uint256 reward = l2Reward.pauseUnlocking(lockIDs[0]);
+
+        balance = l2LiskToken.balanceOf(staker);
+
+        LockingPosition memory lockingPosition = l2LockingPosition.getLockingPosition(lockIDs[0]);
+
+        assertEq(reward, 7.4 * 10 ** 18);
+        assertEq(balance, expectedBalance);
+        assertEq(l2Reward.pendingUnlockAmount(), 0);
+        assertEq(l2Reward.dailyUnlockedAmounts(deploymentDate + 120), 0);
+        assertEq(l2Reward.lastClaimDate(lockIDs[0]), today);
+        assertEq(lockingPosition.pausedLockingDuration, expectedPausedLockingDuration);
+    }
+
+    function test_resumeUnlocking_onlyOwnerCanBeResumeUnlockingForALockingPosition() public {
+        address staker = address(0x1);
+
+        vm.mockCall(
+            address(l2LockingPosition),
+            abi.encodeWithSelector(ERC721Upgradeable.ownerOf.selector),
+            abi.encode(address(0x0))
+        );
+
+        vm.prank(staker);
+        vm.expectRevert("L2Reward: msg.sender does not own the locking position");
+        l2Reward.deletePosition(1);
+    }
+
+    function test_resumeUnlocking_onlyExisitingLockingPositionCanBePausedByAnOwner() public {
+        address staker = address(0x1);
+
+        vm.mockCall(
+            address(l2LockingPosition),
+            abi.encodeWithSelector(ERC721Upgradeable.ownerOf.selector),
+            abi.encode(address(0x1))
+        );
+
+        vm.expectRevert("L2Reward: Locking position does not exist");
+        vm.prank(staker);
+        l2Reward.pauseUnlocking(1);
+    }
+
+    function test_resumeUnlocking_issuesRewardAndUpdatesGlobalUnlockAmount() public {
+        l2Staking.addCreator(address(l2Reward));
+        address staker = address(0x1);
+        uint256 balance = convertLiskToBeddows(1000);
+
+        uint256[] memory lockIDs = new uint256[](1);
+
+        // staker gets balance
+        vm.prank(bridge);
+        l2LiskToken.mint(staker, balance);
+
+        // staker funds staking
+        // staker creates two positions on deploymentDate, 19740.
+        vm.startPrank(staker);
+        l2LiskToken.approve(address(l2Reward), convertLiskToBeddows(35));
+        l2Reward.fundStakingRewards(convertLiskToBeddows(35), 350, 1);
+
+        l2LiskToken.approve(address(l2Staking), convertLiskToBeddows(100));
+        lockIDs[0] = l2Reward.createPosition(convertLiskToBeddows(100), 120);
+
+        vm.stopPrank();
+
+        // rewards are claimed from lastClaimDate for the lock (19740) till expiry day
+        skip(50 days);
+        uint256 today = deploymentDate + 50;
+
+        vm.prank(staker);
+        l2Reward.pauseUnlocking(lockIDs[0]);
+
+        // amount gets unlocked
+        uint256 expectedPausedLockingDuration = deploymentDate + 120 - today;
+
+        skip(50 days);
+        today = deploymentDate + 100;
+
+        vm.prank(staker);
+        l2Reward.resumeUnlockingCountdown(lockIDs[0]);
+
+        LockingPosition memory lockingPosition = l2LockingPosition.getLockingPosition(lockIDs[0]);
+
+        assertEq(lockingPosition.expDate, today + expectedPausedLockingDuration);
+        assertEq(l2Reward.pendingUnlockAmount(), convertLiskToBeddows(100));
+        assertEq(l2Reward.dailyUnlockedAmounts(today + expectedPausedLockingDuration), convertLiskToBeddows(100));
+        assertEq(l2Reward.lastClaimDate(lockIDs[0]), today);
+        // assertEq(lockingPosition.pausedLockingDuration, expectedPausedLockingDuration);
     }
 
     function test_approveTest() public {
