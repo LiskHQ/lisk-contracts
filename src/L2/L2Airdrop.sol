@@ -117,6 +117,13 @@ contract L2Airdrop is Ownable2Step {
     )
         Ownable(msg.sender)
     {
+        require(_l2LiskTokenAddress != address(0), "L2Airdrop: L2 Lisk Token contract address can not be zero");
+        require(_l2ClaimAddress != address(0), "L2Airdrop: L2 Claim contract address can not be zero");
+        require(
+            _l2LockingPositionAddress != address(0), "L2Airdrop: L2 Locking Position contract address can not be zero"
+        );
+        require(_l2VotingPowerAddress != address(0), "L2Airdrop: L2 Voting Power contract address can not be zero");
+        require(_daoTreasuryAddress != address(0), "L2Airdrop: DAO treasury address can not be zero");
         l2LiskTokenAddress = _l2LiskTokenAddress;
         l2LockingPositionAddress = _l2LockingPositionAddress;
         l2ClaimAddress = _l2ClaimAddress;

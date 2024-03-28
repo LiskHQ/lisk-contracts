@@ -171,6 +171,39 @@ contract L2AirdropTest is Test {
         assertEq(l2Claim.claimedTo(aliceLSKAddress), alice);
     }
 
+    function test_Constructor_ZeroL2LiskTokenAddress() public {
+        vm.expectRevert("L2Airdrop: L2 Lisk Token contract address can not be zero");
+        new L2Airdrop(
+            address(0x0), address(l2Claim), address(l2LockingPosition), address(l2VotingPower), daoTreasuryAddress
+        );
+    }
+
+    function test_Constructor_ZeroL2ClaimAddress() public {
+        vm.expectRevert("L2Airdrop: L2 Claim contract address can not be zero");
+        new L2Airdrop(
+            address(l2LiskToken), address(0x0), address(l2LockingPosition), address(l2VotingPower), daoTreasuryAddress
+        );
+    }
+
+    function test_Constructor_ZeroL2LockingPositionAddress() public {
+        vm.expectRevert("L2Airdrop: L2 Locking Position contract address can not be zero");
+        new L2Airdrop(address(l2LiskToken), address(l2Claim), address(0x0), address(l2VotingPower), daoTreasuryAddress);
+    }
+
+    function test_Constructor_ZeroL2VotingPowerAddress() public {
+        vm.expectRevert("L2Airdrop: L2 Voting Power contract address can not be zero");
+        new L2Airdrop(
+            address(l2LiskToken), address(l2Claim), address(l2LockingPosition), address(0x0), daoTreasuryAddress
+        );
+    }
+
+    function test_Constructor_ZeroDaoTreasuryAddress() public {
+        vm.expectRevert("L2Airdrop: DAO treasury address can not be zero");
+        new L2Airdrop(
+            address(l2LiskToken), address(l2Claim), address(l2LockingPosition), address(l2VotingPower), address(0x0)
+        );
+    }
+
     function test_SetMerkleRoot() public {
         bytes32 merkleRoot = bytes32(0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef);
 
