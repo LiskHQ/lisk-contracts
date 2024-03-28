@@ -98,11 +98,11 @@ contract L2RewardTest is Test {
         vm.stopPrank();
 
         vm.startPrank(staker);
-        l2LiskToken.approve(address(l2Staking), convertLiskToBeddows(100));
+        l2LiskToken.approve(address(l2Staking), amount);
         ID = l2Reward.createPosition(amount, duration);
         vm.stopPrank();
 
-        assertEq(l2Reward.totalWeight(), (amount * (duration + l2Reward.OFFSET())) / convertLiskToBeddows(1));
+        assertEq(l2Reward.totalWeight(), (amount * (duration + l2Reward.OFFSET())) / 10 ** 16);
         assertEq(l2Reward.lastClaimDate(ID), deploymentDate);
         assertEq(l2Reward.totalAmountLocked(), amount);
         assertEq(l2Reward.dailyUnlockedAmounts(l2Reward.lastTrsDate() + duration), amount);
@@ -129,8 +129,8 @@ contract L2RewardTest is Test {
         lockIDs[1] = l2Reward.createPosition(1 * 10 ** 18, 100);
         vm.stopPrank();
 
-        uint256 expectedTotalWeight = ((convertLiskToBeddows(100) * (120 + l2Reward.OFFSET())) / 10 ** 18)
-            + ((convertLiskToBeddows(1) * (100 + l2Reward.OFFSET())) / 10 ** 18);
+        uint256 expectedTotalWeight = ((convertLiskToBeddows(100) * (120 + l2Reward.OFFSET())) / 10 ** 16)
+            + ((convertLiskToBeddows(1) * (100 + l2Reward.OFFSET())) / 10 ** 16);
 
         assertEq(l2Reward.totalWeight(), expectedTotalWeight);
         assertEq(l2Reward.totalAmountLocked(), convertLiskToBeddows(101));
@@ -150,8 +150,8 @@ contract L2RewardTest is Test {
 
         // staker funds staking
         vm.startPrank(staker);
-        l2LiskToken.approve(address(l2Staking), 1 * 10 ** 15);
-        lockIDs[0] = l2Reward.createPosition(1 * 10 ** 15, 100);
+        l2LiskToken.approve(address(l2Staking), 1 * 10 ** 13);
+        lockIDs[0] = l2Reward.createPosition(1 * 10 ** 13, 100);
         vm.stopPrank();
 
         assertEq(l2Reward.totalWeight(), 0);
@@ -303,9 +303,9 @@ contract L2RewardTest is Test {
         l2LiskToken.approve(address(l2Staking), convertLiskToBeddows(100));
         lockIDs[0] = l2Reward.createPosition(convertLiskToBeddows(100), 120);
 
-        // 0.001 LSK for 100 days => rewards zero
-        l2LiskToken.approve(address(l2Staking), 1 * 10 ** 15);
-        lockIDs[1] = l2Reward.createPosition(1 * 10 ** 15, 100);
+        // 0.00001 LSK for 100 days => rewards zero
+        l2LiskToken.approve(address(l2Staking), 10 ** 13);
+        lockIDs[1] = l2Reward.createPosition(10 ** 13, 100);
         vm.stopPrank();
 
         // rewards are claimed from lastClaimDate for the lock (19740) till expiry day
@@ -397,9 +397,9 @@ contract L2RewardTest is Test {
         // staker creates two positions on deploymentDate, 19740.
         vm.startPrank(staker);
 
-        // 0.001 LSK for 100 days => totalWeight remains zero
-        l2LiskToken.approve(address(l2Staking), 1 * 10 ** 15);
-        lockIDs[0] = l2Reward.createPosition(1 * 10 ** 15, 100);
+        // 0.00001 LSK for 100 days => totalWeight remains zero
+        l2LiskToken.approve(address(l2Staking), 10 ** 13);
+        lockIDs[0] = l2Reward.createPosition(10 ** 13, 100);
         vm.stopPrank();
 
         skip(150 days);

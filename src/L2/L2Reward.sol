@@ -128,8 +128,8 @@ contract L2Reward {
                     dailyRewards[d] = cappedRewards;
                 }
 
-                totalWeight -= pendingUnlockAmount / 10 ** 18;
-                totalWeight -= (OFFSET * dailyUnlockedAmounts[d + 1]) / 10 ** 18;
+                totalWeight -= pendingUnlockAmount / 10 ** 16;
+                totalWeight -= (OFFSET * dailyUnlockedAmounts[d + 1]) / 10 ** 16;
 
                 totalAmountLocked -= dailyUnlockedAmounts[d + 1];
                 pendingUnlockAmount -= dailyUnlockedAmounts[d + 1];
@@ -152,7 +152,7 @@ contract L2Reward {
 
         lastClaimDate[ID] = start;
 
-        totalWeight += (amount * (duration + OFFSET)) / 10 ** 18;
+        totalWeight += (amount * (duration + OFFSET)) / 10 ** 16;
         totalAmountLocked += amount;
         dailyUnlockedAmounts[lastTrsDate + duration] += amount;
         pendingUnlockAmount += amount;
@@ -205,9 +205,9 @@ contract L2Reward {
 
         dailyUnlockedAmounts[today + fastUnlockDuration] += lockingPosition.amount - penalty;
 
-        totalWeight -= (lockingPosition.amount * (lockingPosition.expDate - today + OFFSET)) / 10 ** 18;
+        totalWeight -= (lockingPosition.amount * (lockingPosition.expDate - today + OFFSET)) / 10 ** 16;
 
-        totalWeight += ((fastUnlockDuration + OFFSET) * (lockingPosition.amount - penalty)) / 10 ** 18;
+        totalWeight += ((fastUnlockDuration + OFFSET) * (lockingPosition.amount - penalty)) / 10 ** 16;
 
         totalAmountLocked -= penalty;
 
@@ -235,7 +235,7 @@ contract L2Reward {
         }
 
         if (remainingLockingDuration > 0) {
-            weight = (lockingPosition.amount * (remainingLockingDuration + OFFSET)) / 10 ** 18;
+            weight = (lockingPosition.amount * (remainingLockingDuration + OFFSET)) / 10 ** 16;
         }
 
         uint256 reward = 0;
@@ -244,7 +244,7 @@ contract L2Reward {
             reward += (weight * dailyRewards[d]) / totalWeights[d];
 
             if (lockingPosition.pausedLockingDuration == 0) {
-                weight -= lockingPosition.amount / 10 ** 18;
+                weight -= lockingPosition.amount / 10 ** 16;
             }
         }
 
@@ -313,12 +313,12 @@ contract L2Reward {
 
         if (lockingPosition.pausedLockingDuration == 0) {
             // duration = lockingPosition.expDate - today;
-            totalWeight += (amountIncrease * (lockingPosition.expDate - today + OFFSET)) / 10 ** 18;
+            totalWeight += (amountIncrease * (lockingPosition.expDate - today + OFFSET)) / 10 ** 16;
             dailyUnlockedAmounts[lockingPosition.expDate] += amountIncrease;
             pendingUnlockAmount += amountIncrease;
         } else {
             // duration = lockingPosition.pausedLockingDuration
-            totalWeight += (amountIncrease * (lockingPosition.pausedLockingDuration + OFFSET)) / 10 ** 18;
+            totalWeight += (amountIncrease * (lockingPosition.pausedLockingDuration + OFFSET)) / 10 ** 16;
         }
     }
 
@@ -340,7 +340,7 @@ contract L2Reward {
 
         IL2Staking(stakingContract).extendDuration(lockID, durationExtension);
 
-        totalWeight += (lockingPosition.amount * durationExtension) / 10 ** 18;
+        totalWeight += (lockingPosition.amount * durationExtension) / 10 ** 16;
 
         if (lockingPosition.pausedLockingDuration == 0) {
             if (lockingPosition.expDate > todayDay()) {
