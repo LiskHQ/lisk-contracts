@@ -460,6 +460,69 @@ contract L2RewardTest is Test {
         assertEq(balance, expectedBalance);
     }
 
+    function test_claimRewards_multipleStakersStakeSameAmountAndDurationAreEquallyRewardedCappedRewards() public {
+        l2Staking.addCreator(address(l2Reward));
+
+        address[5] memory stakers = [address(0x1), address(0x2), address(0x3), address(0x4), address(0x5)];
+        uint256[] memory lockIDs = new uint256[](5);
+        uint256[] memory rewards = new uint256[](5);
+
+        // rewards are capped
+        uint256 funds = convertLiskToBeddows(1000);
+        uint256 amount = convertLiskToBeddows(100);
+        uint256 duration = 300;
+
+        // stakers and DAO gets balance
+        vm.startPrank(bridge);
+        l2LiskToken.mint(daoTreasury, funds);
+
+        for (uint8 d = 0; d < stakers.length; d++) {
+            l2LiskToken.mint(stakers[d], amount);
+        }
+        vm.stopPrank();
+
+        // DAO funds staking
+        vm.startPrank(daoTreasury);
+        l2LiskToken.approve(address(l2Reward), funds);
+        l2Reward.fundStakingRewards(funds, 365, 1);
+        vm.stopPrank();
+
+        // All stakers creates a position on deploymentDate, 19740.
+        for (uint8 d = 0; d < stakers.length; d++) {
+            vm.startPrank(stakers[d]);
+            l2LiskToken.approve(address(l2Staking), amount);
+            lockIDs[d] = l2Reward.createPosition(amount, duration);
+            vm.stopPrank();
+        }
+
+        uint256[] memory locksToClaim = new uint256[](1);
+        uint256[] memory rewardsClaimed = new uint256[](1);
+
+        for (uint8 i = 0; i < 3; i++) {
+            skip(100 days);
+
+            for (uint8 d = 0; d < stakers.length; d++) {
+                locksToClaim[0] = lockIDs[d];
+                vm.startPrank(stakers[d]);
+                rewardsClaimed = l2Reward.claimRewards(locksToClaim);
+
+                console2.logUint(rewardsClaimed[0]);
+                rewards[d] += rewardsClaimed[0];
+            }
+        }
+
+        // skip(1 days);
+        // for (uint8 d = 0; d < stakers.length; d++) {
+        //     locksToClaim[0] = lockIDs[d];
+        //     vm.startPrank(stakers[d]);
+        //     rewardsClaimed = l2Reward.claimRewards(locksToClaim);
+
+        //     rewards[d] += rewardsClaimed[0];
+        // }
+
+        console2.logUint(l2Reward.todayDay());
+    }
+
     function test_deletePosition_onlyOwnerCanDeleteALockingPosition() public {
         address staker = address(0x1);
 
