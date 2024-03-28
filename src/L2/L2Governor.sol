@@ -15,7 +15,7 @@ import {
     TimelockControllerUpgradeable
 } from "@openzeppelin-upgradeable/contracts/governance/extensions/GovernorTimelockControlUpgradeable.sol";
 import { Initializable } from "@openzeppelin-upgradeable/contracts/proxy/utils/Initializable.sol";
-import { OwnableUpgradeable } from "@openzeppelin-upgradeable/contracts/access/OwnableUpgradeable.sol";
+import { Ownable2StepUpgradeable } from "@openzeppelin-upgradeable/contracts/access/Ownable2StepUpgradeable.sol";
 import { UUPSUpgradeable } from "@openzeppelin-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
 
 contract L2Governor is
@@ -25,7 +25,7 @@ contract L2Governor is
     GovernorCountingSimpleUpgradeable,
     GovernorVotesUpgradeable,
     GovernorTimelockControlUpgradeable,
-    OwnableUpgradeable,
+    Ownable2StepUpgradeable,
     UUPSUpgradeable
 {
     /// @notice Name of the governor contract.
@@ -65,6 +65,7 @@ contract L2Governor is
         __GovernorCountingSimple_init();
         __GovernorVotes_init(token);
         __GovernorTimelockControl_init(timelock);
+        __Ownable2Step_init();
         __Ownable_init(initialOwner);
         __UUPSUpgradeable_init();
     }
