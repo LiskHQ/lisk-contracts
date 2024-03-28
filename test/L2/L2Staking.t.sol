@@ -598,8 +598,30 @@ contract L2StakingTest is Test {
     function test_LockAmount_InsufficientUserBalance() public {
         uint256 aliceBalance = l2LiskToken.balanceOf(alice);
         uint256 invalidAmount = aliceBalance + 1 * 10 ** 16;
+
+        // approve l2Staking to spend invalidAmount of alice's L2LiskToken
         vm.prank(alice);
-        vm.expectRevert("L2Staking: sender does not have enough LSK tokens");
+        l2LiskToken.approve(address(l2Staking), invalidAmount);
+        assertEq(l2LiskToken.allowance(alice, address(l2Staking)), invalidAmount);
+
+        vm.prank(alice);
+        vm.expectRevert(
+            abi.encodeWithSelector(IERC20Errors.ERC20InsufficientBalance.selector, alice, aliceBalance, invalidAmount)
+        );
+        l2Staking.lockAmount(alice, invalidAmount, 365);
+    }
+
+    function test_LockAmount_InsufficientUserAllowance() public {
+        uint256 aliceBalance = l2LiskToken.balanceOf(alice);
+        uint256 invalidAmount = aliceBalance + 1 * 10 ** 16;
+
+        // alice didn't approve l2Staking to spend invalidAmount of alice's L2LiskToken
+        vm.prank(alice);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IERC20Errors.ERC20InsufficientAllowance.selector, l2Staking, aliceBalance, invalidAmount
+            )
+        );
         l2Staking.lockAmount(alice, invalidAmount, 365);
     }
 
@@ -1029,8 +1051,34 @@ contract L2StakingTest is Test {
 
         uint256 aliceBalance = l2LiskToken.balanceOf(alice);
         uint256 invalidAmount = aliceBalance + 1 * 10 ** 16;
+
+        // approve l2Staking to spend invalidAmount of alice's L2LiskToken
         vm.prank(alice);
-        vm.expectRevert("L2Staking: sender does not have enough LSK tokens");
+        l2LiskToken.approve(address(l2Staking), invalidAmount);
+        assertEq(l2LiskToken.allowance(alice, address(l2Staking)), invalidAmount);
+
+        vm.prank(alice);
+        vm.expectRevert(
+            abi.encodeWithSelector(IERC20Errors.ERC20InsufficientBalance.selector, alice, aliceBalance, invalidAmount)
+        );
+        l2Staking.increaseLockingAmount(1, invalidAmount);
+    }
+
+    function test_IncreaseLockingAmount_InsufficientUserAllowance() public {
+        vm.prank(alice);
+        l2Staking.lockAmount(alice, 100 * 10 ** 18, 365);
+        assertEq(l2LockingPosition.balanceOf(alice), 1);
+
+        uint256 aliceBalance = l2LiskToken.balanceOf(alice);
+        uint256 invalidAmount = aliceBalance + 1 * 10 ** 16;
+
+        // alice didn't approve l2Staking to spend invalidAmount of alice's L2LiskToken
+        vm.prank(alice);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IERC20Errors.ERC20InsufficientAllowance.selector, l2Staking, aliceBalance, invalidAmount
+            )
+        );
         l2Staking.increaseLockingAmount(1, invalidAmount);
     }
 

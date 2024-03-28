@@ -11,7 +11,6 @@ import { ISemver } from "../utils/ISemver.sol";
 /// @title IL2LiskToken
 /// @notice Interface for the L2LiskToken contract.
 interface IL2LiskToken {
-    function balanceOf(address account) external view returns (uint256);
     function transfer(address to, uint256 value) external returns (bool);
     function transferFrom(address from, address to, uint256 value) external returns (bool);
 }
@@ -222,10 +221,6 @@ contract L2Staking is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, I
         require(amount > 0, "L2Staking: amount should be greater than zero");
         require(amount % 10 ** 16 == 0, "L2Staking: amount should be multiple of 10^16");
         require(
-            IL2LiskToken(l2LiskTokenContract).balanceOf(msg.sender) >= amount,
-            "L2Staking: sender does not have enough LSK tokens"
-        );
-        require(
             lockingDuration >= MIN_LOCKING_DURATION,
             "L2Staking: lockingDuration should be at least MIN_LOCKING_DURATION"
         );
@@ -318,10 +313,6 @@ contract L2Staking is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, I
         require(
             lock.pausedLockingDuration > 0 || lock.expDate > todayDay(),
             "L2Staking: can not increase amount for expired locking position"
-        );
-        require(
-            IL2LiskToken(l2LiskTokenContract).balanceOf(msg.sender) >= amountIncrease,
-            "L2Staking: sender does not have enough LSK tokens"
         );
 
         // We assume that owner or creator has already approved the Staking contract to transfer the amount and in most
