@@ -97,6 +97,9 @@ contract L2Reward {
     /// @notice Address of the locking position contract.
     address public lockingPositionContract;
 
+    /// @notice Address of the DAO contract.
+    address public daoTreasury;
+
     /// @notice Address of the L2 token contract.
     address public l2TokenContract;
 
@@ -409,7 +412,7 @@ contract L2Reward {
         uint256 dailyReward = amount / duration;
         uint256 today = todayDay();
         uint256 endDate = today + delay + duration;
-        for (uint256 d = today + delay; d < endDate; d++) {
+        for (uint256 d = today + delay; d < endDate; d += delay) {
             dailyRewards[d] += dailyReward;
         }
     }
@@ -418,13 +421,22 @@ contract L2Reward {
     /// @param amount Amount to be added to daily rewards.
     /// @param duration Duration in days for which the daily rewards is to be added.
     /// @param delay Determines the start day from today till duration for whom rewards should be added.
-
     function fundStakingRewards(uint256 amount, uint16 duration, uint16 delay) public virtual {
+        require(msg.sender == daoTreasury, "L2Reward: Funds can only be added by DAO treasury");
         require(delay > 0, "L2Reward: Funding should start from next day or later");
 
         IL2LiskToken(l2TokenContract).transferFrom(msg.sender, address(this), amount);
 
         addRewards(amount, duration, delay);
+    }
+
+    /// @notice Initializes the Lisk DAO Treasury address.
+    /// @param _daoTreasury The treasury address of the Lisk DAO.
+    function initializeDaoTreasury(address _daoTreasury) public {
+        require(daoTreasury == address(0), "L2Reward: Lisk DAO Treasury contract is already initialized");
+        require(_daoTreasury != address(0), "L2Reward: Lisk DAO Treasury contract address can not be zero");
+
+        daoTreasury = _daoTreasury;
     }
 
     /// @notice Returns the current day.
