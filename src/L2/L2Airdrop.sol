@@ -135,6 +135,7 @@ contract L2Airdrop is Ownable2Step {
     /// @param _merkleRoot Merkle root for the airdrop process.
     /// @dev Only the owner can set the Merkle root.
     function setMerkleRoot(bytes32 _merkleRoot) public onlyOwner {
+        require(_merkleRoot != 0, "L2Airdrop: Merkle root can not be zero");
         require(merkleRoot == 0, "L2Airdrop: Merkle root already set");
         merkleRoot = _merkleRoot;
     }

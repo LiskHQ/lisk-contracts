@@ -220,6 +220,12 @@ contract L2AirdropTest is Test {
         assertEq(l2Airdrop.merkleRoot(), merkleRoot);
     }
 
+    function test_SetMerkleRoot_ZeroMerkleRoot() public {
+        bytes32 merkleRoot = bytes32(0x0);
+        vm.expectRevert("L2Airdrop: Merkle root can not be zero");
+        l2Airdrop.setMerkleRoot(merkleRoot);
+    }
+
     function test_SetMerkleRoot_AlreadySet() public {
         bytes32 merkleRoot = bytes32(0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef);
         vm.expectRevert("L2Airdrop: Merkle root already set");
