@@ -117,6 +117,16 @@ contract L2VotingPowerTest is Test {
         assertEq(l2VotingPowerHarness.exposedVotingPower(position), 113);
     }
 
+    function test_AdjustVotingPower_ZeroOwnerAddress() public {
+        LockingPosition memory positionBefore = LockingPosition(address(this), 50, 0, 0);
+        LockingPosition memory positionAfter = LockingPosition(address(this), 100, 0, 0);
+
+        // call it as LockingPosition contract
+        vm.prank(lockingPositionContractAddress);
+        vm.expectRevert("L2VotingPower: owner address cannot be 0");
+        l2VotingPower.adjustVotingPower(address(0), positionBefore, positionAfter);
+    }
+
     function test_AdjustVotingPower_DiffLargerThanZero() public {
         // difference between positionBefore and positionAfter is larger than 0
         LockingPosition memory positionBefore = LockingPosition(address(this), 50, 0, 0);

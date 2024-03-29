@@ -85,6 +85,7 @@ contract L2VotingPower is ERC20VotesUpgradeable, Ownable2StepUpgradeable, UUPSUp
         virtual
         onlyLockingPositionContract
     {
+        require(ownerAddress != address(0), "L2VotingPower: owner address cannot be 0");
         uint256 votingPowerAfter = votingPower(positionAfter);
         uint256 votingPowerBefore = votingPower(positionBefore);
 

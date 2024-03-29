@@ -193,6 +193,7 @@ contract L2Staking is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, I
     /// @param newCreator The address of the new creator to be added.
     /// @dev Only the owner can call this function.
     function addCreator(address newCreator) public virtual onlyOwner {
+        require(newCreator != address(0), "L2Staking: creator address can not be zero");
         require(newCreator != address(this), "L2Staking: Staking contract can not be added as a creator");
         allowedCreators[newCreator] = true;
     }
@@ -201,6 +202,7 @@ contract L2Staking is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, I
     /// @param creator The address of the creator to be removed.
     /// @dev Only the owner can call this function.
     function removeCreator(address creator) public virtual onlyOwner {
+        require(creator != address(0), "L2Staking: creator address can not be zero");
         delete allowedCreators[creator];
     }
 
@@ -218,6 +220,7 @@ contract L2Staking is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, I
     /// @param lockingDuration The duration for which the amount is locked (in days).
     /// @return The ID of the newly created locking position.
     function lockAmount(address lockOwner, uint256 amount, uint256 lockingDuration) public virtual returns (uint256) {
+        require(lockOwner != address(0), "L2Staking: lockOwner address can not be zero");
         require(amount > 0, "L2Staking: amount should be greater than zero");
         require(amount % 10 ** 16 == 0, "L2Staking: amount should be multiple of 10^16");
         require(

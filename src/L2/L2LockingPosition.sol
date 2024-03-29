@@ -151,6 +151,7 @@ contract L2LockingPosition is Initializable, Ownable2StepUpgradeable, UUPSUpgrad
         onlyStaking
         returns (uint256)
     {
+        require(creator != address(0), "L2LockingPosition: creator address is required");
         require(lockOwner != address(0), "L2LockingPosition: lockOwner address is required");
         require(amount > 0, "L2LockingPosition: amount should be greater than 0");
         require(lockingDuration > 0, "L2LockingPosition: locking duration should be greater than 0");

@@ -431,6 +431,11 @@ contract L2StakingTest is Test {
         assert(l2Staking.allowedCreators(alice));
     }
 
+    function test_AddCreator_ZeroCreatorAddress() public {
+        vm.expectRevert("L2Staking: creator address can not be zero");
+        l2Staking.addCreator(address(0x0));
+    }
+
     function test_AddCreator_OnlyOwnerCanCall() public {
         vm.prank(alice);
         vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, alice));
@@ -447,6 +452,11 @@ contract L2StakingTest is Test {
         assert(l2Staking.allowedCreators(alice));
         l2Staking.removeCreator(alice);
         assert(!l2Staking.allowedCreators(alice));
+    }
+
+    function test_RemoveCreator_ZeroCreatorAddress() public {
+        vm.expectRevert("L2Staking: creator address can not be zero");
+        l2Staking.removeCreator(address(0x0));
     }
 
     function test_RemoveCreator_OnlyOwnerCanCall() public {
@@ -494,6 +504,12 @@ contract L2StakingTest is Test {
 
         assertEq(l2VotingPower.totalSupply(), 100 * 10 ** 18);
         assertEq(l2VotingPower.balanceOf(alice), 100 * 10 ** 18);
+    }
+
+    function test_LockAmount_ZeroLockOwnerAddress() public {
+        vm.prank(address(0x0));
+        vm.expectRevert("L2Staking: lockOwner address can not be zero");
+        l2Staking.lockAmount(address(0x0), 100 * 10 ** 18, 365);
     }
 
     function test_LockAmount_AmountIsZero() public {

@@ -242,6 +242,13 @@ contract L2LockingPositionTest is Test {
         assertEq(l2VotingPower.balanceOf(alice), 300 * 10 ** 18);
     }
 
+    function test_CreateLockingPosition_CreatorIsZero() public {
+        address alice = address(0x0);
+        vm.prank(address(l2Staking));
+        vm.expectRevert("L2LockingPosition: creator address is required");
+        l2LockingPosition.createLockingPosition(address(0), alice, 100 * 10 ** 18, 365);
+    }
+
     function test_CreateLockingPosition_OwnerIsZero() public {
         address alice = address(0x0);
         vm.prank(address(l2Staking));
