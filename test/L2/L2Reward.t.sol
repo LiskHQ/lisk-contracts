@@ -495,7 +495,9 @@ contract L2RewardTest is Test {
         l2Reward.fundStakingRewards(funds, 365, 1);
         vm.stopPrank();
 
-        // All stakers creates a position on deploymentDate, 19740.
+        skip(1 days);
+
+        // All stakers creates a position on deploymentDate + 1, 19741.
         for (uint8 i = 0; i < stakers.length; i++) {
             vm.startPrank(stakers[i]);
             l2LiskToken.approve(address(l2Staking), amount);
@@ -506,6 +508,8 @@ contract L2RewardTest is Test {
         uint256[] memory locksToClaim = new uint256[](1);
         uint256[] memory rewardsClaimed = new uint256[](1);
 
+        uint256 expectedRewardsFor100Days = 27397260273972602700;
+
         for (uint8 i = 0; i < 3; i++) {
             skip(100 days);
             for (uint8 j = 0; j < stakers.length; j++) {
@@ -514,13 +518,13 @@ contract L2RewardTest is Test {
                 rewardsClaimed = l2Reward.claimRewards(locksToClaim);
 
                 rewards[j] += rewardsClaimed[0];
+
+                assertEq(rewardsClaimed[0], expectedRewardsFor100Days);
             }
         }
 
-        uint256 expectedRewards = 81917808219178082073;
-
         for (uint8 i = 0; i < 5; i++) {
-            assertEq(rewards[i], expectedRewards);
+            assertEq(rewards[i], expectedRewardsFor100Days * 3);
         }
     }
 
@@ -550,7 +554,9 @@ contract L2RewardTest is Test {
         l2Reward.fundStakingRewards(funds, 365, 1);
         vm.stopPrank();
 
-        // All stakers creates a position on deploymentDate, 19740.
+        skip(1 days);
+
+        // All stakers creates a position on deploymentDate + 1, 19741.
         for (uint8 i = 0; i < stakers.length; i++) {
             vm.startPrank(stakers[i]);
             l2LiskToken.approve(address(l2Staking), amount);
@@ -561,6 +567,8 @@ contract L2RewardTest is Test {
         uint256[] memory locksToClaim = new uint256[](1);
         uint256[] memory rewardsClaimed = new uint256[](1);
 
+        uint256 expectedRewardsFor100Days = 54794520547945205400;
+
         for (uint8 i = 0; i < 3; i++) {
             skip(100 days);
             for (uint8 j = 0; j < stakers.length; j++) {
@@ -569,13 +577,14 @@ contract L2RewardTest is Test {
                 rewardsClaimed = l2Reward.claimRewards(locksToClaim);
 
                 rewards[j] += rewardsClaimed[0];
+
+                assertEq(rewardsClaimed[0], expectedRewardsFor100Days);
+                console2.logUint(rewardsClaimed[0]);
             }
         }
 
-        uint256 expectedRewards = 163835616438356164146;
-
         for (uint8 i = 0; i < 5; i++) {
-            assertEq(rewards[i], expectedRewards);
+            assertEq(rewards[i], expectedRewardsFor100Days * 3);
         }
 
         skip(1 days);
