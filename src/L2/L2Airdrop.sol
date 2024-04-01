@@ -3,6 +3,7 @@ pragma solidity 0.8.23;
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { Ownable2Step } from "@openzeppelin/contracts/access/Ownable2Step.sol";
+import { MerkleProof } from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import { LockingPosition } from "./L2LockingPosition.sol";
 
 /// @title IL2LiskToken
@@ -279,8 +280,11 @@ contract L2Airdrop is Ownable2Step {
         require(amount > 0, "L2Airdrop: amount is zero");
         require(merkleProof.length > 0, "L2Airdrop: Merkle proof is empty");
         require(recipient != address(0), "L2Airdrop: recipient is the zero address");
-
-        // TODO require merkleProof be a correct proof for liskv4Address and amount against stored merkleRoot
+        // require merkleProof be a correct proof for liskv4Address and amount against stored merkleRoot
+        /*require(
+            MerkleProof.verify(merkleProof, merkleRoot, keccak256(abi.encode(liskAddress, amount))),
+            "L2Airdrop: invalid Merkle proof"
+        );*/
         require(IL2Claim(l2ClaimAddress).claimedTo(liskAddress) == recipient, "L2Airdrop: invalid recipient");
         require(
             (airdropStatus[liskAddress] & FULL_AIRDROP_CLAIMED) != FULL_AIRDROP_CLAIMED,
