@@ -281,10 +281,12 @@ contract L2Airdrop is Ownable2Step {
         require(merkleProof.length > 0, "L2Airdrop: Merkle proof is empty");
         require(recipient != address(0), "L2Airdrop: recipient is the zero address");
         // require merkleProof be a correct proof for liskv4Address and amount against stored merkleRoot
-        /*require(
-            MerkleProof.verify(merkleProof, merkleRoot, keccak256(abi.encode(liskAddress, amount))),
+        require(
+            MerkleProof.verify(
+                merkleProof, merkleRoot, keccak256(bytes.concat(keccak256(abi.encode(liskAddress, amount))))
+            ),
             "L2Airdrop: invalid Merkle proof"
-        );*/
+        );
         require(IL2Claim(l2ClaimAddress).claimedTo(liskAddress) == recipient, "L2Airdrop: invalid recipient");
         require(
             (airdropStatus[liskAddress] & FULL_AIRDROP_CLAIMED) != FULL_AIRDROP_CLAIMED,
