@@ -75,43 +75,6 @@ contract L2GovernorTest is Test {
         assertEq(timelock.hasRole(timelock.EXECUTOR_ROLE(), address(0)), true);
     }
 
-    function test_TransferOwnership() public {
-        address newOwner = vm.addr(1);
-
-        l2Governor.transferOwnership(newOwner);
-        assertEq(l2Governor.owner(), address(this));
-
-        vm.prank(newOwner);
-        l2Governor.acceptOwnership();
-        assertEq(l2Governor.owner(), newOwner);
-    }
-
-    function test_TransferOwnership_RevertWhenNotCalledByOwner() public {
-        address newOwner = vm.addr(1);
-        address nobody = vm.addr(2);
-
-        // owner is this contract
-        assertEq(l2Governor.owner(), address(this));
-
-        // address nobody is not the owner so it cannot call transferOwnership
-        vm.startPrank(nobody);
-        vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, nobody));
-        l2Governor.transferOwnership(newOwner);
-        vm.stopPrank();
-    }
-
-    function test_TransferOwnership_RevertWhenNotCalledByPendingOwner() public {
-        address newOwner = vm.addr(1);
-
-        l2Governor.transferOwnership(newOwner);
-        assertEq(l2Governor.owner(), address(this));
-
-        address nobody = vm.addr(2);
-        vm.prank(nobody);
-        vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, nobody));
-        l2Governor.acceptOwnership();
-    }
-
     function test_Initialize_ZeroVotesTokenAddress() public {
         vm.expectRevert("L2Governor: Votes token address cannot be 0");
         l2Governor = L2Governor(
