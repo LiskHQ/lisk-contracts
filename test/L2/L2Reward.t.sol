@@ -194,7 +194,7 @@ contract L2RewardTest is Test {
         vm.stopPrank();
 
         uint256 dailyReward = amount / duration;
-        uint256 today = l2Reward.todayDay();
+        uint256 today = 19740;
         uint256 endDate = today + delay + duration;
 
         for (uint256 d = today + delay; d < endDate; d++) {
@@ -985,6 +985,125 @@ contract L2RewardTest is Test {
         assertEq(l2Reward.lastClaimDate(lockID), today);
         assertEq(reward, expectedRewards);
         assertEq(l2LiskToken.balanceOf(staker), expectedBalance);
+    }
+
+    function test_increaseLockingAmount_onlyOwnerCanDeleteALockingPosition() public {
+        address staker = address(0x1);
+
+        vm.mockCall(
+            address(l2LockingPosition),
+            abi.encodeWithSelector(ERC721Upgradeable.ownerOf.selector),
+            abi.encode(address(0x0))
+        );
+
+        vm.prank(staker);
+        vm.expectRevert("L2Reward: msg.sender does not own the locking position");
+        l2Reward.increaseLockingAmount(1, convertLiskToBeddows(10));
+    }
+
+    function test_onlyExistingLockingPositionsCanBeDeletedByAnOwner() public {
+        address staker = address(0x1);
+
+        vm.mockCall(
+            address(l2LockingPosition),
+            abi.encodeWithSelector(ERC721Upgradeable.ownerOf.selector),
+            abi.encode(address(0x1))
+        );
+
+        vm.expectRevert("L2Reward: Locking position does not exist");
+
+        vm.prank(staker);
+        l2Reward.deletePosition(1);
+    }
+
+    function test_increaseLockingAmount_forActivePositionIncreasesLockedAmountAndWeightByRemainingDurationAndClaimsRewards(
+    )
+        public
+    {
+        l2Staking.addCreator(address(l2Reward));
+        address staker = address(0x1);
+        uint256 balance = convertLiskToBeddows(1000);
+
+        // staker and DAO gets balance
+        vm.startPrank(bridge);
+        l2LiskToken.mint(staker, balance);
+        l2LiskToken.mint(daoTreasury, balance);
+        vm.stopPrank();
+
+        // DAO funds staking
+        vm.startPrank(daoTreasury);
+        l2LiskToken.approve(address(l2Reward), convertLiskToBeddows(35));
+        l2Reward.fundStakingRewards(convertLiskToBeddows(35), 350, 1);
+        vm.stopPrank();
+
+        vm.startPrank(staker);
+        l2LiskToken.approve(address(l2Staking), convertLiskToBeddows(100));
+        uint256 lockID = l2Reward.createPosition(convertLiskToBeddows(100), 120);
+        vm.stopPrank();
+
+        skip(50 days);
+
+        uint256 amountIncrease = convertLiskToBeddows(35);
+        uint256 totalWeightAfterClaim = l2Reward.totalWeight() - 500000;
+        uint256 duration = (deploymentDate + 120) - (deploymentDate + 50);
+        uint256 totalWeightIncrease = (amountIncrease * (duration + l2Reward.OFFSET())) / 10 ** 16;
+
+        balance = l2LiskToken.balanceOf(staker);
+
+        vm.startPrank(staker);
+        l2LiskToken.approve(address(l2Staking), amountIncrease);
+        uint256 reward = l2Reward.increaseLockingAmount(lockID, amountIncrease);
+        vm.stopPrank();
+
+        assertEq(l2Reward.totalWeight(), totalWeightAfterClaim + totalWeightIncrease);
+        assertEq(l2LiskToken.balanceOf(staker), balance + reward - amountIncrease);
+        assertEq(l2Reward.pendingUnlockAmount(), convertLiskToBeddows(135));
+        assertEq(l2Reward.dailyUnlockedAmounts(deploymentDate + 120), convertLiskToBeddows(135));
+    }
+
+    function test_increaseLockingAmount_forPausedPositionIncreasesTotalWeightByPausedLockingDuration() public {
+        l2Staking.addCreator(address(l2Reward));
+        address staker = address(0x1);
+        uint256 balance = convertLiskToBeddows(1000);
+
+        // staker and DAO gets balance
+        vm.startPrank(bridge);
+        l2LiskToken.mint(staker, balance);
+        l2LiskToken.mint(daoTreasury, balance);
+        vm.stopPrank();
+
+        // DAO funds staking
+        vm.startPrank(daoTreasury);
+        l2LiskToken.approve(address(l2Reward), convertLiskToBeddows(35));
+        l2Reward.fundStakingRewards(convertLiskToBeddows(35), 350, 1);
+        vm.stopPrank();
+
+        vm.startPrank(staker);
+        l2LiskToken.approve(address(l2Staking), convertLiskToBeddows(100));
+        uint256 lockID = l2Reward.createPosition(convertLiskToBeddows(100), 120);
+        vm.stopPrank();
+
+        // pausedLockingDuration set to 120
+        vm.prank(staker);
+        l2Reward.pauseUnlocking(lockID);
+
+        skip(50 days);
+
+        uint256 amountIncrease = convertLiskToBeddows(35);
+
+        uint256 totalWeight = l2Reward.totalWeight();
+
+        uint256 totalWeightIncrease = (amountIncrease * (120 + l2Reward.OFFSET())) / 10 ** 16;
+
+        balance = l2LiskToken.balanceOf(staker);
+
+        vm.startPrank(staker);
+        l2LiskToken.approve(address(l2Staking), amountIncrease);
+        uint256 reward = l2Reward.increaseLockingAmount(lockID, amountIncrease);
+        vm.stopPrank();
+
+        assertEq(l2LiskToken.balanceOf(staker), balance + reward - amountIncrease);
+        assertEq(l2Reward.totalWeight(), totalWeightIncrease + totalWeight);
     }
 
     function convertLiskToBeddows(uint256 lisk) internal pure returns (uint256) {

@@ -294,15 +294,15 @@ contract L2Reward {
     /// @notice Increases locked amount against a locking position.
     /// @param lockID The ID of the locking position.
     /// @param amountIncrease The amount to be increased.
-    function increaseLockingAmount(uint256 lockID, uint256 amountIncrease) public virtual {
+    function increaseLockingAmount(uint256 lockID, uint256 amountIncrease) public virtual returns (uint256) {
         updateGlobalState();
 
         require(
             IL2LockingPosition(lockingPositionContract).ownerOf(lockID) == msg.sender,
-            "msg.sender does not own the locking position"
+            "L2Reward: msg.sender does not own the locking position"
         );
 
-        _claimReward(lockID);
+        uint256 reward = _claimReward(lockID);
 
         IL2LockingPosition.LockingPosition memory lockingPosition =
             IL2LockingPosition(lockingPositionContract).getLockingPosition(lockID);
@@ -320,6 +320,8 @@ contract L2Reward {
             // duration = lockingPosition.pausedLockingDuration
             totalWeight += (amountIncrease * (lockingPosition.pausedLockingDuration + OFFSET)) / 10 ** 16;
         }
+
+        return reward;
     }
 
     /// @notice Extends duration of a locking position.
