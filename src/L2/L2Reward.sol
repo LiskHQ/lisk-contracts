@@ -9,6 +9,8 @@ interface IL2LiskToken {
     function transfer(address to, uint256 value) external returns (bool);
 
     function transferFrom(address from, address to, uint256 value) external returns (bool);
+
+    function approve(address spender, uint256 value) external returns (bool);
 }
 
 /// @title IL2LiskToken
@@ -145,6 +147,9 @@ contract L2Reward {
     /// @return  The ID of the newly created locking position.
     function createPosition(uint256 amount, uint256 duration) public virtual returns (uint256) {
         updateGlobalState();
+
+        IL2LiskToken(l2TokenContract).transferFrom(msg.sender, address(this), amount);
+        IL2LiskToken(l2TokenContract).approve(stakingContract, amount);
 
         uint256 ID = IL2Staking(stakingContract).lockAmount(msg.sender, amount, duration);
         uint256 today = todayDay();
@@ -303,6 +308,9 @@ contract L2Reward {
         );
 
         uint256 reward = _claimReward(lockID);
+
+        IL2LiskToken(l2TokenContract).transferFrom(msg.sender, address(this), amountIncrease);
+        IL2LiskToken(l2TokenContract).approve(stakingContract, amountIncrease);
 
         IL2Staking(stakingContract).increaseLockingAmount(lockID, amountIncrease);
 
