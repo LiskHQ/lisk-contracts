@@ -1001,7 +1001,7 @@ contract L2RewardTest is Test {
         l2Reward.increaseLockingAmount(1, convertLiskToBeddows(10));
     }
 
-    function test_amountCanOnlyBeIncreasedByAnOwnerForAnExistingLockingPositions() public {
+    function test_increaseLockingAmount_amountCanOnlyBeIncreasedByAnOwnerForAnExistingLockingPositions() public {
         address staker = address(0x1);
 
         vm.mockCall(
@@ -1104,6 +1104,35 @@ contract L2RewardTest is Test {
 
         assertEq(l2LiskToken.balanceOf(staker), balance + reward - amountIncrease);
         assertEq(l2Reward.totalWeight(), totalWeightIncrease + totalWeight);
+    }
+
+    function test_extendDuration_onlyOwnerCanExtendDurationForALockingPosition() public {
+        address staker = address(0x1);
+
+        vm.mockCall(
+            address(l2LockingPosition),
+            abi.encodeWithSelector(ERC721Upgradeable.ownerOf.selector),
+            abi.encode(address(0x0))
+        );
+
+        vm.prank(staker);
+        vm.expectRevert("L2Reward: msg.sender does not own the locking position");
+        l2Reward.extendDuration(1, 1);
+    }
+
+    function test_extendDuration_durationCanOnlyBeExtendedByAnOwnerForAnExistingLockingPositions() public {
+        address staker = address(0x1);
+
+        vm.mockCall(
+            address(l2LockingPosition),
+            abi.encodeWithSelector(ERC721Upgradeable.ownerOf.selector),
+            abi.encode(address(0x1))
+        );
+
+        vm.expectRevert("L2Reward: Locking position does not exist");
+
+        vm.prank(staker);
+        l2Reward.extendDuration(1, 1);
     }
 
     function convertLiskToBeddows(uint256 lisk) internal pure returns (uint256) {

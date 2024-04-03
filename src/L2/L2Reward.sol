@@ -304,10 +304,10 @@ contract L2Reward {
 
         uint256 reward = _claimReward(lockID);
 
+        IL2Staking(stakingContract).increaseLockingAmount(lockID, amountIncrease);
+
         IL2LockingPosition.LockingPosition memory lockingPosition =
             IL2LockingPosition(lockingPositionContract).getLockingPosition(lockID);
-
-        IL2Staking(stakingContract).increaseLockingAmount(lockID, amountIncrease);
 
         uint256 today = todayDay();
 
@@ -330,17 +330,17 @@ contract L2Reward {
     function extendDuration(uint256 lockID, uint256 durationExtension) public virtual {
         updateGlobalState();
 
-        IL2LockingPosition.LockingPosition memory lockingPosition =
-            IL2LockingPosition(lockingPositionContract).getLockingPosition(lockID);
-
         require(
             IL2LockingPosition(lockingPositionContract).ownerOf(lockID) == msg.sender,
-            "msg.sender does not own the locking position"
+            "L2Reward: msg.sender does not own the locking position"
         );
 
         _claimReward(lockID);
 
         IL2Staking(stakingContract).extendDuration(lockID, durationExtension);
+
+        IL2LockingPosition.LockingPosition memory lockingPosition =
+            IL2LockingPosition(lockingPositionContract).getLockingPosition(lockID);
 
         totalWeight += (lockingPosition.amount * durationExtension) / 10 ** 16;
 
