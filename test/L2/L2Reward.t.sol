@@ -987,7 +987,7 @@ contract L2RewardTest is Test {
         assertEq(l2LiskToken.balanceOf(staker), expectedBalance);
     }
 
-    function test_increaseLockingAmount_onlyOwnerCanDeleteALockingPosition() public {
+    function test_increaseLockingAmount_onlyOwnerCanIncreaseAmountForALockingPosition() public {
         address staker = address(0x1);
 
         vm.mockCall(
@@ -1001,7 +1001,7 @@ contract L2RewardTest is Test {
         l2Reward.increaseLockingAmount(1, convertLiskToBeddows(10));
     }
 
-    function test_onlyExistingLockingPositionsCanBeDeletedByAnOwner() public {
+    function test_amountCanOnlyBeIncreasedByAnOwnerForAnExistingLockingPositions() public {
         address staker = address(0x1);
 
         vm.mockCall(
@@ -1013,7 +1013,7 @@ contract L2RewardTest is Test {
         vm.expectRevert("L2Reward: Locking position does not exist");
 
         vm.prank(staker);
-        l2Reward.deletePosition(1);
+        l2Reward.increaseLockingAmount(1, 1);
     }
 
     function test_increaseLockingAmount_forActivePositionIncreasesLockedAmountAndWeightByRemainingDurationAndClaimsRewards(
