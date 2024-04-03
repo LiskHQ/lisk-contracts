@@ -50,7 +50,7 @@ contract L2Airdrop is Ownable2Step {
     uint256 public constant MIGRATION_AIRDROP_AMOUNT = 3_000_000 * 10 ** 18; // 3 million LSK tokens
 
     /// @notice Cap on the token amount of a single Lisk v4 account to be used for the airdrop computation.
-    uint256 public constant WHALE_CAP = 500_000 * 10 ** 18; // 500 thousand LSK tokens
+    uint256 public constant WHALE_CAP = 250_000 * 10 ** 18; // 250 thousand LSK tokens
 
     /// @notice Minimal amount of LSK required to participate in the migration airdrop.
     uint256 public constant CUTOFF_AMOUNT = 50 * 10 ** 18; // 50 LSK tokens
@@ -62,15 +62,22 @@ contract L2Airdrop is Ownable2Step {
     uint32 public constant MIN_STAKING_DURATION_TIER_1 = 30; // 1 month
 
     /// @notice Minimal staking duration to satisfy the staking requirement of tier 2.
-    uint32 public constant MIN_STAKING_DURATION_TIER_2 = 90; // 3 months
+    uint32 public constant MIN_STAKING_DURATION_TIER_2 = 180; // 6 months
 
     /// @notice Airdrop amount with this multiplier defines the minimum staking amount that must be staked at least for
     ///         MIN_STAKING_DURATION to satisfy the staking requirement. This multiplier should incentivize staking of
     ///         50% of the migrated whale capped amount.
     uint8 public constant MIN_STAKING_AMOUNT_MULTIPLIER = 5;
 
+    /// @notice The period of time starting from the setting of the Merkle root, during which the migration airdrop can
+    ///         be claimed.
+    uint256 public constant MIGRATION_AIRDROP_DURATION = 180 days;
+
     /// @notice Merkle Root for the airdrop process.
     bytes32 public merkleRoot;
+
+    /// @notice Start time of the migration airdrop.
+    uint256 public airdropStartTime;
 
     /// @notice Mapping of the airdrop status for each Lisk v4 address. In particular, for each of the airdrop
     ///         conditions (min ETH, delegating, staking tier 1, staking tier 2).
@@ -139,11 +146,16 @@ contract L2Airdrop is Ownable2Step {
         require(_merkleRoot != 0, "L2Airdrop: Merkle root can not be zero");
         require(merkleRoot == 0, "L2Airdrop: Merkle root already set");
         merkleRoot = _merkleRoot;
+        airdropStartTime = block.timestamp;
     }
 
     /// @notice Send the remaining LSK tokens to the Lisk DAO treasury.
     /// @dev Only the owner can send the remaining LSK tokens to the Lisk DAO treasury.
     function sendLSKToDaoTreasury() public onlyOwner {
+        require(
+            airdropStartTime + (MIGRATION_AIRDROP_DURATION * 1 days) < block.timestamp,
+            "L2Airdrop: airdrop is not over yet"
+        );
         uint256 balance = IL2LiskToken(l2LiskTokenAddress).balanceOf(address(this));
         bool status = IL2LiskToken(l2LiskTokenAddress).transfer(daoTreasuryAddress, balance);
         require(status, "L2Airdrop: LSK token transfer to DAO failed");
@@ -277,6 +289,10 @@ contract L2Airdrop is Ownable2Step {
         public
     {
         require(merkleRoot != 0, "L2Airdrop: airdrop has not started yet");
+        require(
+            block.timestamp <= airdropStartTime + (MIGRATION_AIRDROP_DURATION * 1 days),
+            "L2Airdrop: airdrop period is over"
+        );
         require(amount > 0, "L2Airdrop: amount is zero");
         require(merkleProof.length > 0, "L2Airdrop: Merkle proof is empty");
         require(recipient != address(0), "L2Airdrop: recipient is the zero address");

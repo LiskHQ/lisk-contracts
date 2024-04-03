@@ -240,10 +240,21 @@ contract L2AirdropTest is Test {
     }
 
     function test_SendLSKToDaoTreasury() public {
+        // proceed time to MIGRATION_AIRDROP_DURATION + 1 so that airdrop period is over
+        vm.warp(block.timestamp + l2Airdrop.MIGRATION_AIRDROP_DURATION() * 1 days + 1);
+
         // send all L2LiskToken to DAO treasury
         l2Airdrop.sendLSKToDaoTreasury();
         assertEq(l2LiskToken.balanceOf(address(l2Airdrop)), 0);
         assertEq(l2LiskToken.balanceOf(daoTreasuryAddress), 10000 * 10 ** 18);
+    }
+
+    function test_SendLSKToDaoTreasury_AirdropPeriodNotOver() public {
+        // proceed time to MIGRATION_AIRDROP_DURATION so that airdrop period is not over
+        vm.warp(block.timestamp + l2Airdrop.MIGRATION_AIRDROP_DURATION() * 1 days);
+
+        vm.expectRevert("L2Airdrop: airdrop is not over yet");
+        l2Airdrop.sendLSKToDaoTreasury();
     }
 
     function test_SendLSKToDaoTreasury_OnlyOwner() public {
@@ -712,6 +723,15 @@ contract L2AirdropTest is Test {
 
         bytes32[] memory merkleProof = new bytes32[](1);
         vm.expectRevert("L2Airdrop: airdrop has not started yet");
+        l2Airdrop.claimAirdrop(bytes20(alice), 20 * 10 ** 18, merkleProof, alice);
+    }
+
+    function test_ClaimAirdrop_AirdropOver() public {
+        // proceed time to MIGRATION_AIRDROP_DURATION + 1 so that airdrop period is over
+        vm.warp(block.timestamp + l2Airdrop.MIGRATION_AIRDROP_DURATION() * 1 days + 1);
+
+        bytes32[] memory merkleProof = new bytes32[](1);
+        vm.expectRevert("L2Airdrop: airdrop period is over");
         l2Airdrop.claimAirdrop(bytes20(alice), 20 * 10 ** 18, merkleProof, alice);
     }
 
