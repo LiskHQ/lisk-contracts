@@ -1075,6 +1075,39 @@ contract L2RewardTest is Test {
         l2Reward.extendDuration(1, 1);
     }
 
+    function test_extendDuration_updatesGlobalsForActivePositionWithExpiryInFuture() public {
+        l2Staking.addCreator(address(l2Reward));
+        address staker = address(0x1);
+        uint256 balance = convertLiskToBeddows(1000);
+
+        // staker and DAO gets balance
+        vm.startPrank(bridge);
+        l2LiskToken.mint(staker, balance);
+        l2LiskToken.mint(daoTreasury, balance);
+        vm.stopPrank();
+
+        // DAO funds staking
+        vm.startPrank(daoTreasury);
+        l2LiskToken.approve(address(l2Reward), convertLiskToBeddows(35));
+        l2Reward.fundStakingRewards(convertLiskToBeddows(35), 350, 1);
+        vm.stopPrank();
+
+        vm.startPrank(staker);
+        l2LiskToken.approve(address(l2Reward), convertLiskToBeddows(100));
+        uint256 lockID = l2Reward.createPosition(convertLiskToBeddows(100), 120);
+        vm.stopPrank();
+
+        skip(50 days);
+
+        LockingPosition memory lockingPosition = l2LockingPosition.getLockingPosition(lockID);
+
+        vm.startPrank(staker);
+        uint256 reward = l2Reward.extendDuration(lockID, 50);
+        vm.stopPrank();
+
+        console2.logUint(lockingPosition.expDate);
+    }
+
     function convertLiskToBeddows(uint256 lisk) internal pure returns (uint256) {
         return lisk * 10 ** 18;
     }

@@ -26,7 +26,7 @@ interface IL2Staking {
 
     function increaseLockingAmount(uint256 lockID, uint256 amountIncrease) external;
 
-    function extendDuration(uint256 lockID, uint256 durationExtension) external;
+    function extendLockingDuration(uint256 lockID, uint256 durationExtension) external;
 
     function pauseRemainingLockingDuration(uint256 lockID) external;
 
@@ -299,6 +299,7 @@ contract L2Reward {
     /// @notice Increases locked amount against a locking position.
     /// @param lockID The ID of the locking position.
     /// @param amountIncrease The amount to be increased.
+    /// @return uint256 Rewards amount.
     function increaseLockingAmount(uint256 lockID, uint256 amountIncrease) public virtual returns (uint256) {
         updateGlobalState();
 
@@ -335,7 +336,8 @@ contract L2Reward {
     /// @notice Extends duration of a locking position.
     /// @param lockID The ID of the locking position.
     /// @param durationExtension The duration to be extended in days.
-    function extendDuration(uint256 lockID, uint256 durationExtension) public virtual {
+    /// @return uint256 Rewards amount.
+    function extendDuration(uint256 lockID, uint256 durationExtension) public virtual returns (uint256) {
         updateGlobalState();
 
         require(
@@ -343,9 +345,9 @@ contract L2Reward {
             "L2Reward: msg.sender does not own the locking position"
         );
 
-        _claimReward(lockID);
+        uint256 reward = _claimReward(lockID);
 
-        IL2Staking(stakingContract).extendDuration(lockID, durationExtension);
+        IL2Staking(stakingContract).extendLockingDuration(lockID, durationExtension);
 
         IL2LockingPosition.LockingPosition memory lockingPosition =
             IL2LockingPosition(lockingPositionContract).getLockingPosition(lockID);
@@ -362,6 +364,8 @@ contract L2Reward {
         }
 
         dailyUnlockedAmounts[lockingPosition.expDate + durationExtension] += lockingPosition.amount;
+
+        return reward;
     }
 
     /// @notice Pauses unlocking of a locking position.
