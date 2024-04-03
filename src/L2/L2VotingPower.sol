@@ -4,7 +4,7 @@ pragma solidity 0.8.23;
 import { ERC20VotesUpgradeable } from
     "@openzeppelin-upgradeable/contracts/token/ERC20/extensions/ERC20VotesUpgradeable.sol";
 import { ERC20Upgradeable } from "@openzeppelin-upgradeable/contracts/token/ERC20/ERC20Upgradeable.sol";
-import { OwnableUpgradeable } from "@openzeppelin-upgradeable/contracts/access/OwnableUpgradeable.sol";
+import { Ownable2StepUpgradeable } from "@openzeppelin-upgradeable/contracts/access/Ownable2StepUpgradeable.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
 import { ISemver } from "../utils/ISemver.sol";
 
@@ -17,7 +17,7 @@ struct LockingPosition {
     uint256 expDate;
 }
 
-contract L2VotingPower is ERC20VotesUpgradeable, OwnableUpgradeable, UUPSUpgradeable, ISemver {
+contract L2VotingPower is ERC20VotesUpgradeable, Ownable2StepUpgradeable, UUPSUpgradeable, ISemver {
     /// @notice Address of the staking contract.
     address public stakingContractAddress;
 
@@ -48,6 +48,7 @@ contract L2VotingPower is ERC20VotesUpgradeable, OwnableUpgradeable, UUPSUpgrade
     /// @param _stakingContractAddress Address of the staking contract.
     function initialize(address _stakingContractAddress) public initializer {
         require(_stakingContractAddress != address(0), "L2VotingPower: Staking contract address cannot be 0");
+        __Ownable2Step_init();
         __Ownable_init(msg.sender);
         __ERC20_init("Lisk Voting Power", "vpLSK");
         __ERC20Votes_init();

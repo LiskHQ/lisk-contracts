@@ -38,7 +38,7 @@ contract L2GovernorScript is Script {
 
         // Get L2Governor contract owner address. Ownership is transferred to this address after deployment.
         address ownerAddress = vm.envAddress("L2_GOVERNOR_OWNER_ADDRESS");
-        console2.log("L2 Governor future owner address: %s", ownerAddress);
+        console2.log("L2 Governor owner address: %s (after ownership will be accepted)", ownerAddress);
 
         // deploy TimelockController contract
         vm.startBroadcast(deployerPrivateKey);
@@ -98,17 +98,18 @@ contract L2GovernorScript is Script {
         vm.stopBroadcast();
         assert(!timelock.hasRole(timelock.DEFAULT_ADMIN_ROLE(), vm.addr(deployerPrivateKey)));
 
-        // transfer ownership of the L2Governor contract to the owner address
+        // transfer ownership of the L2Governor contract to the owner address; because of using Ownable2StepUpgradeable
+        // contract, new owner has to accept ownership
         vm.startBroadcast(deployerPrivateKey);
         l2Governor.transferOwnership(ownerAddress);
         vm.stopBroadcast();
-        assert(l2Governor.owner() == ownerAddress);
+        assert(l2Governor.owner() == vm.addr(deployerPrivateKey)); // ownership is not yet accepted
 
         console2.log("L2 TimelockController and Governor contracts successfully deployed!");
         console2.log("L2 TimelockController address: %s", address(timelock));
         console2.log("L2 Governor (implementation) address: %s", address(l2GovernorImplementation));
         console2.log("L2 Governor (proxy) address: %s", address(l2Governor));
-        console2.log("L2 Governor owner address: %s", l2Governor.owner());
+        console2.log("L2 Governor owner address: %s (after ownership will be accepted)", ownerAddress);
 
         // write TimelockController and L2 Governor addresses to l2addresses.json
         l2AddressesConfig.L2TimelockController = address(timelock);

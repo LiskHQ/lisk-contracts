@@ -317,6 +317,43 @@ contract L2VotingPowerTest is Test {
         l2VotingPower.transferFrom(vm.addr(1), vm.addr(2), 100);
     }
 
+    function test_TransferOwnership() public {
+        address newOwner = vm.addr(1);
+
+        l2VotingPower.transferOwnership(newOwner);
+        assertEq(l2VotingPower.owner(), address(this));
+
+        vm.prank(newOwner);
+        l2VotingPower.acceptOwnership();
+        assertEq(l2VotingPower.owner(), newOwner);
+    }
+
+    function test_TransferOwnership_RevertWhenNotCalledByOwner() public {
+        address newOwner = vm.addr(1);
+        address nobody = vm.addr(2);
+
+        // owner is this contract
+        assertEq(l2VotingPower.owner(), address(this));
+
+        // address nobody is not the owner so it cannot call transferOwnership
+        vm.startPrank(nobody);
+        vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, nobody));
+        l2VotingPower.transferOwnership(newOwner);
+        vm.stopPrank();
+    }
+
+    function test_TransferOwnership_RevertWhenNotCalledByPendingOwner() public {
+        address newOwner = vm.addr(1);
+
+        l2VotingPower.transferOwnership(newOwner);
+        assertEq(l2VotingPower.owner(), address(this));
+
+        address nobody = vm.addr(2);
+        vm.prank(nobody);
+        vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, nobody));
+        l2VotingPower.acceptOwnership();
+    }
+
     function test_UpgradeToAndCall_RevertWhenNotOwner() public {
         // deploy L2VotingPowerV2 implementation contract
         L2VotingPowerV2 l2VotingPowerV2Implementation = new L2VotingPowerV2();

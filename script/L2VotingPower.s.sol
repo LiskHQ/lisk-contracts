@@ -38,7 +38,7 @@ contract L2VotingPowerScript is Script {
 
         // Get L2VotingPower contract owner address. Ownership is transferred to this address after deployment.
         address ownerAddress = vm.envAddress("L2_VOTING_POWER_OWNER_ADDRESS");
-        console2.log("L2 Voting Power future owner address: %s", ownerAddress);
+        console2.log("L2 Voting Power owner address: %s (after ownership will be accepted)", ownerAddress);
 
         // deploy L2VotingPower implementation contract
         vm.startBroadcast(deployerPrivateKey);
@@ -73,15 +73,16 @@ contract L2VotingPowerScript is Script {
         stakingContract.initializeVotingPower(address(l2VotingPower));
         assert(stakingContract.votingPowerContract() == address(l2VotingPower));
 
-        // transfer ownership of the L2VotingPower contract to the owner address
+        // transfer ownership of the L2VotingPower contract to the owner address; because of using
+        // Ownable2StepUpgradeable contract, new owner has to accept ownership
         vm.startBroadcast(deployerPrivateKey);
         l2VotingPower.transferOwnership(ownerAddress);
         vm.stopBroadcast();
-        assert(l2VotingPower.owner() == ownerAddress);
+        assert(l2VotingPower.owner() == vm.addr(deployerPrivateKey)); // ownership is not yet accepted
 
         console2.log("L2 Voting Power (implementation) address: %s", address(l2VotingPowerImplementation));
         console2.log("L2 Voting Power (proxy) address: %s", address(l2VotingPower));
-        console2.log("L2 Voting Power owner address: %s", l2VotingPower.owner());
+        console2.log("L2 Voting Power owner address: %s (after ownership will be accepted)", ownerAddress);
 
         // write L2 Voting Power address to l2addresses.json
         l2AddressesConfig.L2VotingPowerImplementation = address(l2VotingPowerImplementation);
