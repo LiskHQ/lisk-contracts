@@ -42,19 +42,9 @@ interface IL2VotingPower {
 ///                            at least MIN_STAKING_DURATION_TIER_1.
 ///         4. Staking Tier 2: The recipient must have staked at least MIN_STAKING_AMOUNT_MULTIPLIER * airdropAmount for
 ///                            at least MIN_STAKING_DURATION_TIER_2.
-///         The airdrop amount is capped at WHALE_CAP LSK tokens. The airdrop amount is distributed to the recipient's
-///         L2LiskToken contract. The airdrop status for each recipient is stored in a mapping. The airdrop status
-///         includes the status of each of the airdrop conditions.
+///         The airdrop amount is distributed to the recipient's L2LiskToken contract. The airdrop status for each
+///         recipient is stored in a mapping. The airdrop status includes the status of each of the airdrop conditions.
 contract L2Airdrop is Ownable2Step {
-    /// @notice The total amount of LSK tokens to be given away in the migration airdrop.
-    uint256 public constant MIGRATION_AIRDROP_AMOUNT = 3_000_000 * 10 ** 18; // 3 million LSK tokens
-
-    /// @notice Cap on the token amount of a single Lisk v4 account to be used for the airdrop computation.
-    uint256 public constant WHALE_CAP = 250_000 * 10 ** 18; // 250 thousand LSK tokens
-
-    /// @notice Minimal amount of LSK required to participate in the migration airdrop.
-    uint256 public constant CUTOFF_AMOUNT = 50 * 10 ** 18; // 50 LSK tokens
-
     /// @notice The required ETH amount on Lisk L2 to satisfy min ETH requirement.
     uint256 public constant MIN_ETH = 10 ** 16; // 0.01 ETH
 
