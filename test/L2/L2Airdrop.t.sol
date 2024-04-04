@@ -759,4 +759,41 @@ contract L2AirdropTest is Test {
         vm.expectRevert("L2Airdrop: invalid recipient");
         l2Airdrop.claimAirdrop(bytes20(alice), 20 * 10 ** 18, merkleProof, bob);
     }
+
+    function test_TransferOwnership() public {
+        address newOwner = vm.addr(1);
+
+        l2Airdrop.transferOwnership(newOwner);
+        assertEq(l2Airdrop.owner(), address(this));
+
+        vm.prank(newOwner);
+        l2Airdrop.acceptOwnership();
+        assertEq(l2Airdrop.owner(), newOwner);
+    }
+
+    function test_TransferOwnership_RevertWhenNotCalledByOwner() public {
+        address newOwner = vm.addr(1);
+        address nobody = vm.addr(2);
+
+        // owner is this contract
+        assertEq(l2Airdrop.owner(), address(this));
+
+        // address nobody is not the owner so it cannot call transferOwnership
+        vm.startPrank(nobody);
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, nobody));
+        l2Airdrop.transferOwnership(newOwner);
+        vm.stopPrank();
+    }
+
+    function test_TransferOwnership_RevertWhenNotCalledByPendingOwner() public {
+        address newOwner = vm.addr(1);
+
+        l2Airdrop.transferOwnership(newOwner);
+        assertEq(l2Airdrop.owner(), address(this));
+
+        address nobody = vm.addr(2);
+        vm.prank(nobody);
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, nobody));
+        l2Airdrop.acceptOwnership();
+    }
 }

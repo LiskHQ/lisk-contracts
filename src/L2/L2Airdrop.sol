@@ -71,12 +71,12 @@ contract L2Airdrop is Ownable2Step {
 
     /// @notice The period of time starting from the setting of the Merkle root, during which the migration airdrop can
     ///         be claimed.
-    uint256 public constant MIGRATION_AIRDROP_DURATION = 180 days;
+    uint256 public constant MIGRATION_AIRDROP_DURATION = 180;
 
     /// @notice Merkle Root for the airdrop process.
     bytes32 public merkleRoot;
 
-    /// @notice Start time of the migration airdrop.
+    /// @notice Start time of the migration airdrop. Airdrop is considered started once the Merkle root is set.
     uint256 public airdropStartTime;
 
     /// @notice Mapping of the airdrop status for each Lisk v4 address. In particular, for each of the airdrop
