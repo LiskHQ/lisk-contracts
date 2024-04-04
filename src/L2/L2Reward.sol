@@ -20,7 +20,7 @@ interface IL2Staking {
 
     function unlock(uint256 lockID) external;
 
-    function fastUnlock(uint256 lockID) external;
+    function initiateFastUnlock(uint256 lockID) external;
 
     function increaseAmount(uint256 lockID, uint256 reward) external;
 
@@ -34,13 +34,13 @@ interface IL2Staking {
 
     function calculatePenalty(uint256 lockID) external returns (uint256);
 
-    function getFastUnlockDuration() external returns (uint256);
+    function FAST_UNLOCK_DURATION() external returns (uint256);
 }
 
 /// @title IL2LockingPosition
 /// @notice Interface for the L2LockingPosition contract.
 interface IL2LockingPosition {
-    /// @title LockingPosition
+    ///  @title LockingPosition
     /// @notice Struct for locking position.
     struct LockingPosition {
         address creator;
@@ -196,15 +196,16 @@ contract L2Reward {
 
         _claimReward(lockID);
 
-        uint256 penalty = IL2Staking(lockingPositionContract).calculatePenalty(lockID);
+        uint256 penalty = 0; // L2Staking(lockingPositionContract).calculatePenalty(lockingPosition.amount,
+            // lockingPosition.expDate);
 
-        IL2Staking(stakingContract).fastUnlock(lockID);
+        IL2Staking(stakingContract).initiateFastUnlock(lockID);
 
         addRewards(penalty, 30, 1);
 
         uint256 today = todayDay();
 
-        uint256 fastUnlockDuration = IL2Staking(stakingContract).getFastUnlockDuration();
+        uint256 fastUnlockDuration = IL2Staking(stakingContract).FAST_UNLOCK_DURATION();
 
         dailyUnlockedAmounts[lockingPosition.expDate] -= lockingPosition.amount;
 
@@ -347,10 +348,10 @@ contract L2Reward {
 
         uint256 reward = _claimReward(lockID);
 
-        IL2Staking(stakingContract).extendLockingDuration(lockID, durationExtension);
-
         IL2LockingPosition.LockingPosition memory lockingPosition =
             IL2LockingPosition(lockingPositionContract).getLockingPosition(lockID);
+
+        IL2Staking(stakingContract).extendLockingDuration(lockID, durationExtension);
 
         totalWeight += (lockingPosition.amount * durationExtension) / 10 ** 16;
 
