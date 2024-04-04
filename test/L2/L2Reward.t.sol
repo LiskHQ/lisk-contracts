@@ -117,12 +117,24 @@ contract L2RewardTest is Test {
         assertEq(l2Reward.pendingUnlockAmount(), amount);
     }
 
-    function test_createPosition_aggregatesAmountAndWeight() public {
+    function test_createPosition_aggregatesAmountAndWeightAndUpdatesGlobals() public {
         l2Staking.addCreator(address(l2Reward));
         address staker = address(0x1);
         uint256 balance = convertLiskToBeddows(1000);
 
         uint256[] memory lockIDs = new uint256[](2);
+
+        // staker and DAO gets balance
+        vm.startPrank(bridge);
+        l2LiskToken.mint(staker, balance);
+        l2LiskToken.mint(daoTreasury, balance);
+        vm.stopPrank();
+
+        // DAO funds staking
+        vm.startPrank(daoTreasury);
+        l2LiskToken.approve(address(l2Reward), convertLiskToBeddows(1000));
+        l2Reward.fundStakingRewards(convertLiskToBeddows(1000), 350, 1);
+        vm.stopPrank();
 
         // staker gets balance
         vm.prank(bridge);
@@ -133,16 +145,24 @@ contract L2RewardTest is Test {
         l2LiskToken.approve(address(l2Reward), convertLiskToBeddows(100));
         lockIDs[0] = l2Reward.createPosition(convertLiskToBeddows(100), 120);
 
-        l2LiskToken.approve(address(l2Reward), 1 * 10 ** 18);
-        lockIDs[1] = l2Reward.createPosition(1 * 10 ** 18, 100);
+        skip(2 days);
+        l2LiskToken.approve(address(l2Reward), convertLiskToBeddows(1));
+        lockIDs[1] = l2Reward.createPosition(convertLiskToBeddows(1), 100);
         vm.stopPrank();
 
         uint256 expectedTotalWeight = ((convertLiskToBeddows(100) * (120 + l2Reward.OFFSET())) / 10 ** 16)
-            + ((convertLiskToBeddows(1) * (100 + l2Reward.OFFSET())) / 10 ** 16);
+            + ((convertLiskToBeddows(1) * (100 + l2Reward.OFFSET())) / 10 ** 16) - 20000;
 
         assertEq(l2Reward.totalWeight(), expectedTotalWeight);
         assertEq(l2Reward.totalAmountLocked(), convertLiskToBeddows(101));
         assertEq(l2Reward.pendingUnlockAmount(), convertLiskToBeddows(101));
+
+        uint256 cappedRewards = convertLiskToBeddows(100) / 365;
+        uint256 dailyReward = convertLiskToBeddows(1000) / 350;
+
+        // Rewards are capped for day, 19741 as funding starts at 19741.
+        assertEq(l2Reward.dailyRewards(19741), cappedRewards);
+        assertEq(l2Reward.rewardsSurplus(), dailyReward - cappedRewards);
     }
 
     function test_fundStakingRewards_onlyDAOTreasuryCanFundRewards() public {
@@ -1001,7 +1021,9 @@ contract L2RewardTest is Test {
         assertEq(l2Reward.dailyUnlockedAmounts(deploymentDate + 120), convertLiskToBeddows(135));
     }
 
-    function test_increaseLockingAmount_forPausedPositionIncreasesTotalWeightByPausedLockingDuration() public {
+    function test_increaseLockingAmount_forPausedPositionIncreasesTotalWeightByPausedLockingDurationAndClaimsRewards()
+        public
+    {
         l2Staking.addCreator(address(l2Reward));
         address staker = address(0x1);
         uint256 balance = convertLiskToBeddows(1000);
@@ -1075,7 +1097,7 @@ contract L2RewardTest is Test {
         l2Reward.extendDuration(1, 1);
     }
 
-    function test_extendDuration_updatesGlobalsForActivePositionWithExpiryInFuture() public {
+    function test_extendDuration_updatesGlobalsAndClaimRewardsForActivePositionWithExpiryInFuture() public {
         l2Staking.addCreator(address(l2Reward));
         address staker = address(0x1);
         uint256 balance = convertLiskToBeddows(1000);
@@ -1116,7 +1138,7 @@ contract L2RewardTest is Test {
         assertEq(l2Reward.dailyUnlockedAmounts(deploymentDate + duration + durationExtension), amount);
     }
 
-    function test_extendDuration_updatesGlobalsForExpiredPositions() public {
+    function test_extendDuration_updatesGlobalsAndClaimRewardsForExpiredPositions() public {
         l2Staking.addCreator(address(l2Reward));
         address staker = address(0x1);
         uint256 balance = convertLiskToBeddows(1000);
@@ -1160,7 +1182,7 @@ contract L2RewardTest is Test {
         assertEq(l2Reward.dailyUnlockedAmounts(deploymentDate + duration + durationExtension), amount);
     }
 
-    function test_extendDuration_updatesGlobalsForPausedPositions() public {
+    function test_extendDuration_updatesGlobalsAndClaimRewardsForPausedPositions() public {
         l2Staking.addCreator(address(l2Reward));
         address staker = address(0x1);
         uint256 balance = convertLiskToBeddows(1000);
