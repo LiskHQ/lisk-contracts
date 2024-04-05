@@ -298,7 +298,8 @@ contract L2Staking is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, I
     /// @notice Initiates a fast unlock and apply a penalty to the locked amount. Sends the penalty amount to the Lisk
     ///         DAO Treasury or the creator of the locking position.
     /// @param lockId The ID of the locking position to be unlocked.
-    function initiateFastUnlock(uint256 lockId) public virtual {
+    /// @return The penalty amount applied to the locked amount.
+    function initiateFastUnlock(uint256 lockId) public virtual returns (uint256) {
         LockingPosition memory lock = (IL2LockingPosition(lockingPositionContract)).getLockingPosition(lockId);
         require(isLockingPositionNull(lock) == false, "L2Staking: locking position does not exist");
         require(canLockingPositionBeModified(lockId, lock), "L2Staking: only owner or creator can call this function");
@@ -322,6 +323,8 @@ contract L2Staking is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, I
             bool success = IL2LiskToken(l2LiskTokenContract).transfer(lock.creator, penalty);
             require(success, "L2Staking: LSK token transfer from Staking contract to creator failed");
         }
+
+        return penalty;
     }
 
     /// @notice Increases the amount of the given locking position.

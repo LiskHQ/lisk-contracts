@@ -743,7 +743,8 @@ contract L2StakingTest is Test {
         vm.warp(100 days);
 
         vm.prank(alice);
-        l2Staking.initiateFastUnlock(1);
+        uint256 penalty = l2Staking.initiateFastUnlock(1);
+        assertEq(penalty, 18150684931506849315);
 
         assertEq(l2LiskToken.balanceOf(alice), 0);
         // penalty is sent to the Lisk DAO Treasury contract
@@ -785,7 +786,8 @@ contract L2StakingTest is Test {
         vm.warp(130 days);
 
         vm.prank(alice);
-        l2Staking.initiateFastUnlock(1);
+        uint256 penalty = l2Staking.initiateFastUnlock(1);
+        assertEq(penalty, 16095890410958904109);
 
         assertEq(l2LiskToken.balanceOf(alice), 0);
         // penalty is sent to the Lisk DAO Treasury contract
@@ -836,7 +838,8 @@ contract L2StakingTest is Test {
         vm.warp(100 days);
 
         vm.prank(rewardsContract);
-        l2Staking.initiateFastUnlock(1);
+        uint256 penalty = l2Staking.initiateFastUnlock(1);
+        assertEq(penalty, 18150684931506849315);
 
         assertEq(l2LiskToken.balanceOf(alice), 100 * 10 ** 18); // alice didn't call lockAmount
         assertEq(l2LiskToken.balanceOf(daoTreasuryAddress), 0);
