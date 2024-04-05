@@ -10,6 +10,8 @@ import { L2VotingPower } from "src/L2/L2VotingPower.sol";
 import { L2LiskToken } from "src/L2/L2LiskToken.sol";
 import { L2LockingPosition, LockingPosition } from "src/L2/L2LockingPosition.sol";
 import { L2Staking } from "src/L2/L2Staking.sol";
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+
 
 struct Stake {
     address addr;
@@ -1222,6 +1224,14 @@ contract L2RewardTest is Test {
         assertEq(l2LiskToken.balanceOf(staker), balance + reward);
         assertEq(l2Reward.totalWeight(), expectedTotalWeight);
         assertEq(l2Reward.dailyUnlockedAmounts(deploymentDate + duration + durationExtension), amount);
+    }
+
+    function test_initializeDaoTreasury_onlyOwnerCanInitializeDaoTreasury() public {
+        vm.expectRevert(
+            abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(0x1))
+        );
+        vm.prank(address(0x1));
+        l2Reward.initializeDaoTreasury(address(0x2));
     }
 
     function convertLiskToBeddows(uint256 lisk) internal pure returns (uint256) {

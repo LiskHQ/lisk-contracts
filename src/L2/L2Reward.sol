@@ -2,6 +2,7 @@
 pragma solidity 0.8.23;
 
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 
 /// @title IL2LiskToken
 /// @notice Interface for the L2LiskToken contract.
@@ -56,7 +57,7 @@ interface IL2LockingPosition {
 
 /// @title L2Reward
 /// @notice This contract manages and handles L2 Staking Rewards.
-contract L2Reward {
+contract L2Reward is Ownable {
     /// @notice The offset value of stake weight as a liner function of remaining stake duration.
     uint256 public constant OFFSET = 150;
 
@@ -105,7 +106,7 @@ contract L2Reward {
     /// @notice Address of the L2 token contract.
     address public l2TokenContract;
 
-    constructor(address _stakingContract, address _lockingPositionContract, address _l2TokenContract) {
+    constructor(address _stakingContract, address _lockingPositionContract, address _l2TokenContract) Ownable(msg.sender){
         stakingContract = _stakingContract;
         lockingPositionContract = _lockingPositionContract;
         l2TokenContract = _l2TokenContract;
@@ -447,7 +448,7 @@ contract L2Reward {
 
     /// @notice Initializes the Lisk DAO Treasury address.
     /// @param _daoTreasury The treasury address of the Lisk DAO.
-    function initializeDaoTreasury(address _daoTreasury) public {
+    function initializeDaoTreasury(address _daoTreasury) public onlyOwner {
         require(daoTreasury == address(0), "L2Reward: Lisk DAO Treasury contract is already initialized");
         require(_daoTreasury != address(0), "L2Reward: Lisk DAO Treasury contract address can not be zero");
 
