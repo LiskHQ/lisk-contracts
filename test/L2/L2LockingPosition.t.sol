@@ -94,6 +94,9 @@ contract L2LockingPositionTest is Test {
         assert(l2Staking.daoTreasury() == address(0xbABEBABEBabeBAbEBaBeBabeBABEBabEBAbeBAbe));
 
         // initialize VotingPower contract inside L2LockingPosition contract
+        // check that the VotingPowerContractAddressChanged event is emitted
+        vm.expectEmit(true, true, true, true);
+        emit L2LockingPosition.VotingPowerContractAddressChanged(address(0), address(l2VotingPower));
         l2LockingPosition.initializeVotingPower(address(l2VotingPower));
         assert(l2LockingPosition.votingPowerContract() == address(l2VotingPower));
 

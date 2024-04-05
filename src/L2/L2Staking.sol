@@ -77,6 +77,21 @@ contract L2Staking is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, I
     /// @notice Emitted when the L2LiskToken contract address is changed.
     event LiskTokenContractAddressChanged(address indexed oldAddress, address indexed newAddress);
 
+    /// @notice Emitted when the Locking Position contract address is changed.
+    event LockingPositionContractAddressChanged(address indexed oldAddress, address indexed newAddress);
+
+    /// @notice Emitted when the DAO Treasury address is changed.
+    event DaoTreasuryAddressChanged(address indexed oldAddress, address indexed newAddress);
+
+    /// @notice Emitted when a new creator is added.
+    event AllowedCreatorAdded(address indexed creator);
+
+    /// @notice Emitted when a creator is removed.
+    event AllowedCreatorRemoved(address indexed creator);
+
+    /// @notice Emitted when the EmergencyExitEnabled flag is changed.
+    event EmergencyExitEnabledChanged(bool indexed oldEmergencyExitEnabled, bool indexed newEmergencyExitEnabled);
+
     /// @notice Disabling initializers on implementation contract to prevent misuse.
     constructor() {
         _disableInitializers();
@@ -175,18 +190,20 @@ contract L2Staking is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, I
 
     /// @notice Initializes the L2LockingPosition contract address.
     /// @param _lockingPositionContract The address of the L2LockingPosition contract.
-    function initializeLockingPosition(address _lockingPositionContract) public onlyOwner {
+    function initializeLockingPosition(address _lockingPositionContract) public virtual onlyOwner {
         require(lockingPositionContract == address(0), "L2Staking: Locking Position contract is already initialized");
         require(_lockingPositionContract != address(0), "L2Staking: Locking Position contract address can not be zero");
         lockingPositionContract = _lockingPositionContract;
+        emit LockingPositionContractAddressChanged(address(0), lockingPositionContract);
     }
 
     /// @notice Initializes the Lisk DAO Treasury address.
     /// @param _daoTreasury The treasury address of the Lisk DAO.
-    function initializeDaoTreasury(address _daoTreasury) public onlyOwner {
+    function initializeDaoTreasury(address _daoTreasury) public virtual onlyOwner {
         require(daoTreasury == address(0), "L2Staking: Lisk DAO Treasury contract is already initialized");
         require(_daoTreasury != address(0), "L2Staking: Lisk DAO Treasury contract address can not be zero");
         daoTreasury = _daoTreasury;
+        emit DaoTreasuryAddressChanged(address(0), daoTreasury);
     }
 
     /// @notice Adds a new creator to the list of allowed creators.
@@ -196,6 +213,7 @@ contract L2Staking is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, I
         require(newCreator != address(0), "L2Staking: creator address can not be zero");
         require(newCreator != address(this), "L2Staking: Staking contract can not be added as a creator");
         allowedCreators[newCreator] = true;
+        emit AllowedCreatorAdded(newCreator);
     }
 
     /// @notice Removes a creator from the list of allowed creators.
@@ -204,6 +222,7 @@ contract L2Staking is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, I
     function removeCreator(address creator) public virtual onlyOwner {
         require(creator != address(0), "L2Staking: creator address can not be zero");
         delete allowedCreators[creator];
+        emit AllowedCreatorRemoved(creator);
     }
 
     /// @notice Sets the emergency exit enabled flag.
@@ -211,6 +230,7 @@ contract L2Staking is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, I
     /// @dev Only the owner can call this function.
     function setEmergencyExitEnabled(bool _emergencyExitEnabled) public virtual onlyOwner {
         emergencyExitEnabled = _emergencyExitEnabled;
+        emit EmergencyExitEnabledChanged(!emergencyExitEnabled, emergencyExitEnabled);
     }
 
     /// @notice Locks the given amount for the given owner for the given locking duration and creates a new locking

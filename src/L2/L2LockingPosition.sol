@@ -52,6 +52,9 @@ contract L2LockingPosition is Initializable, Ownable2StepUpgradeable, UUPSUpgrad
     /// @notice Event emitted when Staking contract address is changed.
     event StakingContractAddressChanged(address indexed oldAddress, address indexed newAddress);
 
+    /// @notice Event emitted when Voting Power contract address is changed.
+    event VotingPowerContractAddressChanged(address indexed oldAddress, address indexed newAddress);
+
     /// @notice Modifier to allow only Staking contract to call the function.
     modifier onlyStaking() {
         require(msg.sender == stakingContract, "L2LockingPosition: only Staking contract can call this function");
@@ -100,10 +103,11 @@ contract L2LockingPosition is Initializable, Ownable2StepUpgradeable, UUPSUpgrad
 
     /// @notice Initializes the Voting Power contract address.
     /// @param _votingPowerContract Address of the Voting Power contract.
-    function initializeVotingPower(address _votingPowerContract) public onlyOwner {
+    function initializeVotingPower(address _votingPowerContract) external virtual onlyOwner {
         require(votingPowerContract == address(0), "L2LockingPosition: Voting Power contract is already initialized");
         require(_votingPowerContract != address(0), "L2LockingPosition: Voting Power contract address can not be zero");
         votingPowerContract = _votingPowerContract;
+        emit VotingPowerContractAddressChanged(address(0), votingPowerContract);
     }
 
     /// @notice Change owner of the locking position and adjust voting power.

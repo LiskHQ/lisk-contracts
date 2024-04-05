@@ -167,10 +167,16 @@ contract L2StakingTest is Test {
         assertEq(l2LockingPosition.votingPowerContract(), address(l2VotingPower));
 
         // initialize LockingPosition contract inside L2Staking contract
+        // check that the LockingPositionContractAddressChanged event is emitted
+        vm.expectEmit(true, true, true, true);
+        emit L2Staking.LockingPositionContractAddressChanged(address(0), address(l2LockingPosition));
         l2Staking.initializeLockingPosition(address(l2LockingPosition));
         assert(l2Staking.lockingPositionContract() == address(l2LockingPosition));
 
         // initialize Lisk DAO Treasury contract inside L2Staking contract
+        // check that the DaoTreasuryAddressChanged event is emitted
+        vm.expectEmit(true, true, true, true);
+        emit L2Staking.DaoTreasuryAddressChanged(address(0), daoTreasuryAddress);
         l2Staking.initializeDaoTreasury(daoTreasuryAddress);
         assert(l2Staking.daoTreasury() == daoTreasuryAddress);
 
@@ -427,6 +433,9 @@ contract L2StakingTest is Test {
     function test_AddCreator() public {
         assert(!l2Staking.allowedCreators(alice));
 
+        // check that the AllowedCreatorAdded event is emitted
+        vm.expectEmit(true, true, true, true);
+        emit L2Staking.AllowedCreatorAdded(alice);
         l2Staking.addCreator(alice);
         assert(l2Staking.allowedCreators(alice));
     }
@@ -450,6 +459,10 @@ contract L2StakingTest is Test {
     function test_RemoveCreator() public {
         l2Staking.addCreator(alice);
         assert(l2Staking.allowedCreators(alice));
+
+        // check that the AllowedCreatorRemoved event is emitted
+        vm.expectEmit(true, true, true, true);
+        emit L2Staking.AllowedCreatorRemoved(alice);
         l2Staking.removeCreator(alice);
         assert(!l2Staking.allowedCreators(alice));
     }
@@ -471,9 +484,15 @@ contract L2StakingTest is Test {
     function test_SetEmergencyExitEnabled() public {
         assert(!l2Staking.emergencyExitEnabled());
 
+        // check that the EmergencyExitEnabledChanged event is emitted
+        vm.expectEmit(true, true, true, true);
+        emit L2Staking.EmergencyExitEnabledChanged(false, true);
         l2Staking.setEmergencyExitEnabled(true);
         assert(l2Staking.emergencyExitEnabled());
 
+        // check that the EmergencyExitEnabledChanged event is emitted
+        vm.expectEmit(true, true, true, true);
+        emit L2Staking.EmergencyExitEnabledChanged(true, false);
         l2Staking.setEmergencyExitEnabled(false);
         assert(!l2Staking.emergencyExitEnabled());
     }
