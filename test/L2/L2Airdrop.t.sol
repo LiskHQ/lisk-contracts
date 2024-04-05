@@ -249,6 +249,21 @@ contract L2AirdropTest is Test {
         assertEq(l2LiskToken.balanceOf(daoTreasuryAddress), 10000 * 10 ** 18);
     }
 
+    function test_SendLSKToDaoTreasury_AirdropHasNotStarted() public {
+        // re-deploy L2Airdrop contract because merkle root is already set in setup
+        l2Airdrop = new L2Airdrop(
+            address(l2LiskToken),
+            address(l2Claim),
+            address(l2LockingPosition),
+            address(l2VotingPower),
+            daoTreasuryAddress
+        );
+
+        // Merkle root is not set so airdrop has not started yet
+        vm.expectRevert("L2Airdrop: airdrop has not started yet");
+        l2Airdrop.sendLSKToDaoTreasury();
+    }
+
     function test_SendLSKToDaoTreasury_AirdropPeriodNotOver() public {
         // proceed time to MIGRATION_AIRDROP_DURATION so that airdrop period is not over
         vm.warp(block.timestamp + l2Airdrop.MIGRATION_AIRDROP_DURATION() * 1 days);

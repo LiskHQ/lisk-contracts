@@ -38,12 +38,13 @@ interface IL2VotingPower {
 ///         computation is based on the following conditions:
 ///         1. Min ETH: The recipient must have at least MIN_ETH ETH on L2.
 ///         2. Delegating: The recipient must have delegated in Lisk DAO.
-///         3. Staking Tier 1: The recipient must have staked at least MIN_STAKING_AMOUNT_MULTIPLIER * airdropAmount for
-///                            at least MIN_STAKING_DURATION_TIER_1.
-///         4. Staking Tier 2: The recipient must have staked at least MIN_STAKING_AMOUNT_MULTIPLIER * airdropAmount for
-///                            at least MIN_STAKING_DURATION_TIER_2.
-///         The airdrop amount is distributed to the recipient's L2LiskToken contract. The airdrop status for each
-///         recipient is stored in a mapping. The airdrop status includes the status of each of the airdrop conditions.
+///         3. Staking Tier 1: The recipient must have staked at least MIN_STAKING_AMOUNT_MULTIPLIER * airdropAmount and
+///                            the position expires at earliest in MIN_STAKING_DURATION_TIER_1 days.
+///         4. Staking Tier 2: The recipient must have staked at least MIN_STAKING_AMOUNT_MULTIPLIER * airdropAmount and
+///                            the position expires at earliest in MIN_STAKING_DURATION_TIER_2 days.
+///         The airdrop amount is distributed to the recipient's address in L2LiskToken contract. The airdrop status for
+///         each recipient is stored in a mapping. The airdrop status includes the status of each of the airdrop
+///         conditions.
 contract L2Airdrop is Ownable2Step {
     /// @notice The required ETH amount on Lisk L2 to satisfy min ETH requirement.
     uint256 public constant MIN_ETH = 10 ** 16; // 0.01 ETH
@@ -55,15 +56,14 @@ contract L2Airdrop is Ownable2Step {
     uint32 public constant MIN_STAKING_DURATION_TIER_2 = 180; // 6 months
 
     /// @notice Airdrop amount with this multiplier defines the minimum staking amount that must be staked at least for
-    ///         MIN_STAKING_DURATION to satisfy the staking requirement. This multiplier should incentivize staking of
-    ///         50% of the migrated whale capped amount.
+    ///         MIN_STAKING_DURATION to satisfy the staking requirement.
     uint8 public constant MIN_STAKING_AMOUNT_MULTIPLIER = 5;
 
-    /// @notice The period of time starting from the setting of the Merkle root, during which the migration airdrop can
-    ///         be claimed.
+    /// @notice The period of time starting when the Merkle root is set, during which the migration airdrop can
+    ///         be claimed (in days).
     uint256 public constant MIGRATION_AIRDROP_DURATION = 180;
 
-    /// @notice Merkle Root for the airdrop process.
+    /// @notice Merkle root for the airdrop process.
     bytes32 public merkleRoot;
 
     /// @notice Start time of the migration airdrop. Airdrop is considered started once the Merkle root is set.
@@ -129,6 +129,46 @@ contract L2Airdrop is Ownable2Step {
         daoTreasuryAddress = _daoTreasuryAddress;
     }
 
+    /// @notice Check if the recipient satisfies the staking requirement of the provided tier.
+    /// @param recipient The recipient address to check if it satisfies the staking requirement of the provided tier.
+    /// @param airdropAmount The amount of LSK tokens to claim the airdrop for.
+    /// @param tierDuration The duration of the staking requirement for the provided tier.
+    /// @return True if recipient has staked at least minStakingAmount for at least MIN_STAKING_DURATION_TIER_1 or
+    ///         MIN_STAKING_DURATION_TIER_2 (depending on the tier), False otherwise.
+    function satisfiesStakingTier(
+        address recipient,
+        uint256 airdropAmount,
+        uint32 tierDuration
+    )
+        private
+        view
+        returns (bool)
+    {
+        require(recipient != address(0), "L2Airdrop: recipient is the zero address");
+        require(airdropAmount > 0, "L2Airdrop: airdrop amount is zero");
+
+        // get all locking positions of the recipient
+        IL2LockingPosition l2LockingPosition = IL2LockingPosition(l2LockingPositionAddress);
+        LockingPosition[] memory lockingPositions = l2LockingPosition.getAllLockingPositionsByOwner(recipient);
+
+        // check if the recipient has staked at least minStakingAmount for at least tierDuration
+        uint256 totalStakedAmount = 0;
+        for (uint256 i = 0; i < lockingPositions.length; i++) {
+            LockingPosition memory lockingPosition = lockingPositions[i];
+            // is the locking position expired?
+            if (lockingPosition.expDate < (block.timestamp / 1 days)) {
+                continue;
+            }
+            if (lockingPosition.expDate - (block.timestamp / 1 days) >= tierDuration) {
+                totalStakedAmount += lockingPosition.amount;
+            }
+        }
+
+        uint256 minStakingAmount = MIN_STAKING_AMOUNT_MULTIPLIER * airdropAmount;
+
+        return totalStakedAmount >= minStakingAmount;
+    }
+
     /// @notice Set Merkle root for the airdrop process.
     /// @param _merkleRoot Merkle root for the airdrop process.
     /// @dev Only the owner can set the Merkle root.
@@ -142,6 +182,7 @@ contract L2Airdrop is Ownable2Step {
     /// @notice Send the remaining LSK tokens to the Lisk DAO treasury.
     /// @dev Only the owner can send the remaining LSK tokens to the Lisk DAO treasury.
     function sendLSKToDaoTreasury() public onlyOwner {
+        require(merkleRoot != 0, "L2Airdrop: airdrop has not started yet");
         require(
             airdropStartTime + (MIGRATION_AIRDROP_DURATION * 1 days) < block.timestamp,
             "L2Airdrop: airdrop is not over yet"
@@ -210,29 +251,7 @@ contract L2Airdrop is Ownable2Step {
     /// @return True if recipient has staked at least minStakingAmount for at least MIN_STAKING_DURATION_TIER_1, False
     ///         otherwise.
     function satisfiesStakingTier1(address recipient, uint256 airdropAmount) public view returns (bool) {
-        require(recipient != address(0), "L2Airdrop: recipient is the zero address");
-        require(airdropAmount > 0, "L2Airdrop: airdrop amount is zero");
-
-        // get all locking positions of the recipient
-        IL2LockingPosition l2LockingPosition = IL2LockingPosition(l2LockingPositionAddress);
-        LockingPosition[] memory lockingPositions = l2LockingPosition.getAllLockingPositionsByOwner(recipient);
-
-        // check if the recipient has staked at least minStakingAmount for at least MIN_STAKING_DURATION_TIER_1
-        uint256 totalStakedAmount = 0;
-        for (uint256 i = 0; i < lockingPositions.length; i++) {
-            LockingPosition memory lockingPosition = lockingPositions[i];
-            // is the locking position expired?
-            if (lockingPosition.expDate < (block.timestamp / 1 days)) {
-                continue;
-            }
-            if (lockingPosition.expDate - (block.timestamp / 1 days) >= MIN_STAKING_DURATION_TIER_1) {
-                totalStakedAmount += lockingPosition.amount;
-            }
-        }
-
-        uint256 minStakingAmount = MIN_STAKING_AMOUNT_MULTIPLIER * airdropAmount;
-
-        return totalStakedAmount >= minStakingAmount;
+        return satisfiesStakingTier(recipient, airdropAmount, MIN_STAKING_DURATION_TIER_1);
     }
 
     /// @notice Check if the recipient satisfies the staking requirement of tier 2.
@@ -240,29 +259,7 @@ contract L2Airdrop is Ownable2Step {
     /// @return True if recipient has staked at least minStakingAmount for at least MIN_STAKING_DURATION_TIER_2, False
     ///         otherwise.
     function satisfiesStakingTier2(address recipient, uint256 airdropAmount) public view returns (bool) {
-        require(recipient != address(0), "L2Airdrop: recipient is the zero address");
-        require(airdropAmount > 0, "L2Airdrop: airdrop amount is zero");
-
-        // get all locking positions of the recipient
-        IL2LockingPosition l2LockingPosition = IL2LockingPosition(l2LockingPositionAddress);
-        LockingPosition[] memory lockingPositions = l2LockingPosition.getAllLockingPositionsByOwner(recipient);
-
-        // check if the recipient has staked at least minStakingAmount for at least MIN_STAKING_DURATION_TIER_2
-        uint256 totalStakedAmount = 0;
-        for (uint256 i = 0; i < lockingPositions.length; i++) {
-            LockingPosition memory lockingPosition = lockingPositions[i];
-            // is the locking position expired?
-            if (lockingPosition.expDate < (block.timestamp / 1 days)) {
-                continue;
-            }
-            if (lockingPosition.expDate - (block.timestamp / 1 days) >= MIN_STAKING_DURATION_TIER_2) {
-                totalStakedAmount += lockingPosition.amount;
-            }
-        }
-
-        uint256 minStakingAmount = MIN_STAKING_AMOUNT_MULTIPLIER * airdropAmount;
-
-        return totalStakedAmount >= minStakingAmount;
+        return satisfiesStakingTier(recipient, airdropAmount, MIN_STAKING_DURATION_TIER_2);
     }
 
     /// @notice Claim the airdrop for the recipient.
