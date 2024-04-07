@@ -100,6 +100,15 @@ contract L2Airdrop is Ownable2Step {
     /// @notice The treasury address of the Lisk DAO.
     address public daoTreasuryAddress;
 
+    /// @notice Emitted when the Merkle root is set.
+    event MerkleRootSet(bytes32 merkleRoot);
+
+    /// @notice Emitted when the remaining LSK tokens are sent to the Lisk DAO treasury.
+    event LSKSentToDaoTreasury(address indexed daoTreasuryAddress, uint256 amount);
+
+    /// @notice Emitted when the airdrop is (partially) claimed for the recipient.
+    event AirdropClaimed(bytes20 indexed liskAddress, uint256 amount, address indexed recipient, uint8 airdropStatus);
+
     /// @notice Constructs the L2Airdrop contract.
     /// @param _l2LiskTokenAddress Address of the L2LiskToken contract.
     /// @param _l2ClaimAddress Address of the L2Claim contract.
@@ -177,6 +186,7 @@ contract L2Airdrop is Ownable2Step {
         require(merkleRoot == 0, "L2Airdrop: Merkle root already set");
         merkleRoot = _merkleRoot;
         airdropStartTime = block.timestamp;
+        emit MerkleRootSet(merkleRoot);
     }
 
     /// @notice Send the remaining LSK tokens to the Lisk DAO treasury.
@@ -190,6 +200,7 @@ contract L2Airdrop is Ownable2Step {
         uint256 balance = IL2LiskToken(l2LiskTokenAddress).balanceOf(address(this));
         bool status = IL2LiskToken(l2LiskTokenAddress).transfer(daoTreasuryAddress, balance);
         require(status, "L2Airdrop: LSK token transfer to DAO failed");
+        emit LSKSentToDaoTreasury(daoTreasuryAddress, balance);
     }
 
     /// @notice Check if the Lisk v4 address has claimed the airdrop for min ETH.
@@ -297,11 +308,13 @@ contract L2Airdrop is Ownable2Step {
         );
 
         uint256 airdropAmount = 0;
+        uint8 claimStatus = 0;
 
         if (claimedMinEth(liskAddress) == false) {
             if (satisfiesMinEth(recipient)) {
                 airdropAmount += amount / 4;
                 airdropStatus[liskAddress] |= MIN_ETH_BIT;
+                claimStatus |= MIN_ETH_BIT;
             }
         }
 
@@ -309,6 +322,7 @@ contract L2Airdrop is Ownable2Step {
             if (satisfiesDelegating(recipient)) {
                 airdropAmount += amount / 4;
                 airdropStatus[liskAddress] |= DELEGATING_BIT;
+                claimStatus |= DELEGATING_BIT;
             }
         }
 
@@ -316,6 +330,7 @@ contract L2Airdrop is Ownable2Step {
             if (satisfiesStakingTier1(recipient, amount)) {
                 airdropAmount += amount / 4;
                 airdropStatus[liskAddress] |= STAKING_TIER_1_BIT;
+                claimStatus |= STAKING_TIER_1_BIT;
             }
         }
 
@@ -323,11 +338,16 @@ contract L2Airdrop is Ownable2Step {
             if (satisfiesStakingTier2(recipient, amount)) {
                 airdropAmount += amount / 4;
                 airdropStatus[liskAddress] |= STAKING_TIER_2_BIT;
+                claimStatus |= STAKING_TIER_2_BIT;
             }
         }
 
-        // transfer airdropAmount of LSK to recipient
-        bool status = IL2LiskToken(l2LiskTokenAddress).transfer(recipient, airdropAmount);
-        require(status, "L2Airdrop: L2LiskToken transfer failed");
+        if (airdropAmount > 0) {
+            // transfer airdropAmount of LSK to recipient
+            bool status = IL2LiskToken(l2LiskTokenAddress).transfer(recipient, airdropAmount);
+            require(status, "L2Airdrop: L2LiskToken transfer failed");
+
+            emit AirdropClaimed(liskAddress, airdropAmount, recipient, claimStatus);
+        }
     }
 }
