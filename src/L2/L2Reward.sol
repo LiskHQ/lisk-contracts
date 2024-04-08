@@ -195,7 +195,7 @@ contract L2Reward is Ownable {
 
         require(
             IL2LockingPosition(lockingPositionContract).ownerOf(lockID) == msg.sender,
-            "msg.sender does not own the locking position"
+            "L2Reward: msg.sender does not own the locking position"
         );
 
         _claimReward(lockID);
