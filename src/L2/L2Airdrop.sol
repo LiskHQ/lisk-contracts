@@ -342,7 +342,7 @@ contract L2Airdrop is Ownable2Step {
             }
         }
 
-        if (airdropAmount > 0) {
+        if (claimStatus != 0) {
             // transfer airdropAmount of LSK to recipient
             bool status = IL2LiskToken(l2LiskTokenAddress).transfer(recipient, airdropAmount);
             require(status, "L2Airdrop: L2LiskToken transfer failed");

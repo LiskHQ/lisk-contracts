@@ -24,22 +24,28 @@ contract L2AirdropScript is Script {
 
         // address, the ownership of L2 Airdrop contract is transferred to after deployment
         address newOwnerAddress = vm.envAddress("L2_AIRDROP_OWNER_ADDRESS");
+        assert(newOwnerAddress != address(0));
         console2.log("L2 Airdrop owner address: %s (after ownership will be accepted)", newOwnerAddress);
 
         // get L2LiskToken contract address
         Utils.L2AddressesConfig memory l2AddressesConfig = utils.readL2AddressesFile();
+        assert(l2AddressesConfig.L2LiskToken != address(0));
         console2.log("L2 Lisk token address: %s", l2AddressesConfig.L2LiskToken);
 
+        // get L2Claim contract address
+        assert(l2AddressesConfig.L2ClaimContract != address(0));
+        console2.log("L2 Claim address: %s", l2AddressesConfig.L2ClaimContract);
+
         // get L2LockingPosition contract address
+        assert(l2AddressesConfig.L2LockingPosition != address(0));
         console2.log("L2 Locking Position address: %s", l2AddressesConfig.L2LockingPosition);
 
-        // get L2Staking contract address
-        console2.log("L2 Staking address: %s", l2AddressesConfig.L2Staking);
-
         // get L2VotingPower contract address
+        assert(l2AddressesConfig.L2VotingPower != address(0));
         console2.log("L2 Voting Power address: %s", l2AddressesConfig.L2VotingPower);
 
         // get DAO (L2TimelockController) contract address
+        assert(l2AddressesConfig.L2TimelockController != address(0));
         console2.log("DAO (L2TimelockController) address: %s", l2AddressesConfig.L2TimelockController);
 
         // deploy L2Airdrop contract and transfer its ownership; new owner has to accept ownership to become the owner
@@ -47,8 +53,8 @@ contract L2AirdropScript is Script {
         vm.startBroadcast(deployerPrivateKey);
         L2Airdrop l2Airdrop = new L2Airdrop(
             l2AddressesConfig.L2LiskToken,
+            l2AddressesConfig.L2ClaimContract,
             l2AddressesConfig.L2LockingPosition,
-            l2AddressesConfig.L2Staking,
             l2AddressesConfig.L2VotingPower,
             l2AddressesConfig.L2TimelockController
         );
@@ -56,6 +62,11 @@ contract L2AirdropScript is Script {
         vm.stopBroadcast();
 
         assert(address(l2Airdrop) != address(0));
+        assert(l2Airdrop.l2LiskTokenAddress() == l2AddressesConfig.L2LiskToken);
+        assert(l2Airdrop.l2ClaimAddress() == l2AddressesConfig.L2ClaimContract);
+        assert(l2Airdrop.l2LockingPositionAddress() == l2AddressesConfig.L2LockingPosition);
+        assert(l2Airdrop.l2VotingPowerAddress() == l2AddressesConfig.L2VotingPower);
+        assert(l2Airdrop.daoTreasuryAddress() == l2AddressesConfig.L2TimelockController);
         assert(l2Airdrop.owner() == vm.addr(deployerPrivateKey));
         assert(l2Airdrop.pendingOwner() == newOwnerAddress);
 
