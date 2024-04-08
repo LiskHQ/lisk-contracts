@@ -42,10 +42,11 @@ interface IL2VotingPower {
 ///                            the position expires at earliest in MIN_STAKING_DURATION_TIER_1 days.
 ///         4. Staking Tier 2: The recipient must have staked at least MIN_STAKING_AMOUNT_MULTIPLIER * airdropAmount and
 ///                            the position expires at earliest in MIN_STAKING_DURATION_TIER_2 days.
-///         The airdrop amount is distributed to the recipient's address in L2LiskToken contract. Amount for each
-///         account is calculated at the time the snapshot is taken from which the Merkle root is computed. The airdrop
-///         status for each recipient is stored in a mapping. The airdrop status includes the status of each of the
-///         airdrop conditions.
+///         5. The recipient must have had some LSK tokens on Lisk L1 at the migration time and must have claimed these
+///            tokens on Lisk L2.
+///         The airdrop amount is distributed to the recipient's address in L2LiskToken contract. The airdrop status for
+///         each recipient is stored in a mapping. The airdrop status includes the status of each of the airdrop
+///         conditions.
 contract L2Airdrop is Ownable2Step {
     /// @notice The required ETH amount on Lisk L2 to satisfy min ETH requirement.
     uint256 public constant MIN_ETH = 10 ** 16; // 0.01 ETH
@@ -165,14 +166,17 @@ contract L2Airdrop is Ownable2Step {
         uint256 totalStakedAmount = 0;
         for (uint256 i = 0; i < lockingPositions.length; i++) {
             LockingPosition memory lockingPosition = lockingPositions[i];
-            // is the locking position expired?
-            if (lockingPosition.expDate < (block.timestamp / 1 days)) {
-                // is the locking position paused for at least tierDuration?
-                if (lockingPosition.pausedLockingDuration >= tierDuration) {
+            if (lockingPosition.pausedLockingDuration > 0 /* locking position is paused */ ) {
+                if (lockingPosition.pausedLockingDuration >= tierDuration /* satisfies duration */ ) {
                     totalStakedAmount += lockingPosition.amount;
                 }
-            } else if (lockingPosition.expDate - (block.timestamp / 1 days) >= tierDuration) {
-                totalStakedAmount += lockingPosition.amount;
+            } /* locking position is not paused */ else {
+                if (lockingPosition.expDate < (block.timestamp / 1 days) /* position expired */ ) {
+                    continue;
+                }
+                if (lockingPosition.expDate - (block.timestamp / 1 days) >= tierDuration /* satisfies duration */ ) {
+                    totalStakedAmount += lockingPosition.amount;
+                }
             }
         }
 
@@ -287,7 +291,8 @@ contract L2Airdrop is Ownable2Step {
             "L2Airdrop: airdrop period is over"
         );
         require(
-            IL2Claim(l2ClaimAddress).claimedTo(liskAddress) != address(0), "L2Airdrop: recipient is the zero address"
+            IL2Claim(l2ClaimAddress).claimedTo(liskAddress) != address(0),
+            "L2Airdrop: tokens were not claimed yet from this Lisk address"
         );
         require(amount > 0, "L2Airdrop: amount is zero");
         require(merkleProof.length > 0, "L2Airdrop: Merkle proof is empty");

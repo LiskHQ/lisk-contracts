@@ -852,7 +852,7 @@ contract L2AirdropTest is Test {
 
     function test_ClaimAirdrop_ZeroRecipientAddress() public {
         bytes32[] memory merkleProof = new bytes32[](1);
-        vm.expectRevert("L2Airdrop: recipient is the zero address");
+        vm.expectRevert("L2Airdrop: tokens were not claimed yet from this Lisk address");
         // bob did not claim tokens in the Claim contract
         l2Airdrop.claimAirdrop(bytes20(bob), 20 * 10 ** 18, merkleProof);
     }
