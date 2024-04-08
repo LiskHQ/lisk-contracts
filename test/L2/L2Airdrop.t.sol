@@ -354,6 +354,32 @@ contract L2AirdropTest is Test {
         aliceSatifiesStakingTier1();
     }
 
+    function test_SatisfiesStakingTier1_AllLockingPositionsSatisfy_PausedPositions() public {
+        // alice stakes 30 L2LiskToken for minimum days in one position
+        vm.startPrank(alice);
+        l2Staking.lockAmount(alice, 30 * 10 ** 18, l2Airdrop.MIN_STAKING_DURATION_TIER_1());
+        // and 50 L2LiskToken for minimum plus 1 days in another position
+        l2Staking.lockAmount(alice, 50 * 10 ** 18, l2Airdrop.MIN_STAKING_DURATION_TIER_1() + 1);
+        vm.stopPrank();
+        assertEq(l2LockingPosition.balanceOf(alice), 2);
+        assertEq(l2VotingPower.balanceOf(alice), 80 * 10 ** 18);
+
+        // pause both locking positions
+        vm.startPrank(alice);
+        l2Staking.pauseRemainingLockingDuration(1);
+        l2Staking.pauseRemainingLockingDuration(2);
+        vm.stopPrank();
+        assertEq(l2LockingPosition.getLockingPosition(1).pausedLockingDuration, 30);
+        assertEq(l2LockingPosition.getLockingPosition(2).pausedLockingDuration, 31);
+
+        // proceed time to MIN_STAKING_DURATION_TIER_1 + 100 days so that both positions would not satisfy staking tier
+        // 1 if positions were not paused
+        vm.warp((l2Airdrop.MIN_STAKING_DURATION_TIER_1() + 100) * 1 days);
+
+        // check that alice satisfy staking tier 1 because both positions are paused
+        assertEq(l2Airdrop.satisfiesStakingTier1(alice, 16 * 10 ** 18), true);
+    }
+
     function test_SatisfiesStakingTier1_NotAllLockingPositionsSatisfy_TooSmallDuration() public {
         // alice stakes 30 L2LiskToken for minimum days in one position
         vm.startPrank(alice);

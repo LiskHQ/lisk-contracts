@@ -167,9 +167,11 @@ contract L2Airdrop is Ownable2Step {
             LockingPosition memory lockingPosition = lockingPositions[i];
             // is the locking position expired?
             if (lockingPosition.expDate < (block.timestamp / 1 days)) {
-                continue;
-            }
-            if (lockingPosition.expDate - (block.timestamp / 1 days) >= tierDuration) {
+                // is the locking position paused for at least tierDuration?
+                if (lockingPosition.pausedLockingDuration >= tierDuration) {
+                    totalStakedAmount += lockingPosition.amount;
+                }
+            } else if (lockingPosition.expDate - (block.timestamp / 1 days) >= tierDuration) {
                 totalStakedAmount += lockingPosition.amount;
             }
         }
