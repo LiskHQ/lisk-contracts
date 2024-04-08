@@ -21,7 +21,7 @@ interface IL2Staking {
 
     function unlock(uint256 lockID) external;
 
-    function initiateFastUnlock(uint256 lockID) external;
+    function initiateFastUnlock(uint256 lockID) external returns (uint256);
 
     function increaseAmount(uint256 lockID, uint256 reward) external;
 
@@ -106,7 +106,13 @@ contract L2Reward is Ownable {
     /// @notice Address of the L2 token contract.
     address public l2TokenContract;
 
-    constructor(address _stakingContract, address _lockingPositionContract, address _l2TokenContract) Ownable(msg.sender){
+    constructor(
+        address _stakingContract,
+        address _lockingPositionContract,
+        address _l2TokenContract
+    )
+        Ownable(msg.sender)
+    {
         stakingContract = _stakingContract;
         lockingPositionContract = _lockingPositionContract;
         l2TokenContract = _l2TokenContract;
@@ -192,15 +198,12 @@ contract L2Reward is Ownable {
             "msg.sender does not own the locking position"
         );
 
+        _claimReward(lockID);
+
         IL2LockingPosition.LockingPosition memory lockingPosition =
             IL2LockingPosition(lockingPositionContract).getLockingPosition(lockID);
 
-        _claimReward(lockID);
-
-        uint256 penalty = 0; // L2Staking(lockingPositionContract).calculatePenalty(lockingPosition.amount,
-            // lockingPosition.expDate);
-
-        IL2Staking(stakingContract).initiateFastUnlock(lockID);
+        uint256 penalty = IL2Staking(stakingContract).initiateFastUnlock(lockID);
 
         addRewards(penalty, 30, 1);
 

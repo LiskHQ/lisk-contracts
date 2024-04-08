@@ -12,7 +12,6 @@ import { L2LockingPosition, LockingPosition } from "src/L2/L2LockingPosition.sol
 import { L2Staking } from "src/L2/L2Staking.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 
-
 struct Stake {
     address addr;
     uint256 amount;
@@ -1174,14 +1173,66 @@ contract L2RewardTest is Test {
         uint256 reward = l2Reward.extendDuration(lockID, durationExtension);
         vm.stopPrank();
 
-        console2.logUint(reward);
-
         assertEq(l2LiskToken.balanceOf(staker), balance + reward);
         assertEq(l2Reward.totalWeight(), weightIncrease);
 
         assertEq(l2Reward.totalAmountLocked(), amount);
         assertEq(l2Reward.pendingUnlockAmount(), amount);
         assertEq(l2Reward.dailyUnlockedAmounts(deploymentDate + duration + durationExtension), amount);
+    }
+
+    function test_fastUnlock_addsPenaltyAsRewardAlsoUpdatesGlobalsAndClaimRewards() public {
+        l2Staking.addCreator(address(l2Reward));
+
+        address staker = address(0x1);
+        uint256 balance = convertLiskToBeddows(1000);
+        uint256 amount = convertLiskToBeddows(100);
+        uint256 duration = 120;
+
+        // staker and DAO gets balance
+        vm.startPrank(bridge);
+        l2LiskToken.mint(staker, balance);
+        l2LiskToken.mint(daoTreasury, balance);
+        vm.stopPrank();
+
+        // DAO funds staking
+        vm.startPrank(daoTreasury);
+        l2LiskToken.approve(address(l2Reward), convertLiskToBeddows(35));
+        l2Reward.fundStakingRewards(convertLiskToBeddows(35), 350, 1);
+        vm.stopPrank();
+
+        vm.startPrank(staker);
+        l2LiskToken.approve(address(l2Reward), amount);
+        uint256 lockID = l2Reward.createPosition(amount, duration);
+        vm.stopPrank();
+
+        skip(50 days);
+
+        uint256 reward = 4.9e18;
+        uint256 penalty = 4794520547945205479;
+
+        vm.startPrank(staker);
+        l2Reward.fastUnlock(lockID);
+        vm.stopPrank();
+
+        uint256 expectedTotalWeight = 2700000 - 500000 - ((amount * (19860 - 19790 + 150)) / 10 ** 16)
+            + (((l2Staking.FAST_UNLOCK_DURATION() + l2Reward.OFFSET()) * (100e18 - penalty)) / 10 ** 16);
+
+        assertEq(l2LiskToken.balanceOf(address(l2Reward)), convertLiskToBeddows(35) - reward + penalty);
+        assertEq(l2Reward.dailyUnlockedAmounts(deploymentDate + duration), 0);
+        assertEq(
+            l2Reward.dailyUnlockedAmounts(deploymentDate + 50 + l2Staking.FAST_UNLOCK_DURATION()), amount - penalty
+        );
+        assertEq(l2Reward.totalAmountLocked(), 100e18 - penalty);
+        assertEq(l2Reward.pendingUnlockAmount(), 100e18 - penalty);
+        assertEq(l2Reward.totalWeight(), expectedTotalWeight);
+
+        uint256 dailyFundedReward = 0.1 * 10 ** 18;
+        uint256 rewardsFromPenalty = penalty / 30;
+
+        for (uint16 i = 19791; i < 19821; i++) {
+            assertEq(l2Reward.dailyRewards(i), dailyFundedReward + rewardsFromPenalty);
+        }
     }
 
     function test_extendDuration_updatesGlobalsAndClaimRewardsForPausedPositions() public {
@@ -1227,9 +1278,7 @@ contract L2RewardTest is Test {
     }
 
     function test_initializeDaoTreasury_onlyOwnerCanInitializeDaoTreasury() public {
-        vm.expectRevert(
-            abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(0x1))
-        );
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(0x1)));
         vm.prank(address(0x1));
         l2Reward.initializeDaoTreasury(address(0x2));
     }
