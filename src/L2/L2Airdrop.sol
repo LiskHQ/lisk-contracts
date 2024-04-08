@@ -42,9 +42,10 @@ interface IL2VotingPower {
 ///                            the position expires at earliest in MIN_STAKING_DURATION_TIER_1 days.
 ///         4. Staking Tier 2: The recipient must have staked at least MIN_STAKING_AMOUNT_MULTIPLIER * airdropAmount and
 ///                            the position expires at earliest in MIN_STAKING_DURATION_TIER_2 days.
-///         The airdrop amount is distributed to the recipient's address in L2LiskToken contract. The airdrop status for
-///         each recipient is stored in a mapping. The airdrop status includes the status of each of the airdrop
-///         conditions.
+///         The airdrop amount is distributed to the recipient's address in L2LiskToken contract. Amount for each
+///         account is calculated at the time the snapshot is taken from which the Merkle root is computed. The airdrop
+///         status for each recipient is stored in a mapping. The airdrop status includes the status of each of the
+///         airdrop conditions.
 contract L2Airdrop is Ownable2Step {
     /// @notice The required ETH amount on Lisk L2 to satisfy min ETH requirement.
     uint256 public constant MIN_ETH = 10 ** 16; // 0.01 ETH
@@ -277,23 +278,17 @@ contract L2Airdrop is Ownable2Step {
     /// @param liskAddress The Lisk v4 address to claim the airdrop for.
     /// @param amount The amount of LSK tokens to claim the airdrop for.
     /// @param merkleProof The Merkle proof for the liskAddress and amount against the stored merkleRoot.
-    /// @param recipient The recipient address to claim the airdrop for.
-    function claimAirdrop(
-        bytes20 liskAddress,
-        uint256 amount,
-        bytes32[] memory merkleProof,
-        address recipient
-    )
-        public
-    {
+    function claimAirdrop(bytes20 liskAddress, uint256 amount, bytes32[] memory merkleProof) public {
         require(merkleRoot != 0, "L2Airdrop: airdrop has not started yet");
         require(
             block.timestamp <= airdropStartTime + (MIGRATION_AIRDROP_DURATION * 1 days),
             "L2Airdrop: airdrop period is over"
         );
+        require(
+            IL2Claim(l2ClaimAddress).claimedTo(liskAddress) != address(0), "L2Airdrop: recipient is the zero address"
+        );
         require(amount > 0, "L2Airdrop: amount is zero");
         require(merkleProof.length > 0, "L2Airdrop: Merkle proof is empty");
-        require(recipient != address(0), "L2Airdrop: recipient is the zero address");
         // require merkleProof be a correct proof for liskv4Address and amount against stored merkleRoot
         require(
             MerkleProof.verify(
@@ -301,12 +296,12 @@ contract L2Airdrop is Ownable2Step {
             ),
             "L2Airdrop: invalid Merkle proof"
         );
-        require(IL2Claim(l2ClaimAddress).claimedTo(liskAddress) == recipient, "L2Airdrop: invalid recipient");
         require(
             (airdropStatus[liskAddress] & FULL_AIRDROP_CLAIMED) != FULL_AIRDROP_CLAIMED,
             "L2Airdrop: full airdrop claimed"
         );
 
+        address recipient = IL2Claim(l2ClaimAddress).claimedTo(liskAddress);
         uint256 airdropAmount = 0;
         uint8 claimStatus = 0;
 

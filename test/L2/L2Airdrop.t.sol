@@ -468,7 +468,7 @@ contract L2AirdropTest is Test {
         uint256 aliceBalanceBefore = l2LiskToken.balanceOf(alice);
         bytes32[] memory merkleProof = new bytes32[](1);
         merkleProof[0] = bytes32(0x462e51e817e185fa779ce17c42fd30f1fd40719281ceee42d4ed2b2f3664a07d);
-        l2Airdrop.claimAirdrop(aliceLSKAddress, 20 * 10 ** 18, merkleProof, alice);
+        l2Airdrop.claimAirdrop(aliceLSKAddress, 20 * 10 ** 18, merkleProof);
         assertEq(l2LiskToken.balanceOf(alice), aliceBalanceBefore + 5 * 10 ** 18); // 5 L2LiskToken airdrop
 
         // check that alice has claimed airdrop for min eth condition
@@ -495,7 +495,7 @@ contract L2AirdropTest is Test {
         uint256 aliceBalanceBefore = l2LiskToken.balanceOf(alice);
         bytes32[] memory merkleProof = new bytes32[](1);
         merkleProof[0] = bytes32(0x462e51e817e185fa779ce17c42fd30f1fd40719281ceee42d4ed2b2f3664a07d);
-        l2Airdrop.claimAirdrop(aliceLSKAddress, 20 * 10 ** 18, merkleProof, alice);
+        l2Airdrop.claimAirdrop(aliceLSKAddress, 20 * 10 ** 18, merkleProof);
         assertEq(l2LiskToken.balanceOf(alice), aliceBalanceBefore + 5 * 10 ** 18); // 5 L2LiskToken airdrop
 
         // check that alice has claimed airdrop for delegating condition
@@ -518,7 +518,7 @@ contract L2AirdropTest is Test {
         uint256 aliceBalanceBefore = l2LiskToken.balanceOf(alice);
         bytes32[] memory merkleProof = new bytes32[](1);
         merkleProof[0] = bytes32(0xbd04d829d0eff2f6b6962f1cd385b0d83cba2ad83675f18089ccb0f9985d77df);
-        l2Airdrop.claimAirdrop(aliceLSKAddress, 16 * 10 ** 18, merkleProof, alice);
+        l2Airdrop.claimAirdrop(aliceLSKAddress, 16 * 10 ** 18, merkleProof);
         assertEq(l2LiskToken.balanceOf(alice), aliceBalanceBefore + 4 * 10 ** 18); // 4 L2LiskToken airdrop
 
         // check that alice has claimed airdrop for staking tier 1 condition
@@ -541,7 +541,7 @@ contract L2AirdropTest is Test {
         uint256 aliceBalanceBefore = l2LiskToken.balanceOf(alice);
         bytes32[] memory merkleProof = new bytes32[](1);
         merkleProof[0] = bytes32(0xbd04d829d0eff2f6b6962f1cd385b0d83cba2ad83675f18089ccb0f9985d77df);
-        l2Airdrop.claimAirdrop(aliceLSKAddress, 16 * 10 ** 18, merkleProof, alice);
+        l2Airdrop.claimAirdrop(aliceLSKAddress, 16 * 10 ** 18, merkleProof);
         assertEq(l2LiskToken.balanceOf(alice), aliceBalanceBefore + 4 * 10 ** 18); // 4 L2LiskToken airdrop
 
         // check that alice has claimed airdrop for staking tier 2 condition
@@ -567,7 +567,7 @@ contract L2AirdropTest is Test {
         uint256 aliceBalanceBefore = l2LiskToken.balanceOf(alice);
         bytes32[] memory merkleProof = new bytes32[](1);
         merkleProof[0] = bytes32(0x462e51e817e185fa779ce17c42fd30f1fd40719281ceee42d4ed2b2f3664a07d);
-        l2Airdrop.claimAirdrop(aliceLSKAddress, 20 * 10 ** 18, merkleProof, alice);
+        l2Airdrop.claimAirdrop(aliceLSKAddress, 20 * 10 ** 18, merkleProof);
         assertEq(l2LiskToken.balanceOf(alice), aliceBalanceBefore + 10 * 10 ** 18); // 10 L2LiskToken airdrop
 
         // check airdrop claim status for alice
@@ -589,7 +589,7 @@ contract L2AirdropTest is Test {
         uint256 aliceBalanceBefore = l2LiskToken.balanceOf(alice);
         bytes32[] memory merkleProof = new bytes32[](1);
         merkleProof[0] = bytes32(0xbd04d829d0eff2f6b6962f1cd385b0d83cba2ad83675f18089ccb0f9985d77df);
-        l2Airdrop.claimAirdrop(aliceLSKAddress, 16 * 10 ** 18, merkleProof, alice);
+        l2Airdrop.claimAirdrop(aliceLSKAddress, 16 * 10 ** 18, merkleProof);
         assertEq(l2LiskToken.balanceOf(alice), aliceBalanceBefore + 8 * 10 ** 18); // 8 L2LiskToken airdrop
 
         // check airdrop claim status for alice
@@ -624,7 +624,7 @@ contract L2AirdropTest is Test {
             l2Airdrop.MIN_ETH_BIT() | l2Airdrop.DELEGATING_BIT() | l2Airdrop.STAKING_TIER_1_BIT()
         );
 
-        l2Airdrop.claimAirdrop(aliceLSKAddress, 16 * 10 ** 18, merkleProof, alice);
+        l2Airdrop.claimAirdrop(aliceLSKAddress, 16 * 10 ** 18, merkleProof);
         assertEq(l2LiskToken.balanceOf(alice), aliceBalanceBefore + 12 * 10 ** 18); // 12 L2LiskToken airdrop
 
         // check airdrop claim status for alice
@@ -659,7 +659,7 @@ contract L2AirdropTest is Test {
             l2Airdrop.MIN_ETH_BIT() | l2Airdrop.STAKING_TIER_1_BIT() | l2Airdrop.STAKING_TIER_2_BIT()
         );
 
-        l2Airdrop.claimAirdrop(aliceLSKAddress, 16 * 10 ** 18, merkleProof, alice);
+        l2Airdrop.claimAirdrop(aliceLSKAddress, 16 * 10 ** 18, merkleProof);
         assertEq(l2LiskToken.balanceOf(alice), aliceBalanceBefore + 12 * 10 ** 18); // 12 L2LiskToken airdrop
 
         // check airdrop claim status for alice
@@ -694,7 +694,7 @@ contract L2AirdropTest is Test {
             l2Airdrop.DELEGATING_BIT() | l2Airdrop.STAKING_TIER_1_BIT() | l2Airdrop.STAKING_TIER_2_BIT()
         );
 
-        l2Airdrop.claimAirdrop(aliceLSKAddress, 16 * 10 ** 18, merkleProof, alice);
+        l2Airdrop.claimAirdrop(aliceLSKAddress, 16 * 10 ** 18, merkleProof);
         assertEq(l2LiskToken.balanceOf(alice), aliceBalanceBefore + 12 * 10 ** 18); // 12 L2LiskToken airdrop
 
         // check airdrop claim status for alice
@@ -733,7 +733,7 @@ contract L2AirdropTest is Test {
             l2Airdrop.MIN_ETH_BIT() | l2Airdrop.DELEGATING_BIT() | l2Airdrop.STAKING_TIER_2_BIT()
         );
 
-        l2Airdrop.claimAirdrop(aliceLSKAddress, 16 * 10 ** 18, merkleProof, alice);
+        l2Airdrop.claimAirdrop(aliceLSKAddress, 16 * 10 ** 18, merkleProof);
         assertEq(l2LiskToken.balanceOf(alice), aliceBalanceBefore + 12 * 10 ** 18); // 12 L2LiskToken airdrop
 
         // check airdrop claim status for alice
@@ -773,7 +773,7 @@ contract L2AirdropTest is Test {
                 | l2Airdrop.STAKING_TIER_2_BIT()
         );
 
-        l2Airdrop.claimAirdrop(aliceLSKAddress, 16 * 10 ** 18, merkleProof, alice);
+        l2Airdrop.claimAirdrop(aliceLSKAddress, 16 * 10 ** 18, merkleProof);
         assertEq(l2LiskToken.balanceOf(alice), aliceBalanceBefore + 16 * 10 ** 18); // 16 L2LiskToken airdrop
 
         // check airdrop claim status for alice
@@ -785,7 +785,7 @@ contract L2AirdropTest is Test {
 
         // check that alice cannot claim airdrop again
         vm.expectRevert("L2Airdrop: full airdrop claimed");
-        l2Airdrop.claimAirdrop(bytes20(alice), 16 * 10 ** 18, merkleProof, alice);
+        l2Airdrop.claimAirdrop(bytes20(alice), 16 * 10 ** 18, merkleProof);
     }
 
     function test_ClaimAirdrop_NotStartedYet() public {
@@ -800,7 +800,7 @@ contract L2AirdropTest is Test {
 
         bytes32[] memory merkleProof = new bytes32[](1);
         vm.expectRevert("L2Airdrop: airdrop has not started yet");
-        l2Airdrop.claimAirdrop(bytes20(alice), 20 * 10 ** 18, merkleProof, alice);
+        l2Airdrop.claimAirdrop(bytes20(alice), 20 * 10 ** 18, merkleProof);
     }
 
     function test_ClaimAirdrop_AirdropOver() public {
@@ -809,32 +809,26 @@ contract L2AirdropTest is Test {
 
         bytes32[] memory merkleProof = new bytes32[](1);
         vm.expectRevert("L2Airdrop: airdrop period is over");
-        l2Airdrop.claimAirdrop(bytes20(alice), 20 * 10 ** 18, merkleProof, alice);
+        l2Airdrop.claimAirdrop(bytes20(alice), 20 * 10 ** 18, merkleProof);
     }
 
     function test_ClaimAirdrop_AmountIsZero() public {
         bytes32[] memory merkleProof = new bytes32[](1);
         vm.expectRevert("L2Airdrop: amount is zero");
-        l2Airdrop.claimAirdrop(bytes20(alice), 0, merkleProof, alice);
+        l2Airdrop.claimAirdrop(bytes20(alice), 0, merkleProof);
     }
 
     function test_ClaimAirdrop_ZeroProofLength() public {
         bytes32[] memory merkleProof = new bytes32[](0);
         vm.expectRevert("L2Airdrop: Merkle proof is empty");
-        l2Airdrop.claimAirdrop(bytes20(alice), 20 * 10 ** 18, merkleProof, alice);
+        l2Airdrop.claimAirdrop(bytes20(alice), 20 * 10 ** 18, merkleProof);
     }
 
     function test_ClaimAirdrop_ZeroRecipientAddress() public {
         bytes32[] memory merkleProof = new bytes32[](1);
         vm.expectRevert("L2Airdrop: recipient is the zero address");
-        l2Airdrop.claimAirdrop(bytes20(alice), 20 * 10 ** 18, merkleProof, address(0));
-    }
-
-    function test_ClaimAirdrop_InvalidRecipient() public {
-        bytes32[] memory merkleProof = new bytes32[](1);
-        merkleProof[0] = bytes32(0x462e51e817e185fa779ce17c42fd30f1fd40719281ceee42d4ed2b2f3664a07d);
-        vm.expectRevert("L2Airdrop: invalid recipient");
-        l2Airdrop.claimAirdrop(bytes20(alice), 20 * 10 ** 18, merkleProof, bob);
+        // bob did not claim tokens in the Claim contract
+        l2Airdrop.claimAirdrop(bytes20(bob), 20 * 10 ** 18, merkleProof);
     }
 
     function test_TransferOwnership() public {
