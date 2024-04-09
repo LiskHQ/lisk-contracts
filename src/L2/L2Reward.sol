@@ -217,7 +217,7 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
 
         uint256 penalty = IL2Staking(stakingContract).initiateFastUnlock(lockID);
 
-        addRewards(penalty, 30, 1);
+        _addRewards(penalty, 30, 1);
 
         uint256 today = todayDay();
 
@@ -393,7 +393,7 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
 
         require(
             IL2LockingPosition(lockingPositionContract).ownerOf(lockID) == msg.sender,
-            "msg.sender does not own the locking position"
+            "L2Reward: msg.sender does not own the locking position"
         );
 
         uint256 reward = _claimReward(lockID);
@@ -417,7 +417,7 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
 
         require(
             IL2LockingPosition(lockingPositionContract).ownerOf(lockID) == msg.sender,
-            "msg.sender does not own the locking position"
+            "L2Reward: msg.sender does not own the locking position"
         );
 
         uint256 reward = _claimReward(lockID);
@@ -437,7 +437,7 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
     /// @param amount Amount to be added to daily rewards.
     /// @param duration Duration in days for which the daily rewards is to be added.
     /// @param delay Determines the start day from today till duration for whom rewards should be added.
-    function addRewards(uint256 amount, uint16 duration, uint16 delay) internal virtual {
+    function _addRewards(uint256 amount, uint16 duration, uint16 delay) internal virtual {
         require(delay > 0, "Funding should start from next day or later");
 
         uint256 dailyReward = amount / duration;
@@ -446,6 +446,21 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
         for (uint256 d = today + delay; d < endDate; d += delay) {
             dailyRewards[d] += dailyReward;
         }
+    }
+
+    /// @notice Adds daily rewards between provided duration and resets surplus rewards.
+    /// @param amount Amount to be added to daily rewards.
+    /// @param duration Duration in days for which the daily rewards is to be added.
+    /// @param delay Determines the start day from today till duration from whom rewards should be added.
+    function addRewards(uint256 amount, uint16 duration, uint16 delay) public virtual {
+        require(msg.sender == daoTreasury, "L2Reward: Rewards can only be added by DAO treasury");
+        require(delay > 0, "L2Reward: Rewards can only be added from next day or later");
+
+        require(amount > rewardsSurplus, "L2Reward: Reward amount should exceed available surplus funds");
+
+        _addRewards(amount, duration, delay);
+
+        rewardsSurplus = 0;
     }
 
     /// @notice Adds new daily rewards between provided duration.
@@ -458,7 +473,7 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
 
         IL2LiskToken(l2TokenContract).transferFrom(msg.sender, address(this), amount);
 
-        addRewards(amount, duration, delay);
+        _addRewards(amount, duration, delay);
     }
 
     /// @notice Initializes the Lisk DAO Treasury address.
