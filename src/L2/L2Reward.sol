@@ -1,8 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.23;
 
+import { Initializable } from "@openzeppelin-upgradeable/contracts/proxy/utils/Initializable.sol";
+import { Ownable2StepUpgradeable } from "@openzeppelin-upgradeable/contracts/access/Ownable2StepUpgradeable.sol";
+import { UUPSUpgradeable } from "@openzeppelin-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { ISemver } from "../utils/ISemver.sol";
 
 /// @title IL2LiskToken
 /// @notice Interface for the L2LiskToken contract.
@@ -57,7 +61,7 @@ interface IL2LockingPosition {
 
 /// @title L2Reward
 /// @notice This contract manages and handles L2 Staking Rewards.
-contract L2Reward is Ownable {
+contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, ISemver {
     /// @notice The offset value of stake weight as a liner function of remaining stake duration.
     uint256 public constant OFFSET = 150;
 
@@ -106,16 +110,24 @@ contract L2Reward is Ownable {
     /// @notice Address of the L2 token contract.
     address public l2TokenContract;
 
-    constructor(
-        address _stakingContract,
-        address _lockingPositionContract,
-        address _l2TokenContract
-    )
-        Ownable(msg.sender)
-    {
-        stakingContract = _stakingContract;
-        lockingPositionContract = _lockingPositionContract;
-        l2TokenContract = _l2TokenContract;
+    /// @notice Semantic version of the contract.
+    string public version;
+
+    constructor() {
+        _disableInitializers();
+    }
+
+    /// @notice Ensures that only the owner can authorize a contract upgrade. It reverts if called by any address other
+    ///         than the contract owner.
+    /// @param _newImplementation The address of the new contract implementation to which the proxy will be upgraded.
+    function _authorizeUpgrade(address _newImplementation) internal virtual override onlyOwner { }
+
+    function initialize(address _l2LiskTokenContract) public initializer {
+        require(_l2LiskTokenContract != address(0), "L2Reward: LSK token contract address can not be zero");
+        __Ownable2Step_init();
+        __Ownable_init(msg.sender);
+        __UUPSUpgradeable_init();
+        l2TokenContract = _l2LiskTokenContract;
         lastTrsDate = todayDay();
     }
 
@@ -261,7 +273,7 @@ contract L2Reward is Ownable {
         return reward;
     }
 
-    /// @notice Claim rewads against multiple locking position.
+    /// @notice Claim rewards against multiple locking position.
     /// @param lockIDs The IDs of locking position.
     function claimRewards(uint256[] memory lockIDs) public virtual returns (uint256[] memory) {
         updateGlobalState();
@@ -456,6 +468,24 @@ contract L2Reward is Ownable {
         require(_daoTreasury != address(0), "L2Reward: Lisk DAO Treasury contract address can not be zero");
 
         daoTreasury = _daoTreasury;
+    }
+
+    /// @notice Initializes the LockingPosition address.
+    /// @param _lockingPositionContract Address of the locking position contract.
+    function initializeLockingPosition(address _lockingPositionContract) public onlyOwner {
+        require(lockingPositionContract == address(0), "L2Reward: LockingPosition contract is already initialized");
+        require(_lockingPositionContract != address(0), "L2Reward: LockingPosition contract address can not be zero");
+
+        lockingPositionContract = _lockingPositionContract;
+    }
+
+    /// @notice Initializes the L2Staking address.
+    /// @param _stakingContract Address of the staking contract.
+    function initializeStaking(address _stakingContract) public onlyOwner {
+        require(stakingContract == address(0), "L2Reward: Staking contract is already initialized");
+        require(_stakingContract != address(0), "L2Reward: Staking contract address can not be zero");
+
+        stakingContract = _stakingContract;
     }
 
     /// @notice Returns the current day.

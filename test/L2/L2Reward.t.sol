@@ -29,6 +29,7 @@ contract L2RewardTest is Test {
     L2VotingPower public l2VotingPowerImplementation;
     L2VotingPower public l2VotingPower;
     L2Reward public l2Reward;
+    L2Reward public l2RewardImplementation;
 
     address public remoteToken;
     address public bridge;
@@ -82,9 +83,20 @@ contract L2RewardTest is Test {
 
         l2Staking.initializeLockingPosition(address(l2LockingPosition));
         l2LockingPosition.initializeVotingPower(address(l2VotingPower));
-        l2Reward = new L2Reward(address(l2Staking), address(l2LockingPosition), address(l2LiskToken));
+
+        l2RewardImplementation = new L2Reward();
+        l2Reward = L2Reward(
+            address(
+                new ERC1967Proxy(
+                    address(l2RewardImplementation),
+                    abi.encodeWithSelector(l2Reward.initialize.selector, address(l2LiskToken))
+                )
+            )
+        );
 
         l2Reward.initializeDaoTreasury(daoTreasury);
+        l2Reward.initializeLockingPosition(address(l2LockingPosition));
+        l2Reward.initializeStaking(address(l2Staking));
     }
 
     function test_initialize() public {
@@ -1312,6 +1324,81 @@ contract L2RewardTest is Test {
         vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(0x1)));
         vm.prank(address(0x1));
         l2Reward.initializeDaoTreasury(address(0x2));
+    }
+
+    function test_initialzeDaoTreasury_canOnlyBeInitializedOnce() public {
+        vm.expectRevert("L2Reward: Lisk DAO Treasury contract is already initialized");
+
+        l2Reward.initializeDaoTreasury(address(0x1));
+    }
+
+    function test_initializeDaoTreasury_daoTreasuryContractAddressCanNotBeZero() public {
+        l2RewardImplementation = new L2Reward();
+        l2Reward = L2Reward(
+            address(
+                new ERC1967Proxy(
+                    address(l2RewardImplementation),
+                    abi.encodeWithSelector(l2Reward.initialize.selector, address(l2LiskToken))
+                )
+            )
+        );
+
+        vm.expectRevert("L2Reward: Lisk DAO Treasury contract address can not be zero");
+        l2Reward.initializeDaoTreasury(address(0x0));
+    }
+
+    function test_initializeLockingPosition_onlyOwnerCanInitializeLockingPosition() public {
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(0x1)));
+        vm.prank(address(0x1));
+        l2Reward.initializeLockingPosition(address(0x2));
+    }
+
+    function test_initializeLockingPosition_canOnlyBeInitializedOnce() public {
+        vm.expectRevert("L2Reward: LockingPosition contract is already initialized");
+
+        l2Reward.initializeLockingPosition(address(0x1));
+    }
+
+    function test_initializeLockingPosition_lockingPositionContractAddressCanNotBeZero() public {
+        l2RewardImplementation = new L2Reward();
+        l2Reward = L2Reward(
+            address(
+                new ERC1967Proxy(
+                    address(l2RewardImplementation),
+                    abi.encodeWithSelector(l2Reward.initialize.selector, address(l2LiskToken))
+                )
+            )
+        );
+
+        vm.expectRevert("L2Reward: LockingPosition contract address can not be zero");
+        l2Reward.initializeLockingPosition(address(0x0));
+    }
+
+    function test_initializeStaking_onlyOwnerCanInitializeStaking() public {
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(0x1)));
+        vm.prank(address(0x1));
+        l2Reward.initializeStaking(address(0x2));
+    }
+
+    function test_initializeStaking_canOnlyBeInitializedOnce() public {
+        vm.expectRevert("L2Reward: Staking contract is already initialized");
+
+        l2Reward.initializeStaking(address(0x1));
+    }
+
+    function test_initializeStaking_stakingContractAddressCanNotBeZero() public {
+        l2RewardImplementation = new L2Reward();
+        l2Reward = L2Reward(
+            address(
+                new ERC1967Proxy(
+                    address(l2RewardImplementation),
+                    abi.encodeWithSelector(l2Reward.initialize.selector, address(l2LiskToken))
+                )
+            )
+        );
+
+        vm.expectRevert("L2Reward: Staking contract address can not be zero");
+        l2Reward.initializeStaking(address(0x0));
     }
 
     function convertLiskToBeddows(uint256 lisk) internal pure returns (uint256) {
