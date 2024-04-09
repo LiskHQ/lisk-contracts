@@ -13,3 +13,5 @@ broadcast/
 
 # Slither files
 slither-results.json
+
+.deployment_info

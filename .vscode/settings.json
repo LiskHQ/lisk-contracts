@@ -8,5 +8,6 @@
     "editor.defaultFormatter": "JuanBlanco.solidity"
   },
   "slither.solcPath": "",
-  "slither.hiddenDetectors": []
+"slither.hiddenDetectors": [],
+"solidity.defaultCompiler": "localFile"
 }

@@ -57,6 +57,11 @@ contract SwapAndBridge {
         L2_TOKEN_ADDRESS = _l2Token;
     }
 
+    /// @notice Shortcut function to swap and bridge wrapped LST to the sender address on the L2.
+    receive() external payable {
+        swapAndBridgeTo(msg.sender);
+    }
+
     /// @notice Swap ETH to wrapped LST and bridge it to the recipient address on the L2.
     /// If the amount of l1 token obtained per ETH is less than minL1TokensPerETH,
     /// the transaction will revert.
@@ -103,10 +108,5 @@ contract SwapAndBridge {
     /// @param recipient The address to bridge the wrapped LST to.
     function swapAndBridgeTo(address recipient) public payable {
         swapAndBridgeToWithMinimumAmount(recipient, 0);
-    }
-
-    /// @notice Shortcut function to swap and bridge wrapped LST to the sender address on the L2.
-    receive() external payable {
-        swapAndBridgeTo(msg.sender);
     }
 }

@@ -18,8 +18,10 @@ contract L2WdivETHScript is Script {
 
     /// @notice This function deploys the SwapAndBridge contract.
     function run() public {
-        // Deployer's private key. PRIVATE_KEY is set in .env file.
-        uint256 deployerPrivateKey = vm.envUint("L2_DEPLOYER_PRIVATE_KEY");
+        // Deployer's private key. L2_SWAP_AND_BRIDGE_DEPLOYER_PRIVATE_KEY is set in .env file.
+        uint256 deployerPrivateKey = vm.envUint("L2_SWAP_AND_BRIDGE_DEPLOYER_PRIVATE_KEY");
+        assert(vm.envAddress("L1_DIVA_TOKEN_ADDR") != address(0));
+        assert(vm.envAddress("L2_DIVA_BRIDGE_ADDR") != address(0));
 
         console2.log("Deploying WdivETH contract on Lisk...");
         vm.startBroadcast(deployerPrivateKey);
@@ -27,14 +29,24 @@ contract L2WdivETHScript is Script {
         wdivETH.initialize(vm.envAddress("L2_DIVA_BRIDGE_ADDR"));
         console2.log("WdivETH successfully initialized");
         vm.stopBroadcast();
+
+        assert(address(wdivETH) != address(0));
         console2.log("WdivETH successfully deployed at address: %s", address(wdivETH));
-        // write to json
-        Utils.SwapAndBridgeAddressesConfig memory swapAndBridgeAddressesConfig = Utils.SwapAndBridgeAddressesConfig({
-            l2WdivETH: address(wdivETH),
-            swapAndBridgeDiva: address(0),
-            swapAndBridgeLido: address(0)
-        });
-        utils.writeSwapAndBridgeAddressesFile(swapAndBridgeAddressesConfig);
+        // read swap and bridge addresses from file
+        try utils.readSwapAndBridgeAddressesFile() returns (
+            Utils.SwapAndBridgeAddressesConfig memory swapAndBridgeAddressesConfig
+        ) {
+            swapAndBridgeAddressesConfig.l2WdivETH = address(wdivETH);
+            utils.writeSwapAndBridgeAddressesFile(swapAndBridgeAddressesConfig);
+        } catch {
+            // Initialize SwapAndBridgeAddressesConfig with WdivETH address
+            Utils.SwapAndBridgeAddressesConfig memory swapAndBridgeAddressesConfig = Utils.SwapAndBridgeAddressesConfig({
+                l2WdivETH: address(wdivETH),
+                swapAndBridgeDiva: address(0),
+                swapAndBridgeLido: address(0)
+            });
+            utils.writeSwapAndBridgeAddressesFile(swapAndBridgeAddressesConfig);
+        }
     }
 }
 
@@ -50,8 +62,8 @@ contract SwapAndBridgeDivaScript is Script {
 
     /// @notice This function deploys the SwapAndBridge contract.
     function run() public {
-        // Deployer's private key. PRIVATE_KEY is set in .env file.
-        uint256 deployerPrivateKey = vm.envUint("L1_DEPLOYER_PRIVATE_KEY");
+        // Deployer's private key. L1_SWAP_AND_BRIDGE_DEPLOYER_PRIVATE_KEY is set in .env file.
+        uint256 deployerPrivateKey = vm.envUint("L1_SWAP_AND_BRIDGE_DEPLOYER_PRIVATE_KEY");
 
         // read swap and bridge addresses from file
         Utils.SwapAndBridgeAddressesConfig memory swapAndBridgeAddressesConfig = utils.readSwapAndBridgeAddressesFile();
@@ -85,8 +97,8 @@ contract SwapAndBridgeLidoScript is Script {
     /// @notice This function deploys the SwapAndBridge contract.
 
     function run() public {
-        // Deployer's private key. PRIVATE_KEY is set in .env file.
-        uint256 deployerPrivateKey = vm.envUint("L1_DEPLOYER_PRIVATE_KEY");
+        // Deployer's private key. L1_SWAP_AND_BRIDGE_DEPLOYER_PRIVATE_KEY is set in .env file.
+        uint256 deployerPrivateKey = vm.envUint("L1_SWAP_AND_BRIDGE_DEPLOYER_PRIVATE_KEY");
         // read swap and bridge addresses from file
         Utils.SwapAndBridgeAddressesConfig memory swapAndBridgeAddressesConfig = utils.readSwapAndBridgeAddressesFile();
 

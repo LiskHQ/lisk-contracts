@@ -141,8 +141,25 @@ contract Utils is Script {
         string memory root = vm.projectRoot();
         string memory addressPath = string.concat(root, "/deployment/", network, "/swapAndBridgeAddresses.json");
         string memory addressJson = vm.readFile(addressPath);
-        bytes memory addressRaw = vm.parseJson(addressJson);
-        return abi.decode(addressRaw, (SwapAndBridgeAddressesConfig));
+        // bytes memory addressRaw = vm.parseJson(addressJson);
+
+        SwapAndBridgeAddressesConfig memory swapAndBridgeAddressesConfig;
+
+        try vm.parseJsonAddress(addressJson, ".l2WdivETH") returns (address l2WdivETH) {
+            swapAndBridgeAddressesConfig.l2WdivETH = l2WdivETH;
+        } catch { }
+
+        try vm.parseJsonAddress(addressJson, ".swapAndBridgeDiva") returns (address swapAndBridgeDiva) {
+            swapAndBridgeAddressesConfig.swapAndBridgeDiva = swapAndBridgeDiva;
+        } catch { }
+
+        try vm.parseJsonAddress(addressJson, ".swapAndBridgeLido") returns (address swapAndBridgeLido) {
+            swapAndBridgeAddressesConfig.swapAndBridgeLido = swapAndBridgeLido;
+        } catch { }
+
+        return swapAndBridgeAddressesConfig;
+
+        // return abi.decode(addressRaw, (SwapAndBridgeAddressesConfig));
     }
 
     /// @notice This function writes swap and bridge addresses to JSON file.
@@ -151,9 +168,9 @@ contract Utils is Script {
     function writeSwapAndBridgeAddressesFile(SwapAndBridgeAddressesConfig memory cfg) external {
         string memory network = getNetworkType();
         string memory json = "";
-        vm.serializeAddress(json, "L2WdivETH", cfg.l2WdivETH);
-        vm.serializeAddress(json, "SwapAndBridgeDiva", cfg.swapAndBridgeDiva);
-        string memory finalJson = vm.serializeAddress(json, "SwapAndBridgeLido", cfg.swapAndBridgeLido);
+        vm.serializeAddress(json, "l2WdivETH", cfg.l2WdivETH);
+        vm.serializeAddress(json, "swapAndBridgeDiva", cfg.swapAndBridgeDiva);
+        string memory finalJson = vm.serializeAddress(json, "swapAndBridgeLido", cfg.swapAndBridgeLido);
         finalJson.write(string.concat("deployment/", network, "/swapAndBridgeAddresses.json"));
     }
 
