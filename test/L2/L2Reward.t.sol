@@ -866,6 +866,39 @@ contract L2RewardTest is Test {
         l2Reward.pauseUnlocking(1);
     }
 
+    function test_pauseUnlocking_lockingPositionCanBePausedOnlyOnce() public {
+        l2Staking.addCreator(address(l2Reward));
+        address staker = address(0x1);
+        uint256 balance = convertLiskToBeddows(1000);
+
+        uint256 lockID;
+
+        // staker and DAO gets balance
+        vm.startPrank(bridge);
+        l2LiskToken.mint(staker, balance);
+        l2LiskToken.mint(daoTreasury, balance);
+        vm.stopPrank();
+
+        // DAO funds staking
+        vm.startPrank(daoTreasury);
+        l2LiskToken.approve(address(l2Reward), convertLiskToBeddows(35));
+        l2Reward.fundStakingRewards(convertLiskToBeddows(35), 350, 1);
+        vm.stopPrank();
+
+        // staker creates a position on deploymentDate, 19740
+        vm.startPrank(staker);
+        l2LiskToken.approve(address(l2Reward), convertLiskToBeddows(100));
+        lockID = l2Reward.createPosition(convertLiskToBeddows(100), 120);
+        vm.stopPrank();
+
+        vm.prank(staker);
+        l2Reward.pauseUnlocking(lockID);
+
+        vm.expectRevert("L2Staking: remaining duration is already paused");
+        vm.prank(staker);
+        l2Reward.pauseUnlocking(lockID);
+    }
+
     function test_pauseUnlocking_issuesRewardAndUpdatesGlobalUnlockAmounts() public {
         l2Staking.addCreator(address(l2Reward));
         address staker = address(0x1);
@@ -939,6 +972,36 @@ contract L2RewardTest is Test {
         vm.expectRevert("L2Reward: Locking position does not exist");
         vm.prank(staker);
         l2Reward.resumeUnlockingCountdown(1);
+    }
+
+    function test_resumeUnlockingCountdown_onlyPausedLockingPositionCanBeResumed() public {
+        l2Staking.addCreator(address(l2Reward));
+        address staker = address(0x1);
+        uint256 balance = convertLiskToBeddows(1000);
+
+        uint256 lockID;
+
+        // staker and DAO gets balance
+        vm.startPrank(bridge);
+        l2LiskToken.mint(staker, balance);
+        l2LiskToken.mint(daoTreasury, balance);
+        vm.stopPrank();
+
+        // DAO funds staking
+        vm.startPrank(daoTreasury);
+        l2LiskToken.approve(address(l2Reward), convertLiskToBeddows(35));
+        l2Reward.fundStakingRewards(convertLiskToBeddows(35), 350, 1);
+        vm.stopPrank();
+
+        // staker creates a position on deploymentDate, 19740
+        vm.startPrank(staker);
+        l2LiskToken.approve(address(l2Reward), convertLiskToBeddows(100));
+        lockID = l2Reward.createPosition(convertLiskToBeddows(100), 120);
+        vm.stopPrank();
+
+        vm.expectRevert("L2Staking: countdown is not paused");
+        vm.prank(staker);
+        l2Reward.resumeUnlockingCountdown(lockID);
     }
 
     function test_resumeUnlockingCountdown_issuesRewardAndUpdatesGlobalUnlockAmount() public {
