@@ -763,6 +763,39 @@ contract L2RewardTest is Test {
         l2Reward.deletePosition(1);
     }
 
+    function test_deletePosition_onlyExpiredLockingPositionsCanBeDeleted() public {
+        l2Staking.addCreator(address(l2Reward));
+        address staker = address(0x1);
+        uint256 balance = convertLiskToBeddows(1000);
+
+        uint256 lockID;
+
+        // staker and DAO gets balance
+        vm.startPrank(bridge);
+        l2LiskToken.mint(staker, balance);
+        l2LiskToken.mint(daoTreasury, balance);
+        vm.stopPrank();
+
+        // DAO funds staking
+        vm.startPrank(daoTreasury);
+        l2LiskToken.approve(address(l2Reward), convertLiskToBeddows(35));
+        l2Reward.fundStakingRewards(convertLiskToBeddows(35), 350, 1);
+        vm.stopPrank();
+
+        // staker creates a position on deploymentDate, 19740
+        vm.startPrank(staker);
+        l2LiskToken.approve(address(l2Reward), convertLiskToBeddows(100));
+        lockID = l2Reward.createPosition(convertLiskToBeddows(100), 120);
+
+        vm.stopPrank();
+
+        skip(30 days);
+
+        vm.expectRevert("L2Staking: locking duration active, can not unlock");
+        vm.prank(staker);
+        l2Reward.deletePosition(lockID);
+    }
+
     function test_deletePosition_issuesRewardAndUnlocksPosition() public {
         l2Staking.addCreator(address(l2Reward));
         address staker = address(0x1);
