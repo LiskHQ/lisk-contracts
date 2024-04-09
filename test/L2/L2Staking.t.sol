@@ -532,41 +532,24 @@ contract L2StakingTest is Test {
     }
 
     function test_LockAmount_AmountIsZero() public {
+        // amount is less than 10^16
         vm.prank(alice);
-        vm.expectRevert("L2Staking: amount should be greater than zero");
-        l2Staking.lockAmount(alice, 0, 365);
-    }
+        vm.expectRevert("L2Staking: amount should be greater than or equal to 10^16");
+        l2Staking.lockAmount(alice, (10 ** 16) - 1, 365);
 
-    function test_LockAmount_AmountMultipleOf10ToThe16() public {
-        // amount is not multiple of 10^16
+        // amount is exactly 10^16
         vm.prank(alice);
-        vm.expectRevert("L2Staking: amount should be multiple of 10^16");
-        l2Staking.lockAmount(alice, 1 * 10 ** 16 - 1, 365);
+        l2Staking.lockAmount(alice, 10 ** 16, 365);
+        assertEq(l2LockingPosition.totalSupply(), 1);
+        assertEq(l2LockingPosition.balanceOf(alice), 1);
+        assertEq(l2LockingPosition.getLockingPosition(1).amount, 10 ** 16);
 
-        // amount is not multiple of 10^16
+        // amount is greater than 10^16
         vm.prank(alice);
-        vm.expectRevert("L2Staking: amount should be multiple of 10^16");
-        l2Staking.lockAmount(alice, 2 * 10 ** 16 - 1, 365);
-
-        // amount is not multiple of 10^16
-        vm.prank(alice);
-        vm.expectRevert("L2Staking: amount should be multiple of 10^16");
-        l2Staking.lockAmount(alice, 1 * 10 ** 16 + 1, 365);
-
-        // amount is not multiple of 10^16
-        vm.prank(alice);
-        vm.expectRevert("L2Staking: amount should be multiple of 10^16");
-        l2Staking.lockAmount(alice, 2 * 10 ** 16 + 1, 365);
-
-        // amount is multiple of 10^16
-        vm.prank(alice);
-        l2Staking.lockAmount(alice, 1 * 10 ** 16, 365);
-        assertEq(l2LockingPosition.getLockingPosition(1).amount, 1 * 10 ** 16);
-
-        // amount is multiple of 10^16
-        vm.prank(alice);
-        l2Staking.lockAmount(alice, 2 * 10 ** 16, 365);
-        assertEq(l2LockingPosition.getLockingPosition(2).amount, 2 * 10 ** 16);
+        l2Staking.lockAmount(alice, (10 ** 16) + 1, 365);
+        assertEq(l2LockingPosition.totalSupply(), 2);
+        assertEq(l2LockingPosition.balanceOf(alice), 2);
+        assertEq(l2LockingPosition.getLockingPosition(2).amount, (10 ** 16) + 1);
     }
 
     function test_LockAmount_CreatorNotStakingContract() public {
@@ -985,49 +968,31 @@ contract L2StakingTest is Test {
 
     function test_IncreaseLockingAmount_ZeroAmountIncrease() public {
         vm.prank(alice);
-        l2Staking.lockAmount(alice, 100 * 10 ** 18, 365);
+        l2Staking.lockAmount(alice, 10 * 10 ** 18, 365);
         assertEq(l2LockingPosition.balanceOf(alice), 1);
 
+        // amount is less than 10^16
         vm.prank(alice);
-        vm.expectRevert("L2Staking: increased amount should be greater than zero");
-        l2Staking.increaseLockingAmount(1, 0);
-    }
+        vm.expectRevert("L2Staking: increased amount should be greater than or equal to 10^16");
+        l2Staking.increaseLockingAmount(1, (10 ** 16) - 1);
 
-    function test_IncreaseLockingAmount_ZeroAmountMultipleOf10ToThe16() public {
+        uint256 previousAmount = l2LockingPosition.getLockingPosition(1).amount;
+
+        // amount is exactly 10^16
         vm.prank(alice);
-        l2Staking.lockAmount(alice, 30 * 10 ** 18, 365);
+        l2Staking.increaseLockingAmount(1, (10 ** 16));
+        assertEq(l2LockingPosition.totalSupply(), 1);
         assertEq(l2LockingPosition.balanceOf(alice), 1);
-        assertEq(l2LockingPosition.getLockingPosition(1).amount, 30 * 10 ** 18);
+        assertEq(l2LockingPosition.getLockingPosition(1).amount, previousAmount + 10 ** 16);
 
-        // amount is not multiple of 10^16
-        vm.prank(alice);
-        vm.expectRevert("L2Staking: increased amount should be multiple of 10^16");
-        l2Staking.increaseLockingAmount(1, 1 * 10 ** 16 - 1);
+        previousAmount = l2LockingPosition.getLockingPosition(1).amount;
 
-        // amount is not multiple of 10^16
+        // amount is greater than 10^16
         vm.prank(alice);
-        vm.expectRevert("L2Staking: increased amount should be multiple of 10^16");
-        l2Staking.increaseLockingAmount(1, 2 * 10 ** 16 - 1);
-
-        // amount is not multiple of 10^16
-        vm.prank(alice);
-        vm.expectRevert("L2Staking: increased amount should be multiple of 10^16");
-        l2Staking.increaseLockingAmount(1, 1 * 10 ** 16 + 1);
-
-        // amount is not multiple of 10^16
-        vm.prank(alice);
-        vm.expectRevert("L2Staking: increased amount should be multiple of 10^16");
-        l2Staking.increaseLockingAmount(1, 2 * 10 ** 16 + 1);
-
-        // amount is multiple of 10^16
-        vm.prank(alice);
-        l2Staking.increaseLockingAmount(1, 1 * 10 ** 16);
-        assertEq(l2LockingPosition.getLockingPosition(1).amount, 30 * 10 ** 18 + 1 * 10 ** 16);
-
-        // amount is multiple of 10^16
-        vm.prank(alice);
-        l2Staking.increaseLockingAmount(1, 2 * 10 ** 16);
-        assertEq(l2LockingPosition.getLockingPosition(1).amount, 30 * 10 ** 18 + 3 * 10 ** 16); // 1 + 2 * 10^16
+        l2Staking.increaseLockingAmount(1, (10 ** 16) + 1);
+        assertEq(l2LockingPosition.totalSupply(), 1);
+        assertEq(l2LockingPosition.balanceOf(alice), 1);
+        assertEq(l2LockingPosition.getLockingPosition(1).amount, previousAmount + (10 ** 16) + 1);
     }
 
     function test_IncreaseLockingAmount_ExpiredLockingPosition() public {

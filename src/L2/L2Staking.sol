@@ -241,8 +241,7 @@ contract L2Staking is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, I
     /// @return The ID of the newly created locking position.
     function lockAmount(address lockOwner, uint256 amount, uint256 lockingDuration) public virtual returns (uint256) {
         require(lockOwner != address(0), "L2Staking: lockOwner address can not be zero");
-        require(amount > 0, "L2Staking: amount should be greater than zero");
-        require(amount % 10 ** 16 == 0, "L2Staking: amount should be multiple of 10^16");
+        require(amount >= 10 ** 16, "L2Staking: amount should be greater than or equal to 10^16");
         require(
             lockingDuration >= MIN_LOCKING_DURATION,
             "L2Staking: lockingDuration should be at least MIN_LOCKING_DURATION"
@@ -334,8 +333,7 @@ contract L2Staking is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, I
         LockingPosition memory lock = (IL2LockingPosition(lockingPositionContract)).getLockingPosition(lockId);
         require(isLockingPositionNull(lock) == false, "L2Staking: locking position does not exist");
         require(canLockingPositionBeModified(lockId, lock), "L2Staking: only owner or creator can call this function");
-        require(amountIncrease > 0, "L2Staking: increased amount should be greater than zero");
-        require(amountIncrease % 10 ** 16 == 0, "L2Staking: increased amount should be multiple of 10^16");
+        require(amountIncrease >= 10 ** 16, "L2Staking: increased amount should be greater than or equal to 10^16");
         require(
             lock.pausedLockingDuration > 0 || lock.expDate > todayDay(),
             "L2Staking: can not increase amount for expired locking position"
