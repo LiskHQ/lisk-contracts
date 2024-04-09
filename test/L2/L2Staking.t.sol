@@ -531,7 +531,7 @@ contract L2StakingTest is Test {
         l2Staking.lockAmount(address(0x0), 100 * 10 ** 18, 365);
     }
 
-    function test_LockAmount_AmountIsZero() public {
+    function test_LockAmount_MinAmount() public {
         // amount is less than 10^16
         vm.prank(alice);
         vm.expectRevert("L2Staking: amount should be greater than or equal to 10^16");
@@ -966,7 +966,7 @@ contract L2StakingTest is Test {
         l2Staking.increaseLockingAmount(1, 100 * 10 ** 18);
     }
 
-    function test_IncreaseLockingAmount_ZeroAmountIncrease() public {
+    function test_IncreaseLockingAmount_MinAmountIncrease() public {
         vm.prank(alice);
         l2Staking.lockAmount(alice, 10 * 10 ** 18, 365);
         assertEq(l2LockingPosition.balanceOf(alice), 1);
