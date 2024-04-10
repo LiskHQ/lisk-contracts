@@ -196,18 +196,18 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
         IL2LiskToken(l2TokenContract).transferFrom(msg.sender, address(this), amount);
         IL2LiskToken(l2TokenContract).approve(stakingContract, amount);
 
-        uint256 ID = IL2Staking(stakingContract).lockAmount(msg.sender, amount, duration);
+        uint256 id = IL2Staking(stakingContract).lockAmount(msg.sender, amount, duration);
         uint256 today = todayDay();
         uint256 start = Math.max(today, lastTrsDate);
 
-        lastClaimDate[ID] = start;
+        lastClaimDate[id] = start;
 
         totalWeight += (amount * (duration + OFFSET)) / WEIGHT_FACTOR;
         totalAmountLocked += amount;
         dailyUnlockedAmounts[lastTrsDate + duration] += amount;
         pendingUnlockAmount += amount;
 
-        return ID;
+        return id;
     }
 
     /// @notice Deletes a locking position.

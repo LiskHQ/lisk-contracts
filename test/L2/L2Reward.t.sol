@@ -112,6 +112,7 @@ contract L2RewardTest is Test {
         assertEq(l2Reward.WEIGHT_FACTOR(), 10 ** 16);
         assertEq(l2Reward.REWARD_DURATION(), 30);
         assertEq(l2Reward.REWARD_DURATION_DELAY(), 1);
+        assertEq(l2Reward.version(), "1.0.0");
     }
 
     function test_createPosition_updatesGlobals() public {
