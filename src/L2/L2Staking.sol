@@ -5,6 +5,7 @@ import { Initializable } from "@openzeppelin-upgradeable/contracts/proxy/utils/I
 import { Ownable2StepUpgradeable } from "@openzeppelin-upgradeable/contracts/access/Ownable2StepUpgradeable.sol";
 import { UUPSUpgradeable } from "@openzeppelin-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
+import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { LockingPosition } from "./L2LockingPosition.sol";
 import { ISemver } from "../utils/ISemver.sol";
 
@@ -42,6 +43,9 @@ interface IL2LockingPosition {
 /// @title L2Staking
 /// @notice This contract handles the staking functionality for the L2 network.
 contract L2Staking is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, ISemver {
+    /// @notice Minimum locking amount.
+    uint256 public constant MIN_LOCKING_AMOUNT = 10 ** 16;
+
     /// @notice Minimum possible locking duration (in days).
     uint32 public constant MIN_LOCKING_DURATION = 14;
 
@@ -241,7 +245,10 @@ contract L2Staking is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, I
     /// @return The ID of the newly created locking position.
     function lockAmount(address lockOwner, uint256 amount, uint256 lockingDuration) public virtual returns (uint256) {
         require(lockOwner != address(0), "L2Staking: lockOwner address can not be zero");
-        require(amount >= 10 ** 16, "L2Staking: amount should be greater than or equal to 10^16");
+        require(
+            amount >= MIN_LOCKING_AMOUNT,
+            string.concat("L2Staking: amount should be greater than or equal to ", Strings.toString(MIN_LOCKING_AMOUNT))
+        );
         require(
             lockingDuration >= MIN_LOCKING_DURATION,
             "L2Staking: lockingDuration should be at least MIN_LOCKING_DURATION"
@@ -333,7 +340,7 @@ contract L2Staking is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, I
         LockingPosition memory lock = (IL2LockingPosition(lockingPositionContract)).getLockingPosition(lockId);
         require(isLockingPositionNull(lock) == false, "L2Staking: locking position does not exist");
         require(canLockingPositionBeModified(lockId, lock), "L2Staking: only owner or creator can call this function");
-        require(amountIncrease >= 10 ** 16, "L2Staking: increased amount should be greater than or equal to 10^16");
+        require(amountIncrease > 0, "L2Staking: increased amount should be greater than zero");
         require(
             lock.pausedLockingDuration > 0 || lock.expDate > todayDay(),
             "L2Staking: can not increase amount for expired locking position"

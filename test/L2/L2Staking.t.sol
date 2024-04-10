@@ -532,24 +532,28 @@ contract L2StakingTest is Test {
     }
 
     function test_LockAmount_MinAmount() public {
-        // amount is less than 10^16
-        vm.prank(alice);
-        vm.expectRevert("L2Staking: amount should be greater than or equal to 10^16");
-        l2Staking.lockAmount(alice, (10 ** 16) - 1, 365);
+        uint256 minAmount = l2Staking.MIN_LOCKING_AMOUNT();
 
-        // amount is exactly 10^16
+        // amount is less than MIN_LOCKING_AMOUNT
         vm.prank(alice);
-        l2Staking.lockAmount(alice, 10 ** 16, 365);
+        vm.expectRevert(
+            bytes(string.concat("L2Staking: amount should be greater than or equal to ", vm.toString(minAmount)))
+        );
+        l2Staking.lockAmount(alice, minAmount - 1, 365);
+
+        // amount is exactly MIN_LOCKING_AMOUNT
+        vm.prank(alice);
+        l2Staking.lockAmount(alice, minAmount, 365);
         assertEq(l2LockingPosition.totalSupply(), 1);
         assertEq(l2LockingPosition.balanceOf(alice), 1);
-        assertEq(l2LockingPosition.getLockingPosition(1).amount, 10 ** 16);
+        assertEq(l2LockingPosition.getLockingPosition(1).amount, minAmount);
 
-        // amount is greater than 10^16
+        // amount is greater than MIN_LOCKING_AMOUNT
         vm.prank(alice);
-        l2Staking.lockAmount(alice, (10 ** 16) + 1, 365);
+        l2Staking.lockAmount(alice, minAmount + 1, 365);
         assertEq(l2LockingPosition.totalSupply(), 2);
         assertEq(l2LockingPosition.balanceOf(alice), 2);
-        assertEq(l2LockingPosition.getLockingPosition(2).amount, (10 ** 16) + 1);
+        assertEq(l2LockingPosition.getLockingPosition(2).amount, minAmount + 1);
     }
 
     function test_LockAmount_CreatorNotStakingContract() public {
@@ -615,7 +619,7 @@ contract L2StakingTest is Test {
 
     function test_LockAmount_InsufficientUserBalance() public {
         uint256 aliceBalance = l2LiskToken.balanceOf(alice);
-        uint256 invalidAmount = aliceBalance + 1 * 10 ** 16;
+        uint256 invalidAmount = aliceBalance + l2Staking.MIN_LOCKING_AMOUNT();
 
         // approve l2Staking to spend invalidAmount of alice's L2LiskToken
         vm.prank(alice);
@@ -631,7 +635,7 @@ contract L2StakingTest is Test {
 
     function test_LockAmount_InsufficientUserAllowance() public {
         uint256 aliceAllowance = l2LiskToken.allowance(alice, address(l2Staking));
-        uint256 invalidAmount = aliceAllowance + 1 * 10 ** 16;
+        uint256 invalidAmount = aliceAllowance + l2Staking.MIN_LOCKING_AMOUNT();
 
         // alice didn't approve l2Staking to spend invalidAmount of alice's L2LiskToken
         vm.prank(alice);
@@ -966,33 +970,14 @@ contract L2StakingTest is Test {
         l2Staking.increaseLockingAmount(1, 100 * 10 ** 18);
     }
 
-    function test_IncreaseLockingAmount_MinAmountIncrease() public {
+    function test_IncreaseLockingAmount_ZeroAmountIncrease() public {
         vm.prank(alice);
-        l2Staking.lockAmount(alice, 10 * 10 ** 18, 365);
+        l2Staking.lockAmount(alice, 100 * 10 ** 18, 365);
         assertEq(l2LockingPosition.balanceOf(alice), 1);
 
-        // amount is less than 10^16
         vm.prank(alice);
-        vm.expectRevert("L2Staking: increased amount should be greater than or equal to 10^16");
-        l2Staking.increaseLockingAmount(1, (10 ** 16) - 1);
-
-        uint256 previousAmount = l2LockingPosition.getLockingPosition(1).amount;
-
-        // amount is exactly 10^16
-        vm.prank(alice);
-        l2Staking.increaseLockingAmount(1, (10 ** 16));
-        assertEq(l2LockingPosition.totalSupply(), 1);
-        assertEq(l2LockingPosition.balanceOf(alice), 1);
-        assertEq(l2LockingPosition.getLockingPosition(1).amount, previousAmount + 10 ** 16);
-
-        previousAmount = l2LockingPosition.getLockingPosition(1).amount;
-
-        // amount is greater than 10^16
-        vm.prank(alice);
-        l2Staking.increaseLockingAmount(1, (10 ** 16) + 1);
-        assertEq(l2LockingPosition.totalSupply(), 1);
-        assertEq(l2LockingPosition.balanceOf(alice), 1);
-        assertEq(l2LockingPosition.getLockingPosition(1).amount, previousAmount + (10 ** 16) + 1);
+        vm.expectRevert("L2Staking: increased amount should be greater than zero");
+        l2Staking.increaseLockingAmount(1, 0);
     }
 
     function test_IncreaseLockingAmount_ExpiredLockingPosition() public {
@@ -1053,7 +1038,7 @@ contract L2StakingTest is Test {
         assertEq(l2LockingPosition.balanceOf(alice), 1);
 
         uint256 aliceBalance = l2LiskToken.balanceOf(alice);
-        uint256 invalidAmount = aliceBalance + 1 * 10 ** 16;
+        uint256 invalidAmount = aliceBalance + l2Staking.MIN_LOCKING_AMOUNT();
 
         // approve l2Staking to spend invalidAmount of alice's L2LiskToken
         vm.prank(alice);
@@ -1073,7 +1058,7 @@ contract L2StakingTest is Test {
         assertEq(l2LockingPosition.balanceOf(alice), 1);
 
         uint256 aliceAllowance = l2LiskToken.allowance(alice, address(l2Staking));
-        uint256 invalidAmount = aliceAllowance + 1 * 10 ** 16;
+        uint256 invalidAmount = aliceAllowance + l2Staking.MIN_LOCKING_AMOUNT();
 
         // alice didn't approve l2Staking to spend invalidAmount of alice's L2LiskToken
         vm.prank(alice);
