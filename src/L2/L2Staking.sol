@@ -160,20 +160,16 @@ contract L2Staking is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, I
         return false;
     }
 
-    /// @notice Calculates the penalty for the given amount and expiration date.
+    /// @notice Calculates the penalty for the given amount and remaining duration of the locking position.
     /// @param amount The amount for which the penalty is calculated.
-    /// @param expDate The expiration date for which the penalty is calculated.
-    /// @return The penalty for the given amount and expiration date.
-    function calculatePenalty(uint256 amount, uint256 expDate) internal view virtual returns (uint256) {
+    /// @param remainingDuration The remaining duration of the locking position.
+    /// @return The penalty for the given amount and remaining duration.
+    function calculatePenalty(uint256 amount, uint256 remainingDuration) internal view virtual returns (uint256) {
         if (emergencyExitEnabled) {
             return 0;
         }
 
-        uint256 today = todayDay();
-        if (expDate <= today) {
-            return 0;
-        }
-        return (amount * (expDate - today)) / (MAX_LOCKING_DURATION * PENALTY_DENOMINATOR);
+        return (amount * remainingDuration) / (MAX_LOCKING_DURATION * PENALTY_DENOMINATOR);
     }
 
     /// @notice Returns the remaining locking duration for the given locking position.
@@ -312,7 +308,7 @@ contract L2Staking is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, I
         require(remainingLockingDuration(lock) > FAST_UNLOCK_DURATION, "L2Staking: less than 3 days until unlock");
 
         // calculate penalty
-        uint256 penalty = calculatePenalty(lock.amount, lock.expDate);
+        uint256 penalty = calculatePenalty(lock.amount, remainingLockingDuration(lock));
 
         uint256 amount = lock.amount - penalty;
         uint256 expDate = todayDay() + FAST_UNLOCK_DURATION;

@@ -251,48 +251,31 @@ contract L2StakingTest is Test {
     function test_CalculatePenalty() public {
         L2StakingHarness l2StakingHarness = new L2StakingHarness();
 
-        // penalty in the first day
-        assertEq(l2StakingHarness.exposedCalculatePenalty(100 * 10 ** 18, 365), 25000000000000000000);
+        uint256 remainingDuration = 365;
+        assertEq(l2StakingHarness.exposedCalculatePenalty(100 * 10 ** 18, remainingDuration), 25000000000000000000);
 
-        // advance block time by 50 days
-        vm.warp(50 days);
-        assertEq(l2StakingHarness.exposedCalculatePenalty(100 * 10 ** 18, 365), 21575342465753424657);
+        remainingDuration -= 50;
+        assertEq(l2StakingHarness.exposedCalculatePenalty(100 * 10 ** 18, remainingDuration), 21575342465753424657);
 
-        // advance block time by another 50 days
-        vm.warp(100 days);
-        assertEq(l2StakingHarness.exposedCalculatePenalty(100 * 10 ** 18, 365), 18150684931506849315);
+        remainingDuration -= 50;
+        assertEq(l2StakingHarness.exposedCalculatePenalty(100 * 10 ** 18, remainingDuration), 18150684931506849315);
 
-        // advance block time by another 50 days
-        vm.warp(150 days);
-        assertEq(l2StakingHarness.exposedCalculatePenalty(100 * 10 ** 18, 365), 14726027397260273972);
+        remainingDuration -= 50;
+        assertEq(l2StakingHarness.exposedCalculatePenalty(100 * 10 ** 18, remainingDuration), 14726027397260273972);
 
-        // advance block time by another 50 days
-        vm.warp(200 days);
-        assertEq(l2StakingHarness.exposedCalculatePenalty(100 * 10 ** 18, 365), 11301369863013698630);
+        remainingDuration -= 50;
+        assertEq(l2StakingHarness.exposedCalculatePenalty(100 * 10 ** 18, remainingDuration), 11301369863013698630);
 
-        // advance block time by another 50 days
-        vm.warp(250 days);
-        assertEq(l2StakingHarness.exposedCalculatePenalty(100 * 10 ** 18, 365), 7876712328767123287);
+        remainingDuration -= 50;
+        assertEq(l2StakingHarness.exposedCalculatePenalty(100 * 10 ** 18, remainingDuration), 7876712328767123287);
 
-        // advance block time by another 50 days
-        vm.warp(300 days);
-        assertEq(l2StakingHarness.exposedCalculatePenalty(100 * 10 ** 18, 365), 4452054794520547945);
+        remainingDuration -= 50;
+        assertEq(l2StakingHarness.exposedCalculatePenalty(100 * 10 ** 18, remainingDuration), 4452054794520547945);
 
-        // advance block time by another 50 days
-        vm.warp(350 days);
-        assertEq(l2StakingHarness.exposedCalculatePenalty(100 * 10 ** 18, 365), 1027397260273972602);
+        remainingDuration -= 50;
+        assertEq(l2StakingHarness.exposedCalculatePenalty(100 * 10 ** 18, remainingDuration), 1027397260273972602);
 
-        // advance block time to exactly one day before the expiration date
-        vm.warp(364 days);
-        assertEq(l2StakingHarness.exposedCalculatePenalty(100 * 10 ** 18, 365), 68493150684931506);
-
-        // advance block time to exactly the expiration date
-        vm.warp(365 days);
-        assertEq(l2StakingHarness.exposedCalculatePenalty(100 * 10 ** 18, 365), 0);
-
-        // advance block time to exactly one day after the expiration date
-        vm.warp(366 days);
-        assertEq(l2StakingHarness.exposedCalculatePenalty(100 * 10 ** 18, 365), 0);
+        assertEq(l2StakingHarness.exposedCalculatePenalty(100 * 10 ** 18, 0), 0);
     }
 
     function test_CalculatePenalty_EmergencyExitEnabled() public {
@@ -303,20 +286,19 @@ contract L2StakingTest is Test {
         l2StakingHarness.setEmergencyExitEnabled(true);
         assert(l2StakingHarness.emergencyExitEnabled());
 
-        // penalty in the first day
-        assertEq(l2StakingHarness.exposedCalculatePenalty(100 * 10 ** 18, 365), 0);
+        uint256 remainingDuration = 365;
+        assertEq(l2StakingHarness.exposedCalculatePenalty(100 * 10 ** 18, remainingDuration), 0);
 
-        // advance block time by 100 days
-        vm.warp(100 days);
-        assertEq(l2StakingHarness.exposedCalculatePenalty(100 * 10 ** 18, 365), 0);
+        remainingDuration -= 100;
+        assertEq(l2StakingHarness.exposedCalculatePenalty(100 * 10 ** 18, remainingDuration), 0);
 
-        // advance block time to exactly one day before the expiration date
-        vm.warp(364 days);
-        assertEq(l2StakingHarness.exposedCalculatePenalty(100 * 10 ** 18, 365), 0);
+        remainingDuration -= 100;
+        assertEq(l2StakingHarness.exposedCalculatePenalty(100 * 10 ** 18, remainingDuration), 0);
 
-        // advance block time to exactly the expiration date
-        vm.warp(365 days);
-        assertEq(l2StakingHarness.exposedCalculatePenalty(100 * 10 ** 18, 365), 0);
+        remainingDuration -= 100;
+        assertEq(l2StakingHarness.exposedCalculatePenalty(100 * 10 ** 18, remainingDuration), 0);
+
+        assertEq(l2StakingHarness.exposedCalculatePenalty(100 * 10 ** 18, 0), 0);
     }
 
     function test_RemainingLockingDuration_ZeroPausedLockingDuration() public {
@@ -802,23 +784,23 @@ contract L2StakingTest is Test {
 
         vm.prank(alice);
         uint256 penalty = l2Staking.initiateFastUnlock(1);
-        assertEq(penalty, 16095890410958904109);
+        assertEq(penalty, 18150684931506849315);
 
         assertEq(l2LiskToken.balanceOf(alice), 0);
         // penalty is sent to the Lisk DAO Treasury contract
-        assertEq(l2LiskToken.balanceOf(daoTreasuryAddress), 16095890410958904109);
+        assertEq(l2LiskToken.balanceOf(daoTreasuryAddress), 18150684931506849315);
         assertEq(l2LiskToken.balanceOf(rewardsContract), 100 * 10 ** 18);
-        assertEq(l2LiskToken.balanceOf(address(l2Staking)), 100 * 10 ** 18 - 16095890410958904109);
+        assertEq(l2LiskToken.balanceOf(address(l2Staking)), 100 * 10 ** 18 - 18150684931506849315);
 
         assertEq(l2LockingPosition.totalSupply(), 1);
         assertEq(l2LockingPosition.balanceOf(alice), 1);
-        assertEq(l2LockingPosition.getLockingPosition(1).amount, 100 * 10 ** 18 - 16095890410958904109); // 100 LSK
+        assertEq(l2LockingPosition.getLockingPosition(1).amount, 100 * 10 ** 18 - 18150684931506849315); // 100 LSK
             // tokens - penalty
         assertEq(l2LockingPosition.getLockingPosition(1).expDate, 133); // 130 + 3 days
         assertEq(l2LockingPosition.getLockingPosition(1).pausedLockingDuration, 0);
 
-        assertEq(l2VotingPower.totalSupply(), 83904109589041095891);
-        assertEq(l2VotingPower.balanceOf(alice), 83904109589041095891);
+        assertEq(l2VotingPower.totalSupply(), 81849315068493150685);
+        assertEq(l2VotingPower.balanceOf(alice), 81849315068493150685);
     }
 
     function test_InitiateFastUnlock_LockingPositionExpiresInLessThanThreeDays() public {
