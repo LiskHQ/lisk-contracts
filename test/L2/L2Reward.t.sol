@@ -123,7 +123,7 @@ contract L2RewardTest is Test {
         ID = l2Reward.createPosition(amount, duration);
         vm.stopPrank();
 
-        assertEq(l2Reward.totalWeight(), (amount * (duration + l2Reward.OFFSET())) / 10 ** 16);
+        assertEq(l2Reward.totalWeight(), (amount * (duration + l2Reward.OFFSET())) / l2Reward.WEIGHT_FACTOR());
         assertEq(l2Reward.lastClaimDate(ID), deploymentDate);
         assertEq(l2Reward.totalAmountLocked(), amount);
         assertEq(l2Reward.dailyUnlockedAmounts(l2Reward.lastTrsDate() + duration), amount);
@@ -159,8 +159,9 @@ contract L2RewardTest is Test {
         lockIDs[1] = l2Reward.createPosition(convertLiskToBeddows(1), 100);
         vm.stopPrank();
 
-        uint256 expectedTotalWeight = ((convertLiskToBeddows(100) * (120 + l2Reward.OFFSET())) / 10 ** 16)
-            + ((convertLiskToBeddows(1) * (100 + l2Reward.OFFSET())) / 10 ** 16) - 20000;
+        uint256 expectedTotalWeight = (
+            (convertLiskToBeddows(100) * (120 + l2Reward.OFFSET())) / l2Reward.WEIGHT_FACTOR()
+        ) + ((convertLiskToBeddows(1) * (100 + l2Reward.OFFSET())) / l2Reward.WEIGHT_FACTOR()) - 20000;
 
         assertEq(l2Reward.totalWeight(), expectedTotalWeight);
         assertEq(l2Reward.totalAmountLocked(), convertLiskToBeddows(101));
@@ -1073,7 +1074,7 @@ contract L2RewardTest is Test {
         l2Reward.increaseLockingAmount(1, convertLiskToBeddows(10));
     }
 
-    function test_increaseLockingAmount_amountCanOnlyBeIncreasedByAnOwnerForAnExistingLockingPositions() public {
+    function test_increaseLockingAmount_amountCanOnlyBeIncreasedByAnOwnerForAnExistingLockingPosition() public {
         address staker = address(0x1);
 
         vm.mockCall(
@@ -1083,9 +1084,22 @@ contract L2RewardTest is Test {
         );
 
         vm.expectRevert("L2Reward: Locking position does not exist");
-
         vm.prank(staker);
-        l2Reward.increaseLockingAmount(1, 1);
+        l2Reward.increaseLockingAmount(1, convertLiskToBeddows(1));
+    }
+
+    function test_increaseLockingAmount_increasedAmountCanNotBeLessThanWEIGHT_FACTOR() public {
+        address staker = address(0x1);
+
+        vm.mockCall(
+            address(l2LockingPosition),
+            abi.encodeWithSelector(ERC721Upgradeable.ownerOf.selector),
+            abi.encode(address(0x1))
+        );
+
+        vm.expectRevert("L2Reward: Increased amount should be greater than or equal to 10^16");
+        vm.prank(staker);
+        l2Reward.increaseLockingAmount(1, 10 ** 15);
     }
 
     function test_increaseLockingAmount_forActivePositionIncreasesLockedAmountAndWeightByRemainingDurationAndClaimsRewards(
@@ -1118,7 +1132,7 @@ contract L2RewardTest is Test {
         uint256 amountIncrease = convertLiskToBeddows(35);
         uint256 totalWeightAfterClaim = l2Reward.totalWeight() - 500000;
         uint256 duration = (deploymentDate + 120) - (deploymentDate + 50);
-        uint256 totalWeightIncrease = (amountIncrease * (duration + l2Reward.OFFSET())) / 10 ** 16;
+        uint256 totalWeightIncrease = (amountIncrease * (duration + l2Reward.OFFSET())) / l2Reward.WEIGHT_FACTOR();
 
         balance = l2LiskToken.balanceOf(staker);
 
@@ -1167,7 +1181,7 @@ contract L2RewardTest is Test {
 
         uint256 totalWeight = l2Reward.totalWeight();
 
-        uint256 totalWeightIncrease = (amountIncrease * (120 + l2Reward.OFFSET())) / 10 ** 16;
+        uint256 totalWeightIncrease = (amountIncrease * (120 + l2Reward.OFFSET())) / l2Reward.WEIGHT_FACTOR();
 
         balance = l2LiskToken.balanceOf(staker);
 
@@ -1209,6 +1223,21 @@ contract L2RewardTest is Test {
         l2Reward.extendDuration(1, 1);
     }
 
+    function test_extendDuration_extendedDurationShouldBeGreaterThanZero() public {
+        address staker = address(0x1);
+
+        vm.mockCall(
+            address(l2LockingPosition),
+            abi.encodeWithSelector(ERC721Upgradeable.ownerOf.selector),
+            abi.encode(address(0x1))
+        );
+
+        vm.expectRevert("L2Reward: Extended duration should be greater than zero");
+
+        vm.prank(staker);
+        l2Reward.extendDuration(1, 0);
+    }
+
     function test_extendDuration_updatesGlobalsAndClaimRewardsForActivePositionWithExpiryInFuture() public {
         l2Staking.addCreator(address(l2Reward));
         address staker = address(0x1);
@@ -1237,7 +1266,7 @@ contract L2RewardTest is Test {
         skip(50 days);
 
         uint256 totalWeightAfterClaim = l2Reward.totalWeight() - 500000;
-        uint256 weightIncrease = (amount * durationExtension) / 10 ** 16;
+        uint256 weightIncrease = (amount * durationExtension) / l2Reward.WEIGHT_FACTOR();
         balance = l2LiskToken.balanceOf(staker);
 
         vm.startPrank(staker);
@@ -1277,7 +1306,7 @@ contract L2RewardTest is Test {
 
         skip(121 days);
 
-        uint256 weightIncrease = (amount * durationExtension) / 10 ** 16;
+        uint256 weightIncrease = (amount * durationExtension) / l2Reward.WEIGHT_FACTOR();
         balance = l2LiskToken.balanceOf(staker);
 
         vm.startPrank(staker);
@@ -1320,7 +1349,7 @@ contract L2RewardTest is Test {
 
         skip(120 days);
 
-        uint256 weightIncrease = (amount * durationExtension) / 10 ** 16;
+        uint256 weightIncrease = (amount * durationExtension) / l2Reward.WEIGHT_FACTOR();
         uint256 expectedTotalWeight = l2Reward.totalWeight() + weightIncrease;
 
         balance = l2LiskToken.balanceOf(staker);
@@ -1396,8 +1425,8 @@ contract L2RewardTest is Test {
         l2Reward.fastUnlock(lockID);
         vm.stopPrank();
 
-        uint256 expectedTotalWeight = 2700000 - 500000 - ((amount * (19860 - 19790 + 150)) / 10 ** 16)
-            + (((l2Staking.FAST_UNLOCK_DURATION() + l2Reward.OFFSET()) * (100e18 - penalty)) / 10 ** 16);
+        uint256 expectedTotalWeight = 2700000 - 500000 - ((amount * (19860 - 19790 + 150)) / l2Reward.WEIGHT_FACTOR())
+            + (((l2Staking.FAST_UNLOCK_DURATION() + l2Reward.OFFSET()) * (100e18 - penalty)) / l2Reward.WEIGHT_FACTOR());
 
         assertEq(l2LiskToken.balanceOf(address(l2Reward)), convertLiskToBeddows(35) - reward + penalty);
         assertEq(l2Reward.dailyUnlockedAmounts(deploymentDate + duration), 0);
@@ -1422,7 +1451,7 @@ contract L2RewardTest is Test {
         l2Reward.initializeDaoTreasury(address(0x2));
     }
 
-    function test_initialzeDaoTreasury_canOnlyBeInitializedOnce() public {
+    function test_initializeDaoTreasury_canOnlyBeInitializedOnce() public {
         vm.expectRevert("L2Reward: Lisk DAO Treasury contract is already initialized");
 
         l2Reward.initializeDaoTreasury(address(0x1));
