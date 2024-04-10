@@ -122,6 +122,21 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
     /// @notice Address of the L2 token contract.
     address public l2TokenContract;
 
+    /// @notice Emitted when rewards are added.
+    event RewardsAdded(uint256 indexed amount, uint256 indexed duration, uint256 indexed delay);
+
+    /// @notice Emitted when the L2LiskToken contract address is changed.
+    event LiskTokenContractAddressChanged(address indexed oldAddress, address indexed newAddress);
+
+    /// @notice Emitted when the Stakin contract address is changed.
+    event StakingContractAddressChanged(address indexed oldAddress, address indexed newAddress);
+
+    /// @notice Emitted when the Locking Position contract address is changed.
+    event LockingPositionContractAddressChanged(address indexed oldAddress, address indexed newAddress);
+
+    /// @notice Emitted when the DAO Treasury address is changed.
+    event DaoTreasuryAddressChanged(address indexed oldAddress, address indexed newAddress);
+
     constructor() {
         _disableInitializers();
     }
@@ -138,6 +153,8 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
         __UUPSUpgradeable_init();
         l2TokenContract = _l2LiskTokenContract;
         lastTrsDate = todayDay();
+        version = "1.0.0";
+        emit LiskTokenContractAddressChanged(address(0x0), _l2LiskTokenContract);
     }
 
     /// @notice Updates global state against user actions.
@@ -334,7 +351,7 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
             "L2Reward: msg.sender does not own the locking position"
         );
 
-        require(amountIncrease >= 10 ** 16, "L2Reward: Increased amount should be greater than or equal to 10^16");
+        require(amountIncrease > 0, "L2Reward: Increased amount should be greater than zero");
 
         uint256 reward = _claimReward(lockID);
 
@@ -464,22 +481,25 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
     /// @notice Adds daily rewards between provided duration and resets surplus rewards.
     /// @param amount Amount to be added to daily rewards.
     /// @param duration Duration in days for which the daily rewards is to be added.
-    /// @param delay Determines the start day from today till duration from whom rewards should be added.
+    /// @param delay Determines the start day from today till duration from which rewards should be added.
     function addRewards(uint256 amount, uint16 duration, uint16 delay) public virtual {
         require(msg.sender == daoTreasury, "L2Reward: Rewards can only be added by DAO treasury");
         require(delay > 0, "L2Reward: Rewards can only be added from next day or later");
-
         require(amount > rewardsSurplus, "L2Reward: Reward amount should exceed available surplus funds");
+
+        IL2LiskToken(l2TokenContract).transferFrom(msg.sender, address(this), amount);
 
         _addRewards(amount, duration, delay);
 
         rewardsSurplus = 0;
+
+        emit RewardsAdded(amount, duration, delay);
     }
 
     /// @notice Adds new daily rewards between provided duration.
     /// @param amount Amount to be added to daily rewards.
     /// @param duration Duration in days for which the daily rewards is to be added.
-    /// @param delay Determines the start day from today till duration for whom rewards should be added.
+    /// @param delay Determines the start day from today till duration for which rewards should be added.
     function fundStakingRewards(uint256 amount, uint16 duration, uint16 delay) public virtual {
         require(msg.sender == daoTreasury, "L2Reward: Funds can only be added by DAO treasury");
         require(delay > 0, "L2Reward: Funding should start from next day or later");
@@ -487,6 +507,8 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
         IL2LiskToken(l2TokenContract).transferFrom(msg.sender, address(this), amount);
 
         _addRewards(amount, duration, delay);
+
+        emit RewardsAdded(amount, duration, delay);
     }
 
     /// @notice Initializes the Lisk DAO Treasury address.
@@ -496,6 +518,8 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
         require(_daoTreasury != address(0), "L2Reward: Lisk DAO Treasury contract address can not be zero");
 
         daoTreasury = _daoTreasury;
+
+        emit DaoTreasuryAddressChanged(address(0x0), daoTreasury);
     }
 
     /// @notice Initializes the LockingPosition address.
@@ -505,6 +529,8 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
         require(_lockingPositionContract != address(0), "L2Reward: LockingPosition contract address can not be zero");
 
         lockingPositionContract = _lockingPositionContract;
+
+        emit LockingPositionContractAddressChanged(address(0x0), lockingPositionContract);
     }
 
     /// @notice Initializes the L2Staking address.
@@ -514,6 +540,8 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
         require(_stakingContract != address(0), "L2Reward: Staking contract address can not be zero");
 
         stakingContract = _stakingContract;
+
+        emit StakingContractAddressChanged(address(0x0), stakingContract);
     }
 
     /// @notice Returns the current day.

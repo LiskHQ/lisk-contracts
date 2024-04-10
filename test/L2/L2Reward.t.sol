@@ -77,6 +77,10 @@ contract L2RewardTest is Test {
         l2LockingPosition.initializeVotingPower(address(l2VotingPower));
 
         l2RewardImplementation = new L2Reward();
+
+        vm.expectEmit(true, true, true, true);
+        emit L2Staking.LiskTokenContractAddressChanged(address(0x0), address(l2LiskToken));
+
         l2Reward = L2Reward(
             address(
                 new ERC1967Proxy(
@@ -87,13 +91,27 @@ contract L2RewardTest is Test {
         );
 
         l2Reward.initializeDaoTreasury(daoTreasury);
+
+        vm.expectEmit(true, true, true, true);
+        emit L2Reward.LockingPositionContractAddressChanged(address(0x0), address(l2LockingPosition));
         l2Reward.initializeLockingPosition(address(l2LockingPosition));
+
+        vm.expectEmit(true, true, true, true);
+        emit L2Reward.StakingContractAddressChanged(address(0x0), address(l2Staking));
         l2Reward.initializeStaking(address(l2Staking));
+
+        assertEq(l2Reward.l2TokenContract(), address(l2LiskToken));
+        assertEq(l2Reward.daoTreasury(), daoTreasury);
+        assertEq(l2Reward.lockingPositionContract(), address(l2LockingPosition));
+        assertEq(l2Reward.stakingContract(), address(l2Staking));
     }
 
     function test_initialize() public {
         assertEq(l2Reward.lastTrsDate(), deploymentDate);
         assertEq(l2Reward.OFFSET(), 150);
+        assertEq(l2Reward.WEIGHT_FACTOR(), 10 ** 16);
+        assertEq(l2Reward.REWARD_DURATION(), 30);
+        assertEq(l2Reward.REWARD_DURATION_DELAY(), 1);
     }
 
     function test_createPosition_updatesGlobals() public {
@@ -226,6 +244,23 @@ contract L2RewardTest is Test {
                 assertEq(l2Reward.dailyRewards(d), dailyReward);
             }
         }
+    }
+
+    function test_fundStaking_emitsRewardsAddedEvent() public {
+        l2Staking.addCreator(address(l2Reward));
+        uint256 balance = convertLiskToBeddows(10000);
+
+        // DAO gets balance
+        vm.startPrank(bridge);
+        l2LiskToken.mint(daoTreasury, balance);
+        vm.stopPrank();
+
+        vm.startPrank(daoTreasury);
+        l2LiskToken.approve(address(l2Reward), convertLiskToBeddows(1000));
+        vm.expectEmit(true, true, true, true);
+        emit L2Reward.RewardsAdded(convertLiskToBeddows(1000), 10, 1);
+        l2Reward.fundStakingRewards(convertLiskToBeddows(1000), 10, 1);
+        vm.stopPrank();
     }
 
     function test_claimRewards_onlyExistingLockingPositionCanBeClaimedByTheOwner() public {
@@ -1080,7 +1115,7 @@ contract L2RewardTest is Test {
         l2Reward.increaseLockingAmount(1, convertLiskToBeddows(1));
     }
 
-    function test_increaseLockingAmount_increasedAmountCanNotBeLessThanWEIGHT_FACTOR() public {
+    function test_increaseLockingAmount_increasedAmountShouldBeGreaterThanZero() public {
         address staker = address(0x1);
 
         vm.mockCall(
@@ -1089,9 +1124,9 @@ contract L2RewardTest is Test {
             abi.encode(address(0x1))
         );
 
-        vm.expectRevert("L2Reward: Increased amount should be greater than or equal to 10^16");
+        vm.expectRevert("L2Reward: Increased amount should be greater than zero");
         vm.prank(staker);
-        l2Reward.increaseLockingAmount(1, 10 ** 15);
+        l2Reward.increaseLockingAmount(1, 0);
     }
 
     function test_increaseLockingAmount_forActivePositionIncreasesLockedAmountAndWeightByRemainingDurationAndClaimsRewards(
@@ -1464,6 +1499,22 @@ contract L2RewardTest is Test {
         l2Reward.initializeDaoTreasury(address(0x0));
     }
 
+    function test_initializeDaoTreasury_emitsDaoTreasuryAddressChanged() public {
+        l2RewardImplementation = new L2Reward();
+        l2Reward = L2Reward(
+            address(
+                new ERC1967Proxy(
+                    address(l2RewardImplementation),
+                    abi.encodeWithSelector(l2Reward.initialize.selector, address(l2LiskToken))
+                )
+            )
+        );
+
+        vm.expectEmit(true, true, true, true);
+        emit L2Reward.DaoTreasuryAddressChanged(address(0x0), address(0x1));
+        l2Reward.initializeDaoTreasury(address(0x1));
+    }
+
     function test_initializeLockingPosition_onlyOwnerCanInitializeLockingPosition() public {
         vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(0x1)));
         vm.prank(address(0x1));
@@ -1491,6 +1542,22 @@ contract L2RewardTest is Test {
         l2Reward.initializeLockingPosition(address(0x0));
     }
 
+    function test_initializeLockingPosition_emitsLockingPositionContractAddressChanged() public {
+        l2RewardImplementation = new L2Reward();
+        l2Reward = L2Reward(
+            address(
+                new ERC1967Proxy(
+                    address(l2RewardImplementation),
+                    abi.encodeWithSelector(l2Reward.initialize.selector, address(l2LiskToken))
+                )
+            )
+        );
+
+        vm.expectEmit(true, true, true, true);
+        emit L2Reward.LockingPositionContractAddressChanged(address(0x0), address(0x1));
+        l2Reward.initializeLockingPosition(address(0x1));
+    }
+
     function test_initializeStaking_onlyOwnerCanInitializeStaking() public {
         vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(0x1)));
         vm.prank(address(0x1));
@@ -1516,6 +1583,23 @@ contract L2RewardTest is Test {
 
         vm.expectRevert("L2Reward: Staking contract address can not be zero");
         l2Reward.initializeStaking(address(0x0));
+    }
+
+    function test_initializeStaking_emitsStakingContractAddressChangedEvent() public {
+        l2RewardImplementation = new L2Reward();
+        l2Reward = L2Reward(
+            address(
+                new ERC1967Proxy(
+                    address(l2RewardImplementation),
+                    abi.encodeWithSelector(l2Reward.initialize.selector, address(l2LiskToken))
+                )
+            )
+        );
+
+        vm.expectEmit(true, true, true, true);
+        emit L2Reward.StakingContractAddressChanged(address(0x0), address(0x1));
+
+        l2Reward.initializeStaking(address(0x1));
     }
 
     function test_addRewards_onlyDAOTreasuryCanAddRewards() public {
@@ -1606,14 +1690,34 @@ contract L2RewardTest is Test {
         uint256 additionalReward = convertLiskToBeddows(1000) / 10;
 
         // days 19743 to 19752 are funded
-        vm.prank(daoTreasury);
+        vm.startPrank(daoTreasury);
+        l2LiskToken.approve(address(l2Reward), convertLiskToBeddows(1000));
         l2Reward.addRewards(convertLiskToBeddows(1000), 10, 1);
+        vm.stopPrank();
 
         for (uint16 i = 19743; i < 19753; i++) {
             assertEq(l2Reward.dailyRewards(i), dailyReward + additionalReward);
         }
 
         assertEq(l2Reward.rewardsSurplus(), 0);
+        assertEq(l2LiskToken.balanceOf(address(l2Reward)), convertLiskToBeddows(2000));
+    }
+
+    function test_addRewards_emitsRewardsAddedEvent() public {
+        l2Staking.addCreator(address(l2Reward));
+        uint256 balance = convertLiskToBeddows(10000);
+
+        // DAO gets balance
+        vm.startPrank(bridge);
+        l2LiskToken.mint(daoTreasury, balance);
+        vm.stopPrank();
+
+        vm.startPrank(daoTreasury);
+        l2LiskToken.approve(address(l2Reward), convertLiskToBeddows(1000));
+        vm.expectEmit(true, true, true, true);
+        emit L2Reward.RewardsAdded(convertLiskToBeddows(1000), 10, 1);
+        l2Reward.addRewards(convertLiskToBeddows(1000), 10, 1);
+        vm.stopPrank();
     }
 
     function convertLiskToBeddows(uint256 lisk) internal pure returns (uint256) {
