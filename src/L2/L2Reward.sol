@@ -349,7 +349,7 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
         uint256 today = todayDay();
 
         if (lockingPosition.pausedLockingDuration == 0) {
-            // duration for active postion => lockingPosition.expDate - today;
+            // duration for active position => lockingPosition.expDate - today;
             totalWeight += (amountIncrease * (lockingPosition.expDate - today + OFFSET)) / WEIGHT_FACTOR;
             dailyUnlockedAmounts[lockingPosition.expDate] += amountIncrease;
             pendingUnlockAmount += amountIncrease;

@@ -12,14 +12,6 @@ import { L2LockingPosition, LockingPosition } from "src/L2/L2LockingPosition.sol
 import { L2Staking } from "src/L2/L2Staking.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 
-struct Stake {
-    address addr;
-    uint256 amount;
-    uint256 duration;
-    uint256 rewards;
-    uint256 id;
-}
-
 contract L2RewardTest is Test {
     L2LiskToken public l2LiskToken;
     L2Staking public l2Staking;
