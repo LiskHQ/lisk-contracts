@@ -673,6 +673,34 @@ contract L2StakingTest is Test {
         assertEq(l2VotingPower.balanceOf(alice), 0);
     }
 
+    function test_Unlock_SenderIsAllowedCreator() public {
+        vm.prank(rewardsContract);
+        l2Staking.lockAmount(alice, 100 * 10 ** 18, 365);
+        assertEq(l2LiskToken.balanceOf(alice), 100 * 10 ** 18); // alice didn't call lockAmount
+        assertEq(l2LiskToken.balanceOf(rewardsContract), 0); // rewardsContract call lockAmount
+        assertEq(l2LiskToken.balanceOf(address(l2Staking)), 100 * 10 ** 18);
+        assertEq(l2LockingPosition.totalSupply(), 1);
+        assertEq(l2LockingPosition.balanceOf(alice), 1);
+        assertEq(l2VotingPower.totalSupply(), 100 * 10 ** 18);
+        assertEq(l2VotingPower.balanceOf(alice), 100 * 10 ** 18);
+
+        // advance block time by 365 days
+        vm.warp(365 days);
+
+        vm.prank(rewardsContract);
+        l2Staking.unlock(1);
+
+        assertEq(l2LiskToken.balanceOf(alice), 200 * 10 ** 18); // alice received additional 100 L2LiskToken
+        assertEq(l2LiskToken.balanceOf(rewardsContract), 0);
+        assertEq(l2LiskToken.balanceOf(address(l2Staking)), 0);
+
+        assertEq(l2LockingPosition.totalSupply(), 0);
+        assertEq(l2LockingPosition.balanceOf(alice), 0);
+
+        assertEq(l2VotingPower.totalSupply(), 0);
+        assertEq(l2VotingPower.balanceOf(alice), 0);
+    }
+
     function test_Unlock_StakeDidNotExpire() public {
         vm.prank(alice);
         l2Staking.lockAmount(alice, 100 * 10 ** 18, 365);
