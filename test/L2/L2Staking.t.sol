@@ -1201,6 +1201,27 @@ contract L2StakingTest is Test {
         l2Staking.extendLockingDuration(1, 0);
     }
 
+    function test_ExtendLockingDuration_DurationIsMoreThanMaxDuration() public {
+        vm.prank(alice);
+        l2Staking.lockAmount(alice, 100 * 10 ** 18, 365);
+        assertEq(l2LockingPosition.balanceOf(alice), 1);
+
+        // On first day, the maximum extended duration is 365 days
+        uint256 invalidExtendedDuration = 365 + 1;
+        vm.prank(alice);
+        vm.expectRevert("L2Staking: locking duration can not be extended to more than MAX_LOCKING_DURATION");
+        l2Staking.extendLockingDuration(1, invalidExtendedDuration);
+
+        // advance block time by 100 days
+        vm.warp(100 days);
+
+        // On 100th day, the maximum extended duration is 465 days (365 + 100 days)
+        invalidExtendedDuration = 465 + 1;
+        vm.prank(alice);
+        vm.expectRevert("L2Staking: locking duration can not be extended to more than MAX_LOCKING_DURATION");
+        l2Staking.extendLockingDuration(1, invalidExtendedDuration);
+    }
+
     function test_PauseRemainingLockingDuration() public {
         vm.prank(alice);
         l2Staking.lockAmount(alice, 100 * 10 ** 18, 365);
