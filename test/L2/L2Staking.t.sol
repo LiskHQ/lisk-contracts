@@ -683,6 +683,49 @@ contract L2StakingTest is Test {
         assertEq(l2VotingPower.balanceOf(alice), 0);
     }
 
+    function test_Unlock_LockingPositionIsPaused() public {
+        vm.prank(alice);
+        l2Staking.lockAmount(alice, 100 * 10 ** 18, 365);
+        assertEq(l2LiskToken.balanceOf(alice), 0);
+        assertEq(l2LiskToken.balanceOf(address(l2Staking)), 100 * 10 ** 18);
+        assertEq(l2LockingPosition.totalSupply(), 1);
+        assertEq(l2LockingPosition.balanceOf(alice), 1);
+        assertEq(l2VotingPower.totalSupply(), 100 * 10 ** 18);
+        assertEq(l2VotingPower.balanceOf(alice), 100 * 10 ** 18);
+
+        // pause the remaining locking duration
+        vm.prank(alice);
+        l2Staking.pauseRemainingLockingDuration(1);
+        assertEq(l2LockingPosition.getLockingPosition(1).pausedLockingDuration, 365);
+
+        // advance block time by 365 + 1 days
+        vm.warp(366 days);
+
+        vm.prank(alice);
+        vm.expectRevert("L2Staking: locking duration active, can not unlock");
+        l2Staking.unlock(1);
+
+        // resume the countdown
+        vm.prank(alice);
+        l2Staking.resumeCountdown(1);
+        assertEq(l2LockingPosition.getLockingPosition(1).pausedLockingDuration, 0);
+
+        // advance block time by additional 365 days
+        vm.warp(366 days + 365 days);
+
+        vm.prank(alice);
+        l2Staking.unlock(1);
+
+        assertEq(l2LiskToken.balanceOf(alice), 100 * 10 ** 18);
+        assertEq(l2LiskToken.balanceOf(address(l2Staking)), 0);
+
+        assertEq(l2LockingPosition.totalSupply(), 0);
+        assertEq(l2LockingPosition.balanceOf(alice), 0);
+
+        assertEq(l2VotingPower.totalSupply(), 0);
+        assertEq(l2VotingPower.balanceOf(alice), 0);
+    }
+
     function test_Unlock_StakeDidNotExpire() public {
         vm.prank(alice);
         l2Staking.lockAmount(alice, 100 * 10 ** 18, 365);
