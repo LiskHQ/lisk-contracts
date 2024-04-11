@@ -8,6 +8,13 @@ import { Script, console2 } from "forge-std/Script.sol";
 import { L2Governor } from "src/L2/L2Governor.sol";
 import "script/Utils.sol";
 
+/// @title IL2Claim
+/// @notice Interface for L2 Claim contract. Used to set DAO address.
+interface IL2Claim {
+    function setDAOAddress(address daoAddress) external;
+    function daoAddress() external view returns (address);
+}
+
 /// @title IL2Staking
 /// @notice Interface for L2 Staking contract. Used to initialize Staking contract.
 interface IL2Staking {
@@ -37,8 +44,13 @@ contract L2GovernorScript is Script {
 
         console2.log("Deploying L2 TimelockController and Governor contracts...");
 
-        // get L2Staking contract address
+        // get L2Claim contract address
         Utils.L2AddressesConfig memory l2AddressesConfig = utils.readL2AddressesFile();
+        assert(l2AddressesConfig.L2ClaimContract != address(0));
+        console2.log("L2 Claim address: %s", l2AddressesConfig.L2ClaimContract);
+        IL2Claim l2Claim = IL2Claim(l2AddressesConfig.L2ClaimContract);
+
+        // get L2Staking contract address
         assert(l2AddressesConfig.L2Staking != address(0));
         console2.log("L2 Staking address: %s", l2AddressesConfig.L2Staking);
         IL2Staking stakingContract = IL2Staking(l2AddressesConfig.L2Staking);
@@ -102,6 +114,12 @@ contract L2GovernorScript is Script {
         stakingContract.initializeDaoTreasury(address(timelock));
         vm.stopBroadcast();
         assert(stakingContract.daoTreasury() == address(timelock));
+
+        // set DAO address in L2Claim contract
+        vm.startBroadcast(deployerPrivateKey);
+        l2Claim.setDAOAddress(address(timelock));
+        vm.stopBroadcast();
+        assert(l2Claim.daoAddress() == address(timelock));
 
         // grant the proposer role to the Governor contract
         vm.startBroadcast(deployerPrivateKey);

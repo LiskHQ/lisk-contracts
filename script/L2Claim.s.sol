@@ -27,10 +27,6 @@ contract L2ClaimScript is Script {
 
         console2.log("Deploying L2 Claim contract...");
 
-        // DAO Address, will be used to receive unclaimed LSK after claim period
-        address daoAddress = vm.envAddress("DAO_ADDRESS");
-        console2.log("DAO address: %s", daoAddress);
-
         // owner Address, the ownership of L2Claim Proxy Contract is transferred to after deployment
         address ownerAddress = vm.envAddress("L2_CLAIM_OWNER_ADDRESS");
         console2.log("L2 Claim contract owner address: %s (after ownership will be accepted)", ownerAddress);
@@ -72,12 +68,7 @@ contract L2ClaimScript is Script {
         L2Claim l2Claim = L2Claim(address(l2ClaimProxy));
         assert(address(l2Claim.l2LiskToken()) == l2AddressesConfig.L2LiskToken);
         assert(l2Claim.merkleRoot() == merkleRoot.merkleRoot);
-
-        // assign DAO Address
-        vm.startBroadcast(deployerPrivateKey);
-        l2Claim.setDAOAddress(daoAddress);
-        vm.stopBroadcast();
-        assert(l2Claim.daoAddress() == daoAddress);
+        assert(l2Claim.daoAddress() == address(0));
 
         // transfer ownership of L2Claim Proxy; because of using Ownable2StepUpgradeable contract, new owner has to
         // accept ownership
@@ -89,7 +80,6 @@ contract L2ClaimScript is Script {
         console2.log("L2 Claim contract successfully deployed!");
         console2.log("L2 Claim (Implementation) address: %s", address(l2ClaimImplementation));
         console2.log("L2 Claim (Proxy) address: %s", address(l2Claim));
-        console2.log("DAO Address of L2 Claim (Proxy) address: %s", l2Claim.daoAddress());
         console2.log("Owner of L2 Claim (Proxy) address: %s (after ownership will be accepted)", ownerAddress);
 
         // write L2ClaimContract address to l2addresses.json
