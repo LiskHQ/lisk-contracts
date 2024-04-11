@@ -6,7 +6,6 @@ import { IL2LiskToken, IL2LockingPosition, IL2Staking, L2Reward } from "src/L2/L
 import { ERC721Upgradeable } from "@openzeppelin-upgradeable/contracts/token/ERC721/ERC721Upgradeable.sol";
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import { L2VotingPower } from "src/L2/L2VotingPower.sol";
-
 import { L2LiskToken } from "src/L2/L2LiskToken.sol";
 import { L2LockingPosition, LockingPosition } from "src/L2/L2LockingPosition.sol";
 import { L2Staking } from "src/L2/L2Staking.sol";
@@ -1391,7 +1390,7 @@ contract L2RewardTest is Test {
         assertEq(l2Reward.dailyUnlockedAmounts(deploymentDate + duration + durationExtension), amount);
     }
 
-    function test_fastUnlock_onlyOwnerCanUnlockAPosition() public {
+    function test_initiateFastUnlock_onlyOwnerCanUnlockAPosition() public {
         address staker = address(0x1);
 
         vm.mockCall(
@@ -1402,10 +1401,10 @@ contract L2RewardTest is Test {
 
         vm.prank(staker);
         vm.expectRevert("L2Reward: msg.sender does not own the locking position");
-        l2Reward.fastUnlock(1);
+        l2Reward.initiateFastUnlock(1);
     }
 
-    function test_fastUnlock_onlyExistingLockingPositionCanBeUnlockedByAnOwner() public {
+    function test_initiateFastUnlock_onlyExistingLockingPositionCanBeUnlockedByAnOwner() public {
         address staker = address(0x1);
 
         vm.mockCall(
@@ -1416,10 +1415,10 @@ contract L2RewardTest is Test {
 
         vm.prank(staker);
         vm.expectRevert("L2Reward: Locking position does not exist");
-        l2Reward.fastUnlock(1);
+        l2Reward.initiateFastUnlock(1);
     }
 
-    function test_fastUnlock_addsPenaltyAsRewardAlsoUpdatesGlobalsAndClaimRewards() public {
+    function test_initiateFastUnlock_addsPenaltyAsRewardAlsoUpdatesGlobalsAndClaimRewards() public {
         l2Staking.addCreator(address(l2Reward));
 
         address staker = address(0x1);
@@ -1450,7 +1449,7 @@ contract L2RewardTest is Test {
         uint256 penalty = 4794520547945205479;
 
         vm.startPrank(staker);
-        l2Reward.fastUnlock(lockID);
+        l2Reward.initiateFastUnlock(lockID);
         vm.stopPrank();
 
         uint256 expectedTotalWeight = 2700000 - 500000 - ((amount * (19860 - 19790 + 150)) / l2Reward.WEIGHT_FACTOR())
@@ -1471,6 +1470,8 @@ contract L2RewardTest is Test {
         for (uint16 i = 19791; i < 19821; i++) {
             assertEq(l2Reward.dailyRewards(i), dailyFundedReward + rewardsFromPenalty);
         }
+
+        assertEq(l2LiskToken.balanceOf(staker), convertLiskToBeddows(1000) - amount + reward);
     }
 
     function test_initializeDaoTreasury_onlyOwnerCanInitializeDaoTreasury() public {
@@ -1603,20 +1604,20 @@ contract L2RewardTest is Test {
         l2Reward.initializeStaking(address(0x1));
     }
 
-    function test_addRewards_onlyDAOTreasuryCanAddRewards() public {
+    function test_addUnusedRewards_onlyDAOTreasuryCanAddUnusedRewards() public {
         vm.expectRevert("L2Reward: Rewards can only be added by DAO treasury");
 
-        l2Reward.addRewards(100, 100, 1);
+        l2Reward.addUnusedRewards(100, 100, 1);
     }
 
-    function test_addRewards_delayShouldBeGreaterThanZeroWhenAddingRewards() public {
+    function test_addUnusedRewards_delayShouldBeGreaterThanZeroWhenAddingRewards() public {
         vm.expectRevert("L2Reward: Rewards can only be added from next day or later");
         vm.prank(daoTreasury);
 
-        l2Reward.addRewards(100, 100, 0);
+        l2Reward.addUnusedRewards(100, 100, 0);
     }
 
-    function test_addRewards_rewardAmountShouldBeGreaterThanRewardSurplus() public {
+    function test_addUnusedRewards_rewardAmountShouldNotBeGreaterThanRewardSurplus() public {
         l2Staking.addCreator(address(l2Reward));
         address staker = address(0x1);
         uint256 balance = convertLiskToBeddows(1000);
@@ -1647,16 +1648,15 @@ contract L2RewardTest is Test {
         lockIDs[1] = l2Reward.createPosition(convertLiskToBeddows(1), 100);
         vm.stopPrank();
 
-        uint256 cappedReward = convertLiskToBeddows(100) / 365;
         uint256 dailyReward = convertLiskToBeddows(1000) / 350;
 
-        vm.expectRevert("L2Reward: Reward amount should exceed available surplus funds");
+        vm.expectRevert("L2Reward: Reward amount should not exceed available surplus funds");
 
         vm.prank(daoTreasury);
-        l2Reward.addRewards(dailyReward - cappedReward - 1, 10, 1);
+        l2Reward.addUnusedRewards(dailyReward + 1, 10, 1);
     }
 
-    function test_addRewards_fundsRewardAmountAndResetsRewardsSurplus() public {
+    function test_addUnusedRewards_fundsRewardAmountAndResetsRewardsSurplus() public {
         l2Staking.addCreator(address(l2Reward));
         address staker = address(0x1);
         uint256 balance = convertLiskToBeddows(10000);
@@ -1688,12 +1688,61 @@ contract L2RewardTest is Test {
         vm.stopPrank();
 
         uint256 dailyReward = convertLiskToBeddows(1000) / 350;
-        uint256 additionalReward = convertLiskToBeddows(1000) / 10;
+        uint256 additionalReward = convertLiskToBeddows(1) / 10;
+
+        uint256 rewardsSurplus = l2Reward.rewardsSurplus();
 
         // days 19743 to 19752 are funded
         vm.startPrank(daoTreasury);
+        l2Reward.addUnusedRewards(convertLiskToBeddows(1), 10, 1);
+        vm.stopPrank();
+
+        for (uint16 i = 19743; i < 19753; i++) {
+            assertEq(l2Reward.dailyRewards(i), dailyReward + additionalReward);
+        }
+
+        assertEq(l2Reward.rewardsSurplus(), rewardsSurplus - convertLiskToBeddows(1));
+    }
+
+    function test_addUnusedRewards_emitsRewardsAddedEvent() public {
+        l2Staking.addCreator(address(l2Reward));
+        address staker = address(0x1);
+        uint256 balance = convertLiskToBeddows(10000);
+
+        uint256[] memory lockIDs = new uint256[](2);
+
+        // staker and DAO gets balance
+        vm.startPrank(bridge);
+        l2LiskToken.mint(staker, balance);
+        l2LiskToken.mint(daoTreasury, balance);
+        vm.stopPrank();
+
+        // DAO funds staking
+        vm.startPrank(daoTreasury);
         l2LiskToken.approve(address(l2Reward), convertLiskToBeddows(1000));
-        l2Reward.addRewards(convertLiskToBeddows(1000), 10, 1);
+        l2Reward.fundStakingRewards(convertLiskToBeddows(1000), 350, 1);
+        vm.stopPrank();
+
+        // staker creates a positions on deploymentDate, 19740
+        vm.startPrank(staker);
+        l2LiskToken.approve(address(l2Reward), convertLiskToBeddows(100));
+        lockIDs[0] = l2Reward.createPosition(convertLiskToBeddows(100), 120);
+
+        // staker creates another position on deploymentDate + 2, 1972
+        // This will trigger updateGlobalState() for 19740 and 19741
+        skip(2 days);
+        l2LiskToken.approve(address(l2Reward), convertLiskToBeddows(1));
+        lockIDs[1] = l2Reward.createPosition(convertLiskToBeddows(1), 100);
+        vm.stopPrank();
+
+        uint256 dailyReward = convertLiskToBeddows(1000) / 350;
+        uint256 additionalReward = l2Reward.rewardsSurplus() / 10;
+
+        // days 19743 to 19752 are funded
+        vm.expectEmit(true, true, true, true);
+        emit L2Reward.RewardsAdded(l2Reward.rewardsSurplus(), 10, 1);
+        vm.startPrank(daoTreasury);
+        l2Reward.addUnusedRewards(l2Reward.rewardsSurplus(), 10, 1);
         vm.stopPrank();
 
         for (uint16 i = 19743; i < 19753; i++) {
@@ -1701,24 +1750,6 @@ contract L2RewardTest is Test {
         }
 
         assertEq(l2Reward.rewardsSurplus(), 0);
-        assertEq(l2LiskToken.balanceOf(address(l2Reward)), convertLiskToBeddows(2000));
-    }
-
-    function test_addRewards_emitsRewardsAddedEvent() public {
-        l2Staking.addCreator(address(l2Reward));
-        uint256 balance = convertLiskToBeddows(10000);
-
-        // DAO gets balance
-        vm.startPrank(bridge);
-        l2LiskToken.mint(daoTreasury, balance);
-        vm.stopPrank();
-
-        vm.startPrank(daoTreasury);
-        l2LiskToken.approve(address(l2Reward), convertLiskToBeddows(1000));
-        vm.expectEmit(true, true, true, true);
-        emit L2Reward.RewardsAdded(convertLiskToBeddows(1000), 10, 1);
-        l2Reward.addRewards(convertLiskToBeddows(1000), 10, 1);
-        vm.stopPrank();
     }
 
     function convertLiskToBeddows(uint256 lisk) internal pure returns (uint256) {

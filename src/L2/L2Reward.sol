@@ -56,7 +56,7 @@ interface IL2LockingPosition {
 
     function ownerOf(uint256 lockID) external returns (address);
 
-    function getLockingPosition(uint256 positionId) external returns (LockingPosition memory);
+    function getLockingPosition(uint256 positionId) external view returns (LockingPosition memory);
 }
 
 /// @title L2Reward
@@ -163,24 +163,24 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
         uint256 today = todayDay();
 
         uint256 d = lastTrsDate;
-        if (today > d) {
-            for (; d < today; d++) {
-                totalWeights[d] = totalWeight;
-                totalLockedAmounts[d] = totalAmountLocked;
+        if (today <= d) return;
 
-                cappedRewards = totalAmountLocked / 365;
+        for (; d < today; d++) {
+            totalWeights[d] = totalWeight;
+            totalLockedAmounts[d] = totalAmountLocked;
 
-                if (dailyRewards[d] > cappedRewards) {
-                    rewardsSurplus += dailyRewards[d] - cappedRewards;
-                    dailyRewards[d] = cappedRewards;
-                }
+            cappedRewards = totalAmountLocked / 365;
 
-                totalWeight -= pendingUnlockAmount / WEIGHT_FACTOR;
-                totalWeight -= (OFFSET * dailyUnlockedAmounts[d + 1]) / WEIGHT_FACTOR;
-
-                totalAmountLocked -= dailyUnlockedAmounts[d + 1];
-                pendingUnlockAmount -= dailyUnlockedAmounts[d + 1];
+            if (dailyRewards[d] > cappedRewards) {
+                rewardsSurplus += dailyRewards[d] - cappedRewards;
+                dailyRewards[d] = cappedRewards;
             }
+
+            totalWeight -= pendingUnlockAmount / WEIGHT_FACTOR;
+            totalWeight -= (OFFSET * dailyUnlockedAmounts[d + 1]) / WEIGHT_FACTOR;
+
+            totalAmountLocked -= dailyUnlockedAmounts[d + 1];
+            pendingUnlockAmount -= dailyUnlockedAmounts[d + 1];
         }
 
         lastTrsDate = today;
@@ -198,13 +198,12 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
 
         uint256 id = IL2Staking(stakingContract).lockAmount(msg.sender, amount, duration);
         uint256 today = todayDay();
-        uint256 start = Math.max(today, lastTrsDate);
 
-        lastClaimDate[id] = start;
+        lastClaimDate[id] = today;
 
         totalWeight += (amount * (duration + OFFSET)) / WEIGHT_FACTOR;
         totalAmountLocked += amount;
-        dailyUnlockedAmounts[lastTrsDate + duration] += amount;
+        dailyUnlockedAmounts[today + duration] += amount;
         pendingUnlockAmount += amount;
 
         return id;
@@ -226,9 +225,9 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
         delete lastClaimDate[lockID];
     }
 
-    /// @notice Pauses the locking position.
+    /// @notice Initiates a fast unlock of the locking position.
     /// @param lockID The ID of the locking position.
-    function fastUnlock(uint256 lockID) public virtual {
+    function initiateFastUnlock(uint256 lockID) public virtual {
         updateGlobalState();
 
         require(
@@ -265,28 +264,32 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
     /// @notice Calculate rewards of a locking position.
     /// @param lockID The ID of the locking position.
     /// @return uint256 Rewards amount.
-    function calculateRewards(uint256 lockID) public virtual returns (uint256) {
+    function calculateRewards(uint256 lockID) public view virtual returns (uint256) {
         IL2LockingPosition.LockingPosition memory lockingPosition =
             IL2LockingPosition(lockingPositionContract).getLockingPosition(lockID);
 
         uint256 today = todayDay();
-        uint256 remainingLockingDuration;
+        uint256 rewardableDuration;
         uint256 lastRewardDay;
         uint256 weight;
 
         if (lockingPosition.pausedLockingDuration == 0) {
-            remainingLockingDuration = lockingPosition.expDate - lastClaimDate[lockID];
+            rewardableDuration = lockingPosition.expDate - lastClaimDate[lockID];
             lastRewardDay = Math.min(lockingPosition.expDate, today);
         } else {
-            remainingLockingDuration = lockingPosition.pausedLockingDuration;
+            rewardableDuration = lockingPosition.pausedLockingDuration;
             lastRewardDay = today;
         }
 
-        if (remainingLockingDuration > 0) {
-            weight = (lockingPosition.amount * (remainingLockingDuration + OFFSET)) / WEIGHT_FACTOR;
+        if (rewardableDuration > 0) {
+            weight = (lockingPosition.amount * (rewardableDuration + OFFSET)) / WEIGHT_FACTOR;
         }
 
         uint256 reward = 0;
+
+        if (weight <= 0) {
+            return reward;
+        }
 
         for (uint256 d = lastClaimDate[lockID]; d < lastRewardDay; d++) {
             reward += (weight * dailyRewards[d]) / totalWeights[d];
@@ -478,20 +481,18 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
         }
     }
 
-    /// @notice Adds daily rewards between provided duration and resets surplus rewards.
+    /// @notice Redistribute unused rewards.
     /// @param amount Amount to be added to daily rewards.
     /// @param duration Duration in days for which the daily rewards is to be added.
     /// @param delay Determines the start day from today till duration from which rewards should be added.
-    function addRewards(uint256 amount, uint16 duration, uint16 delay) public virtual {
+    function addUnusedRewards(uint256 amount, uint16 duration, uint16 delay) public virtual {
         require(msg.sender == daoTreasury, "L2Reward: Rewards can only be added by DAO treasury");
         require(delay > 0, "L2Reward: Rewards can only be added from next day or later");
-        require(amount > rewardsSurplus, "L2Reward: Reward amount should exceed available surplus funds");
-
-        IL2LiskToken(l2TokenContract).transferFrom(msg.sender, address(this), amount);
+        require(amount <= rewardsSurplus, "L2Reward: Reward amount should not exceed available surplus funds");
 
         _addRewards(amount, duration, delay);
 
-        rewardsSurplus = 0;
+        rewardsSurplus -= amount;
 
         emit RewardsAdded(amount, duration, delay);
     }
