@@ -204,6 +204,10 @@ contract L2LockingPosition is Initializable, Ownable2StepUpgradeable, UUPSUpgrad
         require(
             !isLockingPositionNull(lockingPositions[positionId]), "L2LockingPosition: locking position does not exist"
         );
+        require(
+            expDate >= todayDay() || lockingPositions[positionId].expDate == expDate,
+            "L2LockingPosition: can not modify past expiration dates"
+        );
 
         LockingPosition memory oldPosition = lockingPositions[positionId];
         lockingPositions[positionId] = LockingPosition({

@@ -327,14 +327,19 @@ contract L2LockingPositionTest is Test {
         // advance block time by 50 days
         vm.warp(50 days);
 
-        // expDate is less than current date (49 days) but pausedLockingDuration is greater than 0
+        // expDate is less than current date (49 days)
         vm.prank(address(l2Staking));
-        l2LockingPosition.modifyLockingPosition(1, 200 * 10 ** 18, 49, 30);
+        vm.expectRevert("L2LockingPosition: can not modify past expiration dates");
+        l2LockingPosition.modifyLockingPosition(1, 200 * 10 ** 18, 49, 20);
+
+        // expDate is same as expDate for the locking position and pausedLockingDuration is greater than 0
+        vm.prank(address(l2Staking));
+        l2LockingPosition.modifyLockingPosition(1, 200 * 10 ** 18, 100, 30);
 
         assertEq(l2LockingPosition.totalSupply(), 1);
         assertEq(l2LockingPosition.balanceOf(alice), 1);
         assertEq(l2LockingPosition.getLockingPosition(1).amount, 200 * 10 ** 18);
-        assertEq(l2LockingPosition.getLockingPosition(1).expDate, 49);
+        assertEq(l2LockingPosition.getLockingPosition(1).expDate, 100);
         assertEq(l2LockingPosition.getLockingPosition(1).pausedLockingDuration, 30);
 
         assertEq(l2VotingPower.totalSupply(), 216438356164383561643);
