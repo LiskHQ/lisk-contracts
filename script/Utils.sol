@@ -41,6 +41,10 @@ contract Utils is Script {
         address L2VotingPower;
         /// @notice The Current implementation of L2 Voting Power Contract.
         address L2VotingPowerImplementation;
+        /// @notice L2 Reward contract (in Proxy), which users interact with.
+        address L2Reward;
+        /// @notice The current implementation of L2 Reward contract.
+        address L2RewardImplementation;
     }
 
     /// @notice This struct is used to read MerkleRoot from JSON file.
@@ -185,6 +189,8 @@ contract Utils is Script {
         vm.serializeAddress(json, "L2StakingImplementation", cfg.L2StakingImplementation);
         vm.serializeAddress(json, "L2TimelockController", cfg.L2TimelockController);
         vm.serializeAddress(json, "L2VotingPower", cfg.L2VotingPower);
+        vm.serializeAddress(json, "L2Reward", cfg.L2Reward);
+        vm.serializeAddress(json, "L2RewardImplementation", cfg.L2RewardImplementation);
         string memory finalJson =
             vm.serializeAddress(json, "L2VotingPowerImplementation", cfg.L2VotingPowerImplementation);
         finalJson.write(string.concat("deployment/", network, "/l2addresses.json"));
