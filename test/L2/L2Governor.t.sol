@@ -75,6 +75,48 @@ contract L2GovernorTest is Test {
         assertEq(timelock.hasRole(timelock.EXECUTOR_ROLE(), address(0)), true);
     }
 
+    function test_Initialize_ZeroVotesTokenAddress() public {
+        vm.expectRevert("L2Governor: Votes token address cannot be 0");
+        l2Governor = L2Governor(
+            payable(
+                address(
+                    new ERC1967Proxy(
+                        address(l2GovernorImplementation),
+                        abi.encodeWithSelector(l2Governor.initialize.selector, address(0), timelock, initialOwner)
+                    )
+                )
+            )
+        );
+    }
+
+    function test_Initialize_ZeroTimelockControllerAddress() public {
+        vm.expectRevert("L2Governor: Timelock Controller address cannot be 0");
+        l2Governor = L2Governor(
+            payable(
+                address(
+                    new ERC1967Proxy(
+                        address(l2GovernorImplementation),
+                        abi.encodeWithSelector(l2Governor.initialize.selector, votingPower, address(0), initialOwner)
+                    )
+                )
+            )
+        );
+    }
+
+    function test_Initialize_ZeroInitialOwnerAddress() public {
+        vm.expectRevert("L2Governor: initial owner address cannot be 0");
+        l2Governor = L2Governor(
+            payable(
+                address(
+                    new ERC1967Proxy(
+                        address(l2GovernorImplementation),
+                        abi.encodeWithSelector(l2Governor.initialize.selector, votingPower, timelock, address(0))
+                    )
+                )
+            )
+        );
+    }
+
     function test_TransferOwnership() public {
         address newOwner = vm.addr(1);
 

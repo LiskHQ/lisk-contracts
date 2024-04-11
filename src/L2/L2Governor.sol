@@ -49,22 +49,25 @@ contract L2Governor is
     }
 
     /// @notice Setting global params.
-    /// @param token The address of the token contract used for voting (Voting Power Contract).
-    /// @param timelock The address of the TimelockController contract used for time-controlled actions.
+    /// @param votesToken The address of the token contract used for voting (Voting Power Contract).
+    /// @param timelockController The address of the TimelockController contract used for time-controlled actions.
     /// @param initialOwner The address of the initial owner of the contract.
     function initialize(
-        IVotes token,
-        TimelockControllerUpgradeable timelock,
+        IVotes votesToken,
+        TimelockControllerUpgradeable timelockController,
         address initialOwner
     )
         public
         initializer
     {
+        require(address(votesToken) != address(0), "L2Governor: Votes token address cannot be 0");
+        require(address(timelockController) != address(0), "L2Governor: Timelock Controller address cannot be 0");
+        require(initialOwner != address(0), "L2Governor: initial owner address cannot be 0");
         __Governor_init(NAME);
         __GovernorSettings_init(VOTING_DELAY, VOTING_PERIOD, PROPOSAL_THRESHOLD);
         __GovernorCountingSimple_init();
-        __GovernorVotes_init(token);
-        __GovernorTimelockControl_init(timelock);
+        __GovernorVotes_init(votesToken);
+        __GovernorTimelockControl_init(timelockController);
         __Ownable2Step_init();
         __Ownable_init(initialOwner);
         __UUPSUpgradeable_init();
