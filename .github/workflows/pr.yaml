@@ -2,7 +2,7 @@ name: PR CI
 
 on:
   pull_request:
-    branches: [ main, 'feature/lisk-dao-staking', '36-functions-for-staking' ]
+    branches: [ main, 'feature/migration-airdrop' ]
 
 permissions:
   contents: read
