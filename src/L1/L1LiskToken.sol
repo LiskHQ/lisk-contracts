@@ -4,14 +4,16 @@ pragma solidity 0.8.23;
 import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import { ERC20Burnable } from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 import { ERC20Permit } from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
+import { Ownable2Step } from "@openzeppelin/contracts/access/Ownable2Step.sol";
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol";
 
 /// @title L1LiskToken
-/// @notice L1LiskToken is an implementation of ERC20 token and is an extension of AccessControl, ERC20Permit and
-///         ERC20Burnable token contracts. It maintains the ownership of the deployed contract and only allows the
-///         owners to transfer the ownership. The L1LiskToken exclusively authorizes burners to reduce the total supply,
-///         while the management of burner accounts is solely under the domain of the owner.
-contract L1LiskToken is ERC20Burnable, AccessControl, ERC20Permit {
+/// @notice L1LiskToken is an implementation of ERC20 token and is an extension of AccessControl, Ownable2Step,
+/// ERC20Permit and ERC20Burnable token contracts. It maintains the ownership of the deployed contract and only allows
+/// the owners to transfer the ownership. The L1LiskToken exclusively authorizes burners to reduce the total supply,
+/// while the management of burner accounts is solely under the domain of the owner.
+contract L1LiskToken is ERC20Burnable, AccessControl, Ownable2Step, ERC20Permit {
     /// @notice Name of the token.
     string private constant NAME = "Lisk";
 
@@ -25,17 +27,8 @@ contract L1LiskToken is ERC20Burnable, AccessControl, ERC20Permit {
     bytes32 public constant BURNER_ROLE = keccak256("BURNER_ROLE");
 
     /// @notice Constructs the L1LiskToken contract.
-    constructor() ERC20(NAME, SYMBOL) ERC20Permit(NAME) {
-        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+    constructor() ERC20(NAME, SYMBOL) ERC20Permit(NAME) Ownable(msg.sender) {
         _mint(msg.sender, TOTAL_SUPPLY);
-    }
-
-    /// @notice Transfer the contract ownership to a new account.
-    /// @param account The address of the new owner.
-    /// @dev Requires DEFAULT_ADMIN_ROLE.
-    function transferOwnership(address account) public onlyRole(DEFAULT_ADMIN_ROLE) {
-        _grantRole(DEFAULT_ADMIN_ROLE, account);
-        _revokeRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
 
     /// @notice Check if an account has the burner role.
@@ -47,15 +40,15 @@ contract L1LiskToken is ERC20Burnable, AccessControl, ERC20Permit {
 
     /// @notice Assign the burner role to an account.
     /// @param account The account to be assigned the burner role.
-    /// @dev Requires DEFAULT_ADMIN_ROLE.
-    function addBurner(address account) public onlyRole(DEFAULT_ADMIN_ROLE) {
+    /// @dev Only callable by the owner.
+    function addBurner(address account) public onlyOwner {
         _grantRole(BURNER_ROLE, account);
     }
 
     /// @notice Remove the burner role from an account.
     /// @param account The account to remove the burner role from.
-    /// @dev Requires DEFAULT_ADMIN_ROLE.
-    function renounceBurner(address account) public onlyRole(DEFAULT_ADMIN_ROLE) {
+    /// @dev Only callable by the owner.
+    function renounceBurner(address account) public onlyOwner {
         _revokeRole(BURNER_ROLE, account);
     }
 

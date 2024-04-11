@@ -74,7 +74,7 @@ contract L2ClaimTest is Test {
         );
     }
 
-    // get detailed MerkleTree, which only exists in devnet
+    // get detailed MerkleTree, which is located in `test/L2/data` and only being used by testing scripts
     function getMerkleLeaves() internal view returns (MerkleLeaves memory) {
         return abi.decode(MerkleLeavesJson.parseRaw("."), (MerkleLeaves));
     }
@@ -95,6 +95,11 @@ contract L2ClaimTest is Test {
         Signature memory signature = getSignature(_accountIndex);
 
         bytes32 pubKey = signature.sigs[0].pubKey;
+
+        // check that the LSKClaimed event is emitted
+        vm.expectEmit(true, true, true, true);
+        emit L2Claim.LSKClaimed(bytes20(sha256(abi.encode(pubKey))), address(this), leaf.balanceBeddows);
+
         l2Claim.claimRegularAccount(
             leaf.proof,
             pubKey,
@@ -117,8 +122,8 @@ contract L2ClaimTest is Test {
         // read Pre-signed Signatures, Merkle Leaves and a Merkle Root in a json format from different files
         string memory rootPath = string.concat(vm.projectRoot(), "/test/L2/data");
         signatureJson = vm.readFile(string.concat(rootPath, "/signatures.json"));
-        MerkleLeavesJson = vm.readFile(string.concat(rootPath, "/merkleLeaves.json"));
-        MerkleRootJson = vm.readFile(string.concat(rootPath, "/merkleRoot.json"));
+        MerkleLeavesJson = vm.readFile(string.concat(rootPath, "/merkle-leaves.json"));
+        MerkleRootJson = vm.readFile(string.concat(rootPath, "/merkle-root.json"));
 
         // get MerkleRoot struct
         Utils.MerkleRoot memory merkleRoot = getMerkleRoot();
@@ -145,6 +150,36 @@ contract L2ClaimTest is Test {
 
         // send bunch of MockLSK to Claim contract
         lsk.transfer(address(l2Claim), lsk.balanceOf(address(this)));
+    }
+
+    function test_Initialize_RevertWhenL2LiskTokenIsZero() public {
+        l2Claim = L2Claim(address(new ERC1967Proxy(address(l2ClaimImplementation), "")));
+        Utils.MerkleRoot memory merkleRoot = getMerkleRoot();
+
+        vm.expectRevert("L2Claim: L2 Lisk Token address cannot be zero");
+        l2Claim.initialize(address(0), merkleRoot.merkleRoot, block.timestamp + RECOVER_PERIOD);
+    }
+
+    function test_Initialize_RevertWhenMerkleRootIsZero() public {
+        l2Claim = L2Claim(address(new ERC1967Proxy(address(l2ClaimImplementation), "")));
+
+        vm.expectRevert("L2Claim: Merkle Root cannot be zero");
+        l2Claim.initialize(address(lsk), bytes32(0), block.timestamp + RECOVER_PERIOD);
+    }
+
+    function test_Initialize_RevertWhenRecoveredPeriodIsNotInFuture() public {
+        l2Claim = L2Claim(address(new ERC1967Proxy(address(l2ClaimImplementation), "")));
+        Utils.MerkleRoot memory merkleRoot = getMerkleRoot();
+
+        // recover period is now, hence it should still pass
+        l2Claim.initialize(address(lsk), merkleRoot.merkleRoot, block.timestamp);
+        assertEq(l2Claim.recoverPeriodTimestamp(), block.timestamp);
+
+        l2Claim = L2Claim(address(new ERC1967Proxy(address(l2ClaimImplementation), "")));
+
+        // recover period is in the past, hence it should revert
+        vm.expectRevert("L2Claim: recover period must be in the future");
+        l2Claim.initialize(address(lsk), merkleRoot.merkleRoot, block.timestamp - 1);
     }
 
     function test_Initialize_RevertWhenCalledAtImplementationContract() public {
@@ -319,6 +354,38 @@ contract L2ClaimTest is Test {
         );
     }
 
+    function test_ClaimMultisigAccount_RevertWhenSigLengthIsZero() public {
+        // claim as multisig account
+        uint256 accountIndex = 50;
+        MerkleTreeLeaf memory leaf = getMerkleLeaves().leaves[accountIndex];
+
+        vm.expectRevert("L2Claim: signatures array is empty");
+        l2Claim.claimMultisigAccount(
+            leaf.proof,
+            bytes20(leaf.b32Address << 96),
+            leaf.balanceBeddows,
+            MultisigKeys(new bytes32[](0), new bytes32[](0)),
+            address(this),
+            new ED25519Signature[](0)
+        );
+    }
+
+    function test_ClaimMultisigAccount_RevertWhenClaimAsRegularAccount() public {
+        // claim as regular account
+        uint256 accountIndex = 0;
+        MerkleTreeLeaf memory leaf = getMerkleLeaves().leaves[accountIndex];
+
+        vm.expectRevert("L2Claim: signatures array is empty");
+        l2Claim.claimMultisigAccount(
+            leaf.proof,
+            bytes20(leaf.b32Address << 96),
+            leaf.balanceBeddows,
+            MultisigKeys(new bytes32[](0), new bytes32[](0)),
+            address(this),
+            new ED25519Signature[](0)
+        );
+    }
+
     function test_ClaimMultisigAccount_RevertWhenSigLengthLongerThanManKeysAndOpKeys() public {
         uint256 accountIndex = 50;
         MerkleTreeLeaf memory leaf = getMerkleLeaves().leaves[accountIndex];
@@ -380,6 +447,11 @@ contract L2ClaimTest is Test {
         }
 
         bytes20 lskAddress = bytes20(leaf.b32Address << 96);
+
+        // check that the LSKClaimed event is emitted
+        vm.expectEmit(true, true, true, true);
+        emit L2Claim.LSKClaimed(lskAddress, address(this), leaf.balanceBeddows);
+
         l2Claim.claimMultisigAccount(
             leaf.proof,
             lskAddress,
@@ -407,6 +479,11 @@ contract L2ClaimTest is Test {
         ed25519Signatures[1] = ED25519Signature(bytes32(0), bytes32(0));
 
         bytes20 lskAddress = bytes20(leaf.b32Address << 96);
+
+        // check that the LSKClaimed event is emitted
+        vm.expectEmit(true, true, true, true);
+        emit L2Claim.LSKClaimed(lskAddress, address(this), leaf.balanceBeddows);
+
         l2Claim.claimMultisigAccount(
             leaf.proof,
             lskAddress,
@@ -435,6 +512,11 @@ contract L2ClaimTest is Test {
         ed25519Signatures[4] = ED25519Signature(bytes32(0), bytes32(0));
 
         bytes20 lskAddress = bytes20(leaf.b32Address << 96);
+
+        // check that the LSKClaimed event is emitted
+        vm.expectEmit(true, true, true, true);
+        emit L2Claim.LSKClaimed(lskAddress, address(this), leaf.balanceBeddows);
+
         l2Claim.claimMultisigAccount(
             leaf.proof,
             lskAddress,
@@ -461,6 +543,11 @@ contract L2ClaimTest is Test {
         }
 
         bytes20 lskAddress = bytes20(leaf.b32Address << 96);
+
+        // check that the LSKClaimed event is emitted
+        vm.expectEmit(true, true, true, true);
+        emit L2Claim.LSKClaimed(lskAddress, address(this), leaf.balanceBeddows);
+
         l2Claim.claimMultisigAccount(
             leaf.proof,
             bytes20(leaf.b32Address << 96),
@@ -521,6 +608,10 @@ contract L2ClaimTest is Test {
     }
 
     function test_SetDAOAddress_SuccessSet() public {
+        // check that the DaoAddressSet event is emitted
+        vm.expectEmit(true, true, true, true);
+        emit L2Claim.DaoAddressSet(daoAddress);
+
         l2Claim.setDAOAddress(daoAddress);
         assertEq(l2Claim.daoAddress(), daoAddress);
     }
@@ -549,11 +640,55 @@ contract L2ClaimTest is Test {
 
     function test_RecoverLSK_SuccessRecover() public {
         l2Claim.setDAOAddress(daoAddress);
-        uint256 claimContractBalance = lsk.balanceOf(daoAddress);
+        uint256 claimContractBalance = lsk.balanceOf(address(l2Claim));
+        assert(claimContractBalance > 0);
 
         vm.warp(RECOVER_PERIOD + 1 seconds);
 
+        // check that the ClaimingEnded event is emitted
+        vm.expectEmit(true, true, true, true);
+        emit L2Claim.ClaimingEnded();
+
+        l2Claim.recoverLSK();
         assertEq(lsk.balanceOf(daoAddress), claimContractBalance);
+        assertEq(lsk.balanceOf(address(l2Claim)), 0);
+    }
+
+    function test_TransferOwnership() public {
+        address newOwner = vm.addr(1);
+
+        l2Claim.transferOwnership(newOwner);
+        assertEq(l2Claim.owner(), address(this));
+
+        vm.prank(newOwner);
+        l2Claim.acceptOwnership();
+        assertEq(l2Claim.owner(), newOwner);
+    }
+
+    function test_TransferOwnership_RevertWhenNotCalledByOwner() public {
+        address newOwner = vm.addr(1);
+        address nobody = vm.addr(2);
+
+        // owner is this contract
+        assertEq(l2Claim.owner(), address(this));
+
+        // address nobody is not the owner so it cannot call transferOwnership
+        vm.startPrank(nobody);
+        vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, nobody));
+        l2Claim.transferOwnership(newOwner);
+        vm.stopPrank();
+    }
+
+    function test_TransferOwnership_RevertWhenNotCalledByPendingOwner() public {
+        address newOwner = vm.addr(1);
+
+        l2Claim.transferOwnership(newOwner);
+        assertEq(l2Claim.owner(), address(this));
+
+        address nobody = vm.addr(2);
+        vm.prank(nobody);
+        vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, nobody));
+        l2Claim.acceptOwnership();
     }
 
     function test_UpgradeToAndCall_RevertWhenNotOwner() public {
