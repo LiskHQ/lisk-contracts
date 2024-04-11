@@ -327,23 +327,32 @@ contract L2LockingPositionTest is Test {
         // advance block time by 50 days
         vm.warp(50 days);
 
-        // expDate is less than current date (49 days)
         vm.prank(address(l2Staking));
-        vm.expectRevert("L2LockingPosition: can not modify past expiration dates");
-        l2LockingPosition.modifyLockingPosition(1, 200 * 10 ** 18, 49, 20);
-
-        // expDate is same as expDate for the locking position and pausedLockingDuration is greater than 0
-        vm.prank(address(l2Staking));
-        l2LockingPosition.modifyLockingPosition(1, 200 * 10 ** 18, 100, 30);
+        l2LockingPosition.modifyLockingPosition(1, 200 * 10 ** 18, 100, 50);
 
         assertEq(l2LockingPosition.totalSupply(), 1);
         assertEq(l2LockingPosition.balanceOf(alice), 1);
         assertEq(l2LockingPosition.getLockingPosition(1).amount, 200 * 10 ** 18);
         assertEq(l2LockingPosition.getLockingPosition(1).expDate, 100);
-        assertEq(l2LockingPosition.getLockingPosition(1).pausedLockingDuration, 30);
+        assertEq(l2LockingPosition.getLockingPosition(1).pausedLockingDuration, 50);
 
-        assertEq(l2VotingPower.totalSupply(), 216438356164383561643);
-        assertEq(l2VotingPower.balanceOf(alice), 216438356164383561643);
+        assertEq(l2VotingPower.totalSupply(), 227397260273972602739);
+        assertEq(l2VotingPower.balanceOf(alice), 227397260273972602739);
+
+        // advance block time by additional 70 days
+        vm.warp(50 days + 70 days);
+
+        vm.prank(address(l2Staking));
+        l2LockingPosition.modifyLockingPosition(1, 200 * 10 ** 18, 100, 60);
+
+        assertEq(l2LockingPosition.totalSupply(), 1);
+        assertEq(l2LockingPosition.balanceOf(alice), 1);
+        assertEq(l2LockingPosition.getLockingPosition(1).amount, 200 * 10 ** 18);
+        assertEq(l2LockingPosition.getLockingPosition(1).expDate, 100);
+        assertEq(l2LockingPosition.getLockingPosition(1).pausedLockingDuration, 60);
+
+        assertEq(l2VotingPower.totalSupply(), 232876712328767123287);
+        assertEq(l2VotingPower.balanceOf(alice), 232876712328767123287);
     }
 
     function test_ModifyLockingPosition_AmountIsZero() public {
@@ -380,6 +389,21 @@ contract L2LockingPositionTest is Test {
         vm.prank(address(l2Staking));
         vm.expectRevert("L2LockingPosition: locking position does not exist");
         l2LockingPosition.modifyLockingPosition(1, 200 * 10 ** 18, 730, 50);
+    }
+
+    function test_ModifyLockingPosition_ModifyPastExpDate() public {
+        address alice = address(0x1);
+
+        vm.prank(address(l2Staking));
+        l2LockingPosition.createLockingPosition(address(l2Staking), alice, 100 * 10 ** 18, 365);
+        assertEq(l2LockingPosition.balanceOf(alice), 1);
+
+        // advance block time by 50 days
+        vm.warp(50 days);
+
+        vm.prank(address(l2Staking));
+        vm.expectRevert("L2LockingPosition: can not modify past expiration dates");
+        l2LockingPosition.modifyLockingPosition(1, 200 * 10 ** 18, 49, 10); // 49  is in the past
     }
 
     function test_ModifyLockingPosition_OnlyStakingCanCall() public {
