@@ -174,6 +174,8 @@ contract L2LockingPosition is Initializable, Ownable2StepUpgradeable, UUPSUpgrad
         });
 
         // call Voting Power contract to set voting power
+        // reentrancy won't be an issue here because the Voting Power contract is trusted and managed by the team
+        // slither-disable-next-line reentrancy-no-eth
         IL2VotingPower(votingPowerContract).adjustVotingPower(
             lockOwner, IL2LockingPosition.LockingPosition(address(0), 0, 0, 0), lockingPositions[nextId]
         );
@@ -239,11 +241,15 @@ contract L2LockingPosition is Initializable, Ownable2StepUpgradeable, UUPSUpgrad
         );
 
         // inform Voting Power contract
+        // reentrancy won't be an issue here because the Voting Power contract is trusted and managed by the team
+        // slither-disable-next-line reentrancy-no-eth
         IL2VotingPower(votingPowerContract).adjustVotingPower(
             ownerOf(positionId), lockingPositions[positionId], IL2LockingPosition.LockingPosition(address(0), 0, 0, 0)
         );
 
         // burn the NFT token
+        // reentrancy won't be an issue here because the ERC721Upgradable contract is trusted
+        // slither-disable-next-line reentrancy-events
         _burn(positionId);
 
         // remove the locking position
