@@ -183,6 +183,9 @@ contract L2Airdrop is Ownable2Step {
             "L2Airdrop: airdrop is not over yet"
         );
         uint256 balance = IL2LiskToken(l2LiskTokenAddress).balanceOf(address(this));
+        // reentrancy won't be an issue here because the L2 Lisk Token contract is trusted and managed by the team
+        // slither-disable-next-line reentrancy-no-eth
+        // slither-disable-next-line reentrancy-events
         bool status = IL2LiskToken(l2LiskTokenAddress).transfer(daoTreasuryAddress, balance);
         require(status, "L2Airdrop: LSK token transfer to DAO failed");
         emit LSKSentToDaoTreasury(daoTreasuryAddress, balance);
@@ -324,6 +327,9 @@ contract L2Airdrop is Ownable2Step {
 
         if (claimStatus != 0) {
             // transfer airdropAmount of LSK to recipient
+            // reentrancy won't be an issue here because the L2 Lisk Token contract is trusted and managed by the team
+            // slither-disable-next-line reentrancy-no-eth
+            // slither-disable-next-line reentrancy-events
             bool status = IL2LiskToken(l2LiskTokenAddress).transfer(recipient, airdropAmount);
             require(status, "L2Airdrop: L2LiskToken transfer failed");
 
