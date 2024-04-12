@@ -6,7 +6,7 @@ import { ERC20VotesUpgradeable } from
 import { ERC20Upgradeable } from "@openzeppelin-upgradeable/contracts/token/ERC20/ERC20Upgradeable.sol";
 import { Ownable2StepUpgradeable } from "@openzeppelin-upgradeable/contracts/access/Ownable2StepUpgradeable.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
-import { LockingPosition } from "./L2LockingPosition.sol";
+import { IL2LockingPosition } from "../interfaces/L2/IL2LockingPosition.sol";
 import { ISemver } from "../utils/ISemver.sol";
 
 contract L2VotingPower is ERC20VotesUpgradeable, Ownable2StepUpgradeable, UUPSUpgradeable, ISemver {
@@ -59,7 +59,7 @@ contract L2VotingPower is ERC20VotesUpgradeable, Ownable2StepUpgradeable, UUPSUp
     /// @notice Calculates the voting power of a locking position.
     /// @param position Locking position.
     /// @return Voting power of the locking position.
-    function votingPower(LockingPosition memory position) internal pure virtual returns (uint256) {
+    function votingPower(IL2LockingPosition.LockingPosition memory position) internal pure virtual returns (uint256) {
         if (position.pausedLockingDuration > 0) {
             // countdown of locking duration is paused
             // return pos.amount * (1 + pos.pausedLockingDuration/365) but to avoid large rounding errors the following
@@ -78,8 +78,8 @@ contract L2VotingPower is ERC20VotesUpgradeable, Ownable2StepUpgradeable, UUPSUp
     /// @param positionAfter Locking position after the adjustment.
     function adjustVotingPower(
         address ownerAddress,
-        LockingPosition memory positionBefore,
-        LockingPosition memory positionAfter
+        IL2LockingPosition.LockingPosition memory positionBefore,
+        IL2LockingPosition.LockingPosition memory positionAfter
     )
         public
         virtual

@@ -3,15 +3,9 @@ pragma solidity 0.8.23;
 
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import { Script, console2 } from "forge-std/Script.sol";
+import { IL2LockingPosition } from "src/interfaces/L2/IL2LockingPosition.sol";
 import { L2VotingPower } from "src/L2/L2VotingPower.sol";
 import "script/Utils.sol";
-
-/// @title IL2LockingPosition
-/// @notice Interface for L2 Locking Position contract. Used to initialize Voting Power contract.
-interface IL2LockingPosition {
-    function initializeVotingPower(address votingPowerContract) external;
-    function votingPowerContract() external view returns (address);
-}
 
 /// @title L2VotingPowerScript - L2 Voting Power contract deployment script
 /// @notice This contract is used to deploy L2 Voting Power contract.

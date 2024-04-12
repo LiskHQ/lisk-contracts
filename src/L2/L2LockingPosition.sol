@@ -8,40 +8,20 @@ import { UUPSUpgradeable } from "@openzeppelin-upgradeable/contracts/proxy/utils
 import { ERC721Upgradeable } from "@openzeppelin-upgradeable/contracts/token/ERC721/ERC721Upgradeable.sol";
 import { ERC721EnumerableUpgradeable } from
     "@openzeppelin-upgradeable/contracts/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
+import { IL2LockingPosition } from "../interfaces/L2/IL2LockingPosition.sol";
+import { IL2VotingPower } from "../interfaces/L2/IL2VotingPower.sol";
 
-/// @title IL2VotingPower
-/// @notice Interface for the L2VotingPower contract.
-interface IL2VotingPower {
-    function adjustVotingPower(
-        address ownerAddress,
-        LockingPosition memory positionBefore,
-        LockingPosition memory positionAfter
-    )
-        external;
-}
-
-/// @title LockingPosition
-/// @notice Struct for locking position.
-struct LockingPosition {
-    /// @notice This can be, for instance, the staking contract or the rewards contract. The staking contract - the only
-    ///         contract allowed to modify a position - uses this property to determine who should be allowed to trigger
-    ///         a modification.
-    address creator;
-    /// @notice Amount to be locked.
-    uint256 amount;
-    /// @notice The expiration date, i.e., the day when locked amount would be claimable from the user.
-    uint256 expDate;
-    /// @notice The remaining locking duration (in days). It is used only when the unlocking countdown is paused,
-    ///         otherwise it is set to 0.
-    uint256 pausedLockingDuration;
-}
-
+/// @title L2LockingPosition
+/// @notice Contract for locking positions. It allows creating, modifying, and removing locking positions. It also
+///         allows querying locking positions for a given owner. It is also responsible for minting and burning NFT
+///         tokens for each locking position. It also interacts with the Voting Power contract to adjust the voting
+///         power of the owner of the locking position.
 contract L2LockingPosition is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, ERC721EnumerableUpgradeable {
     /// @notice Next id for the locking position to be created.
     uint256 private nextId;
 
     /// @notice Mapping of locking position ID to LockingPosition entity.
-    mapping(uint256 => LockingPosition) public lockingPositions;
+    mapping(uint256 => IL2LockingPosition.LockingPosition) public lockingPositions;
 
     /// @notice Address of the Staking contract.
     address public stakingContract;
@@ -111,7 +91,12 @@ contract L2LockingPosition is Initializable, Ownable2StepUpgradeable, UUPSUpgrad
     ///         initialized to 0 or address(0).
     /// @param position Locking position to be checked.
     /// @return Whether the given locking position is null.
-    function isLockingPositionNull(LockingPosition memory position) internal view virtual returns (bool) {
+    function isLockingPositionNull(IL2LockingPosition.LockingPosition memory position)
+        internal
+        view
+        virtual
+        returns (bool)
+    {
         // We are using == to compare with 0 because we want to check if the fields are initialized to 0 or address(0).
         // slither-disable-next-line incorrect-equality
         return position.creator == address(0) && position.amount == 0 && position.expDate == 0
@@ -146,12 +131,12 @@ contract L2LockingPosition is Initializable, Ownable2StepUpgradeable, UUPSUpgrad
 
         // remove voting power for an old owner
         IL2VotingPower(votingPowerContract).adjustVotingPower(
-            from, lockingPositions[tokenId], LockingPosition(address(0), 0, 0, 0)
+            from, lockingPositions[tokenId], IL2LockingPosition.LockingPosition(address(0), 0, 0, 0)
         );
 
         // add voting power to a new owner
         IL2VotingPower(votingPowerContract).adjustVotingPower(
-            to, LockingPosition(address(0), 0, 0, 0), lockingPositions[tokenId]
+            to, IL2LockingPosition.LockingPosition(address(0), 0, 0, 0), lockingPositions[tokenId]
         );
     }
 
@@ -181,7 +166,7 @@ contract L2LockingPosition is Initializable, Ownable2StepUpgradeable, UUPSUpgrad
         _mint(lockOwner, nextId);
 
         // create entry for this locking position
-        lockingPositions[nextId] = LockingPosition({
+        lockingPositions[nextId] = IL2LockingPosition.LockingPosition({
             creator: creator,
             amount: amount,
             expDate: todayDay() + lockingDuration,
@@ -190,7 +175,7 @@ contract L2LockingPosition is Initializable, Ownable2StepUpgradeable, UUPSUpgrad
 
         // call Voting Power contract to set voting power
         IL2VotingPower(votingPowerContract).adjustVotingPower(
-            lockOwner, LockingPosition(address(0), 0, 0, 0), lockingPositions[nextId]
+            lockOwner, IL2LockingPosition.LockingPosition(address(0), 0, 0, 0), lockingPositions[nextId]
         );
 
         // emit event
@@ -229,8 +214,8 @@ contract L2LockingPosition is Initializable, Ownable2StepUpgradeable, UUPSUpgrad
             "L2LockingPosition: can not modify past expiration dates"
         );
 
-        LockingPosition memory oldPosition = lockingPositions[positionId];
-        lockingPositions[positionId] = LockingPosition({
+        IL2LockingPosition.LockingPosition memory oldPosition = lockingPositions[positionId];
+        lockingPositions[positionId] = IL2LockingPosition.LockingPosition({
             creator: oldPosition.creator,
             amount: amount,
             expDate: expDate,
@@ -255,7 +240,7 @@ contract L2LockingPosition is Initializable, Ownable2StepUpgradeable, UUPSUpgrad
 
         // inform Voting Power contract
         IL2VotingPower(votingPowerContract).adjustVotingPower(
-            ownerOf(positionId), lockingPositions[positionId], LockingPosition(address(0), 0, 0, 0)
+            ownerOf(positionId), lockingPositions[positionId], IL2LockingPosition.LockingPosition(address(0), 0, 0, 0)
         );
 
         // burn the NFT token
@@ -271,16 +256,26 @@ contract L2LockingPosition is Initializable, Ownable2StepUpgradeable, UUPSUpgrad
     /// @notice Returns the locking position for the given position ID.
     /// @param positionId ID of the locking position.
     /// @return Locking position for the given position ID.
-    function getLockingPosition(uint256 positionId) public view virtual returns (LockingPosition memory) {
+    function getLockingPosition(uint256 positionId)
+        public
+        view
+        virtual
+        returns (IL2LockingPosition.LockingPosition memory)
+    {
         return lockingPositions[positionId];
     }
 
     /// @notice Returns all locking positions for the given owner.
     /// @param lockOwner Owner address.
     /// @return All locking positions for the given owner.
-    function getAllLockingPositionsByOwner(address lockOwner) public view virtual returns (LockingPosition[] memory) {
+    function getAllLockingPositionsByOwner(address lockOwner)
+        public
+        view
+        virtual
+        returns (IL2LockingPosition.LockingPosition[] memory)
+    {
         uint256 tokenCount = balanceOf(lockOwner);
-        LockingPosition[] memory result = new LockingPosition[](tokenCount);
+        IL2LockingPosition.LockingPosition[] memory result = new IL2LockingPosition.LockingPosition[](tokenCount);
         for (uint256 i = 0; i < tokenCount; i++) {
             result[i] = lockingPositions[tokenOfOwnerByIndex(lockOwner, i)];
         }
