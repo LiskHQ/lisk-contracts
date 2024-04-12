@@ -4,33 +4,10 @@ pragma solidity 0.8.23;
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { Ownable2Step } from "@openzeppelin/contracts/access/Ownable2Step.sol";
 import { MerkleProof } from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
-import { LockingPosition } from "./L2LockingPosition.sol";
-
-/// @title IL2LiskToken
-/// @notice Interface for the L2LiskToken contract.
-interface IL2LiskToken {
-    function balanceOf(address account) external view returns (uint256);
-    function transfer(address to, uint256 value) external returns (bool);
-}
-
-/// @title IL2LockingPosition
-/// @notice Interface for the L2LockingPosition contract.
-interface IL2LockingPosition {
-    function getLockingPosition(uint256 positionId) external view returns (LockingPosition memory);
-    function getAllLockingPositionsByOwner(address lockOwner) external view returns (LockingPosition[] memory);
-}
-
-/// @title IL2Claim
-/// @notice Interface for the L2Claim contract.
-interface IL2Claim {
-    function claimedTo(bytes20 liskAddress) external view returns (address);
-}
-
-/// @title IL2VotingPower
-/// @notice Interface for the L2VotingPower contract.
-interface IL2VotingPower {
-    function delegates(address account) external view returns (address);
-}
+import { IL2LiskToken } from "../interfaces/L2/IL2LiskToken.sol";
+import { IL2LockingPosition } from "../interfaces/L2/IL2LockingPosition.sol";
+import { IL2Claim } from "../interfaces/L2/IL2Claim.sol";
+import { IL2VotingPower } from "../interfaces/L2/IL2VotingPower.sol";
 
 /// @title L2Airdrop
 /// @notice L2Airdrop is an implementation of the Lisk v4 migration airdrop on L2. It is responsible for the airdrop
@@ -160,12 +137,13 @@ contract L2Airdrop is Ownable2Step {
 
         // get all locking positions of the recipient
         IL2LockingPosition l2LockingPosition = IL2LockingPosition(l2LockingPositionAddress);
-        LockingPosition[] memory lockingPositions = l2LockingPosition.getAllLockingPositionsByOwner(recipient);
+        IL2LockingPosition.LockingPosition[] memory lockingPositions =
+            l2LockingPosition.getAllLockingPositionsByOwner(recipient);
 
         // check if the recipient has staked at least minStakingAmount for at least tierDuration
         uint256 totalStakedAmount = 0;
         for (uint256 i = 0; i < lockingPositions.length; i++) {
-            LockingPosition memory lockingPosition = lockingPositions[i];
+            IL2LockingPosition.LockingPosition memory lockingPosition = lockingPositions[i];
             if (lockingPosition.pausedLockingDuration > 0 /* locking position is paused */ ) {
                 if (lockingPosition.pausedLockingDuration >= tierDuration /* satisfies duration */ ) {
                     totalStakedAmount += lockingPosition.amount;
