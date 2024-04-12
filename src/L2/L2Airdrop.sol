@@ -65,19 +65,19 @@ contract L2Airdrop is Ownable2Step {
     uint8 public constant FULL_AIRDROP_CLAIMED = 0x0F;
 
     /// @notice Address of the L2LiskToken contract.
-    address public l2LiskTokenAddress;
+    address public immutable l2LiskTokenAddress;
 
     /// @notice Address of the L2Claim contract.
-    address public l2ClaimAddress;
+    address public immutable l2ClaimAddress;
 
     /// @notice Address of the L2LockingPosition contract.
-    address public l2LockingPositionAddress;
+    address public immutable l2LockingPositionAddress;
 
     /// @notice Address of the L2VotingPower contract.
-    address public l2VotingPowerAddress;
+    address public immutable l2VotingPowerAddress;
 
     /// @notice The treasury address of the Lisk DAO.
-    address public daoTreasuryAddress;
+    address public immutable daoTreasuryAddress;
 
     /// @notice Emitted when the Merkle root is set.
     event MerkleRootSet(bytes32 merkleRoot);
