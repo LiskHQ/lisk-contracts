@@ -1604,15 +1604,15 @@ contract L2RewardTest is Test {
         l2Reward.initializeStaking(address(0x1));
     }
 
-    function test_addUnusedRewards_onlyDAOTreasuryCanAddUnusedRewards() public {
-        vm.expectRevert("L2Reward: Rewards can only be added by DAO treasury");
+    function test_addUnusedRewards_onlyOwnerCanAddUnusedRewards() public {
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(0x1)));
 
+        vm.prank(address(0x1));
         l2Reward.addUnusedRewards(100, 100, 1);
     }
 
     function test_addUnusedRewards_delayShouldBeGreaterThanZeroWhenAddingRewards() public {
         vm.expectRevert("L2Reward: Rewards can only be added from next day or later");
-        vm.prank(daoTreasury);
 
         l2Reward.addUnusedRewards(100, 100, 0);
     }
@@ -1652,7 +1652,6 @@ contract L2RewardTest is Test {
 
         vm.expectRevert("L2Reward: Reward amount should not exceed available surplus funds");
 
-        vm.prank(daoTreasury);
         l2Reward.addUnusedRewards(dailyReward + 1, 10, 1);
     }
 
@@ -1693,7 +1692,6 @@ contract L2RewardTest is Test {
         uint256 rewardsSurplus = l2Reward.rewardsSurplus();
 
         // days 19743 to 19752 are funded
-        vm.startPrank(daoTreasury);
         l2Reward.addUnusedRewards(convertLiskToBeddows(1), 10, 1);
         vm.stopPrank();
 
@@ -1741,7 +1739,6 @@ contract L2RewardTest is Test {
         // days 19743 to 19752 are funded
         vm.expectEmit(true, true, true, true);
         emit L2Reward.RewardsAdded(l2Reward.rewardsSurplus(), 10, 1);
-        vm.startPrank(daoTreasury);
         l2Reward.addUnusedRewards(l2Reward.rewardsSurplus(), 10, 1);
         vm.stopPrank();
 

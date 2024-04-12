@@ -485,8 +485,7 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
     /// @param amount Amount to be added to daily rewards.
     /// @param duration Duration in days for which the daily rewards is to be added.
     /// @param delay Determines the start day from today till duration from which rewards should be added.
-    function addUnusedRewards(uint256 amount, uint16 duration, uint16 delay) public virtual {
-        require(msg.sender == daoTreasury, "L2Reward: Rewards can only be added by DAO treasury");
+    function addUnusedRewards(uint256 amount, uint16 duration, uint16 delay) public virtual onlyOwner {
         require(delay > 0, "L2Reward: Rewards can only be added from next day or later");
         require(amount <= rewardsSurplus, "L2Reward: Reward amount should not exceed available surplus funds");
 
