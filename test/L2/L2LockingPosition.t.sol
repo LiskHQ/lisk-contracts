@@ -216,6 +216,10 @@ contract L2LockingPositionTest is Test {
         assertEq(l2VotingPower.totalSupply(), 0);
         assertEq(l2VotingPower.balanceOf(alice), 0);
 
+        // check that event LockingPositionCreated is emitted
+        vm.expectEmit(true, true, true, true);
+        emit L2LockingPosition.LockingPositionCreated(1, address(l2Staking), alice, 100 * 10 ** 18, 365);
+
         vm.prank(address(l2Staking));
         uint256 positionId = l2LockingPosition.createLockingPosition(address(l2Staking), alice, 100 * 10 ** 18, 365);
 
@@ -230,6 +234,10 @@ contract L2LockingPositionTest is Test {
         assertEq(l2VotingPower.balanceOf(alice), 100 * 10 ** 18);
 
         // create another locking position for alice
+
+        // check that event LockingPositionCreated is emitted
+        vm.expectEmit(true, true, true, true);
+        emit L2LockingPosition.LockingPositionCreated(2, address(l2Staking), alice, 200 * 10 ** 18, 730);
 
         vm.prank(address(l2Staking));
         positionId = l2LockingPosition.createLockingPosition(address(l2Staking), alice, 200 * 10 ** 18, 730);
@@ -296,6 +304,10 @@ contract L2LockingPositionTest is Test {
         assertEq(l2VotingPower.totalSupply(), 100 * 10 ** 18);
         assertEq(l2VotingPower.balanceOf(alice), 100 * 10 ** 18);
 
+        // check that event LockingPositionModified is emitted
+        vm.expectEmit(true, true, true, true);
+        emit L2LockingPosition.LockingPositionModified(1, 200 * 10 ** 18, 730, 50);
+
         vm.prank(address(l2Staking));
         l2LockingPosition.modifyLockingPosition(1, 200 * 10 ** 18, 730, 50);
 
@@ -327,6 +339,10 @@ contract L2LockingPositionTest is Test {
         // advance block time by 50 days
         vm.warp(50 days);
 
+        // check that event LockingPositionModified is emitted
+        vm.expectEmit(true, true, true, true);
+        emit L2LockingPosition.LockingPositionModified(1, 200 * 10 ** 18, 100, 50);
+
         vm.prank(address(l2Staking));
         l2LockingPosition.modifyLockingPosition(1, 200 * 10 ** 18, 100, 50);
 
@@ -341,6 +357,10 @@ contract L2LockingPositionTest is Test {
 
         // advance block time by additional 70 days
         vm.warp(50 days + 70 days);
+
+        // check that event LockingPositionModified is emitted
+        vm.expectEmit(true, true, true, true);
+        emit L2LockingPosition.LockingPositionModified(1, 200 * 10 ** 18, 100, 60);
 
         vm.prank(address(l2Staking));
         l2LockingPosition.modifyLockingPosition(1, 200 * 10 ** 18, 100, 60);
@@ -445,6 +465,11 @@ contract L2LockingPositionTest is Test {
 
         // remove the second locking position of alice; index = 1
         uint256 positionId = l2LockingPosition.tokenOfOwnerByIndex(alice, 1);
+
+        // check that event LockingPositionRemoved is emitted
+        vm.expectEmit(true, true, true, true);
+        emit L2LockingPosition.LockingPositionRemoved(positionId);
+
         vm.prank(address(l2Staking));
         l2LockingPosition.removeLockingPosition(positionId);
 

@@ -55,6 +55,23 @@ contract L2LockingPosition is Initializable, Ownable2StepUpgradeable, UUPSUpgrad
     /// @notice Event emitted when Voting Power contract address is changed.
     event VotingPowerContractAddressChanged(address indexed oldAddress, address indexed newAddress);
 
+    /// @notice Event emitted when a new locking position is created.
+    event LockingPositionCreated(
+        uint256 indexed positionId,
+        address indexed creator,
+        address indexed lockOwner,
+        uint256 amount,
+        uint256 lockingDuration
+    );
+
+    /// @notice Event emitted when a locking position is modified.
+    event LockingPositionModified(
+        uint256 indexed positionId, uint256 amount, uint256 expDate, uint256 pausedLockingDuration
+    );
+
+    /// @notice Event emitted when a locking position is removed.
+    event LockingPositionRemoved(uint256 indexed positionId);
+
     /// @notice Modifier to allow only Staking contract to call the function.
     modifier onlyStaking() {
         require(msg.sender == stakingContract, "L2LockingPosition: only Staking contract can call this function");
@@ -176,6 +193,9 @@ contract L2LockingPosition is Initializable, Ownable2StepUpgradeable, UUPSUpgrad
             lockOwner, LockingPosition(address(0), 0, 0, 0), lockingPositions[nextId]
         );
 
+        // emit event
+        emit LockingPositionCreated(nextId, creator, lockOwner, amount, lockingDuration);
+
         // update nextID and return the created locking position ID
         nextId++;
         return nextId - 1;
@@ -221,6 +241,9 @@ contract L2LockingPosition is Initializable, Ownable2StepUpgradeable, UUPSUpgrad
         IL2VotingPower(votingPowerContract).adjustVotingPower(
             ownerOf(positionId), oldPosition, lockingPositions[positionId]
         );
+
+        // emit event
+        emit LockingPositionModified(positionId, amount, expDate, pausedLockingDuration);
     }
 
     /// @notice Removes the locking position.
@@ -240,6 +263,9 @@ contract L2LockingPosition is Initializable, Ownable2StepUpgradeable, UUPSUpgrad
 
         // remove the locking position
         delete lockingPositions[positionId];
+
+        // emit event
+        emit LockingPositionRemoved(positionId);
     }
 
     /// @notice Returns the locking position for the given position ID.
