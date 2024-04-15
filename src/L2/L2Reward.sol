@@ -77,9 +77,6 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
     /// @notice Total of weights of all stakes for each day.
     mapping(uint256 => uint256) public totalWeights;
 
-    /// @notice Total of staked amount for each day.
-    mapping(uint256 => uint256) public totalLockedAmounts;
-
     /// @notice Total of amount expiring for each day.
     mapping(uint256 => uint256) public dailyUnlockedAmounts;
 
@@ -166,7 +163,6 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
 
         for (; d < today; d++) {
             totalWeights[d] = totalWeight;
-            totalLockedAmounts[d] = totalAmountLocked;
 
             cappedRewards = totalAmountLocked / 365;
 
