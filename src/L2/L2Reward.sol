@@ -395,21 +395,25 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
 
         require(durationExtension > 0, "L2Reward: Extended duration should be greater than zero");
 
-        uint256 reward = _claimReward(lockID);
-
         IL2LockingPosition.LockingPosition memory lockingPosition =
             IL2LockingPosition(lockingPositionContract).getLockingPosition(lockID);
 
+        // claim rewards and update staking contract
+        uint256 reward = _claimReward(lockID);
         IL2Staking(stakingContract).extendLockingDuration(lockID, durationExtension);
 
         totalWeight += (lockingPosition.amount * durationExtension) / WEIGHT_FACTOR;
 
         if (lockingPosition.pausedLockingDuration == 0) {
+            // locking period has not finished
             if (lockingPosition.expDate > todayDay()) {
                 dailyUnlockedAmounts[lockingPosition.expDate] -= lockingPosition.amount;
-            } else {
+            }
+            // locking period has not expired, re-lock amount
+            else {
                 totalAmountLocked += lockingPosition.amount;
                 pendingUnlockAmount += lockingPosition.amount;
+                totalWeight += (lockingPosition.amount * OFFSET) / WEIGHT_FACTOR;
             }
 
             dailyUnlockedAmounts[lockingPosition.expDate + durationExtension] += lockingPosition.amount;

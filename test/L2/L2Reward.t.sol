@@ -1357,7 +1357,8 @@ contract L2RewardTest is Test {
 
         skip(121 days);
 
-        uint256 weightIncrease = (amount * durationExtension) / l2Reward.WEIGHT_FACTOR();
+        uint256 weightIncrease = ((amount * durationExtension) / l2Reward.WEIGHT_FACTOR())
+            + ((amount * l2Reward.OFFSET()) / l2Reward.WEIGHT_FACTOR());
         balance = l2LiskToken.balanceOf(staker);
 
         vm.startPrank(staker);
