@@ -159,7 +159,7 @@ contract L2RewardTest is Test {
         l2Reward.fundStakingRewards(convertLiskToBeddows(1000), 350, 1);
         vm.stopPrank();
 
-        // staker creates two positions on deploymentDate, 19740.
+        // staker creates a position on deploymentDate, 19740.
         vm.startPrank(staker);
         l2LiskToken.approve(address(l2Reward), convertLiskToBeddows(100));
         lockIDs[0] = l2Reward.createPosition(convertLiskToBeddows(100), 120);
@@ -238,11 +238,7 @@ contract L2RewardTest is Test {
         uint256 additionalReward = amount / duration;
 
         for (uint256 d = today + delay; d < endDate; d++) {
-            if (d % 2 == 0) {
-                assertEq(l2Reward.dailyRewards(d), dailyReward + additionalReward);
-            } else {
-                assertEq(l2Reward.dailyRewards(d), dailyReward);
-            }
+            assertEq(l2Reward.dailyRewards(d), dailyReward + additionalReward);
         }
     }
 
@@ -589,7 +585,7 @@ contract L2RewardTest is Test {
 
         skip(1 days);
 
-        // All positions are expired, rewards zero
+        // All positions are expired, reward is zero
         for (uint8 i = 0; i < stakers.length; i++) {
             locksToClaim[0] = lockIDs[i];
             vm.startPrank(stakers[i]);
@@ -966,7 +962,7 @@ contract L2RewardTest is Test {
 
         LockingPosition memory lockingPosition = l2LockingPosition.getLockingPosition(lockID);
 
-        assertEq(reward, 7.4 * 10 ** 18);
+        assertEq(reward, expectedRewards);
         assertEq(balance, expectedBalance);
         assertEq(l2Reward.pendingUnlockAmount(), 0);
         assertEq(l2Reward.dailyUnlockedAmounts(deploymentDate + 120), 0);
@@ -1387,7 +1383,6 @@ contract L2RewardTest is Test {
 
         assertEq(l2LiskToken.balanceOf(staker), balance + reward);
         assertEq(l2Reward.totalWeight(), expectedTotalWeight);
-        assertEq(l2Reward.dailyUnlockedAmounts(deploymentDate + duration + durationExtension), amount);
     }
 
     function test_initiateFastUnlock_onlyOwnerCanUnlockAPosition() public {
@@ -1418,7 +1413,7 @@ contract L2RewardTest is Test {
         l2Reward.initiateFastUnlock(1);
     }
 
-    function test_initiateFastUnlock_addsPenaltyAsRewardAlsoUpdatesGlobalsAndClaimRewards() public {
+    function test_initiateFastUnlock_forActivePositionAddsPenaltyAsRewardAlsoUpdatesGlobalsAndClaimRewards() public {
         l2Staking.addCreator(address(l2Reward));
 
         address staker = address(0x1);
@@ -1452,16 +1447,17 @@ contract L2RewardTest is Test {
         l2Reward.initiateFastUnlock(lockID);
         vm.stopPrank();
 
-        uint256 expectedTotalWeight = 2700000 - 500000 - ((amount * (19860 - 19790 + 150)) / l2Reward.WEIGHT_FACTOR())
-            + (((l2Staking.FAST_UNLOCK_DURATION() + l2Reward.OFFSET()) * (100e18 - penalty)) / l2Reward.WEIGHT_FACTOR());
+        uint256 expectedTotalWeight = 2700000 - 500000
+            - ((amount * (19860 - 19790 + l2Reward.OFFSET())) / l2Reward.WEIGHT_FACTOR())
+            + (((l2Staking.FAST_UNLOCK_DURATION() + l2Reward.OFFSET()) * (amount - penalty)) / l2Reward.WEIGHT_FACTOR());
 
         assertEq(l2LiskToken.balanceOf(address(l2Reward)), convertLiskToBeddows(35) - reward + penalty);
         assertEq(l2Reward.dailyUnlockedAmounts(deploymentDate + duration), 0);
         assertEq(
             l2Reward.dailyUnlockedAmounts(deploymentDate + 50 + l2Staking.FAST_UNLOCK_DURATION()), amount - penalty
         );
-        assertEq(l2Reward.totalAmountLocked(), 100e18 - penalty);
-        assertEq(l2Reward.pendingUnlockAmount(), 100e18 - penalty);
+        assertEq(l2Reward.totalAmountLocked(), amount - penalty);
+        assertEq(l2Reward.pendingUnlockAmount(), amount - penalty);
         assertEq(l2Reward.totalWeight(), expectedTotalWeight);
 
         uint256 dailyFundedReward = 0.1 * 10 ** 18;
@@ -1472,6 +1468,61 @@ contract L2RewardTest is Test {
         }
 
         assertEq(l2LiskToken.balanceOf(staker), convertLiskToBeddows(1000) - amount + reward);
+    }
+
+    function test_initiateFastUnlock_forPausedPositionAddsPenaltyAsRewardAlsoUpdatesGlobalsAndClaimRewards() public {
+        l2Staking.addCreator(address(l2Reward));
+
+        address staker = address(0x1);
+        uint256 balance = convertLiskToBeddows(1000);
+        uint256 amount = convertLiskToBeddows(100);
+        uint256 duration = 120;
+
+        // staker and DAO gets balance
+        vm.startPrank(bridge);
+        l2LiskToken.mint(staker, balance);
+        l2LiskToken.mint(daoTreasury, balance);
+        vm.stopPrank();
+
+        // DAO funds staking
+        vm.startPrank(daoTreasury);
+        l2LiskToken.approve(address(l2Reward), convertLiskToBeddows(35));
+        l2Reward.fundStakingRewards(convertLiskToBeddows(35), 350, 1);
+        vm.stopPrank();
+
+        skip(1 days);
+
+        vm.startPrank(staker);
+        l2LiskToken.approve(address(l2Reward), amount);
+        uint256 lockID = l2Reward.createPosition(amount, duration);
+        vm.stopPrank();
+
+        skip(20 days);
+
+        vm.startPrank(staker);
+        l2Reward.pauseUnlocking(lockID);
+        vm.stopPrank();
+
+        uint256 rewardFor20Days = convertLiskToBeddows(2);
+        uint256 penalty = 6849315068493150684;
+
+        skip(20 days);
+
+        vm.startPrank(staker);
+        l2Reward.initiateFastUnlock(lockID);
+        vm.stopPrank();
+
+        uint256 expectedTotalWeight = 2700000 - 200000
+            - (((100 + l2Reward.OFFSET()) * amount) / l2Reward.WEIGHT_FACTOR())
+            + (((l2Staking.FAST_UNLOCK_DURATION() + l2Reward.OFFSET()) * (amount - penalty)) / l2Reward.WEIGHT_FACTOR());
+
+        assertEq(l2LiskToken.balanceOf(staker), balance - amount + rewardFor20Days * 2);
+        assertEq(l2Reward.totalWeight(), expectedTotalWeight);
+        assertEq(l2Reward.pendingUnlockAmount(), amount - penalty);
+        assertEq(l2Reward.totalAmountLocked(), amount - penalty);
+        assertEq(
+            l2Reward.dailyUnlockedAmounts(deploymentDate + 1 + 40 + l2Staking.FAST_UNLOCK_DURATION()), amount - penalty
+        );
     }
 
     function test_initializeDaoTreasury_onlyOwnerCanInitializeDaoTreasury() public {

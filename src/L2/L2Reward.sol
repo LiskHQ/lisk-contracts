@@ -86,7 +86,7 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
     /// @notice Total of rewards provided for each day.
     mapping(uint256 => uint256) public dailyRewards;
 
-    /// @notice Maintains locking positions.
+    /// @notice Maintains the date of the last reward date for each locking position.
     mapping(uint256 => uint256) public lastClaimDate;
 
     /// @notice Total weight of all active locking positions.
@@ -103,9 +103,6 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
 
     /// @notice Semantic version of the contract.
     string public version;
-
-    /// @notice Reward cap.
-    uint256 public cappedRewards;
 
     /// @notice Aggregation of surplus rewards.
     uint256 public rewardsSurplus;
@@ -164,6 +161,8 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
 
         uint256 d = lastTrsDate;
         if (today <= d) return;
+
+        uint256 cappedRewards;
 
         for (; d < today; d++) {
             totalWeights[d] = totalWeight;
@@ -248,17 +247,22 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
 
         uint256 fastUnlockDuration = IL2Staking(stakingContract).FAST_UNLOCK_DURATION();
 
-        dailyUnlockedAmounts[lockingPosition.expDate] -= lockingPosition.amount;
+        uint256 remainingDuration;
 
-        dailyUnlockedAmounts[today + fastUnlockDuration] += lockingPosition.amount - penalty;
+        if (lockingPosition.pausedLockingDuration == 0) {
+            remainingDuration = lockingPosition.expDate - lastClaimDate[lockID];
+            dailyUnlockedAmounts[lockingPosition.expDate] -= lockingPosition.amount;
+            pendingUnlockAmount -= lockingPosition.amount;
+        } else {
+            remainingDuration = lockingPosition.pausedLockingDuration;
+        }
 
-        totalWeight -= (lockingPosition.amount * (lockingPosition.expDate - today + OFFSET)) / WEIGHT_FACTOR;
-
+        totalWeight -= ((remainingDuration + OFFSET) * lockingPosition.amount) / WEIGHT_FACTOR;
         totalWeight += ((fastUnlockDuration + OFFSET) * (lockingPosition.amount - penalty)) / WEIGHT_FACTOR;
 
+        dailyUnlockedAmounts[today + fastUnlockDuration] += lockingPosition.amount - penalty;
+        pendingUnlockAmount += lockingPosition.amount - penalty;
         totalAmountLocked -= penalty;
-
-        pendingUnlockAmount -= penalty;
     }
 
     /// @notice Calculate rewards of a locking position.
@@ -411,9 +415,9 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
                 totalAmountLocked += lockingPosition.amount;
                 pendingUnlockAmount += lockingPosition.amount;
             }
-        }
 
-        dailyUnlockedAmounts[lockingPosition.expDate + durationExtension] += lockingPosition.amount;
+            dailyUnlockedAmounts[lockingPosition.expDate + durationExtension] += lockingPosition.amount;
+        }
 
         return reward;
     }
@@ -476,7 +480,7 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
         uint256 dailyReward = amount / duration;
         uint256 today = todayDay();
         uint256 endDate = today + delay + duration;
-        for (uint256 d = today + delay; d < endDate; d += delay) {
+        for (uint256 d = today + delay; d < endDate; d++) {
             dailyRewards[d] += dailyReward;
         }
     }
