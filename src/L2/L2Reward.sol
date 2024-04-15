@@ -246,7 +246,7 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
         uint256 remainingDuration;
 
         if (lockingPosition.pausedLockingDuration == 0) {
-            remainingDuration = lockingPosition.expDate - lastClaimDate[lockID];
+            remainingDuration = lockingPosition.expDate - today;
             dailyUnlockedAmounts[lockingPosition.expDate] -= lockingPosition.amount;
             pendingUnlockAmount -= lockingPosition.amount;
         } else {
