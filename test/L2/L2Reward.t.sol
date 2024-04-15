@@ -1154,8 +1154,9 @@ contract L2RewardTest is Test {
 
         uint256 amountIncrease = convertLiskToBeddows(35);
         uint256 totalWeightAfterClaim = l2Reward.totalWeight() - 500000;
-        uint256 duration = (deploymentDate + 120) - (deploymentDate + 50);
-        uint256 totalWeightIncrease = (amountIncrease * (duration + l2Reward.OFFSET())) / l2Reward.WEIGHT_FACTOR();
+        uint256 remainingDuration = (deploymentDate + 120) - (deploymentDate + 50);
+        uint256 totalWeightIncrease =
+            (amountIncrease * (remainingDuration + l2Reward.OFFSET())) / l2Reward.WEIGHT_FACTOR();
 
         balance = l2LiskToken.balanceOf(staker);
 
@@ -1288,7 +1289,6 @@ contract L2RewardTest is Test {
 
         skip(50 days);
 
-        uint256 totalWeightAfterClaim = l2Reward.totalWeight() - 500000;
         uint256 weightIncrease = (amount * durationExtension) / l2Reward.WEIGHT_FACTOR();
         balance = l2LiskToken.balanceOf(staker);
 
@@ -1296,7 +1296,7 @@ contract L2RewardTest is Test {
         uint256 reward = l2Reward.extendDuration(lockID, durationExtension);
         vm.stopPrank();
 
-        assertEq(l2Reward.totalWeight(), totalWeightAfterClaim + weightIncrease);
+        assertEq(l2Reward.totalWeight(), 2700000 - 500000 + weightIncrease);
         assertEq(l2LiskToken.balanceOf(staker), balance + reward);
         assertEq(l2Reward.dailyUnlockedAmounts(deploymentDate + duration), 0);
         assertEq(l2Reward.dailyUnlockedAmounts(deploymentDate + duration + durationExtension), amount);
@@ -1706,7 +1706,7 @@ contract L2RewardTest is Test {
         l2Reward.addUnusedRewards(dailyReward + 1, 10, 1);
     }
 
-    function test_addUnusedRewards_fundsRewardAmountAndResetsRewardsSurplus() public {
+    function test_addUnusedRewards_fundsRewardAmountAndUpdatesRewardsSurplusAndAlsoEmitsRewardsAddedEvent() public {
         l2Staking.addCreator(address(l2Reward));
         address staker = address(0x1);
         uint256 balance = convertLiskToBeddows(10000);
@@ -1743,6 +1743,8 @@ contract L2RewardTest is Test {
         uint256 rewardsSurplus = l2Reward.rewardsSurplus();
 
         // days 19743 to 19752 are funded
+        vm.expectEmit(true, true, true, true);
+        emit L2Reward.RewardsAdded(convertLiskToBeddows(1), 10, 1);
         l2Reward.addUnusedRewards(convertLiskToBeddows(1), 10, 1);
         vm.stopPrank();
 
@@ -1753,7 +1755,7 @@ contract L2RewardTest is Test {
         assertEq(l2Reward.rewardsSurplus(), rewardsSurplus - convertLiskToBeddows(1));
     }
 
-    function test_addUnusedRewards_emitsRewardsAddedEvent() public {
+    function test_addUnusedRewards_updatesDailyRewardsAndEmitsRewardsAddedEvent() public {
         l2Staking.addCreator(address(l2Reward));
         address staker = address(0x1);
         uint256 balance = convertLiskToBeddows(10000);
@@ -1777,8 +1779,8 @@ contract L2RewardTest is Test {
         l2LiskToken.approve(address(l2Reward), convertLiskToBeddows(100));
         lockIDs[0] = l2Reward.createPosition(convertLiskToBeddows(100), 120);
 
-        // staker creates another position on deploymentDate + 2, 1972
-        // This will trigger updateGlobalState() for 19740 and 19741
+        // staker creates another position on deploymentDate + 2, 19740
+        // This will trigger updateGlobalState() for 19740 and 19741, updating rewardsSurplus
         skip(2 days);
         l2LiskToken.approve(address(l2Reward), convertLiskToBeddows(1));
         lockIDs[1] = l2Reward.createPosition(convertLiskToBeddows(1), 100);
@@ -1786,6 +1788,9 @@ contract L2RewardTest is Test {
 
         uint256 dailyReward = convertLiskToBeddows(1000) / 350;
         uint256 additionalReward = l2Reward.rewardsSurplus() / 10;
+        uint256 cappedRewards = convertLiskToBeddows(100) / 365;
+
+        assertEq(l2Reward.dailyRewards(19741), cappedRewards);
 
         // days 19743 to 19752 are funded
         vm.expectEmit(true, true, true, true);
@@ -1798,6 +1803,29 @@ contract L2RewardTest is Test {
         }
 
         assertEq(l2Reward.rewardsSurplus(), 0);
+        assertEq(l2Reward.lastTrsDate(), 19742);
+
+        skip(10 days);
+
+        // staker cerates another position on deploymentDate + 2 + 10, 19752
+        // This will trigger updateGlobalState() from 19742 to 19751
+        vm.startPrank(staker);
+        l2LiskToken.approve(address(l2Reward), convertLiskToBeddows(100));
+        l2Reward.createPosition(convertLiskToBeddows(1), 100);
+        vm.stopPrank();
+
+        cappedRewards = convertLiskToBeddows(101) / 365;
+
+        // For day 19742 additional rewards are not assigned but for the
+        // remaining days from 19743 onwards additional rewards are assigned
+        uint256 expectedRewardSurplus =
+            (dailyReward - cappedRewards) + (9 * (dailyReward + additionalReward - cappedRewards));
+
+        for (uint16 i = 19742; i < 19752; i++) {
+            assertEq(l2Reward.dailyRewards(i), cappedRewards);
+        }
+
+        assertEq(l2Reward.rewardsSurplus(), expectedRewardSurplus);
     }
 
     function convertLiskToBeddows(uint256 lisk) internal pure returns (uint256) {
