@@ -10,6 +10,7 @@ import { L2LiskToken } from "src/L2/L2LiskToken.sol";
 import { L2LockingPosition, LockingPosition } from "src/L2/L2LockingPosition.sol";
 import { L2Staking } from "src/L2/L2Staking.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { IERC20Errors } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 contract L2RewardTest is Test {
     L2LiskToken public l2LiskToken;
@@ -114,6 +115,28 @@ contract L2RewardTest is Test {
         assertEq(l2Reward.version(), "1.0.0");
     }
 
+    function test_createPosition_l2RewardContractShouldBeApprovedToTransferFromStakerAccount() public {
+        l2Staking.addCreator(address(l2Reward));
+
+        address staker = address(0x1);
+
+        uint256 duration = 20;
+        uint256 amount = convertLiskToSmallestDenomination(10);
+        uint256 ID;
+
+        vm.startPrank(bridge);
+        l2LiskToken.mint(address(l2Reward), convertLiskToSmallestDenomination(1000));
+        l2LiskToken.mint(staker, convertLiskToSmallestDenomination(1000));
+        vm.stopPrank();
+
+        vm.startPrank(staker);
+        vm.expectRevert(
+            abi.encodeWithSelector(IERC20Errors.ERC20InsufficientAllowance.selector, address(l2Reward), 0, amount)
+        );
+        ID = l2Reward.createPosition(amount, duration);
+        vm.stopPrank();
+    }
+
     function test_createPosition_updatesGlobals() public {
         l2Staking.addCreator(address(l2Reward));
 
@@ -138,6 +161,8 @@ contract L2RewardTest is Test {
         assertEq(l2Reward.totalAmountLocked(), amount);
         assertEq(l2Reward.dailyUnlockedAmounts(l2Reward.lastTrsDate() + duration), amount);
         assertEq(l2Reward.pendingUnlockAmount(), amount);
+        assertEq(l2Reward.lastTrsDate(), deploymentDate);
+        assertEq(l2LiskToken.allowance(staker, address(l2Reward)), 0);
     }
 
     function test_createPosition_aggregatesAmountAndWeightAndUpdatesGlobals() public {
