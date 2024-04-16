@@ -415,7 +415,7 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
             if (lockingPosition.expDate > todayDay()) {
                 dailyUnlockedAmounts[lockingPosition.expDate] -= lockingPosition.amount;
             }
-            // locking period has not expired, re-lock amount
+            // locking period has expired, re-lock amount
             else {
                 totalAmountLocked += lockingPosition.amount;
                 pendingUnlockAmount += lockingPosition.amount;
