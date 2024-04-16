@@ -65,9 +65,6 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
     /// @notice The offset value of stake weight as a liner function of remaining stake duration.
     uint256 public constant OFFSET = 150;
 
-    /// @notice The factor by which weight is maintained.
-    uint256 public constant WEIGHT_FACTOR = 10 ** 16;
-
     /// @notice The default duration in days for which the rewards are added.
     uint16 public constant REWARD_DURATION = 30;
 
@@ -140,6 +137,8 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
     /// @param _newImplementation The address of the new contract implementation to which the proxy will be upgraded.
     function _authorizeUpgrade(address _newImplementation) internal virtual override onlyOwner { }
 
+    /// @notice Initializes the contract.
+    /// @param _l2LiskTokenContract The address of the L2LiskToken contract.
     function initialize(address _l2LiskTokenContract) public initializer {
         require(_l2LiskTokenContract != address(0), "L2Reward: LSK token contract address can not be zero");
         __Ownable2Step_init();
@@ -166,14 +165,17 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
 
             cappedRewards = totalAmountLocked / 365;
 
+            // capping in rewards
             if (dailyRewards[d] > cappedRewards) {
                 rewardsSurplus += dailyRewards[d] - cappedRewards;
                 dailyRewards[d] = cappedRewards;
             }
 
-            totalWeight -= pendingUnlockAmount / WEIGHT_FACTOR;
-            totalWeight -= (OFFSET * dailyUnlockedAmounts[d + 1]) / WEIGHT_FACTOR;
+            // update total weights due to unlockable and pending unlocks
+            totalWeight -= pendingUnlockAmount;
+            totalWeight -= (OFFSET * dailyUnlockedAmounts[d + 1]);
 
+            // the amount getting unlocked for a day should not be considered staked anymore
             totalAmountLocked -= dailyUnlockedAmounts[d + 1];
             pendingUnlockAmount -= dailyUnlockedAmounts[d + 1];
         }
@@ -188,15 +190,15 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
     function createPosition(uint256 amount, uint256 duration) public virtual returns (uint256) {
         updateGlobalState();
 
+        // create a new position
         IL2LiskToken(l2TokenContract).transferFrom(msg.sender, address(this), amount);
         IL2LiskToken(l2TokenContract).approve(stakingContract, amount);
-
         uint256 id = IL2Staking(stakingContract).lockAmount(msg.sender, amount, duration);
         uint256 today = todayDay();
-
         lastClaimDate[id] = today;
 
-        totalWeight += (amount * (duration + OFFSET)) / WEIGHT_FACTOR;
+        // update total weight and amount
+        totalWeight += (amount * (duration + OFFSET));
         totalAmountLocked += amount;
         dailyUnlockedAmounts[today + duration] += amount;
         pendingUnlockAmount += amount;
@@ -213,8 +215,8 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
             "L2Reward: msg.sender does not own the locking position"
         );
 
+        // claim rewards and updates staking contract
         _claimReward(lockID);
-
         IL2Staking(stakingContract).unlock(lockID);
 
         delete lastClaimDate[lockID];
@@ -230,22 +232,22 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
             "L2Reward: msg.sender does not own the locking position"
         );
 
+        // claim rewards and inform staking contract
         _claimReward(lockID);
-
         IL2LockingPosition.LockingPosition memory lockingPosition =
             IL2LockingPosition(lockingPositionContract).getLockingPosition(lockID);
-
         uint256 penalty = IL2Staking(stakingContract).initiateFastUnlock(lockID);
 
+        // add penalty amout to future rewards
         _addRewards(penalty, REWARD_DURATION, REWARD_DURATION_DELAY);
 
         uint256 today = todayDay();
-
         uint256 fastUnlockDuration = IL2Staking(stakingContract).FAST_UNLOCK_DURATION();
-
         uint256 remainingDuration;
 
+        // update global variables and arrays
         if (lockingPosition.pausedLockingDuration == 0) {
+            // removing previous expiration date
             remainingDuration = lockingPosition.expDate - today;
             dailyUnlockedAmounts[lockingPosition.expDate] -= lockingPosition.amount;
             pendingUnlockAmount -= lockingPosition.amount;
@@ -253,9 +255,9 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
             remainingDuration = lockingPosition.pausedLockingDuration;
         }
 
-        totalWeight -= ((remainingDuration + OFFSET) * lockingPosition.amount) / WEIGHT_FACTOR;
-        totalWeight += ((fastUnlockDuration + OFFSET) * (lockingPosition.amount - penalty)) / WEIGHT_FACTOR;
-
+        // setting new expiration date
+        totalWeight -= (remainingDuration + OFFSET) * lockingPosition.amount;
+        totalWeight += (fastUnlockDuration + OFFSET) * (lockingPosition.amount - penalty);
         dailyUnlockedAmounts[today + fastUnlockDuration] += lockingPosition.amount - penalty;
         pendingUnlockAmount += lockingPosition.amount - penalty;
         totalAmountLocked -= penalty;
@@ -282,7 +284,7 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
         }
 
         if (rewardableDuration > 0) {
-            weight = (lockingPosition.amount * (rewardableDuration + OFFSET)) / WEIGHT_FACTOR;
+            weight = lockingPosition.amount * (rewardableDuration + OFFSET);
         }
 
         uint256 reward = 0;
@@ -295,7 +297,8 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
             reward += (weight * dailyRewards[d]) / totalWeights[d];
 
             if (lockingPosition.pausedLockingDuration == 0) {
-                weight -= lockingPosition.amount / WEIGHT_FACTOR;
+                // unlocking period is active, weight is decreasing
+                weight -= lockingPosition.amount;
             }
         }
 
@@ -356,11 +359,10 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
 
         require(amountIncrease > 0, "L2Reward: Increased amount should be greater than zero");
 
+        // claim rewards and update staking contract
         uint256 reward = _claimReward(lockID);
-
         IL2LiskToken(l2TokenContract).transferFrom(msg.sender, address(this), amountIncrease);
         IL2LiskToken(l2TokenContract).approve(stakingContract, amountIncrease);
-
         IL2Staking(stakingContract).increaseLockingAmount(lockID, amountIncrease);
 
         IL2LockingPosition.LockingPosition memory lockingPosition =
@@ -368,14 +370,17 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
 
         uint256 today = todayDay();
 
+        // update globals
+        totalAmountLocked += amountIncrease;
+
         if (lockingPosition.pausedLockingDuration == 0) {
             // duration for active position => lockingPosition.expDate - today;
-            totalWeight += (amountIncrease * (lockingPosition.expDate - today + OFFSET)) / WEIGHT_FACTOR;
+            totalWeight += amountIncrease * (lockingPosition.expDate - today + OFFSET);
             dailyUnlockedAmounts[lockingPosition.expDate] += amountIncrease;
             pendingUnlockAmount += amountIncrease;
         } else {
             // duration for paused position => lockingPosition.pausedLockingDuration
-            totalWeight += (amountIncrease * (lockingPosition.pausedLockingDuration + OFFSET)) / WEIGHT_FACTOR;
+            totalWeight += amountIncrease * (lockingPosition.pausedLockingDuration + OFFSET);
         }
 
         return reward;
@@ -402,7 +407,8 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
         uint256 reward = _claimReward(lockID);
         IL2Staking(stakingContract).extendLockingDuration(lockID, durationExtension);
 
-        totalWeight += (lockingPosition.amount * durationExtension) / WEIGHT_FACTOR;
+        // update globals
+        totalWeight += lockingPosition.amount * durationExtension;
 
         if (lockingPosition.pausedLockingDuration == 0) {
             // locking period has not finished
@@ -413,7 +419,7 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
             else {
                 totalAmountLocked += lockingPosition.amount;
                 pendingUnlockAmount += lockingPosition.amount;
-                totalWeight += (lockingPosition.amount * OFFSET) / WEIGHT_FACTOR;
+                totalWeight += lockingPosition.amount * OFFSET;
             }
 
             dailyUnlockedAmounts[lockingPosition.expDate + durationExtension] += lockingPosition.amount;
@@ -433,13 +439,14 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
             "L2Reward: msg.sender does not own the locking position"
         );
 
+        // claim rewards and update staking contract
         uint256 reward = _claimReward(lockID);
-
         IL2Staking(stakingContract).pauseRemainingLockingDuration(lockID);
 
         IL2LockingPosition.LockingPosition memory lockingPosition =
             IL2LockingPosition(lockingPositionContract).getLockingPosition(lockID);
 
+        // update globals
         pendingUnlockAmount -= lockingPosition.amount;
         dailyUnlockedAmounts[lockingPosition.expDate] -= lockingPosition.amount;
 
@@ -457,13 +464,14 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
             "L2Reward: msg.sender does not own the locking position"
         );
 
+        // claim rewards and update staking contract
         uint256 reward = _claimReward(lockID);
-
         IL2Staking(stakingContract).resumeCountdown(lockID);
 
         IL2LockingPosition.LockingPosition memory lockingPosition =
             IL2LockingPosition(lockingPositionContract).getLockingPosition(lockID);
 
+        // update globals
         pendingUnlockAmount += lockingPosition.amount;
         dailyUnlockedAmounts[lockingPosition.expDate] += lockingPosition.amount;
 

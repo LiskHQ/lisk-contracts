@@ -109,7 +109,6 @@ contract L2RewardTest is Test {
     function test_initialize() public {
         assertEq(l2Reward.lastTrsDate(), deploymentDate);
         assertEq(l2Reward.OFFSET(), 150);
-        assertEq(l2Reward.WEIGHT_FACTOR(), 10 ** 16);
         assertEq(l2Reward.REWARD_DURATION(), 30);
         assertEq(l2Reward.REWARD_DURATION_DELAY(), 1);
         assertEq(l2Reward.version(), "1.0.0");
@@ -156,7 +155,7 @@ contract L2RewardTest is Test {
         ID = l2Reward.createPosition(amount, duration);
         vm.stopPrank();
 
-        assertEq(l2Reward.totalWeight(), (amount * (duration + l2Reward.OFFSET())) / l2Reward.WEIGHT_FACTOR());
+        assertEq(l2Reward.totalWeight(), (amount * (duration + l2Reward.OFFSET())));
         assertEq(l2Reward.lastClaimDate(ID), deploymentDate);
         assertEq(l2Reward.totalAmountLocked(), amount);
         assertEq(l2Reward.dailyUnlockedAmounts(l2Reward.lastTrsDate() + duration), amount);
@@ -194,14 +193,12 @@ contract L2RewardTest is Test {
         lockIDs[1] = l2Reward.createPosition(convertLiskToSmallestDenomination(1), 100);
         vm.stopPrank();
 
-        uint256 expectedTotalWeight = (
-            (convertLiskToSmallestDenomination(100) * (120 + l2Reward.OFFSET())) / l2Reward.WEIGHT_FACTOR()
-        ) + ((convertLiskToSmallestDenomination(1) * (100 + l2Reward.OFFSET())) / l2Reward.WEIGHT_FACTOR()) - 20000;
-
+        uint256 expectedTotalWeight = (convertLiskToSmallestDenomination(100) * (120 + l2Reward.OFFSET()))
+            + ((convertLiskToSmallestDenomination(1) * (100 + l2Reward.OFFSET()))) - 20000 * 10 ** 16;
         assertEq(l2Reward.totalWeight(), expectedTotalWeight);
         assertEq(l2Reward.totalAmountLocked(), convertLiskToSmallestDenomination(101));
         assertEq(l2Reward.pendingUnlockAmount(), convertLiskToSmallestDenomination(101));
-
+        assertEq(l2Reward.lastTrsDate(), deploymentDate + 2);
         uint256 cappedRewards = convertLiskToSmallestDenomination(100) / 365;
         uint256 dailyReward = convertLiskToSmallestDenomination(1000) / 350;
 
@@ -239,7 +236,7 @@ contract L2RewardTest is Test {
         vm.stopPrank();
 
         uint256 dailyReward = amount / duration;
-        uint256 today = 19740;
+        uint256 today = deploymentDate;
         uint256 endDate = today + delay + duration;
 
         for (uint256 d = today + delay; d < endDate; d++) {
@@ -248,6 +245,8 @@ contract L2RewardTest is Test {
 
         assertEq(l2LiskToken.balanceOf(address(daoTreasury)), balance - amount);
         assertEq(l2LiskToken.balanceOf(address(l2Reward)), amount);
+        assertEq(l2Reward.dailyRewards(today), 0);
+        assertEq(l2Reward.dailyRewards(endDate), 0);
 
         delay = 2;
         duration = 10;
@@ -256,15 +255,15 @@ contract L2RewardTest is Test {
         l2Reward.fundStakingRewards(amount, duration, delay);
         vm.stopPrank();
 
-        delay = 2;
-        duration = 10;
-
-        endDate = today + delay + duration;
+        uint256 newEndDate = today + delay + duration;
         uint256 additionalReward = amount / duration;
 
-        for (uint256 d = today + delay; d < endDate; d++) {
+        for (uint256 d = today + delay; d < newEndDate; d++) {
             assertEq(l2Reward.dailyRewards(d), dailyReward + additionalReward);
         }
+
+        assertEq(l2Reward.dailyRewards(today), 0);
+        assertEq(l2Reward.dailyRewards(newEndDate), dailyReward);
     }
 
     function test_fundStaking_emitsRewardsAddedEvent() public {
@@ -1160,6 +1159,7 @@ contract L2RewardTest is Test {
         l2Staking.addCreator(address(l2Reward));
         address staker = address(0x1);
         uint256 balance = convertLiskToSmallestDenomination(1000);
+        uint256 amount = convertLiskToSmallestDenomination(100);
 
         // staker and DAO gets balance
         vm.startPrank(bridge);
@@ -1174,17 +1174,16 @@ contract L2RewardTest is Test {
         vm.stopPrank();
 
         vm.startPrank(staker);
-        l2LiskToken.approve(address(l2Reward), convertLiskToSmallestDenomination(100));
-        uint256 lockID = l2Reward.createPosition(convertLiskToSmallestDenomination(100), 120);
+        l2LiskToken.approve(address(l2Reward), amount);
+        uint256 lockID = l2Reward.createPosition(amount, 120);
         vm.stopPrank();
 
         skip(50 days);
 
         uint256 amountIncrease = convertLiskToSmallestDenomination(35);
-        uint256 totalWeightAfterClaim = l2Reward.totalWeight() - 500000;
         uint256 remainingDuration = (deploymentDate + 120) - (deploymentDate + 50);
-        uint256 totalWeightIncrease =
-            (amountIncrease * (remainingDuration + l2Reward.OFFSET())) / l2Reward.WEIGHT_FACTOR();
+        uint256 expectedTotalWeight =
+            l2Reward.totalWeight() - (500000 * 10 ** 16) + (amountIncrease * (remainingDuration + l2Reward.OFFSET()));
 
         balance = l2LiskToken.balanceOf(staker);
 
@@ -1193,7 +1192,8 @@ contract L2RewardTest is Test {
         uint256 reward = l2Reward.increaseLockingAmount(lockID, amountIncrease);
         vm.stopPrank();
 
-        assertEq(l2Reward.totalWeight(), totalWeightAfterClaim + totalWeightIncrease);
+        assertEq(l2Reward.totalAmountLocked(), amount + amountIncrease);
+        assertEq(l2Reward.totalWeight(), expectedTotalWeight);
         assertEq(l2LiskToken.balanceOf(staker), balance + reward - amountIncrease);
         assertEq(l2Reward.pendingUnlockAmount(), convertLiskToSmallestDenomination(135));
         assertEq(l2Reward.dailyUnlockedAmounts(deploymentDate + 120), convertLiskToSmallestDenomination(135));
@@ -1205,6 +1205,7 @@ contract L2RewardTest is Test {
         l2Staking.addCreator(address(l2Reward));
         address staker = address(0x1);
         uint256 balance = convertLiskToSmallestDenomination(1000);
+        uint256 amount = convertLiskToSmallestDenomination(100);
 
         // staker and DAO gets balance
         vm.startPrank(bridge);
@@ -1219,8 +1220,8 @@ contract L2RewardTest is Test {
         vm.stopPrank();
 
         vm.startPrank(staker);
-        l2LiskToken.approve(address(l2Reward), convertLiskToSmallestDenomination(100));
-        uint256 lockID = l2Reward.createPosition(convertLiskToSmallestDenomination(100), 120);
+        l2LiskToken.approve(address(l2Reward), amount);
+        uint256 lockID = l2Reward.createPosition(amount, 120);
         vm.stopPrank();
 
         // pausedLockingDuration set to 120
@@ -1233,7 +1234,7 @@ contract L2RewardTest is Test {
 
         uint256 totalWeight = l2Reward.totalWeight();
 
-        uint256 totalWeightIncrease = (amountIncrease * (120 + l2Reward.OFFSET())) / l2Reward.WEIGHT_FACTOR();
+        uint256 totalWeightIncrease = amountIncrease * (120 + l2Reward.OFFSET());
 
         balance = l2LiskToken.balanceOf(staker);
 
@@ -1242,6 +1243,7 @@ contract L2RewardTest is Test {
         uint256 reward = l2Reward.increaseLockingAmount(lockID, amountIncrease);
         vm.stopPrank();
 
+        assertEq(l2Reward.totalAmountLocked(), amount + amountIncrease);
         assertEq(l2LiskToken.balanceOf(staker), balance + reward - amountIncrease);
         assertEq(l2Reward.totalWeight(), totalWeightIncrease + totalWeight);
     }
@@ -1317,14 +1319,14 @@ contract L2RewardTest is Test {
 
         skip(50 days);
 
-        uint256 weightIncrease = (amount * durationExtension) / l2Reward.WEIGHT_FACTOR();
+        uint256 weightIncrease = amount * durationExtension;
         balance = l2LiskToken.balanceOf(staker);
 
         vm.startPrank(staker);
         uint256 reward = l2Reward.extendDuration(lockID, durationExtension);
         vm.stopPrank();
 
-        assertEq(l2Reward.totalWeight(), 2700000 - 500000 + weightIncrease);
+        assertEq(l2Reward.totalWeight(), (27000 * 10 ** 18) - (5000 * 10 ** 18) + weightIncrease);
         assertEq(l2LiskToken.balanceOf(staker), balance + reward);
         assertEq(l2Reward.dailyUnlockedAmounts(deploymentDate + duration), 0);
         assertEq(l2Reward.dailyUnlockedAmounts(deploymentDate + duration + durationExtension), amount);
@@ -1357,8 +1359,7 @@ contract L2RewardTest is Test {
 
         skip(121 days);
 
-        uint256 weightIncrease = ((amount * durationExtension) / l2Reward.WEIGHT_FACTOR())
-            + ((amount * l2Reward.OFFSET()) / l2Reward.WEIGHT_FACTOR());
+        uint256 weightIncrease = (amount * durationExtension) + (amount * l2Reward.OFFSET());
         balance = l2LiskToken.balanceOf(staker);
 
         vm.startPrank(staker);
@@ -1401,7 +1402,7 @@ contract L2RewardTest is Test {
 
         skip(120 days);
 
-        uint256 weightIncrease = (amount * durationExtension) / l2Reward.WEIGHT_FACTOR();
+        uint256 weightIncrease = amount * durationExtension;
         uint256 expectedTotalWeight = l2Reward.totalWeight() + weightIncrease;
 
         balance = l2LiskToken.balanceOf(staker);
@@ -1476,9 +1477,9 @@ contract L2RewardTest is Test {
         l2Reward.initiateFastUnlock(lockID);
         vm.stopPrank();
 
-        uint256 expectedTotalWeight = 2700000 - 500000
-            - ((amount * (19860 - 19790 + l2Reward.OFFSET())) / l2Reward.WEIGHT_FACTOR())
-            + (((l2Staking.FAST_UNLOCK_DURATION() + l2Reward.OFFSET()) * (amount - penalty)) / l2Reward.WEIGHT_FACTOR());
+        uint256 expectedTotalWeight = (2700000 * 10 ** 16) - (500000 * 10 ** 16)
+            - (amount * (19860 - 19790 + l2Reward.OFFSET()))
+            + ((l2Staking.FAST_UNLOCK_DURATION() + l2Reward.OFFSET()) * (amount - penalty));
 
         assertEq(l2LiskToken.balanceOf(address(l2Reward)), convertLiskToSmallestDenomination(35) - reward + penalty);
         assertEq(l2Reward.dailyUnlockedAmounts(deploymentDate + duration), 0);
@@ -1541,9 +1542,8 @@ contract L2RewardTest is Test {
         l2Reward.initiateFastUnlock(lockID);
         vm.stopPrank();
 
-        uint256 expectedTotalWeight = 2700000 - 200000
-            - (((100 + l2Reward.OFFSET()) * amount) / l2Reward.WEIGHT_FACTOR())
-            + (((l2Staking.FAST_UNLOCK_DURATION() + l2Reward.OFFSET()) * (amount - penalty)) / l2Reward.WEIGHT_FACTOR());
+        uint256 expectedTotalWeight = (2700000 * 10 ** 16) - (200000 * 10 ** 16) - ((100 + l2Reward.OFFSET()) * amount)
+            + ((l2Staking.FAST_UNLOCK_DURATION() + l2Reward.OFFSET()) * (amount - penalty));
 
         assertEq(l2LiskToken.balanceOf(staker), balance - amount + rewardFor20Days * 2);
         assertEq(l2Reward.totalWeight(), expectedTotalWeight);
