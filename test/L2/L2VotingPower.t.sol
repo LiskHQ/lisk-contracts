@@ -8,7 +8,6 @@ import { IAccessControl } from "@openzeppelin/contracts/access/IAccessControl.so
 import { IERC20Errors } from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { Test, console } from "forge-std/Test.sol";
-import { L2LockingPosition } from "src/L2/L2LockingPosition.sol";
 import { IL2LockingPosition } from "src/interfaces/L2/IL2LockingPosition.sol";
 import { L2VotingPower } from "src/L2/L2VotingPower.sol";
 import { Utils } from "script/Utils.sol";
