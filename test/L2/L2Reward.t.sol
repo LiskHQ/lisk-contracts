@@ -188,6 +188,7 @@ contract L2RewardTest is Test {
         l2LiskToken.approve(address(l2Reward), convertLiskToSmallestDenomination(100));
         lockIDs[0] = l2Reward.createPosition(convertLiskToSmallestDenomination(100), 120);
 
+        // staker creates another position on deploymentDate + 2, 19742.
         skip(2 days);
         l2LiskToken.approve(address(l2Reward), convertLiskToSmallestDenomination(1));
         lockIDs[1] = l2Reward.createPosition(convertLiskToSmallestDenomination(1), 100);
@@ -1182,7 +1183,7 @@ contract L2RewardTest is Test {
         skip(50 days);
 
         uint256 amountIncrease = convertLiskToSmallestDenomination(35);
-        uint256 remainingDuration = (deploymentDate + 120) - (deploymentDate + 50);
+        uint256 remainingDuration = 70;
         uint256 expectedTotalWeight =
             (27000 * 10 ** 18) - (5000 * 10 ** 18) + (amountIncrease * (remainingDuration + l2Reward.OFFSET()));
 
@@ -1296,7 +1297,7 @@ contract L2RewardTest is Test {
         vm.stopPrank();
 
         // daily rewards are capped
-        for (uint256 i = deploymentDate + 10; i < deploymentDate + 20; i++) {
+        for (uint256 i = 19750; i < 19760; i++) {
             assertEq(l2Reward.dailyRewards(i), cappedRewards);
         }
 
@@ -1307,7 +1308,7 @@ contract L2RewardTest is Test {
         // daily rewards are set from 19760 to 19769
         vm.startPrank(staker);
         // daily rewards are capped
-        for (uint256 i = deploymentDate + 20; i < deploymentDate + 30; i++) {
+        for (uint256 i = 19760; i < 19770; i++) {
             assertEq(l2Reward.dailyRewards(i), dailyRewards);
         }
         vm.stopPrank();
@@ -1767,8 +1768,6 @@ contract L2RewardTest is Test {
         address staker = address(0x1);
         uint256 balance = convertLiskToSmallestDenomination(1000);
 
-        uint256[] memory lockIDs = new uint256[](2);
-
         // staker and DAO gets balance
         vm.startPrank(bridge);
         l2LiskToken.mint(staker, balance);
@@ -1784,20 +1783,35 @@ contract L2RewardTest is Test {
         // staker creates a positions on deploymentDate, 19740
         vm.startPrank(staker);
         l2LiskToken.approve(address(l2Reward), convertLiskToSmallestDenomination(100));
-        lockIDs[0] = l2Reward.createPosition(convertLiskToSmallestDenomination(100), 120);
+        l2Reward.createPosition(convertLiskToSmallestDenomination(100), 120);
 
-        // staker creates another position on deploymentDate + 2, 1972
+        // staker creates another position on deploymentDate + 2, 19742
         // This will trigger updateGlobalState() for 19740 and 19741, with funds availbe only for 19741
         skip(2 days);
         l2LiskToken.approve(address(l2Reward), convertLiskToSmallestDenomination(1));
-        lockIDs[1] = l2Reward.createPosition(convertLiskToSmallestDenomination(1), 100);
+        l2Reward.createPosition(convertLiskToSmallestDenomination(1), 100);
         vm.stopPrank();
 
-        uint256 dailyReward = convertLiskToSmallestDenomination(1000) / 350;
-
+        uint256 invalidRewardAmount = l2Reward.rewardsSurplus() + 1;
         vm.expectRevert("L2Reward: Reward amount should not exceed available surplus funds");
+        l2Reward.addUnusedRewards(invalidRewardAmount, 10, 1);
 
-        l2Reward.addUnusedRewards(dailyReward + 1, 10, 1);
+        // surplus is added from 19743 to 19752
+        l2Reward.addUnusedRewards(l2Reward.rewardsSurplus(), 10, 1);
+        assertEq(l2Reward.rewardsSurplus(), 0);
+
+        // staker creates another position on deploymentDate + 10, 19750
+        // This will trigger updateGlobalState() for day, 19742 to 19749
+        skip(8 days);
+        vm.startPrank(staker);
+        l2LiskToken.approve(address(l2Reward), convertLiskToSmallestDenomination(1));
+        l2Reward.createPosition(convertLiskToSmallestDenomination(1), 100);
+        vm.stopPrank();
+
+        // dailyRewards are capped
+        for (uint16 i = 19742; i < 19750; i++) {
+            assertEq(l2Reward.dailyRewards(i), convertLiskToSmallestDenomination(101) / 365);
+        }
     }
 
     function test_addUnusedRewards_fundsRewardAmountAndUpdatesRewardsSurplusAndAlsoEmitsRewardsAddedEvent() public {
