@@ -173,7 +173,7 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
 
             // update total weights due to unlockable and pending unlocks
             totalWeight -= pendingUnlockAmount;
-            totalWeight -= (OFFSET * dailyUnlockedAmounts[d + 1]);
+            totalWeight -= OFFSET * dailyUnlockedAmounts[d + 1];
 
             // the amount getting unlocked for a day should not be considered staked anymore
             totalAmountLocked -= dailyUnlockedAmounts[d + 1];
@@ -198,7 +198,7 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
         lastClaimDate[id] = today;
 
         // update total weight and amount
-        totalWeight += (amount * (duration + OFFSET));
+        totalWeight += amount * (duration + OFFSET);
         totalAmountLocked += amount;
         dailyUnlockedAmounts[today + duration] += amount;
         pendingUnlockAmount += amount;
@@ -255,9 +255,10 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
             remainingDuration = lockingPosition.pausedLockingDuration;
         }
 
-        // setting new expiration date
         totalWeight -= (remainingDuration + OFFSET) * lockingPosition.amount;
         totalWeight += (fastUnlockDuration + OFFSET) * (lockingPosition.amount - penalty);
+
+        // setting new expiration date
         dailyUnlockedAmounts[today + fastUnlockDuration] += lockingPosition.amount - penalty;
         pendingUnlockAmount += lockingPosition.amount - penalty;
         totalAmountLocked -= penalty;
