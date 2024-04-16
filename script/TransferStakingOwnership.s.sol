@@ -2,21 +2,9 @@
 pragma solidity 0.8.23;
 
 import { Script, console2 } from "forge-std/Script.sol";
+import { IL2Staking } from "src/interfaces/L2/IL2Staking.sol";
+import { IL2LockingPosition } from "src/interfaces/L2/IL2LockingPosition.sol";
 import "script/Utils.sol";
-
-/// @title IL2Staking
-/// @notice Interface for L2 Staking contract. Used to transfer ownership of the L2 Staking contract.
-interface IL2Staking {
-    function transferOwnership(address newOwner) external;
-    function owner() external view returns (address);
-}
-
-/// @title IL2LockingPosition
-/// @notice Interface for L2 LockingPosition contract. Used to transfer ownership of the L2 LockingPosition contract.
-interface IL2LockingPosition {
-    function transferOwnership(address newOwner) external;
-    function owner() external view returns (address);
-}
 
 /// @title TransferStakingOwnershipScript
 /// @notice This contract is used to transfer ownership of the L2 staking contracts (Staking and LockingPosition) to

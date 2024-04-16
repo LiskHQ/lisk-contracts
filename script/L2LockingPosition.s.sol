@@ -4,14 +4,8 @@ pragma solidity 0.8.23;
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import { Script, console2 } from "forge-std/Script.sol";
 import { L2LockingPosition } from "src/L2/L2LockingPosition.sol";
+import { IL2Staking } from "src/interfaces/L2/IL2Staking.sol";
 import "script/Utils.sol";
-
-/// @title IL2Staking
-/// @notice Interface for L2 Staking contract. Used to initialize Staking contract.
-interface IL2Staking {
-    function initializeLockingPosition(address lockingPositionContract) external;
-    function lockingPositionContract() external view returns (address);
-}
 
 /// @title L2LockingPositionScript - L2 Locking Position contract deployment script
 /// @notice This contract is used to deploy L2 Locking Position contract.

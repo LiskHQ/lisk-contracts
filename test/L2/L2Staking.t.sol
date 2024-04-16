@@ -5,7 +5,8 @@ import { OwnableUpgradeable } from "@openzeppelin-upgradeable/contracts/access/O
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import { IERC20Errors } from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
 import { Test, console2 } from "forge-std/Test.sol";
-import { L2LockingPosition, LockingPosition } from "src/L2/L2LockingPosition.sol";
+import { L2LockingPosition } from "src/L2/L2LockingPosition.sol";
+import { IL2LockingPosition } from "src/interfaces/L2/IL2LockingPosition.sol";
 import { L2LiskToken } from "src/L2/L2LiskToken.sol";
 import { L2Staking } from "src/L2/L2Staking.sol";
 import { L2VotingPower } from "src/L2/L2VotingPower.sol";
@@ -17,7 +18,7 @@ contract L2StakingHarness is L2Staking {
 
     function exposedCanLockingPositionBeModified(
         uint256 lockId,
-        LockingPosition memory lock
+        IL2LockingPosition.LockingPosition memory lock
     )
         public
         view
@@ -26,7 +27,11 @@ contract L2StakingHarness is L2Staking {
         return canLockingPositionBeModified(lockId, lock);
     }
 
-    function exposedRemainingLockingDuration(LockingPosition memory lock) public view returns (uint256) {
+    function exposedRemainingLockingDuration(IL2LockingPosition.LockingPosition memory lock)
+        public
+        view
+        returns (uint256)
+    {
         return remainingLockingDuration(lock);
     }
 }
@@ -213,7 +218,7 @@ contract L2StakingTest is Test {
         assertEq(l2LockingPosition.balanceOf(alice), 1);
         assertEq(l2LockingPosition.getLockingPosition(1).creator, address(l2StakingHarness));
 
-        LockingPosition memory lock = l2LockingPosition.getLockingPosition(1);
+        IL2LockingPosition.LockingPosition memory lock = l2LockingPosition.getLockingPosition(1);
 
         // call the function as owner
         vm.prank(alice);
@@ -236,7 +241,7 @@ contract L2StakingTest is Test {
         assertEq(l2LockingPosition.balanceOf(alice), 1);
         assertEq(l2LockingPosition.getLockingPosition(1).creator, rewardsContract);
 
-        LockingPosition memory lock = l2LockingPosition.getLockingPosition(1);
+        IL2LockingPosition.LockingPosition memory lock = l2LockingPosition.getLockingPosition(1);
 
         // call the function as owner
         vm.prank(alice);
@@ -305,8 +310,12 @@ contract L2StakingTest is Test {
         L2StakingHarness l2StakingHarness = new L2StakingHarness();
 
         // create a locking position with pausedLockingDuration set to zero
-        LockingPosition memory lock =
-            LockingPosition({ creator: address(0x1), amount: 100 * 10 ** 18, expDate: 365, pausedLockingDuration: 0 });
+        IL2LockingPosition.LockingPosition memory lock = IL2LockingPosition.LockingPosition({
+            creator: address(0x1),
+            amount: 100 * 10 ** 18,
+            expDate: 365,
+            pausedLockingDuration: 0
+        });
         assertEq(lock.pausedLockingDuration, 0);
 
         // same day
@@ -321,8 +330,12 @@ contract L2StakingTest is Test {
         L2StakingHarness l2StakingHarness = new L2StakingHarness();
 
         // create a locking position with pausedLockingDuration set to 100
-        LockingPosition memory lock =
-            LockingPosition({ creator: address(0x1), amount: 100 * 10 ** 18, expDate: 365, pausedLockingDuration: 100 });
+        IL2LockingPosition.LockingPosition memory lock = IL2LockingPosition.LockingPosition({
+            creator: address(0x1),
+            amount: 100 * 10 ** 18,
+            expDate: 365,
+            pausedLockingDuration: 100
+        });
         assertEq(lock.pausedLockingDuration, 100);
 
         // same day
@@ -337,8 +350,12 @@ contract L2StakingTest is Test {
         L2StakingHarness l2StakingHarness = new L2StakingHarness();
 
         // create a locking position with expDate set to 365
-        LockingPosition memory lock =
-            LockingPosition({ creator: address(0x1), amount: 100 * 10 ** 18, expDate: 365, pausedLockingDuration: 0 });
+        IL2LockingPosition.LockingPosition memory lock = IL2LockingPosition.LockingPosition({
+            creator: address(0x1),
+            amount: 100 * 10 ** 18,
+            expDate: 365,
+            pausedLockingDuration: 0
+        });
         assertEq(lock.expDate, 365);
 
         // advance block time to exactly one day before the expiration date

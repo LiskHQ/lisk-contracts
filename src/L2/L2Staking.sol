@@ -4,41 +4,11 @@ pragma solidity 0.8.23;
 import { Initializable } from "@openzeppelin-upgradeable/contracts/proxy/utils/Initializable.sol";
 import { Ownable2StepUpgradeable } from "@openzeppelin-upgradeable/contracts/access/Ownable2StepUpgradeable.sol";
 import { UUPSUpgradeable } from "@openzeppelin-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
-import { LockingPosition } from "./L2LockingPosition.sol";
+import { IL2LockingPosition } from "../interfaces/L2/IL2LockingPosition.sol";
 import { ISemver } from "../utils/ISemver.sol";
-
-/// @title IL2LiskToken
-/// @notice Interface for the L2LiskToken contract.
-interface IL2LiskToken {
-    function transfer(address to, uint256 value) external returns (bool);
-    function transferFrom(address from, address to, uint256 value) external returns (bool);
-}
-
-/// @title IL2LockingPosition
-/// @notice Interface for the L2LockingPosition contract.
-interface IL2LockingPosition {
-    function createLockingPosition(
-        address creator,
-        address owner,
-        uint256 amount,
-        uint256 lockingDuration
-    )
-        external
-        returns (uint256);
-    function modifyLockingPosition(
-        uint256 positionId,
-        uint256 amount,
-        uint256 expDate,
-        uint256 pausedLockingDuration
-    )
-        external;
-    function removeLockingPosition(uint256 positionId) external;
-    function getLockingPosition(uint256 positionId) external view returns (LockingPosition memory);
-    function getAllLockingPositionsByOwner(address owner) external view returns (LockingPosition[] memory);
-    function ownerOf(uint256 tokenId) external view returns (address);
-}
 
 /// @title L2Staking
 /// @notice This contract handles the staking functionality for the L2 network.
@@ -128,7 +98,12 @@ contract L2Staking is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, I
     ///         initialized to 0 or address(0).
     /// @param position Locking position to be checked.
     /// @return Whether the given locking position is null.
-    function isLockingPositionNull(LockingPosition memory position) internal view virtual returns (bool) {
+    function isLockingPositionNull(IL2LockingPosition.LockingPosition memory position)
+        internal
+        view
+        virtual
+        returns (bool)
+    {
         // We are using == to compare with 0 because we want to check if the fields are initialized to 0 or address(0).
         // slither-disable-next-line incorrect-equality
         return position.creator == address(0) && position.amount == 0 && position.expDate == 0
@@ -143,7 +118,7 @@ contract L2Staking is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, I
     /// @return Whether the locking position can be modified by the caller.
     function canLockingPositionBeModified(
         uint256 lockId,
-        LockingPosition memory lock
+        IL2LockingPosition.LockingPosition memory lock
     )
         internal
         view
@@ -175,7 +150,12 @@ contract L2Staking is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, I
     /// @notice Returns the remaining locking duration for the given locking position.
     /// @param lock The locking position for which the remaining locking duration is returned.
     /// @return The remaining locking duration for the given locking position.
-    function remainingLockingDuration(LockingPosition memory lock) internal view virtual returns (uint256) {
+    function remainingLockingDuration(IL2LockingPosition.LockingPosition memory lock)
+        internal
+        view
+        virtual
+        returns (uint256)
+    {
         if (lock.pausedLockingDuration == 0) {
             uint256 today = todayDay();
             if (lock.expDate <= today) {
@@ -268,7 +248,7 @@ contract L2Staking is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, I
         // We assume that owner or creator has already approved the Staking contract to transfer the amount and in most
         // cases lockAmount will be called from a smart contract (creator).
         // slither-disable-next-line arbitrary-send-erc20
-        bool success = IL2LiskToken(l2LiskTokenContract).transferFrom(msg.sender, address(this), amount);
+        bool success = IERC20(l2LiskTokenContract).transferFrom(msg.sender, address(this), amount);
         require(success, "L2Staking: LSK token transfer from owner or creator to Staking contract failed");
 
         uint256 lockId = (IL2LockingPosition(lockingPositionContract)).createLockingPosition(
@@ -281,14 +261,15 @@ contract L2Staking is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, I
     /// @notice Unlocks the given locking position and transfers the locked amount back to the owner.
     /// @param lockId The ID of the locking position to be unlocked.
     function unlock(uint256 lockId) public virtual {
-        LockingPosition memory lock = (IL2LockingPosition(lockingPositionContract)).getLockingPosition(lockId);
+        IL2LockingPosition.LockingPosition memory lock =
+            (IL2LockingPosition(lockingPositionContract)).getLockingPosition(lockId);
         require(isLockingPositionNull(lock) == false, "L2Staking: locking position does not exist");
         require(canLockingPositionBeModified(lockId, lock), "L2Staking: only owner or creator can call this function");
 
         if (lock.expDate <= todayDay() && lock.pausedLockingDuration == 0) {
             // unlocking is valid
             address ownerOfLock = (IL2LockingPosition(lockingPositionContract)).ownerOf(lockId);
-            bool success = IL2LiskToken(l2LiskTokenContract).transfer(ownerOfLock, lock.amount);
+            bool success = IERC20(l2LiskTokenContract).transfer(ownerOfLock, lock.amount);
             require(success, "L2Staking: LSK token transfer from Staking contract to owner failed");
             (IL2LockingPosition(lockingPositionContract)).removeLockingPosition(lockId);
         } else {
@@ -302,7 +283,8 @@ contract L2Staking is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, I
     /// @param lockId The ID of the locking position to be unlocked.
     /// @return The penalty amount applied to the locked amount.
     function initiateFastUnlock(uint256 lockId) public virtual returns (uint256) {
-        LockingPosition memory lock = (IL2LockingPosition(lockingPositionContract)).getLockingPosition(lockId);
+        IL2LockingPosition.LockingPosition memory lock =
+            (IL2LockingPosition(lockingPositionContract)).getLockingPosition(lockId);
         require(isLockingPositionNull(lock) == false, "L2Staking: locking position does not exist");
         require(canLockingPositionBeModified(lockId, lock), "L2Staking: only owner or creator can call this function");
         require(remainingLockingDuration(lock) > FAST_UNLOCK_DURATION, "L2Staking: less than 3 days until unlock");
@@ -318,11 +300,11 @@ contract L2Staking is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, I
 
         if (lock.creator == address(this)) {
             // send penalty amount to the Lisk DAO Treasury contract
-            bool success = IL2LiskToken(l2LiskTokenContract).transfer(daoTreasury, penalty);
+            bool success = IERC20(l2LiskTokenContract).transfer(daoTreasury, penalty);
             require(success, "L2Staking: LSK token transfer from Staking contract to DAO failed");
         } else {
             // send penalty amount to the creator
-            bool success = IL2LiskToken(l2LiskTokenContract).transfer(lock.creator, penalty);
+            bool success = IERC20(l2LiskTokenContract).transfer(lock.creator, penalty);
             require(success, "L2Staking: LSK token transfer from Staking contract to creator failed");
         }
 
@@ -333,7 +315,8 @@ contract L2Staking is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, I
     /// @param lockId The ID of the locking position to be increased.
     /// @param amountIncrease The amount by which the locking position is increased.
     function increaseLockingAmount(uint256 lockId, uint256 amountIncrease) public virtual {
-        LockingPosition memory lock = (IL2LockingPosition(lockingPositionContract)).getLockingPosition(lockId);
+        IL2LockingPosition.LockingPosition memory lock =
+            (IL2LockingPosition(lockingPositionContract)).getLockingPosition(lockId);
         require(isLockingPositionNull(lock) == false, "L2Staking: locking position does not exist");
         require(canLockingPositionBeModified(lockId, lock), "L2Staking: only owner or creator can call this function");
         require(amountIncrease > 0, "L2Staking: increased amount should be greater than zero");
@@ -345,7 +328,7 @@ contract L2Staking is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, I
         // We assume that owner or creator has already approved the Staking contract to transfer the amount and in most
         // cases increaseLockingAmount will be called from a smart contract (creator).
         // slither-disable-next-line arbitrary-send-erc20
-        bool success = IL2LiskToken(l2LiskTokenContract).transferFrom(msg.sender, address(this), amountIncrease);
+        bool success = IERC20(l2LiskTokenContract).transferFrom(msg.sender, address(this), amountIncrease);
         require(success, "L2Staking: LSK token transfer from owner or creator to Staking contract failed");
 
         // update locking position
@@ -358,7 +341,8 @@ contract L2Staking is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, I
     /// @param lockId The ID of the locking position to be extended.
     /// @param extendDays The number of days by which the locking position is extended.
     function extendLockingDuration(uint256 lockId, uint256 extendDays) public virtual {
-        LockingPosition memory lock = (IL2LockingPosition(lockingPositionContract)).getLockingPosition(lockId);
+        IL2LockingPosition.LockingPosition memory lock =
+            (IL2LockingPosition(lockingPositionContract)).getLockingPosition(lockId);
         require(isLockingPositionNull(lock) == false, "L2Staking: locking position does not exist");
         require(canLockingPositionBeModified(lockId, lock), "L2Staking: only owner or creator can call this function");
         require(extendDays > 0, "L2Staking: extendDays should be greater than zero");
@@ -384,7 +368,8 @@ contract L2Staking is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, I
     /// @notice Pauses the countdown of the remaining locking duration of the given locking position.
     /// @param lockId The ID of the locking position for which the remaining locking duration is paused.
     function pauseRemainingLockingDuration(uint256 lockId) public virtual {
-        LockingPosition memory lock = (IL2LockingPosition(lockingPositionContract)).getLockingPosition(lockId);
+        IL2LockingPosition.LockingPosition memory lock =
+            (IL2LockingPosition(lockingPositionContract)).getLockingPosition(lockId);
         require(isLockingPositionNull(lock) == false, "L2Staking: locking position does not exist");
         require(canLockingPositionBeModified(lockId, lock), "L2Staking: only owner or creator can call this function");
         require(lock.pausedLockingDuration == 0, "L2Staking: remaining duration is already paused");
@@ -402,7 +387,8 @@ contract L2Staking is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, I
     /// @notice Resumes the remaining locking duration of the given locking position.
     /// @param lockId The ID of the locking position for which the remaining locking duration is resumed.
     function resumeCountdown(uint256 lockId) public virtual {
-        LockingPosition memory lock = (IL2LockingPosition(lockingPositionContract)).getLockingPosition(lockId);
+        IL2LockingPosition.LockingPosition memory lock =
+            (IL2LockingPosition(lockingPositionContract)).getLockingPosition(lockId);
         require(isLockingPositionNull(lock) == false, "L2Staking: locking position does not exist");
         require(canLockingPositionBeModified(lockId, lock), "L2Staking: only owner or creator can call this function");
         require(lock.pausedLockingDuration > 0, "L2Staking: countdown is not paused");

@@ -5,7 +5,8 @@ import { OwnableUpgradeable } from "@openzeppelin-upgradeable/contracts/access/O
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import { IERC721Errors } from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
 import { Test, console2 } from "forge-std/Test.sol";
-import { L2LockingPosition, LockingPosition } from "src/L2/L2LockingPosition.sol";
+import { L2LockingPosition } from "src/L2/L2LockingPosition.sol";
+import { IL2LockingPosition } from "src/interfaces/L2/IL2LockingPosition.sol";
 import { L2Staking } from "src/L2/L2Staking.sol";
 import { L2VotingPower } from "src/L2/L2VotingPower.sol";
 
@@ -22,7 +23,11 @@ contract L2LockingPositionV2 is L2VotingPower {
 }
 
 contract L2LockingPositionHarness is L2LockingPosition {
-    function exposedIsLockingPositionNull(LockingPosition memory position) public view returns (bool) {
+    function exposedIsLockingPositionNull(IL2LockingPosition.LockingPosition memory position)
+        public
+        view
+        returns (bool)
+    {
         return isLockingPositionNull(position);
     }
 }
@@ -127,7 +132,7 @@ contract L2LockingPositionTest is Test {
     function test_IsLockingPositionNull() public {
         L2LockingPositionHarness l2LockingPositionHarness = new L2LockingPositionHarness();
 
-        LockingPosition memory position;
+        IL2LockingPosition.LockingPosition memory position;
         assert(l2LockingPositionHarness.exposedIsLockingPositionNull(position));
 
         position.creator = address(0xDeaDbeefdEAdbeefdEadbEEFdeadbeEFdEaDbeeF);
@@ -513,7 +518,7 @@ contract L2LockingPositionTest is Test {
     }
 
     function test_GetLockingPosition_PositionDoesNotExist() public {
-        LockingPosition memory position = l2LockingPosition.getLockingPosition(1);
+        IL2LockingPosition.LockingPosition memory position = l2LockingPosition.getLockingPosition(1);
         assertEq(position.creator, address(0));
         assertEq(position.amount, 0);
         assertEq(position.expDate, 0);
@@ -535,7 +540,7 @@ contract L2LockingPositionTest is Test {
         l2LockingPosition.createLockingPosition(address(l2Staking), alice, 500 * 10 ** 18, 365);
         vm.stopPrank();
 
-        LockingPosition[] memory positions = l2LockingPosition.getAllLockingPositionsByOwner(alice);
+        IL2LockingPosition.LockingPosition[] memory positions = l2LockingPosition.getAllLockingPositionsByOwner(alice);
         assertEq(positions.length, 3);
         assertEq(positions[0].amount, 100 * 10 ** 18);
         assertEq(positions[1].amount, 200 * 10 ** 18);
@@ -562,7 +567,7 @@ contract L2LockingPositionTest is Test {
         l2LockingPosition.createLockingPosition(address(l2Staking), bob, 500 * 10 ** 18, 365);
         vm.stopPrank();
 
-        LockingPosition[] memory positions = l2LockingPosition.getAllLockingPositionsByOwner(alice);
+        IL2LockingPosition.LockingPosition[] memory positions = l2LockingPosition.getAllLockingPositionsByOwner(alice);
         assertEq(positions.length, 0);
 
         positions = l2LockingPosition.getAllLockingPositionsByOwner(bob);
