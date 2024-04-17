@@ -516,7 +516,7 @@ contract L2RewardTest is Test {
 
         skip(1 days);
 
-        // All stakers creates a position on deploymentDate + 1, 19741
+        // All stakers create a position on deploymentDate + 1, 19741
         for (uint8 i = 0; i < stakers.length; i++) {
             vm.startPrank(stakers[i]);
             l2LiskToken.approve(address(l2Reward), amount);
@@ -579,7 +579,7 @@ contract L2RewardTest is Test {
 
         skip(1 days);
 
-        // All stakers creates a position on deploymentDate + 1, 19741
+        // All stakers create a position on deploymentDate + 1, 19741
         for (uint8 i = 0; i < stakers.length; i++) {
             vm.startPrank(stakers[i]);
             l2LiskToken.approve(address(l2Reward), amount);
@@ -633,7 +633,6 @@ contract L2RewardTest is Test {
 
         address[3] memory stakers = [address(0x1), address(0x2), address(0x3)];
         uint256[] memory lockIDs = new uint256[](3);
-        uint256[] memory rewards = new uint256[](3);
 
         uint256 funds = convertLiskToSmallestDenomination(1000);
         uint256 amount = convertLiskToSmallestDenomination(1000);
@@ -654,7 +653,7 @@ contract L2RewardTest is Test {
         l2Reward.fundStakingRewards(funds, 365, 1);
         vm.stopPrank();
 
-        // All stakers creates a position on deploymentDate, 19740
+        // All stakers create a position on deploymentDate, 19740
         for (uint8 i = 0; i < stakers.length; i++) {
             vm.startPrank(stakers[i]);
             l2LiskToken.approve(address(l2Reward), amount * (i + 1));
@@ -663,16 +662,13 @@ contract L2RewardTest is Test {
         }
 
         uint256[] memory locksToClaim = new uint256[](1);
-        uint256[] memory rewardsClaimed = new uint256[](1);
 
         for (uint8 i = 0; i < 2; i++) {
             skip(100 days);
             for (uint8 j = 0; j < stakers.length; j++) {
                 locksToClaim[0] = lockIDs[j];
                 vm.startPrank(stakers[j]);
-                rewardsClaimed = l2Reward.claimRewards(locksToClaim);
-
-                rewards[j] += rewardsClaimed[0];
+                l2Reward.claimRewards(locksToClaim);
             }
         }
 
@@ -716,7 +712,7 @@ contract L2RewardTest is Test {
 
         skip(1 days);
 
-        // All stakers creates a position on deploymentDate + 1, 19741
+        // All stakers create a position on deploymentDate + 1, 19741
         for (uint8 i = 0; i < stakers.length; i++) {
             vm.startPrank(stakers[i]);
             l2LiskToken.approve(address(l2Reward), amount);
@@ -780,7 +776,7 @@ contract L2RewardTest is Test {
             vm.stopPrank();
         }
 
-        // no additional rewards as lock is expired after 100 days
+        // no additional rewards for first locking position as reward as lock is expired after 100 days
         assertEq(rewards[0], 10927171697410554831);
         assertEq(rewards[1], 43867348850534650469);
     }
@@ -980,7 +976,7 @@ contract L2RewardTest is Test {
 
         uint256 expectedRewards = 7.4 * 10 ** 18;
         uint256 expectedBalance = l2LiskToken.balanceOf(staker) + expectedRewards;
-        uint256 expectedPausedLockingDuration = deploymentDate + 120 - today;
+        uint256 expectedPausedLockingDuration = 45;
 
         vm.prank(staker);
         uint256 reward = l2Reward.pauseUnlocking(lockID);
@@ -997,7 +993,7 @@ contract L2RewardTest is Test {
         assertEq(lockingPosition.pausedLockingDuration, expectedPausedLockingDuration);
     }
 
-    function test_resumeUnlockingCountdown_onlyOwnerCanBeResumeUnlockingForALockingPosition() public {
+    function test_resumeUnlockingCountdown_onlyOwnerCanResumeUnlockingForALockingPosition() public {
         address staker = address(0x1);
 
         vm.mockCall(
@@ -1087,7 +1083,7 @@ contract L2RewardTest is Test {
         vm.prank(staker);
         l2Reward.pauseUnlocking(lockID);
 
-        uint256 expectedPausedLockingDuration = deploymentDate + 120 - today;
+        uint256 expectedPausedLockingDuration = 70;
         uint256 expectedRewards = convertLiskToSmallestDenomination(5);
 
         balance = l2LiskToken.balanceOf(staker);
@@ -1564,6 +1560,7 @@ contract L2RewardTest is Test {
         }
 
         assertEq(l2LiskToken.balanceOf(staker), convertLiskToSmallestDenomination(1000) - amount + reward);
+        assertEq(l2Reward.dailyRewards(19821), dailyFundedReward);
     }
 
     function test_initiateFastUnlock_forPausedPositionAddsPenaltyAsRewardAlsoUpdatesGlobalsAndClaimRewards() public {
