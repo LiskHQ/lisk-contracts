@@ -169,8 +169,6 @@ contract L2RewardTest is Test {
         address staker = address(0x1);
         uint256 balance = convertLiskToSmallestDenomination(1000);
 
-        uint256[] memory lockIDs = new uint256[](2);
-
         // staker and DAO gets balance
         vm.startPrank(bridge);
         l2LiskToken.mint(staker, balance);
@@ -186,12 +184,12 @@ contract L2RewardTest is Test {
         // staker creates a position on deploymentDate, 19740.
         vm.startPrank(staker);
         l2LiskToken.approve(address(l2Reward), convertLiskToSmallestDenomination(100));
-        lockIDs[0] = l2Reward.createPosition(convertLiskToSmallestDenomination(100), 120);
+        l2Reward.createPosition(convertLiskToSmallestDenomination(100), 120);
 
         // staker creates another position on deploymentDate + 2, 19742.
         skip(2 days);
         l2LiskToken.approve(address(l2Reward), convertLiskToSmallestDenomination(1));
-        lockIDs[1] = l2Reward.createPosition(convertLiskToSmallestDenomination(1), 100);
+        l2Reward.createPosition(convertLiskToSmallestDenomination(1), 100);
         vm.stopPrank();
 
         uint256 expectedTotalWeight = convertLiskToSmallestDenomination(100) * (120 + l2Reward.OFFSET())
@@ -206,6 +204,19 @@ contract L2RewardTest is Test {
         // Rewards are capped for the day, 19741 as funding starts at 19741.
         assertEq(l2Reward.dailyRewards(19741), cappedRewards);
         assertEq(l2Reward.rewardsSurplus(), dailyReward - cappedRewards);
+
+        skip(3 days);
+
+        // staker creates another position on deploymentDate + 4, 1745.
+        vm.startPrank(staker);
+        l2LiskToken.approve(address(l2Reward), convertLiskToSmallestDenomination(100));
+        l2Reward.createPosition(convertLiskToSmallestDenomination(100), 100);
+        vm.stopPrank();
+
+        uint256 newCappedRewards = convertLiskToSmallestDenomination(101) / 365;
+        for (uint16 i = 19742; i < 19745; i++) {
+            assertEq(l2Reward.dailyRewards(i), newCappedRewards);
+        }
     }
 
     function test_fundStakingRewards_onlyDAOTreasuryCanFundRewards() public {
@@ -679,13 +690,11 @@ contract L2RewardTest is Test {
 
         uint256[] memory locksToClaim = new uint256[](1);
 
-        for (uint8 i = 0; i < 2; i++) {
-            skip(100 days);
-            for (uint8 j = 0; j < stakers.length; j++) {
-                locksToClaim[0] = lockIDs[j];
-                vm.startPrank(stakers[j]);
-                l2Reward.claimRewards(locksToClaim);
-            }
+        skip(200 days);
+        for (uint8 i = 0; i < stakers.length; i++) {
+            locksToClaim[0] = lockIDs[i];
+            vm.startPrank(stakers[i]);
+            l2Reward.claimRewards(locksToClaim);
         }
 
         uint256[3] memory expectedRewards =
