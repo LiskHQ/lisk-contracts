@@ -55,6 +55,12 @@ contract TestBridgingScript is Test {
     IWrappedETH l1WdivETH;
     IWrappedETH l2WdivETH;
 
+    // L2 Cross Domain Messenger address
+    address constant L2_CROSS_DOMAIN_MESSENGER_ADDR = 0x4200000000000000000000000000000000000007;
+
+    // L2 sequencer address
+    address constant SEQUENCER_ADDR = 0x968924E6234f7733eCA4E9a76804fD1afA1a4B3D;
+
     function getSlice(uint256 begin, uint256 end, bytes memory text) public pure returns (bytes memory) {
         bytes memory a = new bytes(end - begin + 1);
         for (uint256 i = 0; i <= end - begin; i++) {
