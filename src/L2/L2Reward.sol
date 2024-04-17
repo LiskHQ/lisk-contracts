@@ -326,7 +326,7 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
     }
 
     function _claimReward(uint256 lockID) internal virtual returns (uint256) {
-        require(this.lastClaimDate(lockID) != 0, "L2Reward: Locking position does not exist");
+        require(lastClaimDate[lockID] != 0, "L2Reward: Locking position does not exist");
 
         uint256 today = todayDay();
         uint256 reward;
