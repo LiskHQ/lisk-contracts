@@ -1300,7 +1300,8 @@ contract L2RewardTest is Test {
         skip(10);
 
         // staker stakes on 19770
-        // rewards from 19760 to 19769 are not capped  as the total amount locked is 100 in this time window which is high enough
+        // rewards from 19760 to 19769 are not capped  as the total amount locked is 100 in this time window which is
+        // high enough
         vm.startPrank(staker);
         // daily rewards are capped
         for (uint256 i = 19760; i < 19770; i++) {
