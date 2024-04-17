@@ -1299,9 +1299,8 @@ contract L2RewardTest is Test {
 
         skip(10);
 
-        // staker stakes on 19770, totalAmountLocked is 100
-        // rewards are not capped
-        // daily rewards are set from 19760 to 19769
+        // staker stakes on 19770
+        // rewards from 19760 to 19769 are not capped  as the total amount locked is 100 in this time window which is high enough
         vm.startPrank(staker);
         // daily rewards are capped
         for (uint256 i = 19760; i < 19770; i++) {
@@ -1835,7 +1834,7 @@ contract L2RewardTest is Test {
         l2LiskToken.approve(address(l2Reward), convertLiskToSmallestDenomination(100));
         lockIDs[0] = l2Reward.createPosition(convertLiskToSmallestDenomination(100), 120);
 
-        // staker creates another position on deploymentDate + 2, 1972
+        // staker creates another position on deploymentDate + 2, 19742
         // This will trigger updateGlobalState() for 19740 and 19741
         skip(2 days);
         l2LiskToken.approve(address(l2Reward), convertLiskToSmallestDenomination(1));
