@@ -1269,7 +1269,7 @@ contract L2RewardTest is Test {
         skip(10 days);
 
         // staker stakes on 19750
-        // daily rewards are set from 19740 to 19749
+        // daily rewards from 19740 to 19749 are capped due to zero total amount unlocked
         vm.startPrank(staker);
         l2LiskToken.approve(address(l2Reward), amount);
         uint256 lockID = l2Reward.createPosition(amount, 120);
@@ -1283,7 +1283,7 @@ contract L2RewardTest is Test {
         skip(10 days);
 
         // staker increase amount on 19760
-        // daily rewards are set from 19750 to 19759
+        // "daily rewards from 19750 to 19759 are capped due too low total locked amount
         uint256 cappedRewards = amount / 365;
         uint256 amountIncrease = 90;
 
