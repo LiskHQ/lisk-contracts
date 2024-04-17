@@ -315,35 +315,51 @@ contract L2RewardTest is Test {
     }
 
     function test_claimRewards_rewardIsZeroIfAlreadyClaimedToday() public {
+        l2Staking.addCreator(address(l2Reward));
         address staker = address(0x1);
-        uint256 lockID = 1;
-        uint256 amount = convertLiskToSmallestDenomination(100);
-        uint256 expDate = deploymentDate + 300;
-        uint256 pausedLockingDuration = 0;
-
-        LockingPosition memory lockingPosition = LockingPosition(staker, amount, expDate, pausedLockingDuration);
-
-        vm.mockCall(
-            address(l2LockingPosition), abi.encodeWithSelector(ERC721Upgradeable.ownerOf.selector), abi.encode(staker)
-        );
-
-        // lastClaimDate is today => deploymentDate
-        vm.mockCall(
-            address(l2Reward), abi.encodeWithSelector(l2Reward.lastClaimDate.selector), abi.encode(deploymentDate)
-        );
-
-        vm.mockCall(
-            address(l2LockingPosition),
-            abi.encodeWithSelector(L2LockingPosition.getLockingPosition.selector),
-            abi.encode(lockingPosition)
-        );
+        uint256 balance = convertLiskToSmallestDenomination(1000);
 
         uint256[] memory lockIDs = new uint256[](1);
-        lockIDs[0] = lockID;
 
+        // staker and DAO gets balance
+        vm.startPrank(bridge);
+        l2LiskToken.mint(staker, balance);
+        l2LiskToken.mint(daoTreasury, balance);
+        vm.stopPrank();
+
+        // DAO funds staking
+        vm.startPrank(daoTreasury);
+        l2LiskToken.approve(address(l2Reward), convertLiskToSmallestDenomination(35));
+        l2Reward.fundStakingRewards(convertLiskToSmallestDenomination(35), 350, 1);
+        vm.stopPrank();
+
+        // staker creates a position on deploymentDate, 19740
+        vm.startPrank(staker);
+        l2LiskToken.approve(address(l2Reward), convertLiskToSmallestDenomination(100));
+        lockIDs[0] = l2Reward.createPosition(convertLiskToSmallestDenomination(100), 120);
+        vm.stopPrank();
+
+        // rewards are claimed from lastClaimDate for the lock (19740) till expiry day
+        uint256 today = deploymentDate + 150;
+        skip(150 days);
+
+        uint256 expectedRewards = 11.9 * 10 ** 18;
+        uint256 expectedBalance = l2LiskToken.balanceOf(staker) + expectedRewards;
+
+        // staker claims rewards on, 19890
         vm.prank(staker);
-        l2Reward.claimRewards(lockIDs);
-        assertEq(l2LiskToken.balanceOf(staker), 0);
+        uint256[] memory rewards = l2Reward.claimRewards(lockIDs);
+
+        assertEq(rewards[0], expectedRewards);
+        assertEq(l2Reward.lastClaimDate(lockIDs[0]), today);
+        assertEq(l2LiskToken.balanceOf(staker), expectedBalance);
+
+        // staker claims again on, 19890
+        vm.prank(staker);
+        rewards = l2Reward.claimRewards(lockIDs);
+
+        // reward is zero
+        assertEq(rewards[0], 0);
     }
 
     function test_claimRewards_activePositionsAreRewardedTillExpiry() public {
