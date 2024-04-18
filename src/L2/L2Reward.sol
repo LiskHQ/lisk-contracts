@@ -238,7 +238,7 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
 
     /// @notice Deletes a locking position.
     /// @param lockID The ID of the locking position.
-    function _deletePosition(uint256 lockID) private {
+    function _deletePosition(uint256 lockID) internal virtual {
         // claim rewards and updates staking contract
         _claimReward(lockID);
         IL2Staking(stakingContract).unlock(lockID);
@@ -263,7 +263,7 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
 
     /// @notice Initiates a fast unlock of the locking position.
     /// @param lockID The ID of the locking position.
-    function _initiateFastUnlock(uint256 lockID) private {
+    function _initiateFastUnlock(uint256 lockID) internal virtual {
         // claim rewards and inform staking contract
         _claimReward(lockID);
         IL2LockingPosition.LockingPosition memory lockingPosition =
@@ -397,7 +397,7 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
     /// @notice Increases locked amount against a locking position.
     /// @param lockID The ID of the locking position.
     /// @param amountIncrease The amount to be increased.
-    function _increaseLockingAmount(uint256 lockID, uint256 amountIncrease) private {
+    function _increaseLockingAmount(uint256 lockID, uint256 amountIncrease) internal virtual {
         // claim rewards and update staking contract
         _claimReward(lockID);
         IL2LiskToken(l2TokenContract).transferFrom(msg.sender, address(this), amountIncrease);
@@ -443,7 +443,7 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
     /// @notice Extends duration of a locking position.
     /// @param lockID The ID of the locking position.
     /// @param durationExtension The duration to be extended in days.
-    function _extendDuration(uint256 lockID, uint256 durationExtension) private {
+    function _extendDuration(uint256 lockID, uint256 durationExtension) internal virtual {
         IL2LockingPosition.LockingPosition memory lockingPosition =
             IL2LockingPosition(lockingPositionContract).getLockingPosition(lockID);
 
@@ -487,7 +487,7 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
 
     /// @notice Pauses unlocking of a locking position.
     /// @param lockID The ID of the locking position.
-    function _pauseUnlocking(uint256 lockID) private {
+    function _pauseUnlocking(uint256 lockID) internal virtual {
         // claim rewards and update staking contract
         _claimReward(lockID);
         IL2Staking(stakingContract).pauseRemainingLockingDuration(lockID);
@@ -500,7 +500,7 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
         dailyUnlockedAmounts[lockingPosition.expDate] -= lockingPosition.amount;
     }
 
-    /// @notice Resumes unlcoking of multiple locking positions.
+    /// @notice Resumes unlocking of multiple locking positions.
     /// @param lockIDs The IDs of locking positions.
     function resumeUnlockingCountdown(uint256[] memory lockIDs) public virtual {
         updateGlobalState();
@@ -517,7 +517,7 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
 
     /// @notice Resumes unlocking of a locking position.
     /// @param lockID The ID of the locking position.
-    function _resumeUnlockingCountdown(uint256 lockID) private {
+    function _resumeUnlockingCountdown(uint256 lockID) internal virtual {
         // claim rewards and update staking contract
         _claimReward(lockID);
         IL2Staking(stakingContract).resumeCountdown(lockID);

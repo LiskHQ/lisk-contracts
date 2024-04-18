@@ -207,7 +207,7 @@ contract L2RewardTest is Test {
 
         skip(3 days);
 
-        // staker creates another position on deploymentDate + 4, 1745.
+        // staker creates another position on deploymentDate + 5, 19745.
         vm.startPrank(staker);
         l2LiskToken.approve(address(l2Reward), convertLiskToSmallestDenomination(100));
         l2Reward.createPosition(convertLiskToSmallestDenomination(100), 100);
@@ -504,10 +504,10 @@ contract L2RewardTest is Test {
         uint256 today = deploymentDate + 301;
         skip(301 days);
 
-        // vm.expectEmit(true, true, true, true);
-        // emit L2Reward.RewardsClaimed(lockIDs[0], 6575342465753424600);
-        // vm.expectEmit(true, true, true, true);
-        // emit L2Reward.RewardsClaimed(lockIDs[1], 9863013698630136900);
+        vm.expectEmit(true, true, true, true);
+        emit L2Reward.RewardsClaimed(lockIDs[0], 6575342465753424600);
+        vm.expectEmit(true, true, true, true);
+        emit L2Reward.RewardsClaimed(lockIDs[1], 9863013698630136900);
         vm.prank(staker);
         l2Reward.claimRewards(lockIDs);
 
@@ -689,9 +689,6 @@ contract L2RewardTest is Test {
             l2Reward.claimRewards(locksToClaim);
         }
 
-        uint256[3] memory expectedRewards =
-            [uint256(136529680365296803455), uint256(273059360730593607209), uint256(409589041095890410664)];
-
         uint256[3] memory expectedRewardsOnDeletion =
             [uint256(45662100456621004500), uint256(91324200913242009100), uint256(136986301369863013600)];
 
@@ -707,7 +704,10 @@ contract L2RewardTest is Test {
             l2Reward.deletePositions(positionsToDelete);
             vm.stopPrank();
 
-            assertEq(l2LiskToken.balanceOf(stakers[i]), amount * (i + 1) + expectedRewards[i]);
+            assertEq(
+                l2LiskToken.balanceOf(stakers[i]),
+                (amount * (i + 1)) + (expectedRewardsAfter200Days[i]) + expectedRewardsOnDeletion[i]
+            );
         }
     }
 
