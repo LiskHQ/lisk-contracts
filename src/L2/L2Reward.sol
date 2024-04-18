@@ -311,10 +311,8 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
 
     /// @notice Claim rewards against multiple locking position.
     /// @param lockIDs The IDs of locking position.
-    function claimRewards(uint256[] memory lockIDs) public virtual returns (uint256[] memory) {
+    function claimRewards(uint256[] memory lockIDs) public virtual {
         updateGlobalState();
-
-        uint256[] memory rewards = new uint256[](lockIDs.length);
 
         for (uint8 i = 0; i < lockIDs.length; i++) {
             require(
@@ -322,13 +320,11 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
                 "L2Reward: msg.sender does not own the locking position"
             );
 
-            rewards[i] = _claimReward(lockIDs[i]);
+            _claimReward(lockIDs[i]);
         }
-
-        return rewards;
     }
 
-    function _claimReward(uint256 lockID) internal virtual returns (uint256) {
+    function _claimReward(uint256 lockID) internal virtual {
         require(lastClaimDate[lockID] != 0, "L2Reward: Locking position does not exist");
 
         uint256 today = todayDay();
@@ -336,7 +332,8 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
 
         if (this.lastClaimDate(lockID) >= today) {
             emit RewardsClaimed(lockID, 0);
-            return reward;
+
+            return;
         }
 
         reward = calculateRewards(lockID);
@@ -347,15 +344,12 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
         if (reward != 0) {
             IL2LiskToken(l2TokenContract).transfer(msg.sender, reward);
         }
-
-        return reward;
     }
 
     /// @notice Increases locked amount against a locking position.
     /// @param lockID The ID of the locking position.
     /// @param amountIncrease The amount to be increased.
-    /// @return uint256 Rewards amount.
-    function increaseLockingAmount(uint256 lockID, uint256 amountIncrease) public virtual returns (uint256) {
+    function increaseLockingAmount(uint256 lockID, uint256 amountIncrease) public virtual {
         updateGlobalState();
 
         require(
@@ -366,7 +360,7 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
         require(amountIncrease > 0, "L2Reward: Increased amount should be greater than zero");
 
         // claim rewards and update staking contract
-        uint256 reward = _claimReward(lockID);
+        _claimReward(lockID);
         IL2LiskToken(l2TokenContract).transferFrom(msg.sender, address(this), amountIncrease);
         IL2LiskToken(l2TokenContract).approve(stakingContract, amountIncrease);
         IL2Staking(stakingContract).increaseLockingAmount(lockID, amountIncrease);
@@ -388,15 +382,12 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
             // duration for paused position => lockingPosition.pausedLockingDuration
             totalWeight += amountIncrease * (lockingPosition.pausedLockingDuration + OFFSET);
         }
-
-        return reward;
     }
 
     /// @notice Extends duration of a locking position.
     /// @param lockID The ID of the locking position.
     /// @param durationExtension The duration to be extended in days.
-    /// @return uint256 Rewards amount.
-    function extendDuration(uint256 lockID, uint256 durationExtension) public virtual returns (uint256) {
+    function extendDuration(uint256 lockID, uint256 durationExtension) public virtual {
         updateGlobalState();
 
         require(
@@ -410,7 +401,7 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
             IL2LockingPosition(lockingPositionContract).getLockingPosition(lockID);
 
         // claim rewards and update staking contract
-        uint256 reward = _claimReward(lockID);
+        _claimReward(lockID);
         IL2Staking(stakingContract).extendLockingDuration(lockID, durationExtension);
 
         // update globals
@@ -430,14 +421,11 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
 
             dailyUnlockedAmounts[lockingPosition.expDate + durationExtension] += lockingPosition.amount;
         }
-
-        return reward;
     }
 
     /// @notice Pauses unlocking of a locking position.
     /// @param lockID The ID of the locking position.
-    /// @return Reward amount against the locking position.
-    function pauseUnlocking(uint256 lockID) public virtual returns (uint256) {
+    function pauseUnlocking(uint256 lockID) public virtual {
         updateGlobalState();
 
         require(
@@ -446,7 +434,7 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
         );
 
         // claim rewards and update staking contract
-        uint256 reward = _claimReward(lockID);
+        _claimReward(lockID);
         IL2Staking(stakingContract).pauseRemainingLockingDuration(lockID);
 
         IL2LockingPosition.LockingPosition memory lockingPosition =
@@ -455,14 +443,11 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
         // update globals
         pendingUnlockAmount -= lockingPosition.amount;
         dailyUnlockedAmounts[lockingPosition.expDate] -= lockingPosition.amount;
-
-        return reward;
     }
 
     /// @notice Resumes unlocking of a locking position.
     /// @param lockID The ID of the locking position.
-    /// @return Reward amount against the locking position.
-    function resumeUnlockingCountdown(uint256 lockID) public virtual returns (uint256) {
+    function resumeUnlockingCountdown(uint256 lockID) public virtual {
         updateGlobalState();
 
         require(
@@ -471,7 +456,7 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
         );
 
         // claim rewards and update staking contract
-        uint256 reward = _claimReward(lockID);
+        _claimReward(lockID);
         IL2Staking(stakingContract).resumeCountdown(lockID);
 
         IL2LockingPosition.LockingPosition memory lockingPosition =
@@ -480,8 +465,6 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
         // update globals
         pendingUnlockAmount += lockingPosition.amount;
         dailyUnlockedAmounts[lockingPosition.expDate] += lockingPosition.amount;
-
-        return reward;
     }
 
     /// @notice Adds daily rewards between provided duration.

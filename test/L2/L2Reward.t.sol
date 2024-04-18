@@ -361,9 +361,8 @@ contract L2RewardTest is Test {
         vm.expectEmit(true, true, true, true);
         emit L2Reward.RewardsClaimed(lockIDs[0], expectedRewards);
         vm.prank(staker);
-        uint256[] memory rewards = l2Reward.claimRewards(lockIDs);
+        l2Reward.claimRewards(lockIDs);
 
-        assertEq(rewards[0], expectedRewards);
         assertEq(l2Reward.lastClaimDate(lockIDs[0]), today);
         assertEq(l2LiskToken.balanceOf(staker), expectedBalance);
 
@@ -371,10 +370,7 @@ contract L2RewardTest is Test {
         vm.expectEmit(true, true, true, true);
         emit L2Reward.RewardsClaimed(lockIDs[0], 0);
         vm.prank(staker);
-        rewards = l2Reward.claimRewards(lockIDs);
-
-        // reward is zero
-        assertEq(rewards[0], 0);
+        l2Reward.claimRewards(lockIDs);
     }
 
     function test_claimRewards_activePositionsAreRewardedTillExpiry() public {
@@ -413,9 +409,8 @@ contract L2RewardTest is Test {
         vm.expectEmit(true, true, true, true);
         emit L2Reward.RewardsClaimed(lockIDs[0], expectedRewards);
         vm.prank(staker);
-        uint256[] memory rewards = l2Reward.claimRewards(lockIDs);
+        l2Reward.claimRewards(lockIDs);
 
-        assertEq(rewards[0], expectedRewards);
         assertEq(l2Reward.lastClaimDate(lockIDs[0]), today);
         assertEq(l2LiskToken.balanceOf(staker), expectedBalance);
     }
@@ -462,12 +457,10 @@ contract L2RewardTest is Test {
         vm.expectEmit(true, true, true, true);
         emit L2Reward.RewardsClaimed(lockIDs[1], 80252925540556258);
         vm.prank(staker);
-        uint256[] memory rewards = l2Reward.claimRewards(lockIDs);
+        l2Reward.claimRewards(lockIDs);
 
         balance = l2LiskToken.balanceOf(staker);
 
-        assertEq(rewards[0], 8819747074459443653);
-        assertEq(rewards[1], 80252925540556258);
         assertEq(l2Reward.lastClaimDate(lockIDs[0]), today);
         assertEq(l2Reward.lastClaimDate(lockIDs[1]), today);
         assertEq(balance, expectedBalance);
@@ -517,12 +510,10 @@ contract L2RewardTest is Test {
         vm.expectEmit(true, true, true, true);
         emit L2Reward.RewardsClaimed(lockIDs[1], 9863013698630136900);
         vm.prank(staker);
-        uint256[] memory rewards = l2Reward.claimRewards(lockIDs);
+        l2Reward.claimRewards(lockIDs);
 
         balance = l2LiskToken.balanceOf(staker);
 
-        assertEq(rewards[0], 6575342465753424600);
-        assertEq(rewards[1], 9863013698630136900);
         assertEq(l2Reward.lastClaimDate(lockIDs[0]), today);
         assertEq(l2Reward.lastClaimDate(lockIDs[1]), today);
         assertEq(balance, expectedBalance);
@@ -533,7 +524,6 @@ contract L2RewardTest is Test {
 
         address[5] memory stakers = [address(0x1), address(0x2), address(0x3), address(0x4), address(0x5)];
         uint256[] memory lockIDs = new uint256[](5);
-        uint256[] memory rewards = new uint256[](5);
 
         // rewards are capped
         uint256 funds = convertLiskToSmallestDenomination(1000);
@@ -566,7 +556,6 @@ contract L2RewardTest is Test {
         }
 
         uint256[] memory locksToClaim = new uint256[](1);
-        uint256[] memory rewardsClaimed = new uint256[](1);
 
         uint256 expectedRewardsFor100Days = 27397260273972602700;
 
@@ -577,16 +566,8 @@ contract L2RewardTest is Test {
                 vm.expectEmit(true, true, true, true);
                 emit L2Reward.RewardsClaimed(lockIDs[j], expectedRewardsFor100Days);
                 vm.startPrank(stakers[j]);
-                rewardsClaimed = l2Reward.claimRewards(locksToClaim);
-
-                rewards[j] += rewardsClaimed[0];
-
-                assertEq(rewardsClaimed[0], expectedRewardsFor100Days);
+                l2Reward.claimRewards(locksToClaim);
             }
-        }
-
-        for (uint8 i = 0; i < 5; i++) {
-            assertEq(rewards[i], expectedRewardsFor100Days * 3);
         }
 
         for (uint8 i = 0; i < 5; i++) {
@@ -599,7 +580,6 @@ contract L2RewardTest is Test {
 
         address[5] memory stakers = [address(0x1), address(0x2), address(0x3), address(0x4), address(0x5)];
         uint256[] memory lockIDs = new uint256[](5);
-        uint256[] memory rewards = new uint256[](5);
 
         uint256 funds = convertLiskToSmallestDenomination(1000);
         uint256 amount = convertLiskToSmallestDenomination(1000);
@@ -631,7 +611,6 @@ contract L2RewardTest is Test {
         }
 
         uint256[] memory locksToClaim = new uint256[](1);
-        uint256[] memory rewardsClaimed = new uint256[](1);
 
         uint256 expectedRewardsFor100Days = 54794520547945205400;
 
@@ -642,16 +621,8 @@ contract L2RewardTest is Test {
                 vm.expectEmit(true, true, true, true);
                 emit L2Reward.RewardsClaimed(lockIDs[j], expectedRewardsFor100Days);
                 vm.startPrank(stakers[j]);
-                rewardsClaimed = l2Reward.claimRewards(locksToClaim);
-
-                rewards[j] += rewardsClaimed[0];
-
-                assertEq(rewardsClaimed[0], expectedRewardsFor100Days);
+                l2Reward.claimRewards(locksToClaim);
             }
-        }
-
-        for (uint8 i = 0; i < 5; i++) {
-            assertEq(rewards[i], expectedRewardsFor100Days * 3);
         }
 
         skip(1 days);
@@ -663,9 +634,7 @@ contract L2RewardTest is Test {
 
             vm.expectEmit(true, true, true, true);
             emit L2Reward.RewardsClaimed(lockIDs[i], 0);
-            rewardsClaimed = l2Reward.claimRewards(locksToClaim);
-
-            assertEq(rewardsClaimed[0], 0);
+            l2Reward.claimRewards(locksToClaim);
         }
 
         for (uint8 i = 0; i < 5; i++) {
@@ -743,7 +712,6 @@ contract L2RewardTest is Test {
 
         address[2] memory stakers = [address(0x1), address(0x2)];
         uint256[] memory lockIDs = new uint256[](2);
-        uint256[] memory rewards = new uint256[](2);
 
         uint256 funds = convertLiskToSmallestDenomination(100);
         uint256 amount = convertLiskToSmallestDenomination(100);
@@ -774,7 +742,6 @@ contract L2RewardTest is Test {
         }
 
         uint256[] memory locksToClaim = new uint256[](1);
-        uint256[] memory rewardsClaimed = new uint256[](2);
 
         skip(2 days);
 
@@ -785,14 +752,9 @@ contract L2RewardTest is Test {
             locksToClaim[0] = lockIDs[i];
             vm.expectEmit(true, true, true, true);
             emit L2Reward.RewardsClaimed(lockIDs[i], expectedRewardsAfter2Days[i]);
-            rewardsClaimed = l2Reward.claimRewards(locksToClaim);
-
-            rewards[i] += rewardsClaimed[0];
+            l2Reward.claimRewards(locksToClaim);
             vm.stopPrank();
         }
-
-        assertEq(rewards[0], 228234144255585589);
-        assertEq(rewards[1], 319711061223866463);
 
         skip(49 days);
 
@@ -803,14 +765,9 @@ contract L2RewardTest is Test {
             locksToClaim[0] = lockIDs[i];
             vm.expectEmit(true, true, true, true);
             emit L2Reward.RewardsClaimed(lockIDs[i], expectedRewardsAfter51Days[i]);
-            rewardsClaimed = l2Reward.claimRewards(locksToClaim);
-
-            rewards[i] += rewardsClaimed[0];
+            l2Reward.claimRewards(locksToClaim);
             vm.stopPrank();
         }
-
-        assertEq(rewards[0], 5712406637897779526);
-        assertEq(rewards[1], 8260196101828247800);
 
         skip(49 days);
 
@@ -821,14 +778,9 @@ contract L2RewardTest is Test {
             locksToClaim[0] = lockIDs[i];
             vm.expectEmit(true, true, true, true);
             emit L2Reward.RewardsClaimed(lockIDs[i], expectedRewardsAfter100Days[i]);
-            rewardsClaimed = l2Reward.claimRewards(locksToClaim);
-
-            rewards[i] += rewardsClaimed[0];
+            l2Reward.claimRewards(locksToClaim);
             vm.stopPrank();
         }
-
-        assertEq(rewards[0], 10927171697410554831);
-        assertEq(rewards[1], 16470088576562047769);
 
         skip(100 days);
         uint256[2] memory expectedRewardsAfter200Days = [uint256(0), uint256(27397260273972602700)];
@@ -838,15 +790,9 @@ contract L2RewardTest is Test {
             locksToClaim[0] = lockIDs[i];
             vm.expectEmit(true, true, true, true);
             emit L2Reward.RewardsClaimed(lockIDs[i], expectedRewardsAfter200Days[i]);
-            rewardsClaimed = l2Reward.claimRewards(locksToClaim);
-
-            rewards[i] += rewardsClaimed[0];
+            l2Reward.claimRewards(locksToClaim);
             vm.stopPrank();
         }
-
-        // no additional rewards for first locking position as reward as lock is expired after 100 days
-        assertEq(rewards[0], 10927171697410554831);
-        assertEq(rewards[1], 43867348850534650469);
     }
 
     function test_deletePosition_onlyOwnerCanDeleteALockingPosition() public {
@@ -1053,13 +999,12 @@ contract L2RewardTest is Test {
         vm.expectEmit(true, true, true, true);
         emit L2Reward.RewardsClaimed(lockID, expectedRewards);
         vm.prank(staker);
-        uint256 reward = l2Reward.pauseUnlocking(lockID);
+        l2Reward.pauseUnlocking(lockID);
 
         balance = l2LiskToken.balanceOf(staker);
 
         LockingPosition memory lockingPosition = l2LockingPosition.getLockingPosition(lockID);
 
-        assertEq(reward, expectedRewards);
         assertEq(balance, expectedBalance);
         assertEq(l2Reward.pendingUnlockAmount(), 0);
         assertEq(l2Reward.dailyUnlockedAmounts(deploymentDate + 120), 0);
@@ -1171,7 +1116,7 @@ contract L2RewardTest is Test {
         vm.expectEmit(true, true, true, true);
         emit L2Reward.RewardsClaimed(lockID, expectedRewardsWhenResuming);
         vm.prank(staker);
-        uint256 reward = l2Reward.resumeUnlockingCountdown(lockID);
+        l2Reward.resumeUnlockingCountdown(lockID);
 
         uint256 expectedBalance = balance + expectedRewardsWhenResuming;
 
@@ -1183,7 +1128,6 @@ contract L2RewardTest is Test {
             l2Reward.dailyUnlockedAmounts(today + expectedPausedLockingDuration), convertLiskToSmallestDenomination(100)
         );
         assertEq(l2Reward.lastClaimDate(lockID), today);
-        assertEq(reward, expectedRewardsWhenResuming);
         assertEq(l2LiskToken.balanceOf(staker), expectedBalance);
     }
 
@@ -1264,16 +1208,18 @@ contract L2RewardTest is Test {
 
         balance = l2LiskToken.balanceOf(staker);
 
+        uint256 expectedReward = 4.9 * 10 ** 18;
+
         vm.startPrank(staker);
         l2LiskToken.approve(address(l2Reward), amountIncrease);
         vm.expectEmit(true, true, true, true);
-        emit L2Reward.RewardsClaimed(lockID, 4.9 * 10 ** 18);
-        uint256 reward = l2Reward.increaseLockingAmount(lockID, amountIncrease);
+        emit L2Reward.RewardsClaimed(lockID, expectedReward);
+        l2Reward.increaseLockingAmount(lockID, amountIncrease);
         vm.stopPrank();
 
         assertEq(l2Reward.totalAmountLocked(), amount + amountIncrease);
         assertEq(l2Reward.totalWeight(), expectedTotalWeight);
-        assertEq(l2LiskToken.balanceOf(staker), balance + reward - amountIncrease);
+        assertEq(l2LiskToken.balanceOf(staker), balance + expectedReward - amountIncrease);
         assertEq(l2Reward.pendingUnlockAmount(), convertLiskToSmallestDenomination(135));
         assertEq(l2Reward.dailyUnlockedAmounts(deploymentDate + 120), convertLiskToSmallestDenomination(135));
     }
@@ -1317,15 +1263,17 @@ contract L2RewardTest is Test {
 
         balance = l2LiskToken.balanceOf(staker);
 
+        uint256 expectedReward = 4.9 * 10 ** 18;
+
         vm.startPrank(staker);
         l2LiskToken.approve(address(l2Reward), amountIncrease);
         vm.expectEmit(true, true, true, true);
-        emit L2Reward.RewardsClaimed(lockID, 4.9 * 10 ** 18);
-        uint256 reward = l2Reward.increaseLockingAmount(lockID, amountIncrease);
+        emit L2Reward.RewardsClaimed(lockID, expectedReward);
+        l2Reward.increaseLockingAmount(lockID, amountIncrease);
         vm.stopPrank();
 
         assertEq(l2Reward.totalAmountLocked(), amount + amountIncrease);
-        assertEq(l2LiskToken.balanceOf(staker), balance + reward - amountIncrease);
+        assertEq(l2LiskToken.balanceOf(staker), balance + expectedReward - amountIncrease);
         assertEq(l2Reward.totalWeight(), totalWeightIncrease + totalWeight);
     }
 
@@ -1469,14 +1417,16 @@ contract L2RewardTest is Test {
         uint256 weightIncrease = amount * durationExtension;
         balance = l2LiskToken.balanceOf(staker);
 
+        uint256 expectedReward = 4.9 * 10 ** 18;
+
         vm.startPrank(staker);
         vm.expectEmit(true, true, true, true);
-        emit L2Reward.RewardsClaimed(1, 4.9 * 10 ** 18);
-        uint256 reward = l2Reward.extendDuration(lockID, durationExtension);
+        emit L2Reward.RewardsClaimed(lockID, expectedReward);
+        l2Reward.extendDuration(lockID, durationExtension);
         vm.stopPrank();
 
         assertEq(l2Reward.totalWeight(), (27000 * 10 ** 18) - (5000 * 10 ** 18) + weightIncrease);
-        assertEq(l2LiskToken.balanceOf(staker), balance + reward);
+        assertEq(l2LiskToken.balanceOf(staker), balance + expectedReward);
         assertEq(l2Reward.dailyUnlockedAmounts(deploymentDate + duration), 0);
         assertEq(l2Reward.dailyUnlockedAmounts(deploymentDate + duration + durationExtension), amount);
     }
@@ -1511,13 +1461,15 @@ contract L2RewardTest is Test {
         uint256 weightIncrease = (amount * durationExtension) + (amount * l2Reward.OFFSET());
         balance = l2LiskToken.balanceOf(staker);
 
+        uint256 expectedReward = 11.9 * 10 ** 18;
+
         vm.startPrank(staker);
         vm.expectEmit(true, true, true, true);
-        emit L2Reward.RewardsClaimed(lockID, 11.9 * 10 ** 18);
-        uint256 reward = l2Reward.extendDuration(lockID, durationExtension);
+        emit L2Reward.RewardsClaimed(lockID, expectedReward);
+        l2Reward.extendDuration(lockID, durationExtension);
         vm.stopPrank();
 
-        assertEq(l2LiskToken.balanceOf(staker), balance + reward);
+        assertEq(l2LiskToken.balanceOf(staker), balance + expectedReward);
         assertEq(l2Reward.totalWeight(), weightIncrease);
 
         assertEq(l2Reward.totalAmountLocked(), amount);
@@ -1548,23 +1500,24 @@ contract L2RewardTest is Test {
         vm.startPrank(staker);
         l2LiskToken.approve(address(l2Reward), amount);
         uint256 lockID = l2Reward.createPosition(amount, duration);
-        uint256 reward = l2Reward.pauseUnlocking(lockID);
+        l2Reward.pauseUnlocking(lockID);
         vm.stopPrank();
 
         skip(120 days);
 
         uint256 weightIncrease = amount * durationExtension;
         uint256 expectedTotalWeight = l2Reward.totalWeight() + weightIncrease;
+        uint256 expectedReward = 11.9 * 10 ** 18;
 
         balance = l2LiskToken.balanceOf(staker);
 
         vm.startPrank(staker);
         vm.expectEmit(true, true, true, true);
-        emit L2Reward.RewardsClaimed(lockID, 11.9 * 10 ** 18);
-        reward = l2Reward.extendDuration(lockID, durationExtension);
+        emit L2Reward.RewardsClaimed(lockID, expectedReward);
+        l2Reward.extendDuration(lockID, durationExtension);
         vm.stopPrank();
 
-        assertEq(l2LiskToken.balanceOf(staker), balance + reward);
+        assertEq(l2LiskToken.balanceOf(staker), balance + expectedReward);
         assertEq(l2Reward.totalWeight(), expectedTotalWeight);
     }
 
