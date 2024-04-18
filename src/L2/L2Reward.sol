@@ -313,11 +313,6 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
             // rewardableDuration is zero
             (, rewardableDuration) = Math.trySub(lockingPosition.expDate, lastClaimDate[lockID]);
 
-            if (lastClaimDate[lockID] > lockingPosition.expDate) {
-                rewardableDuration = 0;
-            } else {
-                rewardableDuration = lockingPosition.expDate - lastClaimDate[lockID];
-            }
             lastRewardDay = Math.min(lockingPosition.expDate, today);
         } else {
             rewardableDuration = lockingPosition.pausedLockingDuration;
