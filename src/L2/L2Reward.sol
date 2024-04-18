@@ -128,6 +128,9 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
     /// @notice Emitted when the DAO Treasury address is changed.
     event DaoTreasuryAddressChanged(address indexed oldAddress, address indexed newAddress);
 
+    /// @notice Emitted when a position is rewarded.
+    event RewardsClaimed(uint256 lockID, uint256 amount);
+
     constructor() {
         _disableInitializers();
     }
@@ -332,10 +335,12 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
         uint256 reward;
 
         if (this.lastClaimDate(lockID) >= today) {
+            emit RewardsClaimed(lockID, 0);
             return reward;
         }
 
         reward = calculateRewards(lockID);
+        emit RewardsClaimed(lockID, reward);
 
         lastClaimDate[lockID] = today;
 
