@@ -309,7 +309,15 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
         uint256 weight;
 
         if (lockingPosition.pausedLockingDuration == 0) {
-            rewardableDuration = lockingPosition.expDate - lastClaimDate[lockID];
+            // If rewards are claimed against an expired position that was already claimed after expiry period,
+            // rewardableDuration is zero
+            (, rewardableDuration) = Math.trySub(lockingPosition.expDate, lastClaimDate[lockID]);
+
+            if (lastClaimDate[lockID] > lockingPosition.expDate) {
+                rewardableDuration = 0;
+            } else {
+                rewardableDuration = lockingPosition.expDate - lastClaimDate[lockID];
+            }
             lastRewardDay = Math.min(lockingPosition.expDate, today);
         } else {
             rewardableDuration = lockingPosition.pausedLockingDuration;

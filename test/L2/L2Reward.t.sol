@@ -11,6 +11,7 @@ import { L2LockingPosition, LockingPosition } from "src/L2/L2LockingPosition.sol
 import { L2Staking } from "src/L2/L2Staking.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { IERC20Errors } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 
 contract L2RewardTest is Test {
     L2LiskToken public l2LiskToken;
@@ -797,6 +798,57 @@ contract L2RewardTest is Test {
             l2Reward.claimRewards(locksToClaim);
             vm.stopPrank();
         }
+    }
+
+    function test_claimRewards_rewardClaimedAgainstExpiredPositionIsZeroIfAlreadyClaimedAfterExpiry() public {
+        l2Staking.addCreator(address(l2Reward));
+        address staker = address(0x1);
+        uint256 balance = convertLiskToSmallestDenomination(1000);
+
+        uint256[] memory lockIDs = new uint256[](1);
+
+        // staker and DAO gets balance
+        vm.startPrank(bridge);
+        l2LiskToken.mint(staker, balance);
+        l2LiskToken.mint(daoTreasury, balance);
+        vm.stopPrank();
+
+        // DAO funds staking
+        vm.startPrank(daoTreasury);
+        l2LiskToken.approve(address(l2Reward), convertLiskToSmallestDenomination(35));
+        l2Reward.fundStakingRewards(convertLiskToSmallestDenomination(35), 350, 1);
+        vm.stopPrank();
+
+        // staker creates a position on deploymentDate, 19740
+        vm.startPrank(staker);
+        l2LiskToken.approve(address(l2Reward), convertLiskToSmallestDenomination(100));
+        lockIDs[0] = l2Reward.createPosition(convertLiskToSmallestDenomination(100), 120);
+        vm.stopPrank();
+
+        // rewards are claimed from lastClaimDate for the lock (19740) till expiry day
+        uint256 today = deploymentDate + 150;
+        skip(150 days);
+
+        uint256 expectedRewards = 11.9 * 10 ** 18;
+        uint256 expectedBalance = l2LiskToken.balanceOf(staker) + expectedRewards;
+
+        // staker claims rewards on, 19890
+        vm.expectEmit(true, true, true, true);
+        emit L2Reward.RewardsClaimed(lockIDs[0], expectedRewards);
+        vm.prank(staker);
+        l2Reward.claimRewards(lockIDs);
+
+        assertEq(l2Reward.lastClaimDate(lockIDs[0]), today);
+        assertEq(l2LiskToken.balanceOf(staker), expectedBalance);
+
+        skip(5 days);
+        today += 5;
+        // staker claims again on, 19895
+        vm.expectEmit(true, true, true, true);
+        emit L2Reward.RewardsClaimed(lockIDs[0], 0);
+        vm.prank(staker);
+        l2Reward.claimRewards(lockIDs);
+        assertEq(l2Reward.lastClaimDate(lockIDs[0]), today);
     }
 
     function test_deletePositions_onlyOwnerCanDeleteALockingPosition() public {
