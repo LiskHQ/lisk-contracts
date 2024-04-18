@@ -131,6 +131,18 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
     /// @notice Emitted when a position is rewarded.
     event RewardsClaimed(uint256 lockID, uint256 amount);
 
+    /// @notice Represents duration extension for a position.
+    struct ExtendedDuration {
+        uint256 lockID;
+        uint256 durationExtension;
+    }
+
+    /// @notice Represents increased lock amount for a position.
+    struct IncreasedAmount {
+        uint256 lockID;
+        uint256 amountIncrease;
+    }
+
     constructor() {
         _disableInitializers();
     }
@@ -209,15 +221,24 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
         return id;
     }
 
+    /// @notice Deletes multiple locking positions.
+    /// @param lockIDs The IDs of locking positions.
+    function deletePositions(uint256[] memory lockIDs) public virtual {
+        updateGlobalState();
+
+        for (uint8 i = 0; i < lockIDs.length; i++) {
+            require(
+                IL2LockingPosition(lockingPositionContract).ownerOf(lockIDs[i]) == msg.sender,
+                "L2Reward: msg.sender does not own the locking position"
+            );
+
+            _deletePosition(lockIDs[i]);
+        }
+    }
+
     /// @notice Deletes a locking position.
     /// @param lockID The ID of the locking position.
-    function deletePosition(uint256 lockID) public virtual {
-        updateGlobalState();
-        require(
-            IL2LockingPosition(lockingPositionContract).ownerOf(lockID) == msg.sender,
-            "L2Reward: msg.sender does not own the locking position"
-        );
-
+    function _deletePosition(uint256 lockID) private {
         // claim rewards and updates staking contract
         _claimReward(lockID);
         IL2Staking(stakingContract).unlock(lockID);
@@ -225,16 +246,24 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
         delete lastClaimDate[lockID];
     }
 
-    /// @notice Initiates a fast unlock of the locking position.
-    /// @param lockID The ID of the locking position.
-    function initiateFastUnlock(uint256 lockID) public virtual {
+    /// @notice Initiates fast unlock of multiple locking positions.
+    /// @param lockIDs The IDs of locking positions.
+    function initiateFastUnlock(uint256[] memory lockIDs) public virtual {
         updateGlobalState();
 
-        require(
-            IL2LockingPosition(lockingPositionContract).ownerOf(lockID) == msg.sender,
-            "L2Reward: msg.sender does not own the locking position"
-        );
+        for (uint8 i = 0; i < lockIDs.length; i++) {
+            require(
+                IL2LockingPosition(lockingPositionContract).ownerOf(lockIDs[i]) == msg.sender,
+                "L2Reward: msg.sender does not own the locking position"
+            );
 
+            _initiateFastUnlock(lockIDs[i]);
+        }
+    }
+
+    /// @notice Initiates a fast unlock of the locking position.
+    /// @param lockID The ID of the locking position.
+    function _initiateFastUnlock(uint256 lockID) private {
         // claim rewards and inform staking contract
         _claimReward(lockID);
         IL2LockingPosition.LockingPosition memory lockingPosition =
@@ -324,6 +353,8 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
         }
     }
 
+    /// @notice Claim rewards against a locking position.
+    /// @param lockID The ID of the locking position.
     function _claimReward(uint256 lockID) internal virtual {
         require(lastClaimDate[lockID] != 0, "L2Reward: Locking position does not exist");
 
@@ -346,19 +377,27 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
         }
     }
 
+    /// @notice Increases locked amount against multiple locking positions.
+    /// @param locks The IDs of locking positions.
+    function increaseLockingAmount(IncreasedAmount[] memory locks) public virtual {
+        updateGlobalState();
+
+        for (uint8 i = 0; i < locks.length; i++) {
+            require(
+                IL2LockingPosition(lockingPositionContract).ownerOf(locks[i].lockID) == msg.sender,
+                "L2Reward: msg.sender does not own the locking position"
+            );
+
+            require(locks[i].amountIncrease > 0, "L2Reward: Increased amount should be greater than zero");
+
+            _increaseLockingAmount(locks[0].lockID, locks[0].amountIncrease);
+        }
+    }
+
     /// @notice Increases locked amount against a locking position.
     /// @param lockID The ID of the locking position.
     /// @param amountIncrease The amount to be increased.
-    function increaseLockingAmount(uint256 lockID, uint256 amountIncrease) public virtual {
-        updateGlobalState();
-
-        require(
-            IL2LockingPosition(lockingPositionContract).ownerOf(lockID) == msg.sender,
-            "L2Reward: msg.sender does not own the locking position"
-        );
-
-        require(amountIncrease > 0, "L2Reward: Increased amount should be greater than zero");
-
+    function _increaseLockingAmount(uint256 lockID, uint256 amountIncrease) private {
         // claim rewards and update staking contract
         _claimReward(lockID);
         IL2LiskToken(l2TokenContract).transferFrom(msg.sender, address(this), amountIncrease);
@@ -384,19 +423,27 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
         }
     }
 
+    /// @notice Extends duration of multiple locking positions.
+    /// @param locks The IDs of locking positions and their extended duration.
+    function extendDuration(ExtendedDuration[] memory locks) public virtual {
+        updateGlobalState();
+
+        for (uint8 i = 0; i < locks.length; i++) {
+            require(
+                IL2LockingPosition(lockingPositionContract).ownerOf(locks[i].lockID) == msg.sender,
+                "L2Reward: msg.sender does not own the locking position"
+            );
+
+            require(locks[i].durationExtension > 0, "L2Reward: Extended duration should be greater than zero");
+
+            _extendDuration(locks[i].lockID, locks[i].durationExtension);
+        }
+    }
+
     /// @notice Extends duration of a locking position.
     /// @param lockID The ID of the locking position.
     /// @param durationExtension The duration to be extended in days.
-    function extendDuration(uint256 lockID, uint256 durationExtension) public virtual {
-        updateGlobalState();
-
-        require(
-            IL2LockingPosition(lockingPositionContract).ownerOf(lockID) == msg.sender,
-            "L2Reward: msg.sender does not own the locking position"
-        );
-
-        require(durationExtension > 0, "L2Reward: Extended duration should be greater than zero");
-
+    function _extendDuration(uint256 lockID, uint256 durationExtension) private {
         IL2LockingPosition.LockingPosition memory lockingPosition =
             IL2LockingPosition(lockingPositionContract).getLockingPosition(lockID);
 
@@ -423,16 +470,24 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
         }
     }
 
-    /// @notice Pauses unlocking of a locking position.
-    /// @param lockID The ID of the locking position.
-    function pauseUnlocking(uint256 lockID) public virtual {
+    /// @notice Pauses unlocking of multiple locking positions.
+    /// @param lockIDs The IDs of locking positions.
+    function pauseUnlocking(uint256[] memory lockIDs) public virtual {
         updateGlobalState();
 
-        require(
-            IL2LockingPosition(lockingPositionContract).ownerOf(lockID) == msg.sender,
-            "L2Reward: msg.sender does not own the locking position"
-        );
+        for (uint8 i = 0; i < lockIDs.length; i++) {
+            require(
+                IL2LockingPosition(lockingPositionContract).ownerOf(lockIDs[i]) == msg.sender,
+                "L2Reward: msg.sender does not own the locking position"
+            );
 
+            _pauseUnlocking(lockIDs[i]);
+        }
+    }
+
+    /// @notice Pauses unlocking of a locking position.
+    /// @param lockID The ID of the locking position.
+    function _pauseUnlocking(uint256 lockID) private {
         // claim rewards and update staking contract
         _claimReward(lockID);
         IL2Staking(stakingContract).pauseRemainingLockingDuration(lockID);
@@ -445,16 +500,24 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
         dailyUnlockedAmounts[lockingPosition.expDate] -= lockingPosition.amount;
     }
 
-    /// @notice Resumes unlocking of a locking position.
-    /// @param lockID The ID of the locking position.
-    function resumeUnlockingCountdown(uint256 lockID) public virtual {
+    /// @notice Resumes unlcoking of multiple locking positions.
+    /// @param lockIDs The IDs of locking positions.
+    function resumeUnlockingCountdown(uint256[] memory lockIDs) public virtual {
         updateGlobalState();
 
-        require(
-            IL2LockingPosition(lockingPositionContract).ownerOf(lockID) == msg.sender,
-            "L2Reward: msg.sender does not own the locking position"
-        );
+        for (uint8 i = 0; i < lockIDs.length; i++) {
+            require(
+                IL2LockingPosition(lockingPositionContract).ownerOf(lockIDs[i]) == msg.sender,
+                "L2Reward: msg.sender does not own the locking position"
+            );
 
+            _resumeUnlockingCountdown(lockIDs[i]);
+        }
+    }
+
+    /// @notice Resumes unlocking of a locking position.
+    /// @param lockID The ID of the locking position.
+    function _resumeUnlockingCountdown(uint256 lockID) private {
         // claim rewards and update staking contract
         _claimReward(lockID);
         IL2Staking(stakingContract).resumeCountdown(lockID);
