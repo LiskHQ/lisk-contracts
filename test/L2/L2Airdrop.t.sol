@@ -6,7 +6,7 @@ import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { Test, console2, stdStorage, StdStorage } from "forge-std/Test.sol";
 import { L2Airdrop } from "src/L2/L2Airdrop.sol";
 import { L2Claim } from "src/L2/L2Claim.sol";
-import { L2LockingPosition, LockingPosition } from "src/L2/L2LockingPosition.sol";
+import { L2LockingPosition } from "src/L2/L2LockingPosition.sol";
 import { L2LiskToken } from "src/L2/L2LiskToken.sol";
 import { L2Staking } from "src/L2/L2Staking.sol";
 import { L2VotingPower } from "src/L2/L2VotingPower.sol";
