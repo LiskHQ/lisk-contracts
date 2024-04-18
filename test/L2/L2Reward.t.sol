@@ -1501,6 +1501,7 @@ contract L2RewardTest is Test {
         skip(121 days);
 
         locks[0].durationExtension = 50;
+        // For expired positions, amount is effectively re-locked for the extended duration.
         uint256 weightIncrease = (amount * locks[0].durationExtension) + (amount * l2Reward.OFFSET());
         balance = l2LiskToken.balanceOf(staker);
 
