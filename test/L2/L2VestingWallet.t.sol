@@ -63,7 +63,7 @@ contract L2VestingWalletTest is Test {
 
         vm.prank(beneficiary);
         l2VestingWallet.release(address(mockToken));
-        assertEq(mockToken.balanceOf(beneficiary), vestAmount/ 10);
+        assertEq(mockToken.balanceOf(beneficiary), vestAmount / 10);
     }
 
     // To verify if the contract works correctly when durationSeconds = 0
@@ -74,11 +74,7 @@ contract L2VestingWalletTest is Test {
                     new ERC1967Proxy(
                         address(l2VestingWalletImplementation),
                         abi.encodeWithSelector(
-                            l2VestingWalletImplementation.initialize.selector,
-                            beneficiary,
-                            startTimestamp,
-                            0,
-                            name
+                            l2VestingWalletImplementation.initialize.selector, beneficiary, startTimestamp, 0, name
                         )
                     )
                 )

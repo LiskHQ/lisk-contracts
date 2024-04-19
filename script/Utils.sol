@@ -187,7 +187,7 @@ contract Utils is Script {
         try vm.parseJsonAddress(addressJson, ".L2VestingWalletImplementation") returns (
             address l2VestingWalletImplementation
         ) {
-        l2AddressesConfig.L2VestingWalletImplementation = l2VestingWalletImplementation;
+            l2AddressesConfig.L2VestingWalletImplementation = l2VestingWalletImplementation;
         } catch { }
 
         return l2AddressesConfig;
@@ -209,7 +209,7 @@ contract Utils is Script {
         vm.serializeAddress(json, "L2StakingImplementation", cfg.L2StakingImplementation);
         vm.serializeAddress(json, "L2TimelockController", cfg.L2TimelockController);
         vm.serializeAddress(json, "L2VotingPower", cfg.L2VotingPower);
-            vm.serializeAddress(json, "L2VotingPowerImplementation", cfg.L2VotingPowerImplementation);
+        vm.serializeAddress(json, "L2VotingPowerImplementation", cfg.L2VotingPowerImplementation);
         string memory finalJson =
             vm.serializeAddress(json, "L2VestingWalletImplementation", cfg.L2VestingWalletImplementation);
         finalJson.write(string.concat("deployment/", network, "/l2addresses.json"));
