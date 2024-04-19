@@ -2,16 +2,17 @@
 pragma solidity 0.8.23;
 
 import { Test, console2 } from "forge-std/Test.sol";
-import { IL2LiskToken, IL2LockingPosition, IL2Staking, L2Reward } from "src/L2/L2Reward.sol";
+import { IL2LiskToken, IL2Staking, L2Reward } from "src/L2/L2Reward.sol";
 import { ERC721Upgradeable } from "@openzeppelin-upgradeable/contracts/token/ERC721/ERC721Upgradeable.sol";
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import { L2VotingPower } from "src/L2/L2VotingPower.sol";
 import { L2LiskToken } from "src/L2/L2LiskToken.sol";
-import { L2LockingPosition, LockingPosition } from "src/L2/L2LockingPosition.sol";
+import { L2LockingPosition } from "src/L2/L2LockingPosition.sol";
 import { L2Staking } from "src/L2/L2Staking.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { IERC20Errors } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
+import { IL2LockingPosition } from "src/interfaces/L2/IL2LockingPosition.sol";
 
 contract L2RewardTest is Test {
     L2LiskToken public l2LiskToken;
@@ -941,7 +942,7 @@ contract L2RewardTest is Test {
 
         balance = l2LiskToken.balanceOf(staker);
 
-        LockingPosition memory lockingPosition = l2LockingPosition.getLockingPosition(lockIDs[0]);
+        IL2LockingPosition.LockingPosition memory lockingPosition = l2LockingPosition.getLockingPosition(lockIDs[0]);
 
         assertEq(balance, expectedBalance);
         assertEq(l2Reward.pendingUnlockAmount(), 0);
@@ -1046,7 +1047,7 @@ contract L2RewardTest is Test {
 
         uint256 expectedBalance = balance + expectedRewardsWhenResuming;
 
-        LockingPosition memory lockingPosition = l2LockingPosition.getLockingPosition(lockIDs[0]);
+        IL2LockingPosition.LockingPosition memory lockingPosition = l2LockingPosition.getLockingPosition(lockIDs[0]);
 
         assertEq(lockingPosition.expDate, today + expectedPausedLockingDuration);
         assertEq(l2Reward.pendingUnlockAmount(), convertLiskToSmallestDenomination(100));
