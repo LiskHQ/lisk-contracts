@@ -227,7 +227,7 @@ contract L2RewardTest is Test {
         // staker creates a position on deploymentDate, 19740
         when_stakerCreatesPosition(staker, Position({ amount: convertLiskToSmallestDenomination(100), duration: 120 }));
 
-        // staker creates another position on deploymentDate + 2, 19742.=
+        // staker creates another position on deploymentDate + 2, 19742
         skip(2 days);
         when_stakerCreatesPosition(staker, Position({ amount: convertLiskToSmallestDenomination(1), duration: 100 }));
 
