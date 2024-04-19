@@ -7,57 +7,9 @@ import { UUPSUpgradeable } from "@openzeppelin-upgradeable/contracts/proxy/utils
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { ISemver } from "../utils/ISemver.sol";
-
-/// @title IL2LiskToken
-/// @notice Interface for the L2LiskToken contract.
-interface IL2LiskToken {
-    function transfer(address to, uint256 value) external returns (bool);
-
-    function transferFrom(address from, address to, uint256 value) external returns (bool);
-
-    function approve(address spender, uint256 value) external returns (bool);
-}
-
-/// @title IL2LiskToken
-/// @notice Interface for the L2LiskToken contract.
-interface IL2Staking {
-    function lockAmount(address account, uint256 amount, uint256 duration) external returns (uint256);
-
-    function unlock(uint256 lockID) external;
-
-    function initiateFastUnlock(uint256 lockID) external returns (uint256);
-
-    function increaseAmount(uint256 lockID, uint256 reward) external;
-
-    function increaseLockingAmount(uint256 lockID, uint256 amountIncrease) external;
-
-    function extendLockingDuration(uint256 lockID, uint256 durationExtension) external;
-
-    function pauseRemainingLockingDuration(uint256 lockID) external;
-
-    function resumeCountdown(uint256 lockID) external;
-
-    function calculatePenalty(uint256 lockID) external returns (uint256);
-
-    function FAST_UNLOCK_DURATION() external returns (uint256);
-}
-
-/// @title IL2LockingPosition
-/// @notice Interface for the L2LockingPosition contract.
-interface IL2LockingPosition {
-    ///  @title LockingPosition
-    /// @notice Struct for locking position.
-    struct LockingPosition {
-        address creator;
-        uint256 amount;
-        uint256 expDate;
-        uint256 pausedLockingDuration;
-    }
-
-    function ownerOf(uint256 lockID) external returns (address);
-
-    function getLockingPosition(uint256 positionId) external view returns (LockingPosition memory);
-}
+import { IL2LockingPosition } from "../interfaces/L2/IL2LockingPosition.sol";
+import { IL2Staking } from "../interfaces/L2/IL2Staking.sol";
+import { IL2LiskToken } from "../interfaces/L2/IL2LiskToken.sol";
 
 /// @title L2Reward
 /// @notice This contract manages and handles L2 Staking Rewards.
