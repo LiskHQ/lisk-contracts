@@ -41,6 +41,8 @@ contract Utils is Script {
         address L2VotingPower;
         /// @notice The Current implementation of L2 Voting Power Contract.
         address L2VotingPowerImplementation;
+        /// @notice The Current implementation of L2 Vesting Wallet.
+        address L2VestingWalletImplementation;
     }
 
     /// @notice This struct is used to read MerkleRoot from JSON file.
@@ -74,6 +76,11 @@ contract Utils is Script {
 
     struct VestingPlans {
         VestingPlan[] vestingPlans;
+    }
+
+    struct VestingWallet {
+        string name;
+        address vestingWalletAddress;
     }
 
     /// @notice This function gets network type from .env file. It should be either mainnet, testnet or devnet.
@@ -177,6 +184,12 @@ contract Utils is Script {
             l2AddressesConfig.L2VotingPowerImplementation = l2VotingPowerImplementation;
         } catch { }
 
+        try vm.parseJsonAddress(addressJson, ".L2VestingWalletImplementation") returns (
+            address l2VestingWalletImplementation
+        ) {
+        l2AddressesConfig.L2VestingWalletImplementation = l2VestingWalletImplementation;
+        } catch { }
+
         return l2AddressesConfig;
     }
 
@@ -196,9 +209,22 @@ contract Utils is Script {
         vm.serializeAddress(json, "L2StakingImplementation", cfg.L2StakingImplementation);
         vm.serializeAddress(json, "L2TimelockController", cfg.L2TimelockController);
         vm.serializeAddress(json, "L2VotingPower", cfg.L2VotingPower);
-        string memory finalJson =
             vm.serializeAddress(json, "L2VotingPowerImplementation", cfg.L2VotingPowerImplementation);
+        string memory finalJson =
+            vm.serializeAddress(json, "L2VestingWalletImplementation", cfg.L2VestingWalletImplementation);
         finalJson.write(string.concat("deployment/", network, "/l2addresses.json"));
+    }
+
+    function writeVestingWalletsFile(VestingWallet[] memory vestingWallets) external {
+        string memory network = getNetworkType();
+
+        string memory json = "vestingWallets";
+        string memory finalJson;
+        for (uint256 i = 0; i < vestingWallets.length; i++) {
+            VestingWallet memory vestingWallet = vestingWallets[i];
+            finalJson = vm.serializeAddress(json, vestingWallet.name, vestingWallet.vestingWalletAddress);
+        }
+        finalJson.write(string.concat("deployment/", network, "/vestingWallets.json"));
     }
 
     /// @notice This function reads MerkleRoot from JSON file.

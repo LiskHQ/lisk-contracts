@@ -18,6 +18,8 @@ contract L2VestingWalletScript is Script {
 
     /// @notice This function deploys L2 Vesting Wallet contract.
     function run() public {
+        Utils.L2AddressesConfig memory l2AddressesConfig = utils.readL2AddressesFile();
+
         // Deployer's private key. Owner of the L2 Vesting Wallet. PRIVATE_KEY is set in .env file.
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
 
@@ -36,6 +38,7 @@ contract L2VestingWalletScript is Script {
         );
 
         Utils.VestingPlans memory plans = utils.readVestingPlansFile();
+        Utils.VestingWallet[] memory vestingWallets = new Utils.VestingWallet[](plans.vestingPlans.length);
         for (uint256 i; i < plans.vestingPlans.length; i++) {
             console2.log("Deploying Vesting Plan #%d: %s", i, plans.vestingPlans[i].name);
 
@@ -66,7 +69,14 @@ contract L2VestingWalletScript is Script {
             // Owner automatically transferred to beneficiary during initialize
             assert(l2VestingWallet.owner() == beneficiary);
 
-            // TODO: Output Implementation and VestingWallet as JSON
+            vestingWallets[i] = Utils.VestingWallet(vestingPlan.name, address(l2VestingWalletProxy));
         }
+
+        // Write all Vesting Contract addresses to vestingWallets.json
+        utils.writeVestingWalletsFile(vestingWallets);
+
+        // write L2VestingWallet address to l2addresses.json
+        l2AddressesConfig.L2VestingWalletImplementation = address(l2VestingWalletImplementation);
+        utils.writeL2AddressesFile(l2AddressesConfig);
     }
 }
