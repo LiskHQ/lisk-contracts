@@ -30,19 +30,19 @@ echo "Done."
 echo "Deploying and if enabled verifying L2Claim smart contract..."
 if [ -z "$CONTRACT_VERIFIER" ]
 then
-      forge script --rpc-url="$L2_RPC_URL" --broadcast -vvvv script/L2Claim.s.sol:L2ClaimScript
+      forge script --rpc-url="$L2_RPC_URL" --broadcast -vvvv script/contracts/L2/L2Claim.s.sol:L2ClaimScript
 else
       if [ $CONTRACT_VERIFIER = "blockscout" ]
       then
-            forge script --rpc-url="$L2_RPC_URL" --broadcast --verify --verifier blockscout --verifier-url $L2_VERIFIER_URL -vvvv script/L2Claim.s.sol:L2ClaimScript
+            forge script --rpc-url="$L2_RPC_URL" --broadcast --verify --verifier blockscout --verifier-url $L2_VERIFIER_URL -vvvv script/contracts/L2/L2Claim.s.sol:L2ClaimScript
       fi
       if [ $CONTRACT_VERIFIER = "etherscan" ]
       then        
-            forge script --rpc-url="$L2_RPC_URL" --broadcast --verify --verifier etherscan --etherscan-api-key="$L2_ETHERSCAN_API_KEY" -vvvv script/L2Claim.s.sol:L2ClaimScript
+            forge script --rpc-url="$L2_RPC_URL" --broadcast --verify --verifier etherscan --etherscan-api-key="$L2_ETHERSCAN_API_KEY" -vvvv script/contracts/L2/L2Claim.s.sol:L2ClaimScript
       fi
 fi
 echo "Done."
 
 echo "Transferring funds to L1 and L2 addresses and L2Claim smart contract..."
-forge script --rpc-url="$L1_RPC_URL" --broadcast -vvvv script/TransferFunds2ndBatch.s.sol:TransferFunds2ndBatchScript
+forge script --rpc-url="$L1_RPC_URL" --broadcast -vvvv script/contracts/TransferFunds2ndBatch.s.sol:TransferFunds2ndBatchScript
 echo "Done."

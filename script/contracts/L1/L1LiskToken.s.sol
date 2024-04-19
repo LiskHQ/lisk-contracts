@@ -3,7 +3,7 @@ pragma solidity 0.8.23;
 
 import { Script, console2 } from "forge-std/Script.sol";
 import { L1LiskToken } from "src/L1/L1LiskToken.sol";
-import "script/Utils.sol";
+import "script/contracts/Utils.sol";
 
 /// @title L1LiskTokenScript - L1 Lisk token deployment script
 /// @notice This contract is used to deploy L1 Lisk token contract, transfers its ownership and writes its address to

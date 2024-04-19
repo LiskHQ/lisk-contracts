@@ -4,7 +4,7 @@ pragma solidity 0.8.23;
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import { Script, console2 } from "forge-std/Script.sol";
 import { L2Claim } from "src/L2/L2Claim.sol";
-import "script/Utils.sol";
+import "script/contracts/Utils.sol";
 
 /// @title L2ClaimScript - L2 Claim contract deployment script
 /// @notice This contract is used to deploy L2 Claim contract and write its address to JSON file.

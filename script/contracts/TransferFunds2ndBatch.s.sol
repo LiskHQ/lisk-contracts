@@ -3,7 +3,7 @@ pragma solidity 0.8.23;
 
 import { Script, console2 } from "forge-std/Script.sol";
 import { L1LiskToken } from "src/L1/L1LiskToken.sol";
-import "script/Utils.sol";
+import "script/contracts/Utils.sol";
 
 /// @title IL1StandardBridge - L1 Standard Bridge interface
 /// @notice This contract is used to transfer L1 Lisk tokens to the L2 network as L2 Lisk tokens.

@@ -8,7 +8,7 @@ import { stdJson } from "forge-std/StdJson.sol";
 import { L2Claim, ED25519Signature, MultisigKeys } from "src/L2/L2Claim.sol";
 import { Signature, MerkleTreeLeaf, MerkleLeaves } from "test/L2/L2Claim.t.sol";
 import { MockERC20 } from "../../test/mock/MockERC20.sol";
-import "script/Utils.sol";
+import "script/contracts/Utils.sol";
 
 /// @title L2ClaimTokensScript - L2 Claim Lisk tokens script
 /// @notice This contract is used to claim L2 Lisk tokens from the L2 Claim contract for a demonstration purpose. This

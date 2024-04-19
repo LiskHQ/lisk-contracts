@@ -7,7 +7,7 @@ import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy
 import { Script, console2 } from "forge-std/Script.sol";
 import { L2Governor } from "src/L2/L2Governor.sol";
 import { IL2Staking } from "src/interfaces/L2/IL2Staking.sol";
-import "script/Utils.sol";
+import "script/contracts/Utils.sol";
 
 /// @title L2GovernorScript - L2 Timelock Controller and Governor contracts deployment script
 /// @notice This contract is used to deploy L2 TimelockController and Governor contracts.

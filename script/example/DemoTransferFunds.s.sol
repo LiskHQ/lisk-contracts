@@ -4,7 +4,7 @@ pragma solidity 0.8.23;
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { Script, console2 } from "forge-std/Script.sol";
 import { StdUtils } from "forge-std/StdUtils.sol";
-import "script/Utils.sol";
+import "script/contracts/Utils.sol";
 
 /// @title DemoTransferFundsScript - Demo Transferring LSK to Claim contract
 /// @notice In Demo environment, after Claim contract is deployed, this script is used to send LSK tokens to Claim

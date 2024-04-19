@@ -10,7 +10,7 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { Test, console } from "forge-std/Test.sol";
 import { IL2LockingPosition } from "src/interfaces/L2/IL2LockingPosition.sol";
 import { L2VotingPower } from "src/L2/L2VotingPower.sol";
-import { Utils } from "script/Utils.sol";
+import { Utils } from "script/contracts/Utils.sol";
 
 contract L2VotingPowerV2 is L2VotingPower {
     uint256 public testNumber;
