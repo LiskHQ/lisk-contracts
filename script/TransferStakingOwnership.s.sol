@@ -28,11 +28,13 @@ contract TransferStakingOwnershipScript is Script {
 
         // get L2Staking contract address
         Utils.L2AddressesConfig memory l2AddressesConfig = utils.readL2AddressesFile();
+        assert(l2AddressesConfig.L2Staking != address(0));
         console2.log("L2 Staking address: %s", l2AddressesConfig.L2Staking);
         IL2Staking l2Staking = IL2Staking(l2AddressesConfig.L2Staking);
 
         // get L2LockingPosition contract address
         console2.log("L2 LockingPosition address: %s", l2AddressesConfig.L2LockingPosition);
+        assert(l2AddressesConfig.L2LockingPosition != address(0));
         IL2Staking l2LockingPosition = IL2Staking(l2AddressesConfig.L2LockingPosition);
 
         // Get L2Staking contract new owner address. Ownership is transferred to this address.

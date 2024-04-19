@@ -260,11 +260,12 @@ contract Utils is Script {
     }
 
     /// @notice This function reads accounts from JSON file.
+    /// @param fileName Name of the file containing accounts.
     /// @return Accounts struct containing accounts.
-    function readAccountsFile() external view returns (Accounts memory) {
+    function readAccountsFile(string memory fileName) external view returns (Accounts memory) {
         string memory network = getNetworkType();
         string memory root = vm.projectRoot();
-        string memory accountsPath = string.concat(root, "/script/data/", network, "/accounts.json");
+        string memory accountsPath = string.concat(root, "/script/data/", network, "/", fileName);
         string memory accountsJson = vm.readFile(accountsPath);
         bytes memory accountsRaw = vm.parseJson(accountsJson);
         return abi.decode(accountsRaw, (Accounts));

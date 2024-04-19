@@ -29,11 +29,17 @@ contract L2ClaimScript is Script {
 
         // owner Address, the ownership of L2Claim Proxy Contract is transferred to after deployment
         address ownerAddress = vm.envAddress("L2_CLAIM_OWNER_ADDRESS");
+        assert(ownerAddress != address(0));
         console2.log("L2 Claim contract owner address: %s (after ownership will be accepted)", ownerAddress);
 
         // get L2LiskToken contract address
         Utils.L2AddressesConfig memory l2AddressesConfig = utils.readL2AddressesFile();
+        assert(l2AddressesConfig.L2LiskToken != address(0));
         console2.log("L2 Lisk token address: %s", l2AddressesConfig.L2LiskToken);
+
+        // get L2TimelockController contract address
+        assert(l2AddressesConfig.L2TimelockController != address(0));
+        console2.log("L2 Timelock Controller address: %s", l2AddressesConfig.L2TimelockController);
 
         // get MerkleTree details
         Utils.MerkleRoot memory merkleRoot = utils.readMerkleRootFile();
@@ -69,6 +75,12 @@ contract L2ClaimScript is Script {
         assert(address(l2Claim.l2LiskToken()) == l2AddressesConfig.L2LiskToken);
         assert(l2Claim.merkleRoot() == merkleRoot.merkleRoot);
         assert(l2Claim.daoAddress() == address(0));
+
+        // set DAO address
+        vm.startBroadcast(deployerPrivateKey);
+        l2Claim.setDAOAddress(address(l2AddressesConfig.L2TimelockController));
+        vm.stopBroadcast();
+        assert(l2Claim.daoAddress() == address(l2AddressesConfig.L2TimelockController));
 
         // transfer ownership of L2Claim Proxy; because of using Ownable2StepUpgradeable contract, new owner has to
         // accept ownership
