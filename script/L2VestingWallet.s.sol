@@ -6,8 +6,8 @@ import { Script, console2 } from "forge-std/Script.sol";
 import { L2VestingWallet } from "src/L2/L2VestingWallet.sol";
 import "script/Utils.sol";
 
-/// @title L2VestingWalletScript - L2 Voting Power contract deployment script
-/// @notice This contract is used to deploy L2 Voting Power contract.
+/// @title L2VestingWalletScript - L2 Vesting Wallet contract deployment script
+/// @notice This contract is used to deploy L2 Vesting Wallet contract.
 contract L2VestingWalletScript is Script {
     /// @notice Utils contract which provides functions to read and write JSON files containing L2 addresses.
     Utils utils;
@@ -16,14 +16,14 @@ contract L2VestingWalletScript is Script {
         utils = new Utils();
     }
 
-    /// @notice This function deploys L2 Voting Power contract.
+    /// @notice This function deploys L2 Vesting Wallet contract.
     function run() public {
-        // Deployer's private key. Owner of the L2 Voting Power. PRIVATE_KEY is set in .env file.
+        // Deployer's private key. Owner of the L2 Vesting Wallet. PRIVATE_KEY is set in .env file.
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
 
         console2.log("Deploying L2VestingWallet Implementation...");
 
-        // deploy L2VotingPower implementation contract
+        // deploy L2VestingWallet implementation contract
         vm.startBroadcast(deployerPrivateKey);
         L2VestingWallet l2VestingWalletImplementation = new L2VestingWallet();
         vm.stopBroadcast();
