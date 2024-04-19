@@ -65,6 +65,17 @@ contract Utils is Script {
         uint256 amount;
     }
 
+    struct VestingPlan {
+        string beneficiaryAddressTag;
+        uint64 durationDays;
+        string name;
+        uint64 startTimestamp;
+    }
+
+    struct VestingPlans {
+        VestingPlan[] vestingPlans;
+    }
+
     /// @notice This function gets network type from .env file. It should be either mainnet, testnet or devnet.
     /// @return string containing network type.
     function getNetworkType() public view returns (string memory) {
@@ -210,6 +221,15 @@ contract Utils is Script {
         string memory accountsJson = vm.readFile(accountsPath);
         bytes memory accountsRaw = vm.parseJson(accountsJson);
         return abi.decode(accountsRaw, (Accounts));
+    }
+
+    function readVestingPlansFile() external view returns (VestingPlans memory) {
+        string memory network = getNetworkType();
+        string memory root = vm.projectRoot();
+        string memory vestingPlansPath = string.concat(root, "/script/data/", network, "/vestingPlans.json");
+        string memory vestingPlansJson = vm.readFile(vestingPlansPath);
+        bytes memory vestingPlansRaw = vm.parseJson(vestingPlansJson);
+        return abi.decode(vestingPlansRaw, (VestingPlans));
     }
 
     /// @notice This function returns salt as a string. keccak256 of this string is used as salt for calculating

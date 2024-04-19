@@ -1,0 +1,52 @@
+{
+  "vestingPlans": [
+    {
+      "name": "Treasury 3 Years",
+      "beneficiaryAddressTag": "FOUNDATION_TREASURY_ADDRESS",
+      "startTimestamp": 1735689600,
+      "durationDays": 1095
+    },
+    {
+      "name": "Team 4 Years",
+      "beneficiaryAddressTag": "TEAM_VESTING_ADDRESS",
+      "startTimestamp": 1735689600,
+      "durationDays": 1461
+    },
+    {
+      "name": "Investors 2 Years",
+      "beneficiaryAddressTag": "INVESTOR_VESTING_ADDRESS",
+      "startTimestamp": 1735689600,
+      "durationDays": 730
+    },
+    {
+      "name": "Ecosystem",
+      "beneficiaryAddressTag": "ECOSYSTEM_FUND_ADDRESS",
+      "startTimestamp": 1735689600,
+      "durationDays": 0
+    },
+    {
+      "name": "DAO I",
+      "beneficiaryAddressTag": "DAO_TREASURY_ADDRESS",
+      "startTimestamp": 1704067200,
+      "durationDays": 366
+    },
+    {
+      "name": "DAO II",
+      "beneficiaryAddressTag": "DAO_TREASURY_ADDRESS",
+      "startTimestamp": 1735689600,
+      "durationDays": 730
+    },
+    {
+      "name": "DAO optional I",
+      "beneficiaryAddressTag": "DAO_TREASURY_ADDRESS",
+      "startTimestamp": 1798761600,
+      "durationDays": 2192
+    },
+    {
+      "name": "DAO optional II",
+      "beneficiaryAddressTag": "DAO_TREASURY_ADDRESS",
+      "startTimestamp": 1988150400,
+      "durationDays": 365
+    }
+  ]
+}
