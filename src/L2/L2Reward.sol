@@ -272,13 +272,11 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
             lastRewardDay = today;
         }
 
+        uint256 reward;
+
         if (rewardableDuration > 0) {
             weight = lockingPosition.amount * (rewardableDuration + OFFSET);
-        }
-
-        uint256 reward = 0;
-
-        if (weight <= 0) {
+        } else {
             return reward;
         }
 
