@@ -1,12 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.23;
 
-import { Initializable } from "@openzeppelin-upgradeable/contracts/proxy/utils/Initializable.sol";
 import { Ownable2StepUpgradeable } from "@openzeppelin-upgradeable/contracts/access/Ownable2StepUpgradeable.sol";
 import { OwnableUpgradeable } from "@openzeppelin-upgradeable/contracts/access/OwnableUpgradeable.sol";
 import { UUPSUpgradeable } from "@openzeppelin-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
 import { VestingWalletUpgradeable } from "@openzeppelin-upgradeable/contracts/finance/VestingWalletUpgradeable.sol";
-import { IL2LockingPosition } from "../interfaces/L2/IL2LockingPosition.sol";
 import { ISemver } from "../utils/ISemver.sol";
 
 /// @title L2VestingWallet
