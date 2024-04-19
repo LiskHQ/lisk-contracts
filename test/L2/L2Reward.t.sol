@@ -116,6 +116,8 @@ contract L2RewardTest is Test {
         assertEq(l2Reward.daoTreasury(), daoTreasury);
         assertEq(l2Reward.lockingPositionContract(), address(l2LockingPosition));
         assertEq(l2Reward.stakingContract(), address(l2Staking));
+
+        l2Staking.addCreator(address(l2Reward));
     }
 
     function test_initialize() public {
@@ -180,8 +182,6 @@ contract L2RewardTest is Test {
     }
 
     function test_createPosition_l2RewardContractShouldBeApprovedToTransferFromStakerAccount() public {
-        l2Staking.addCreator(address(l2Reward));
-
         address staker = address(0x1);
         uint256 duration = 20;
         uint256 amount = convertLiskToSmallestDenomination(10);
@@ -196,8 +196,6 @@ contract L2RewardTest is Test {
     }
 
     function test_createPosition_updatesGlobals() public {
-        l2Staking.addCreator(address(l2Reward));
-
         address staker = address(0x1);
         uint256 duration = 20;
         uint256 amount = convertLiskToSmallestDenomination(10);
@@ -215,7 +213,6 @@ contract L2RewardTest is Test {
     }
 
     function test_createPosition_aggregatesAmountAndWeightAndUpdatesGlobals() public {
-        l2Staking.addCreator(address(l2Reward));
         address staker = address(0x1);
         uint256 balance = convertLiskToSmallestDenomination(1000);
 
@@ -310,7 +307,6 @@ contract L2RewardTest is Test {
     }
 
     function test_fundStaking_emitsRewardsAddedEvent() public {
-        l2Staking.addCreator(address(l2Reward));
         uint256 balance = convertLiskToSmallestDenomination(10000);
 
         given_accountHasBalance(daoTreasury, balance);
@@ -353,7 +349,6 @@ contract L2RewardTest is Test {
     }
 
     function test_claimRewards_rewardIsZeroIfAlreadyClaimedToday() public {
-        l2Staking.addCreator(address(l2Reward));
         address staker = address(0x1);
         uint256 balance = convertLiskToSmallestDenomination(1000);
 
@@ -394,7 +389,6 @@ contract L2RewardTest is Test {
     }
 
     function test_claimRewards_activePositionsAreRewardedTillExpiry() public {
-        l2Staking.addCreator(address(l2Reward));
         address staker = address(0x1);
         uint256 balance = convertLiskToSmallestDenomination(1000);
 
@@ -428,7 +422,6 @@ contract L2RewardTest is Test {
     }
 
     function test_claimRewards_activePositionsAreRewardedTillTodayIfExpiryIsInFuture() public {
-        l2Staking.addCreator(address(l2Reward));
         address staker = address(0x1);
         uint256 balance = convertLiskToSmallestDenomination(1000);
 
@@ -472,7 +465,6 @@ contract L2RewardTest is Test {
     }
 
     function test_claimRewards_pausedPositionsAreRewardedTillTodayWeightedAgainstThePausedLockingDuration() public {
-        l2Staking.addCreator(address(l2Reward));
         address staker = address(0x1);
         uint256 balance = convertLiskToSmallestDenomination(1000);
 
@@ -517,8 +509,6 @@ contract L2RewardTest is Test {
     }
 
     function test_claimRewards_multipleStakesWithSameAmountAndDurationAreEquallyRewardedCappedRewards() public {
-        l2Staking.addCreator(address(l2Reward));
-
         uint256[] memory lockIDs = new uint256[](5);
 
         uint256 funds = convertLiskToSmallestDenomination(1000);
@@ -559,8 +549,6 @@ contract L2RewardTest is Test {
     }
 
     function test_claimRewards_multipleStakesWithSameAmountAndDurationAreEquallyRewarded() public {
-        l2Staking.addCreator(address(l2Reward));
-
         uint256[] memory lockIDs = new uint256[](5);
 
         uint256 funds = convertLiskToSmallestDenomination(1000);
@@ -614,8 +602,6 @@ contract L2RewardTest is Test {
     function test_claimRewards_multipleStakesWithDifferentAmountForSimilarDurationAreRewardedAccordinglyWhenUnlocked()
         public
     {
-        l2Staking.addCreator(address(l2Reward));
-
         uint256[] memory lockIDs = new uint256[](3);
 
         uint256 funds = convertLiskToSmallestDenomination(1000);
@@ -671,8 +657,6 @@ contract L2RewardTest is Test {
     }
 
     function test_claimRewards_multipleStakesWithSameAmountForDifferentDurationAreRewardedAsPerTheWeight() public {
-        l2Staking.addCreator(address(l2Reward));
-
         uint256[] memory lockIDs = new uint256[](2);
 
         uint256 funds = convertLiskToSmallestDenomination(100);
@@ -739,7 +723,6 @@ contract L2RewardTest is Test {
     }
 
     function test_claimRewards_rewardClaimedAgainstExpiredPositionIsZeroIfAlreadyClaimedAfterExpiry() public {
-        l2Staking.addCreator(address(l2Reward));
         address staker = address(0x1);
         uint256 balance = convertLiskToSmallestDenomination(1000);
 
@@ -813,7 +796,6 @@ contract L2RewardTest is Test {
     }
 
     function test_deletePosition_onlyExpiredLockingPositionsCanBeDeleted() public {
-        l2Staking.addCreator(address(l2Reward));
         address staker = address(0x1);
         uint256 balance = convertLiskToSmallestDenomination(1000);
 
@@ -838,7 +820,6 @@ contract L2RewardTest is Test {
     }
 
     function test_deletePosition_issuesRewardAndUnlocksPosition() public {
-        l2Staking.addCreator(address(l2Reward));
         address staker = address(0x1);
         uint256 balance = convertLiskToSmallestDenomination(1000);
 
@@ -906,7 +887,6 @@ contract L2RewardTest is Test {
     }
 
     function test_pauseUnlocking_lockingPositionCanBePausedOnlyOnce() public {
-        l2Staking.addCreator(address(l2Reward));
         address staker = address(0x1);
         uint256 balance = convertLiskToSmallestDenomination(1000);
         uint256[] memory lockIDs = new uint256[](1);
@@ -933,7 +913,6 @@ contract L2RewardTest is Test {
     }
 
     function test_pauseUnlocking_issuesRewardAndUpdatesGlobalUnlockAmounts() public {
-        l2Staking.addCreator(address(l2Reward));
         address staker = address(0x1);
         uint256 balance = convertLiskToSmallestDenomination(1000);
         uint256[] memory lockIDs = new uint256[](1);
@@ -1004,7 +983,6 @@ contract L2RewardTest is Test {
     }
 
     function test_resumeUnlockingCountdown_onlyPausedLockingPositionCanBeResumed() public {
-        l2Staking.addCreator(address(l2Reward));
         address staker = address(0x1);
         uint256 balance = convertLiskToSmallestDenomination(1000);
 
@@ -1027,7 +1005,6 @@ contract L2RewardTest is Test {
     }
 
     function test_resumeUnlockingCountdown_issuesRewardAndUpdatesGlobalUnlockAmount() public {
-        l2Staking.addCreator(address(l2Reward));
         address staker = address(0x1);
         uint256 balance = convertLiskToSmallestDenomination(1000);
 
@@ -1135,7 +1112,6 @@ contract L2RewardTest is Test {
     )
         public
     {
-        l2Staking.addCreator(address(l2Reward));
         address staker = address(0x1);
         uint256 balance = convertLiskToSmallestDenomination(1000);
         uint256 amount = convertLiskToSmallestDenomination(100);
@@ -1176,7 +1152,6 @@ contract L2RewardTest is Test {
     function test_increaseLockingAmount_forPausedPositionIncreasesTotalWeightByPausedLockingDurationAndClaimsRewards()
         public
     {
-        l2Staking.addCreator(address(l2Reward));
         address staker = address(0x1);
         uint256 balance = convertLiskToSmallestDenomination(1000);
         uint256 amount = convertLiskToSmallestDenomination(100);
@@ -1221,7 +1196,6 @@ contract L2RewardTest is Test {
     }
 
     function test_increaseLockingAmount_updatesTotalAmountLockedAndImpactsRewardCapping() public {
-        l2Staking.addCreator(address(l2Reward));
         address staker = address(0x1);
         uint256 balance = convertLiskToSmallestDenomination(1000);
         uint256 amount = convertLiskToSmallestDenomination(10);
@@ -1331,7 +1305,6 @@ contract L2RewardTest is Test {
     }
 
     function test_extendDuration_updatesGlobalsAndClaimRewardsForActivePositionWithExpiryInFuture() public {
-        l2Staking.addCreator(address(l2Reward));
         address staker = address(0x1);
         uint256 balance = convertLiskToSmallestDenomination(1000);
         uint256 duration = 120;
@@ -1367,7 +1340,6 @@ contract L2RewardTest is Test {
     }
 
     function test_extendDuration_updatesGlobalsAndClaimRewardsForExpiredPositions() public {
-        l2Staking.addCreator(address(l2Reward));
         address staker = address(0x1);
         uint256 balance = convertLiskToSmallestDenomination(1000);
         uint256 duration = 120;
@@ -1405,7 +1377,6 @@ contract L2RewardTest is Test {
     }
 
     function test_extendDuration_updatesGlobalsAndClaimRewardsForPausedPositions() public {
-        l2Staking.addCreator(address(l2Reward));
         address staker = address(0x1);
         uint256 balance = convertLiskToSmallestDenomination(1000);
         uint256 duration = 120;
@@ -1478,8 +1449,6 @@ contract L2RewardTest is Test {
     }
 
     function test_initiateFastUnlock_forActivePositionAddsPenaltyAsRewardAlsoUpdatesGlobalsAndClaimRewards() public {
-        l2Staking.addCreator(address(l2Reward));
-
         address staker = address(0x1);
         uint256 balance = convertLiskToSmallestDenomination(1000);
         uint256 amount = convertLiskToSmallestDenomination(100);
@@ -1530,8 +1499,6 @@ contract L2RewardTest is Test {
     }
 
     function test_initiateFastUnlock_forPausedPositionAddsPenaltyAsRewardAlsoUpdatesGlobalsAndClaimRewards() public {
-        l2Staking.addCreator(address(l2Reward));
-
         address staker = address(0x1);
         uint256 balance = convertLiskToSmallestDenomination(1000);
         uint256 amount = convertLiskToSmallestDenomination(100);
@@ -1720,7 +1687,6 @@ contract L2RewardTest is Test {
     }
 
     function test_addUnusedRewards_rewardAmountShouldNotBeGreaterThanRewardSurplus() public {
-        l2Staking.addCreator(address(l2Reward));
         address staker = address(0x1);
         uint256 balance = convertLiskToSmallestDenomination(1000);
 
@@ -1749,7 +1715,6 @@ contract L2RewardTest is Test {
     }
 
     function test_addUnusedRewards_updatesDailyRewardsAndEmitsRewardsAddedEvent() public {
-        l2Staking.addCreator(address(l2Reward));
         address staker = address(0x1);
         uint256 balance = convertLiskToSmallestDenomination(10000);
 
