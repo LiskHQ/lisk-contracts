@@ -266,7 +266,7 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
     function _initiateFastUnlock(uint256 lockID) internal virtual {
         // claim rewards and inform staking contract
         _claimReward(lockID);
-        IL2LockingPosition.LockingPosition memory lockingPosition =
+        IL2LockingPosition.LockingPosition memory lockingPositionBeforeInitiatingFastUnlock =
             IL2LockingPosition(lockingPositionContract).getLockingPosition(lockID);
         uint256 penalty = IL2Staking(stakingContract).initiateFastUnlock(lockID);
 
@@ -278,21 +278,22 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
         uint256 remainingDuration;
 
         // update global variables and arrays
-        if (lockingPosition.pausedLockingDuration == 0) {
+        if (lockingPositionBeforeInitiatingFastUnlock.pausedLockingDuration == 0) {
             // removing previous expiration date
-            remainingDuration = lockingPosition.expDate - today;
-            dailyUnlockedAmounts[lockingPosition.expDate] -= lockingPosition.amount;
-            pendingUnlockAmount -= lockingPosition.amount;
+            remainingDuration = lockingPositionBeforeInitiatingFastUnlock.expDate - today;
+            dailyUnlockedAmounts[lockingPositionBeforeInitiatingFastUnlock.expDate] -=
+                lockingPositionBeforeInitiatingFastUnlock.amount;
+            pendingUnlockAmount -= lockingPositionBeforeInitiatingFastUnlock.amount;
         } else {
-            remainingDuration = lockingPosition.pausedLockingDuration;
+            remainingDuration = lockingPositionBeforeInitiatingFastUnlock.pausedLockingDuration;
         }
 
-        totalWeight -= (remainingDuration + OFFSET) * lockingPosition.amount;
-        totalWeight += (fastUnlockDuration + OFFSET) * (lockingPosition.amount - penalty);
+        totalWeight -= (remainingDuration + OFFSET) * lockingPositionBeforeInitiatingFastUnlock.amount;
+        totalWeight += (fastUnlockDuration + OFFSET) * (lockingPositionBeforeInitiatingFastUnlock.amount - penalty);
 
         // setting new expiration date
-        dailyUnlockedAmounts[today + fastUnlockDuration] += lockingPosition.amount - penalty;
-        pendingUnlockAmount += lockingPosition.amount - penalty;
+        dailyUnlockedAmounts[today + fastUnlockDuration] += lockingPositionBeforeInitiatingFastUnlock.amount - penalty;
+        pendingUnlockAmount += lockingPositionBeforeInitiatingFastUnlock.amount - penalty;
         totalAmountLocked -= penalty;
     }
 

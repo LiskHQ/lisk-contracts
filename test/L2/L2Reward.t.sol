@@ -30,6 +30,17 @@ contract L2RewardTest is Test {
 
     address daoTreasury = address(0xff);
 
+    struct Funds {
+        uint256 amount;
+        uint16 duration;
+        uint16 delay;
+    }
+
+    struct Position {
+        uint256 amount;
+        uint256 duration;
+    }
+
     function setUp() public {
         skip(deploymentDate * 1 days);
 
@@ -115,25 +126,72 @@ contract L2RewardTest is Test {
         assertEq(l2Reward.version(), "1.0.0");
     }
 
+    function given_accountHasBalance(address account, uint256 balance) private {
+        vm.startPrank(bridge);
+        l2LiskToken.mint(account, balance);
+        vm.stopPrank();
+    }
+
+    function given_accountsHaveBalance(address[] memory accounts, uint256 balance) private {
+        vm.startPrank(bridge);
+        for (uint8 i = 0; i < accounts.length; i++) {
+            l2LiskToken.mint(accounts[i], balance);
+        }
+        vm.stopPrank();
+    }
+
+    function given_daoTreasuryHasFundedStaking(Funds memory funds) public returns (uint256) {
+        vm.startPrank(daoTreasury);
+        l2LiskToken.approve(address(l2Reward), funds.amount);
+        l2Reward.fundStakingRewards(funds.amount, funds.duration, funds.delay);
+        vm.stopPrank();
+
+        return funds.amount / funds.duration;
+    }
+
+    function given_anArrayOfStakersOfLength(uint8 length) private pure returns (address[] memory) {
+        address[] memory stakers = new address[](length);
+
+        for (uint8 i = 0; i < length; i++) {
+            stakers[i] = address(uint160(i + 1));
+        }
+
+        return stakers;
+    }
+
+    function when_stakerCreatesPosition(address staker, Position memory position) private returns (uint256) {
+        vm.startPrank(staker);
+        l2LiskToken.approve(address(l2Reward), position.amount);
+        uint256 ID = l2Reward.createPosition(position.amount, position.duration);
+        vm.stopPrank();
+
+        return ID;
+    }
+
+    function then_eventRewardsClaimedIsEmitted(uint256 lockID, uint256 reward) private {
+        vm.expectEmit(true, true, true, true);
+        emit L2Reward.RewardsClaimed(lockID, reward);
+    }
+
+    function when_rewardsAreClaimedByStaker(address staker, uint256[] memory lockIDs) private {
+        vm.startPrank(staker);
+        l2Reward.claimRewards(lockIDs);
+        vm.stopPrank();
+    }
+
     function test_createPosition_l2RewardContractShouldBeApprovedToTransferFromStakerAccount() public {
         l2Staking.addCreator(address(l2Reward));
 
         address staker = address(0x1);
-
         uint256 duration = 20;
         uint256 amount = convertLiskToSmallestDenomination(10);
-        uint256 ID;
 
-        vm.startPrank(bridge);
-        l2LiskToken.mint(address(l2Reward), convertLiskToSmallestDenomination(1000));
-        l2LiskToken.mint(staker, convertLiskToSmallestDenomination(1000));
-        vm.stopPrank();
+        given_accountHasBalance(staker, convertLiskToSmallestDenomination(1000));
 
-        vm.startPrank(staker);
         vm.expectRevert(
             abi.encodeWithSelector(IERC20Errors.ERC20InsufficientAllowance.selector, address(l2Reward), 0, amount)
         );
-        ID = l2Reward.createPosition(amount, duration);
+        l2Reward.createPosition(amount, duration);
         vm.stopPrank();
     }
 
@@ -141,20 +199,11 @@ contract L2RewardTest is Test {
         l2Staking.addCreator(address(l2Reward));
 
         address staker = address(0x1);
-
         uint256 duration = 20;
         uint256 amount = convertLiskToSmallestDenomination(10);
-        uint256 ID;
 
-        vm.startPrank(bridge);
-        l2LiskToken.mint(address(l2Reward), convertLiskToSmallestDenomination(1000));
-        l2LiskToken.mint(staker, convertLiskToSmallestDenomination(1000));
-        vm.stopPrank();
-
-        vm.startPrank(staker);
-        l2LiskToken.approve(address(l2Reward), amount);
-        ID = l2Reward.createPosition(amount, duration);
-        vm.stopPrank();
+        given_accountHasBalance(staker, convertLiskToSmallestDenomination(1000));
+        uint256 ID = when_stakerCreatesPosition(staker, Position({ amount: amount, duration: duration }));
 
         assertEq(l2Reward.totalWeight(), amount * (duration + l2Reward.OFFSET()));
         assertEq(l2Reward.lastClaimDate(ID), deploymentDate);
@@ -170,28 +219,19 @@ contract L2RewardTest is Test {
         address staker = address(0x1);
         uint256 balance = convertLiskToSmallestDenomination(1000);
 
-        // staker and DAO gets balance
-        vm.startPrank(bridge);
-        l2LiskToken.mint(staker, balance);
-        l2LiskToken.mint(daoTreasury, balance);
-        vm.stopPrank();
+        given_accountHasBalance(daoTreasury, balance);
+        given_accountHasBalance(staker, balance);
 
-        // DAO funds staking
-        vm.startPrank(daoTreasury);
-        l2LiskToken.approve(address(l2Reward), convertLiskToSmallestDenomination(1000));
-        l2Reward.fundStakingRewards(convertLiskToSmallestDenomination(1000), 350, 1);
-        vm.stopPrank();
+        uint256 dailyReward = given_daoTreasuryHasFundedStaking(
+            Funds({ amount: convertLiskToSmallestDenomination(1000), duration: 350, delay: 1 })
+        );
 
-        // staker creates a position on deploymentDate, 19740.
-        vm.startPrank(staker);
-        l2LiskToken.approve(address(l2Reward), convertLiskToSmallestDenomination(100));
-        l2Reward.createPosition(convertLiskToSmallestDenomination(100), 120);
+        // staker creates a position on deploymentDate, 19740
+        when_stakerCreatesPosition(staker, Position({ amount: convertLiskToSmallestDenomination(100), duration: 120 }));
 
-        // staker creates another position on deploymentDate + 2, 19742.
+        // // staker creates another position on deploymentDate + 2, 19742.=
         skip(2 days);
-        l2LiskToken.approve(address(l2Reward), convertLiskToSmallestDenomination(1));
-        l2Reward.createPosition(convertLiskToSmallestDenomination(1), 100);
-        vm.stopPrank();
+        when_stakerCreatesPosition(staker, Position({ amount: convertLiskToSmallestDenomination(1), duration: 100 }));
 
         uint256 expectedTotalWeight = convertLiskToSmallestDenomination(100) * (120 + l2Reward.OFFSET())
             + convertLiskToSmallestDenomination(1) * (100 + l2Reward.OFFSET()) - 200 * 10 ** 18;
@@ -200,7 +240,6 @@ contract L2RewardTest is Test {
         assertEq(l2Reward.pendingUnlockAmount(), convertLiskToSmallestDenomination(101));
         assertEq(l2Reward.lastTrsDate(), deploymentDate + 2);
         uint256 cappedRewards = convertLiskToSmallestDenomination(100) / 365;
-        uint256 dailyReward = convertLiskToSmallestDenomination(1000) / 350;
 
         // Rewards are capped for the day, 19741 as funding starts at 19741.
         assertEq(l2Reward.dailyRewards(19741), cappedRewards);
@@ -208,11 +247,8 @@ contract L2RewardTest is Test {
 
         skip(3 days);
 
-        // staker creates another position on deploymentDate + 5, 19745.
-        vm.startPrank(staker);
-        l2LiskToken.approve(address(l2Reward), convertLiskToSmallestDenomination(100));
-        l2Reward.createPosition(convertLiskToSmallestDenomination(100), 100);
-        vm.stopPrank();
+        // staker creates another position on deploymentDate + 5, 19745
+        when_stakerCreatesPosition(staker, Position({ amount: convertLiskToSmallestDenomination(100), duration: 100 }));
 
         uint256 newCappedRewards = convertLiskToSmallestDenomination(101) / 365;
         for (uint16 i = 19742; i < 19745; i++) {
@@ -236,19 +272,15 @@ contract L2RewardTest is Test {
 
     function test_fundStakingRewards_dailyRewardsAreAggregatedForTheDuration() public {
         uint256 balance = convertLiskToSmallestDenomination(1000);
-        vm.startPrank(bridge);
-        l2LiskToken.mint(daoTreasury, balance);
-        vm.stopPrank();
+
+        given_accountHasBalance(daoTreasury, balance);
 
         uint256 amount = convertLiskToSmallestDenomination(35);
         uint16 duration = 350;
         uint16 delay = 1;
-        vm.startPrank(daoTreasury);
-        l2LiskToken.approve(address(l2Reward), amount);
-        l2Reward.fundStakingRewards(amount, duration, delay);
-        vm.stopPrank();
+        uint256 dailyReward =
+            given_daoTreasuryHasFundedStaking(Funds({ amount: amount, duration: duration, delay: delay }));
 
-        uint256 dailyReward = amount / duration;
         uint256 today = deploymentDate;
         uint256 endDate = today + delay + duration;
 
@@ -263,13 +295,10 @@ contract L2RewardTest is Test {
 
         delay = 2;
         duration = 10;
-        vm.startPrank(daoTreasury);
-        l2LiskToken.approve(address(l2Reward), amount);
-        l2Reward.fundStakingRewards(amount, duration, delay);
-        vm.stopPrank();
+        uint256 additionalReward =
+            given_daoTreasuryHasFundedStaking(Funds({ amount: amount, duration: duration, delay: 2 }));
 
         uint256 newEndDate = today + delay + duration;
-        uint256 additionalReward = amount / duration;
 
         for (uint256 d = today + delay; d < newEndDate; d++) {
             assertEq(l2Reward.dailyRewards(d), dailyReward + additionalReward);
@@ -284,10 +313,7 @@ contract L2RewardTest is Test {
         l2Staking.addCreator(address(l2Reward));
         uint256 balance = convertLiskToSmallestDenomination(10000);
 
-        // DAO gets balance
-        vm.startPrank(bridge);
-        l2LiskToken.mint(daoTreasury, balance);
-        vm.stopPrank();
+        given_accountHasBalance(daoTreasury, balance);
 
         vm.startPrank(daoTreasury);
         l2LiskToken.approve(address(l2Reward), convertLiskToSmallestDenomination(1000));
@@ -333,23 +359,16 @@ contract L2RewardTest is Test {
 
         uint256[] memory lockIDs = new uint256[](1);
 
-        // staker and DAO gets balance
-        vm.startPrank(bridge);
-        l2LiskToken.mint(staker, balance);
-        l2LiskToken.mint(daoTreasury, balance);
-        vm.stopPrank();
-
-        // DAO funds staking
-        vm.startPrank(daoTreasury);
-        l2LiskToken.approve(address(l2Reward), convertLiskToSmallestDenomination(35));
-        l2Reward.fundStakingRewards(convertLiskToSmallestDenomination(35), 350, 1);
-        vm.stopPrank();
+        given_accountHasBalance(daoTreasury, balance);
+        given_accountHasBalance(staker, balance);
+        given_daoTreasuryHasFundedStaking(
+            Funds({ amount: convertLiskToSmallestDenomination(35), duration: 350, delay: 1 })
+        );
 
         // staker creates a position on deploymentDate, 19740
-        vm.startPrank(staker);
-        l2LiskToken.approve(address(l2Reward), convertLiskToSmallestDenomination(100));
-        lockIDs[0] = l2Reward.createPosition(convertLiskToSmallestDenomination(100), 120);
-        vm.stopPrank();
+        lockIDs[0] = when_stakerCreatesPosition(
+            staker, Position({ amount: convertLiskToSmallestDenomination(100), duration: 120 })
+        );
 
         // rewards are claimed from lastClaimDate for the lock (19740) till expiry day
         uint256 today = deploymentDate + 150;
@@ -381,26 +400,18 @@ contract L2RewardTest is Test {
 
         uint256[] memory lockIDs = new uint256[](1);
 
-        // staker and DAO gets balance
-        vm.startPrank(bridge);
-        l2LiskToken.mint(staker, balance);
-        l2LiskToken.mint(daoTreasury, balance);
-        vm.stopPrank();
-
-        // DAO funds staking
-        vm.startPrank(daoTreasury);
-        l2LiskToken.approve(address(l2Reward), convertLiskToSmallestDenomination(35));
-        l2Reward.fundStakingRewards(convertLiskToSmallestDenomination(35), 350, 1);
-        vm.stopPrank();
+        given_accountHasBalance(daoTreasury, balance);
+        given_accountHasBalance(staker, balance);
+        given_daoTreasuryHasFundedStaking(
+            Funds({ amount: convertLiskToSmallestDenomination(35), duration: 350, delay: 1 })
+        );
 
         // staker creates a position on deploymentDate, 19740
-        vm.startPrank(staker);
-        l2LiskToken.approve(address(l2Reward), convertLiskToSmallestDenomination(100));
-        lockIDs[0] = l2Reward.createPosition(convertLiskToSmallestDenomination(100), 120);
-        vm.stopPrank();
+        lockIDs[0] = when_stakerCreatesPosition(
+            staker, Position({ amount: convertLiskToSmallestDenomination(100), duration: 120 })
+        );
 
         // rewards are claimed from lastClaimDate for the lock (19740) till expiry day
-
         uint256 today = deploymentDate + 150;
         skip(150 days);
 
@@ -423,26 +434,19 @@ contract L2RewardTest is Test {
 
         uint256[] memory lockIDs = new uint256[](2);
 
-        // staker and DAO gets balance
-        vm.startPrank(bridge);
-        l2LiskToken.mint(staker, balance);
-        l2LiskToken.mint(daoTreasury, balance);
-        vm.stopPrank();
+        given_accountHasBalance(daoTreasury, balance);
+        given_accountHasBalance(staker, balance);
+        given_daoTreasuryHasFundedStaking(
+            Funds({ amount: convertLiskToSmallestDenomination(35), duration: 350, delay: 1 })
+        );
 
-        // DAO funds staking
-        vm.startPrank(daoTreasury);
-        l2LiskToken.approve(address(l2Reward), convertLiskToSmallestDenomination(35));
-        l2Reward.fundStakingRewards(convertLiskToSmallestDenomination(35), 350, 1);
-        vm.stopPrank();
-
-        // staker creates a position on deploymentDate, 19740
-        vm.startPrank(staker);
-        l2LiskToken.approve(address(l2Reward), convertLiskToSmallestDenomination(100));
-        lockIDs[0] = l2Reward.createPosition(convertLiskToSmallestDenomination(100), 120);
-
-        l2LiskToken.approve(address(l2Reward), 1 * 10 ** 18);
-        lockIDs[1] = l2Reward.createPosition(1 * 10 ** 18, 100);
-        vm.stopPrank();
+        // staker creates two positions on deploymentDate, 19740
+        lockIDs[0] = when_stakerCreatesPosition(
+            staker, Position({ amount: convertLiskToSmallestDenomination(100), duration: 120 })
+        );
+        lockIDs[1] = when_stakerCreatesPosition(
+            staker, Position({ amount: convertLiskToSmallestDenomination(1), duration: 100 })
+        );
 
         // rewards are claimed from lastClaimDate for the lock (19740) till today
 
@@ -474,26 +478,19 @@ contract L2RewardTest is Test {
 
         uint256[] memory lockIDs = new uint256[](2);
 
-        // staker and DAO gets balance
-        vm.startPrank(bridge);
-        l2LiskToken.mint(staker, balance);
-        l2LiskToken.mint(daoTreasury, balance);
-        vm.stopPrank();
-
-        // DAO funds staking
-        vm.startPrank(daoTreasury);
-        l2LiskToken.approve(address(l2Reward), convertLiskToSmallestDenomination(35));
-        l2Reward.fundStakingRewards(convertLiskToSmallestDenomination(35), 350, 1);
-        vm.stopPrank();
+        given_accountHasBalance(daoTreasury, balance);
+        given_accountHasBalance(staker, balance);
+        given_daoTreasuryHasFundedStaking(
+            Funds({ amount: convertLiskToSmallestDenomination(35), duration: 350, delay: 1 })
+        );
 
         // staker creates two positions on deploymentDate, 19740
-        vm.startPrank(staker);
-        l2LiskToken.approve(address(l2Reward), convertLiskToSmallestDenomination(10));
-        lockIDs[0] = l2Reward.createPosition(convertLiskToSmallestDenomination(10), 150);
-
-        l2LiskToken.approve(address(l2Reward), convertLiskToSmallestDenomination(10));
-        lockIDs[1] = l2Reward.createPosition(convertLiskToSmallestDenomination(10), 300);
-        vm.stopPrank();
+        lockIDs[0] = when_stakerCreatesPosition(
+            staker, Position({ amount: convertLiskToSmallestDenomination(10), duration: 150 })
+        );
+        lockIDs[1] = when_stakerCreatesPosition(
+            staker, Position({ amount: convertLiskToSmallestDenomination(10), duration: 300 })
+        );
 
         vm.startPrank(staker);
         l2Reward.pauseUnlocking(lockIDs);
@@ -522,37 +519,23 @@ contract L2RewardTest is Test {
     function test_claimRewards_multipleStakesWithSameAmountAndDurationAreEquallyRewardedCappedRewards() public {
         l2Staking.addCreator(address(l2Reward));
 
-        address[5] memory stakers = [address(0x1), address(0x2), address(0x3), address(0x4), address(0x5)];
         uint256[] memory lockIDs = new uint256[](5);
 
-        // rewards are capped
         uint256 funds = convertLiskToSmallestDenomination(1000);
+        uint16 duration = 300;
         uint256 amount = convertLiskToSmallestDenomination(100);
-        uint256 duration = 300;
 
-        // stakers and DAO gets balance
-        vm.startPrank(bridge);
-        l2LiskToken.mint(daoTreasury, funds);
-
-        for (uint8 i = 0; i < stakers.length; i++) {
-            l2LiskToken.mint(stakers[i], amount);
-        }
-        vm.stopPrank();
-
-        // DAO funds staking
-        vm.startPrank(daoTreasury);
-        l2LiskToken.approve(address(l2Reward), funds);
-        l2Reward.fundStakingRewards(funds, 365, 1);
-        vm.stopPrank();
+        address[] memory stakers = given_anArrayOfStakersOfLength(5);
+        given_accountHasBalance(daoTreasury, funds);
+        given_accountsHaveBalance(stakers, amount);
+        // rewards are capped
+        given_daoTreasuryHasFundedStaking(Funds({ amount: funds, duration: duration, delay: 1 }));
 
         skip(1 days);
 
         // All stakers create a position on deploymentDate + 1, 19741
         for (uint8 i = 0; i < stakers.length; i++) {
-            vm.startPrank(stakers[i]);
-            l2LiskToken.approve(address(l2Reward), amount);
-            lockIDs[i] = l2Reward.createPosition(amount, duration);
-            vm.stopPrank();
+            lockIDs[i] = when_stakerCreatesPosition(stakers[i], Position(amount, duration));
         }
 
         uint256[] memory locksToClaim = new uint256[](1);
@@ -578,36 +561,22 @@ contract L2RewardTest is Test {
     function test_claimRewards_multipleStakesWithSameAmountAndDurationAreEquallyRewarded() public {
         l2Staking.addCreator(address(l2Reward));
 
-        address[5] memory stakers = [address(0x1), address(0x2), address(0x3), address(0x4), address(0x5)];
         uint256[] memory lockIDs = new uint256[](5);
 
         uint256 funds = convertLiskToSmallestDenomination(1000);
         uint256 amount = convertLiskToSmallestDenomination(1000);
         uint256 duration = 300;
 
-        // stakers and DAO gets balance
-        vm.startPrank(bridge);
-        l2LiskToken.mint(daoTreasury, funds);
-
-        for (uint8 i = 0; i < stakers.length; i++) {
-            l2LiskToken.mint(stakers[i], amount);
-        }
-        vm.stopPrank();
-
-        // DAO funds staking
-        vm.startPrank(daoTreasury);
-        l2LiskToken.approve(address(l2Reward), funds);
-        l2Reward.fundStakingRewards(funds, 365, 1);
-        vm.stopPrank();
+        address[] memory stakers = given_anArrayOfStakersOfLength(5);
+        given_accountHasBalance(daoTreasury, funds);
+        given_accountsHaveBalance(stakers, amount);
+        given_daoTreasuryHasFundedStaking(Funds({ amount: funds, duration: 365, delay: 1 }));
 
         skip(1 days);
 
         // All stakers create a position on deploymentDate + 1, 19741
         for (uint8 i = 0; i < stakers.length; i++) {
-            vm.startPrank(stakers[i]);
-            l2LiskToken.approve(address(l2Reward), amount);
-            lockIDs[i] = l2Reward.createPosition(amount, duration);
-            vm.stopPrank();
+            lockIDs[i] = when_stakerCreatesPosition(stakers[i], Position(amount, duration));
         }
 
         uint256[] memory locksToClaim = new uint256[](1);
@@ -647,34 +616,23 @@ contract L2RewardTest is Test {
     {
         l2Staking.addCreator(address(l2Reward));
 
-        address[3] memory stakers = [address(0x1), address(0x2), address(0x3)];
         uint256[] memory lockIDs = new uint256[](3);
 
         uint256 funds = convertLiskToSmallestDenomination(1000);
         uint256 amount = convertLiskToSmallestDenomination(1000);
         uint256 duration = 300;
 
-        // stakers and DAO gets balance
-        vm.startPrank(bridge);
-        l2LiskToken.mint(daoTreasury, funds);
-
+        address[] memory stakers = given_anArrayOfStakersOfLength(3);
+        given_accountHasBalance(daoTreasury, funds);
         for (uint8 i = 0; i < stakers.length; i++) {
-            l2LiskToken.mint(stakers[i], amount * (i + 1));
+            given_accountHasBalance(stakers[i], amount * (i + 1));
         }
-        vm.stopPrank();
-
-        // DAO funds staking
-        vm.startPrank(daoTreasury);
-        l2LiskToken.approve(address(l2Reward), funds);
-        l2Reward.fundStakingRewards(funds, 365, 1);
-        vm.stopPrank();
+        given_daoTreasuryHasFundedStaking(Funds({ amount: funds, duration: 365, delay: 1 }));
 
         // All stakers create a position on deploymentDate, 19740
         for (uint8 i = 0; i < stakers.length; i++) {
-            vm.startPrank(stakers[i]);
-            l2LiskToken.approve(address(l2Reward), amount * (i + 1));
-            lockIDs[i] = l2Reward.createPosition(amount * (i + 1), duration);
-            vm.stopPrank();
+            lockIDs[i] =
+                when_stakerCreatesPosition(stakers[i], Position({ amount: amount * (i + 1), duration: duration }));
         }
 
         uint256[] memory locksToClaim = new uint256[](1);
@@ -715,35 +673,23 @@ contract L2RewardTest is Test {
     function test_claimRewards_multipleStakesWithSameAmountForDifferentDurationAreRewardedAsPerTheWeight() public {
         l2Staking.addCreator(address(l2Reward));
 
-        address[2] memory stakers = [address(0x1), address(0x2)];
         uint256[] memory lockIDs = new uint256[](2);
 
         uint256 funds = convertLiskToSmallestDenomination(100);
         uint256 amount = convertLiskToSmallestDenomination(100);
         uint256 duration = 100;
 
-        // stakers and DAO gets balance
-        vm.startPrank(bridge);
-        l2LiskToken.mint(daoTreasury, funds);
-
-        l2LiskToken.mint(stakers[0], amount);
-        l2LiskToken.mint(stakers[1], amount);
-        vm.stopPrank();
-
-        // DAO funds staking
-        vm.startPrank(daoTreasury);
-        l2LiskToken.approve(address(l2Reward), funds);
-        l2Reward.fundStakingRewards(funds, 365, 1);
-        vm.stopPrank();
+        address[] memory stakers = given_anArrayOfStakersOfLength(2);
+        given_accountHasBalance(daoTreasury, funds);
+        given_accountsHaveBalance(stakers, amount);
+        given_daoTreasuryHasFundedStaking(Funds({ amount: funds, duration: 365, delay: 1 }));
 
         skip(1 days);
 
         // All stakers create a position on deploymentDate + 1, 19741
         for (uint8 i = 0; i < stakers.length; i++) {
-            vm.startPrank(stakers[i]);
-            l2LiskToken.approve(address(l2Reward), amount);
-            lockIDs[i] = l2Reward.createPosition(amount, duration * (i + 1));
-            vm.stopPrank();
+            lockIDs[i] =
+                when_stakerCreatesPosition(stakers[i], Position({ amount: amount, duration: duration * (i + 1) }));
         }
 
         uint256[] memory locksToClaim = new uint256[](1);
@@ -753,12 +699,10 @@ contract L2RewardTest is Test {
         uint256[2] memory expectedRewardsAfter2Days = [uint256(228234144255585589), uint256(319711061223866463)];
 
         for (uint8 i = 0; i < stakers.length; i++) {
-            vm.startPrank(stakers[i]);
             locksToClaim[0] = lockIDs[i];
-            vm.expectEmit(true, true, true, true);
-            emit L2Reward.RewardsClaimed(lockIDs[i], expectedRewardsAfter2Days[i]);
-            l2Reward.claimRewards(locksToClaim);
-            vm.stopPrank();
+
+            then_eventRewardsClaimedIsEmitted(lockIDs[i], expectedRewardsAfter2Days[i]);
+            when_rewardsAreClaimedByStaker(stakers[i], locksToClaim);
         }
 
         skip(49 days);
@@ -766,12 +710,10 @@ contract L2RewardTest is Test {
         uint256[2] memory expectedRewardsAfter51Days = [uint256(5484172493642193937), uint256(7940485040604381337)];
 
         for (uint8 i = 0; i < stakers.length; i++) {
-            vm.startPrank(stakers[i]);
             locksToClaim[0] = lockIDs[i];
-            vm.expectEmit(true, true, true, true);
-            emit L2Reward.RewardsClaimed(lockIDs[i], expectedRewardsAfter51Days[i]);
-            l2Reward.claimRewards(locksToClaim);
-            vm.stopPrank();
+
+            then_eventRewardsClaimedIsEmitted(lockIDs[i], expectedRewardsAfter51Days[i]);
+            when_rewardsAreClaimedByStaker(stakers[i], locksToClaim);
         }
 
         skip(49 days);
@@ -779,24 +721,20 @@ contract L2RewardTest is Test {
         uint256[2] memory expectedRewardsAfter100Days = [uint256(5214765059512775305), uint256(8209892474733799969)];
 
         for (uint8 i = 0; i < stakers.length; i++) {
-            vm.startPrank(stakers[i]);
             locksToClaim[0] = lockIDs[i];
-            vm.expectEmit(true, true, true, true);
-            emit L2Reward.RewardsClaimed(lockIDs[i], expectedRewardsAfter100Days[i]);
-            l2Reward.claimRewards(locksToClaim);
-            vm.stopPrank();
+
+            then_eventRewardsClaimedIsEmitted(lockIDs[i], expectedRewardsAfter100Days[i]);
+            when_rewardsAreClaimedByStaker(stakers[i], locksToClaim);
         }
 
         skip(100 days);
         uint256[2] memory expectedRewardsAfter200Days = [uint256(0), uint256(27397260273972602700)];
 
         for (uint8 i = 0; i < stakers.length; i++) {
-            vm.startPrank(stakers[i]);
             locksToClaim[0] = lockIDs[i];
-            vm.expectEmit(true, true, true, true);
-            emit L2Reward.RewardsClaimed(lockIDs[i], expectedRewardsAfter200Days[i]);
-            l2Reward.claimRewards(locksToClaim);
-            vm.stopPrank();
+
+            then_eventRewardsClaimedIsEmitted(lockIDs[i], expectedRewardsAfter200Days[i]);
+            when_rewardsAreClaimedByStaker(stakers[i], locksToClaim);
         }
     }
 
@@ -807,47 +745,38 @@ contract L2RewardTest is Test {
 
         uint256[] memory lockIDs = new uint256[](1);
 
-        // staker and DAO gets balance
-        vm.startPrank(bridge);
-        l2LiskToken.mint(staker, balance);
-        l2LiskToken.mint(daoTreasury, balance);
-        vm.stopPrank();
-
-        // DAO funds staking
-        vm.startPrank(daoTreasury);
-        l2LiskToken.approve(address(l2Reward), convertLiskToSmallestDenomination(35));
-        l2Reward.fundStakingRewards(convertLiskToSmallestDenomination(35), 350, 1);
-        vm.stopPrank();
+        given_accountHasBalance(daoTreasury, balance);
+        given_accountHasBalance(staker, balance);
+        given_daoTreasuryHasFundedStaking(
+            Funds({ amount: convertLiskToSmallestDenomination(35), duration: 350, delay: 1 })
+        );
 
         // staker creates a position on deploymentDate, 19740
-        vm.startPrank(staker);
-        l2LiskToken.approve(address(l2Reward), convertLiskToSmallestDenomination(100));
-        lockIDs[0] = l2Reward.createPosition(convertLiskToSmallestDenomination(100), 120);
-        vm.stopPrank();
+        lockIDs[0] = when_stakerCreatesPosition(
+            staker, Position({ amount: convertLiskToSmallestDenomination(100), duration: 120 })
+        );
 
         // rewards are claimed from lastClaimDate for the lock (19740) till expiry day
         uint256 today = deploymentDate + 150;
-        skip(150 days);
-
         uint256 expectedRewards = 11.9 * 10 ** 18;
         uint256 expectedBalance = l2LiskToken.balanceOf(staker) + expectedRewards;
 
+        skip(150 days);
+
         // staker claims rewards on, 19890
-        vm.expectEmit(true, true, true, true);
-        emit L2Reward.RewardsClaimed(lockIDs[0], expectedRewards);
-        vm.prank(staker);
-        l2Reward.claimRewards(lockIDs);
+        then_eventRewardsClaimedIsEmitted(lockIDs[0], expectedRewards);
+        when_rewardsAreClaimedByStaker(staker, lockIDs);
 
         assertEq(l2Reward.lastClaimDate(lockIDs[0]), today);
         assertEq(l2LiskToken.balanceOf(staker), expectedBalance);
 
         skip(5 days);
         today += 5;
+
         // staker claims again on, 19895
-        vm.expectEmit(true, true, true, true);
-        emit L2Reward.RewardsClaimed(lockIDs[0], 0);
-        vm.prank(staker);
-        l2Reward.claimRewards(lockIDs);
+        then_eventRewardsClaimedIsEmitted(lockIDs[0], 0);
+        when_rewardsAreClaimedByStaker(staker, lockIDs);
+
         assertEq(l2Reward.lastClaimDate(lockIDs[0]), today);
     }
 
@@ -890,24 +819,16 @@ contract L2RewardTest is Test {
 
         uint256[] memory lockIDs = new uint256[](1);
 
-        // staker and DAO gets balance
-        vm.startPrank(bridge);
-        l2LiskToken.mint(staker, balance);
-        l2LiskToken.mint(daoTreasury, balance);
-        vm.stopPrank();
-
-        // DAO funds staking
-        vm.startPrank(daoTreasury);
-        l2LiskToken.approve(address(l2Reward), convertLiskToSmallestDenomination(35));
-        l2Reward.fundStakingRewards(convertLiskToSmallestDenomination(35), 350, 1);
-        vm.stopPrank();
+        given_accountHasBalance(daoTreasury, balance);
+        given_accountHasBalance(staker, balance);
+        given_daoTreasuryHasFundedStaking(
+            Funds({ amount: convertLiskToSmallestDenomination(35), duration: 350, delay: 1 })
+        );
 
         // staker creates a position on deploymentDate, 19740
-        vm.startPrank(staker);
-        l2LiskToken.approve(address(l2Reward), convertLiskToSmallestDenomination(100));
-        lockIDs[0] = l2Reward.createPosition(convertLiskToSmallestDenomination(100), 120);
-
-        vm.stopPrank();
+        lockIDs[0] = when_stakerCreatesPosition(
+            staker, Position({ amount: convertLiskToSmallestDenomination(100), duration: 120 })
+        );
 
         skip(30 days);
 
@@ -923,24 +844,16 @@ contract L2RewardTest is Test {
 
         uint256[] memory lockIDs = new uint256[](1);
 
-        // staker and DAO gets balance
-        vm.startPrank(bridge);
-        l2LiskToken.mint(staker, balance);
-        l2LiskToken.mint(daoTreasury, balance);
-        vm.stopPrank();
-
-        // DAO funds staking
-        vm.startPrank(daoTreasury);
-        l2LiskToken.approve(address(l2Reward), convertLiskToSmallestDenomination(35));
-        l2Reward.fundStakingRewards(convertLiskToSmallestDenomination(35), 350, 1);
-        vm.stopPrank();
+        given_accountHasBalance(daoTreasury, balance);
+        given_accountHasBalance(staker, balance);
+        given_daoTreasuryHasFundedStaking(
+            Funds({ amount: convertLiskToSmallestDenomination(35), duration: 350, delay: 1 })
+        );
 
         // staker creates a position on deploymentDate, 19740
-        vm.startPrank(staker);
-        l2LiskToken.approve(address(l2Reward), convertLiskToSmallestDenomination(100));
-        lockIDs[0] = l2Reward.createPosition(convertLiskToSmallestDenomination(100), 120);
-
-        vm.stopPrank();
+        lockIDs[0] = when_stakerCreatesPosition(
+            staker, Position({ amount: convertLiskToSmallestDenomination(100), duration: 120 })
+        );
 
         skip(150 days);
 
@@ -950,8 +863,7 @@ contract L2RewardTest is Test {
             l2LiskToken.balanceOf(staker) + expectedRewards + convertLiskToSmallestDenomination(100);
 
         // staker deletes position
-        vm.expectEmit(true, true, true, true);
-        emit L2Reward.RewardsClaimed(lockIDs[0], expectedRewards);
+        then_eventRewardsClaimedIsEmitted(lockIDs[0], expectedRewards);
         vm.prank(staker);
         l2Reward.deletePositions(lockIDs);
 
@@ -997,29 +909,21 @@ contract L2RewardTest is Test {
         l2Staking.addCreator(address(l2Reward));
         address staker = address(0x1);
         uint256 balance = convertLiskToSmallestDenomination(1000);
-
         uint256[] memory lockIDs = new uint256[](1);
 
-        // staker and DAO gets balance
-        vm.startPrank(bridge);
-        l2LiskToken.mint(staker, balance);
-        l2LiskToken.mint(daoTreasury, balance);
-        vm.stopPrank();
-
-        // DAO funds staking
-        vm.startPrank(daoTreasury);
-        l2LiskToken.approve(address(l2Reward), convertLiskToSmallestDenomination(35));
-        l2Reward.fundStakingRewards(convertLiskToSmallestDenomination(35), 350, 1);
-        vm.stopPrank();
+        given_accountHasBalance(daoTreasury, balance);
+        given_accountHasBalance(staker, balance);
+        given_daoTreasuryHasFundedStaking(
+            Funds({ amount: convertLiskToSmallestDenomination(35), duration: 350, delay: 1 })
+        );
 
         // staker creates a position on deploymentDate, 19740
-        vm.startPrank(staker);
-        l2LiskToken.approve(address(l2Reward), convertLiskToSmallestDenomination(100));
-        lockIDs[0] = l2Reward.createPosition(convertLiskToSmallestDenomination(100), 120);
-        vm.stopPrank();
+        lockIDs[0] = when_stakerCreatesPosition(
+            staker, Position({ amount: convertLiskToSmallestDenomination(100), duration: 120 })
+        );
 
-        vm.expectEmit(true, true, true, true);
-        emit L2Reward.RewardsClaimed(lockIDs[0], 0);
+        then_eventRewardsClaimedIsEmitted(lockIDs[0], 0);
+
         vm.prank(staker);
         l2Reward.pauseUnlocking(lockIDs);
 
@@ -1032,26 +936,18 @@ contract L2RewardTest is Test {
         l2Staking.addCreator(address(l2Reward));
         address staker = address(0x1);
         uint256 balance = convertLiskToSmallestDenomination(1000);
-
         uint256[] memory lockIDs = new uint256[](1);
 
-        // staker and DAO gets balance
-        vm.startPrank(bridge);
-        l2LiskToken.mint(staker, balance);
-        l2LiskToken.mint(daoTreasury, balance);
-        vm.stopPrank();
-
-        // DAO funds staking
-        vm.startPrank(daoTreasury);
-        l2LiskToken.approve(address(l2Reward), convertLiskToSmallestDenomination(35));
-        l2Reward.fundStakingRewards(convertLiskToSmallestDenomination(35), 350, 1);
-        vm.stopPrank();
+        given_accountHasBalance(daoTreasury, balance);
+        given_accountHasBalance(staker, balance);
+        given_daoTreasuryHasFundedStaking(
+            Funds({ amount: convertLiskToSmallestDenomination(35), duration: 350, delay: 1 })
+        );
 
         // staker creates a position on deploymentDate, 19740
-        vm.startPrank(staker);
-        l2LiskToken.approve(address(l2Reward), convertLiskToSmallestDenomination(100));
-        lockIDs[0] = l2Reward.createPosition(convertLiskToSmallestDenomination(100), 120);
-        vm.stopPrank();
+        lockIDs[0] = when_stakerCreatesPosition(
+            staker, Position({ amount: convertLiskToSmallestDenomination(100), duration: 120 })
+        );
 
         skip(75 days);
         uint256 today = deploymentDate + 75;
@@ -1060,8 +956,7 @@ contract L2RewardTest is Test {
         uint256 expectedBalance = l2LiskToken.balanceOf(staker) + expectedRewards;
         uint256 expectedPausedLockingDuration = 45;
 
-        vm.expectEmit(true, true, true, true);
-        emit L2Reward.RewardsClaimed(lockIDs[0], expectedRewards);
+        then_eventRewardsClaimedIsEmitted(lockIDs[0], expectedRewards);
         vm.prank(staker);
         l2Reward.pauseUnlocking(lockIDs);
 
@@ -1115,23 +1010,16 @@ contract L2RewardTest is Test {
 
         uint256[] memory lockIDs = new uint256[](1);
 
-        // staker and DAO gets balance
-        vm.startPrank(bridge);
-        l2LiskToken.mint(staker, balance);
-        l2LiskToken.mint(daoTreasury, balance);
-        vm.stopPrank();
-
-        // DAO funds staking
-        vm.startPrank(daoTreasury);
-        l2LiskToken.approve(address(l2Reward), convertLiskToSmallestDenomination(35));
-        l2Reward.fundStakingRewards(convertLiskToSmallestDenomination(35), 350, 1);
-        vm.stopPrank();
+        given_accountHasBalance(daoTreasury, balance);
+        given_accountHasBalance(staker, balance);
+        given_daoTreasuryHasFundedStaking(
+            Funds({ amount: convertLiskToSmallestDenomination(35), duration: 350, delay: 1 })
+        );
 
         // staker creates a position on deploymentDate, 19740
-        vm.startPrank(staker);
-        l2LiskToken.approve(address(l2Reward), convertLiskToSmallestDenomination(100));
-        lockIDs[0] = l2Reward.createPosition(convertLiskToSmallestDenomination(100), 120);
-        vm.stopPrank();
+        lockIDs[0] = when_stakerCreatesPosition(
+            staker, Position({ amount: convertLiskToSmallestDenomination(100), duration: 120 })
+        );
 
         vm.expectRevert("L2Staking: countdown is not paused");
         vm.prank(staker);
@@ -1145,30 +1033,23 @@ contract L2RewardTest is Test {
 
         uint256[] memory lockIDs = new uint256[](1);
 
-        // staker and DAO gets balance
-        vm.startPrank(bridge);
-        l2LiskToken.mint(staker, balance);
-        l2LiskToken.mint(daoTreasury, balance);
-        vm.stopPrank();
+        given_accountHasBalance(daoTreasury, balance);
+        given_accountHasBalance(staker, balance);
+        given_daoTreasuryHasFundedStaking(
+            Funds({ amount: convertLiskToSmallestDenomination(35), duration: 350, delay: 1 })
+        );
 
-        // DAO funds staking
-        vm.startPrank(daoTreasury);
-        l2LiskToken.approve(address(l2Reward), convertLiskToSmallestDenomination(35));
-        l2Reward.fundStakingRewards(convertLiskToSmallestDenomination(35), 350, 1);
-        vm.stopPrank();
-
-        // staker creates a position on deploymentDate, 19740
-        vm.startPrank(staker);
-        l2LiskToken.approve(address(l2Reward), convertLiskToSmallestDenomination(100));
-        lockIDs[0] = l2Reward.createPosition(convertLiskToSmallestDenomination(100), 120);
-        vm.stopPrank();
+        lockIDs[0] = when_stakerCreatesPosition(
+            staker, Position({ amount: convertLiskToSmallestDenomination(100), duration: 120 })
+        );
 
         skip(50 days);
         uint256 today = deploymentDate + 50;
 
         uint256 expectedRewardsWhenPausing = 4.9 * 10 ** 18;
-        vm.expectEmit(true, true, true, true);
-        emit L2Reward.RewardsClaimed(lockIDs[0], expectedRewardsWhenPausing);
+
+        then_eventRewardsClaimedIsEmitted(lockIDs[0], expectedRewardsWhenPausing);
+
         // staker pauses the position
         vm.prank(staker);
         l2Reward.pauseUnlocking(lockIDs);
@@ -1181,8 +1062,8 @@ contract L2RewardTest is Test {
         skip(50 days);
         today = deploymentDate + 100;
 
-        vm.expectEmit(true, true, true, true);
-        emit L2Reward.RewardsClaimed(lockIDs[0], expectedRewardsWhenResuming);
+        then_eventRewardsClaimedIsEmitted(lockIDs[0], expectedRewardsWhenResuming);
+
         vm.prank(staker);
         l2Reward.resumeUnlockingCountdown(lockIDs);
 
@@ -1201,9 +1082,9 @@ contract L2RewardTest is Test {
 
     function test_increaseLockingAmount_onlyOwnerCanIncreaseAmountForALockingPosition() public {
         address staker = address(0x1);
-        L2Reward.IncreasedAmount[] memory locks = new L2Reward.IncreasedAmount[](1);
-        locks[0].lockID = 1;
-        locks[0].amountIncrease = convertLiskToSmallestDenomination(10);
+        L2Reward.IncreasedAmount[] memory increasingAmounts = new L2Reward.IncreasedAmount[](1);
+        increasingAmounts[0].lockID = 1;
+        increasingAmounts[0].amountIncrease = convertLiskToSmallestDenomination(10);
 
         vm.mockCall(
             address(l2LockingPosition),
@@ -1213,14 +1094,14 @@ contract L2RewardTest is Test {
 
         vm.prank(staker);
         vm.expectRevert("L2Reward: msg.sender does not own the locking position");
-        l2Reward.increaseLockingAmount(locks);
+        l2Reward.increaseLockingAmount(increasingAmounts);
     }
 
     function test_increaseLockingAmount_amountCanOnlyBeIncreasedByAnOwnerForAnExistingLockingPosition() public {
         address staker = address(0x1);
-        L2Reward.IncreasedAmount[] memory locks = new L2Reward.IncreasedAmount[](1);
-        locks[0].lockID = 1;
-        locks[0].amountIncrease = convertLiskToSmallestDenomination(10);
+        L2Reward.IncreasedAmount[] memory increasingAmounts = new L2Reward.IncreasedAmount[](1);
+        increasingAmounts[0].lockID = 1;
+        increasingAmounts[0].amountIncrease = convertLiskToSmallestDenomination(10);
 
         vm.mockCall(
             address(l2LockingPosition),
@@ -1230,14 +1111,14 @@ contract L2RewardTest is Test {
 
         vm.expectRevert("L2Reward: Locking position does not exist");
         vm.prank(staker);
-        l2Reward.increaseLockingAmount(locks);
+        l2Reward.increaseLockingAmount(increasingAmounts);
     }
 
     function test_increaseLockingAmount_increasedAmountShouldBeGreaterThanZero() public {
         address staker = address(0x1);
-        L2Reward.IncreasedAmount[] memory locks = new L2Reward.IncreasedAmount[](1);
-        locks[0].lockID = 1;
-        locks[0].amountIncrease = 0;
+        L2Reward.IncreasedAmount[] memory increasingAmounts = new L2Reward.IncreasedAmount[](1);
+        increasingAmounts[0].lockID = 1;
+        increasingAmounts[0].amountIncrease = 0;
 
         vm.mockCall(
             address(l2LockingPosition),
@@ -1247,7 +1128,7 @@ contract L2RewardTest is Test {
 
         vm.expectRevert("L2Reward: Increased amount should be greater than zero");
         vm.prank(staker);
-        l2Reward.increaseLockingAmount(locks);
+        l2Reward.increaseLockingAmount(increasingAmounts);
     }
 
     function test_increaseLockingAmount_forActivePositionIncreasesLockedAmountAndWeightByRemainingDurationAndClaimsRewards(
@@ -1258,46 +1139,36 @@ contract L2RewardTest is Test {
         address staker = address(0x1);
         uint256 balance = convertLiskToSmallestDenomination(1000);
         uint256 amount = convertLiskToSmallestDenomination(100);
-        L2Reward.IncreasedAmount[] memory locks = new L2Reward.IncreasedAmount[](1);
+        L2Reward.IncreasedAmount[] memory increasingAmounts = new L2Reward.IncreasedAmount[](1);
 
-        // staker and DAO gets balance
-        vm.startPrank(bridge);
-        l2LiskToken.mint(staker, balance);
-        l2LiskToken.mint(daoTreasury, balance);
-        vm.stopPrank();
+        given_accountHasBalance(daoTreasury, balance);
+        given_accountHasBalance(staker, balance);
+        given_daoTreasuryHasFundedStaking(
+            Funds({ amount: convertLiskToSmallestDenomination(35), duration: 350, delay: 1 })
+        );
 
-        // DAO funds staking
-        vm.startPrank(daoTreasury);
-        l2LiskToken.approve(address(l2Reward), convertLiskToSmallestDenomination(35));
-        l2Reward.fundStakingRewards(convertLiskToSmallestDenomination(35), 350, 1);
-        vm.stopPrank();
-
-        vm.startPrank(staker);
-        l2LiskToken.approve(address(l2Reward), amount);
-        locks[0].lockID = l2Reward.createPosition(amount, 120);
-        vm.stopPrank();
+        increasingAmounts[0].lockID = when_stakerCreatesPosition(staker, Position({ amount: amount, duration: 120 }));
 
         skip(50 days);
 
-        locks[0].amountIncrease = convertLiskToSmallestDenomination(35);
+        increasingAmounts[0].amountIncrease = convertLiskToSmallestDenomination(35);
         uint256 remainingDuration = 70;
-        uint256 expectedTotalWeight =
-            (27000 * 10 ** 18) - (5000 * 10 ** 18) + (locks[0].amountIncrease * (remainingDuration + l2Reward.OFFSET()));
+        uint256 expectedTotalWeight = (27000 * 10 ** 18) - (5000 * 10 ** 18)
+            + (increasingAmounts[0].amountIncrease * (remainingDuration + l2Reward.OFFSET()));
 
         balance = l2LiskToken.balanceOf(staker);
 
         uint256 expectedReward = 4.9 * 10 ** 18;
 
         vm.startPrank(staker);
-        l2LiskToken.approve(address(l2Reward), locks[0].amountIncrease);
-        vm.expectEmit(true, true, true, true);
-        emit L2Reward.RewardsClaimed(locks[0].lockID, expectedReward);
-        l2Reward.increaseLockingAmount(locks);
+        l2LiskToken.approve(address(l2Reward), increasingAmounts[0].amountIncrease);
+        then_eventRewardsClaimedIsEmitted(increasingAmounts[0].lockID, expectedReward);
+        l2Reward.increaseLockingAmount(increasingAmounts);
         vm.stopPrank();
 
-        assertEq(l2Reward.totalAmountLocked(), amount + locks[0].amountIncrease);
+        assertEq(l2Reward.totalAmountLocked(), amount + increasingAmounts[0].amountIncrease);
         assertEq(l2Reward.totalWeight(), expectedTotalWeight);
-        assertEq(l2LiskToken.balanceOf(staker), balance + expectedReward - locks[0].amountIncrease);
+        assertEq(l2LiskToken.balanceOf(staker), balance + expectedReward - increasingAmounts[0].amountIncrease);
         assertEq(l2Reward.pendingUnlockAmount(), convertLiskToSmallestDenomination(135));
         assertEq(l2Reward.dailyUnlockedAmounts(deploymentDate + 120), convertLiskToSmallestDenomination(135));
     }
@@ -1310,26 +1181,17 @@ contract L2RewardTest is Test {
         uint256 balance = convertLiskToSmallestDenomination(1000);
         uint256 amount = convertLiskToSmallestDenomination(100);
         uint256[] memory lockIDs = new uint256[](1);
-        L2Reward.IncreasedAmount[] memory locks = new L2Reward.IncreasedAmount[](1);
+        L2Reward.IncreasedAmount[] memory increasingAmounts = new L2Reward.IncreasedAmount[](1);
 
-        // staker and DAO gets balance
-        vm.startPrank(bridge);
-        l2LiskToken.mint(staker, balance);
-        l2LiskToken.mint(daoTreasury, balance);
-        vm.stopPrank();
+        given_accountHasBalance(daoTreasury, balance);
+        given_accountHasBalance(staker, balance);
+        given_daoTreasuryHasFundedStaking(
+            Funds({ amount: convertLiskToSmallestDenomination(35), duration: 350, delay: 1 })
+        );
 
-        // DAO funds staking
-        vm.startPrank(daoTreasury);
-        l2LiskToken.approve(address(l2Reward), convertLiskToSmallestDenomination(35));
-        l2Reward.fundStakingRewards(convertLiskToSmallestDenomination(35), 350, 1);
-        vm.stopPrank();
+        increasingAmounts[0].lockID = when_stakerCreatesPosition(staker, Position({ amount: amount, duration: 120 }));
 
-        vm.startPrank(staker);
-        l2LiskToken.approve(address(l2Reward), amount);
-        locks[0].lockID = l2Reward.createPosition(amount, 120);
-        vm.stopPrank();
-
-        lockIDs[0] = locks[0].lockID;
+        lockIDs[0] = increasingAmounts[0].lockID;
 
         // pausedLockingDuration set to 120
         vm.prank(staker);
@@ -1337,25 +1199,24 @@ contract L2RewardTest is Test {
 
         skip(50 days);
 
-        locks[0].amountIncrease = convertLiskToSmallestDenomination(35);
+        increasingAmounts[0].amountIncrease = convertLiskToSmallestDenomination(35);
 
         uint256 totalWeight = l2Reward.totalWeight();
 
-        uint256 totalWeightIncrease = locks[0].amountIncrease * (120 + l2Reward.OFFSET());
+        uint256 totalWeightIncrease = increasingAmounts[0].amountIncrease * (120 + l2Reward.OFFSET());
 
         balance = l2LiskToken.balanceOf(staker);
 
         uint256 expectedReward = 4.9 * 10 ** 18;
 
         vm.startPrank(staker);
-        l2LiskToken.approve(address(l2Reward), locks[0].amountIncrease);
-        vm.expectEmit(true, true, true, true);
-        emit L2Reward.RewardsClaimed(locks[0].lockID, expectedReward);
-        l2Reward.increaseLockingAmount(locks);
+        l2LiskToken.approve(address(l2Reward), increasingAmounts[0].amountIncrease);
+        then_eventRewardsClaimedIsEmitted(increasingAmounts[0].lockID, expectedReward);
+        l2Reward.increaseLockingAmount(increasingAmounts);
         vm.stopPrank();
 
-        assertEq(l2Reward.totalAmountLocked(), amount + locks[0].amountIncrease);
-        assertEq(l2LiskToken.balanceOf(staker), balance + expectedReward - locks[0].amountIncrease);
+        assertEq(l2Reward.totalAmountLocked(), amount + increasingAmounts[0].amountIncrease);
+        assertEq(l2LiskToken.balanceOf(staker), balance + expectedReward - increasingAmounts[0].amountIncrease);
         assertEq(l2Reward.totalWeight(), totalWeightIncrease + totalWeight);
     }
 
@@ -1364,30 +1225,19 @@ contract L2RewardTest is Test {
         address staker = address(0x1);
         uint256 balance = convertLiskToSmallestDenomination(1000);
         uint256 amount = convertLiskToSmallestDenomination(10);
-        L2Reward.IncreasedAmount[] memory locks = new L2Reward.IncreasedAmount[](1);
+        L2Reward.IncreasedAmount[] memory increasingAmounts = new L2Reward.IncreasedAmount[](1);
 
-        // staker and DAO gets balance
-        vm.startPrank(bridge);
-        l2LiskToken.mint(staker, balance);
-        l2LiskToken.mint(daoTreasury, balance);
-        vm.stopPrank();
-
-        // DAO funds staking
-        vm.startPrank(daoTreasury);
-        l2LiskToken.approve(address(l2Reward), convertLiskToSmallestDenomination(35));
-        l2Reward.fundStakingRewards(convertLiskToSmallestDenomination(35), 350, 1);
-        vm.stopPrank();
-
-        uint256 dailyRewards = convertLiskToSmallestDenomination(35) / 350;
+        given_accountHasBalance(daoTreasury, balance);
+        given_accountHasBalance(staker, balance);
+        uint256 dailyRewards = given_daoTreasuryHasFundedStaking(
+            Funds({ amount: convertLiskToSmallestDenomination(35), duration: 350, delay: 1 })
+        );
 
         skip(10 days);
 
         // staker stakes on 19750
         // daily rewards from 19740 to 19749 are capped due to zero total amount unlocked
-        vm.startPrank(staker);
-        l2LiskToken.approve(address(l2Reward), amount);
-        locks[0].lockID = l2Reward.createPosition(amount, 120);
-        vm.stopPrank();
+        increasingAmounts[0].lockID = when_stakerCreatesPosition(staker, Position({ amount: amount, duration: 120 }));
 
         // daily rewards are capped to zero
         for (uint256 i = deploymentDate; i < deploymentDate + 10; i++) {
@@ -1399,13 +1249,14 @@ contract L2RewardTest is Test {
         // staker increase amount on 19760
         // "daily rewards from 19750 to 19759 are capped due too low total locked amount
         uint256 cappedRewards = amount / 365;
-        locks[0].amountIncrease = 90;
+        increasingAmounts[0].amountIncrease = 90;
 
         vm.startPrank(staker);
-        l2LiskToken.approve(address(l2Reward), locks[0].amountIncrease);
-        vm.expectEmit(true, true, true, true);
-        emit L2Reward.RewardsClaimed(locks[0].lockID, 273972602739726020);
-        l2Reward.increaseLockingAmount(locks);
+        l2LiskToken.approve(address(l2Reward), increasingAmounts[0].amountIncrease);
+
+        then_eventRewardsClaimedIsEmitted(increasingAmounts[0].lockID, 273972602739726020);
+
+        l2Reward.increaseLockingAmount(increasingAmounts);
         vm.stopPrank();
 
         // daily rewards are capped
@@ -1428,9 +1279,9 @@ contract L2RewardTest is Test {
 
     function test_extendDuration_onlyOwnerCanExtendDurationForALockingPosition() public {
         address staker = address(0x1);
-        L2Reward.ExtendedDuration[] memory locks = new L2Reward.ExtendedDuration[](1);
-        locks[0].lockID = 1;
-        locks[0].durationExtension = 1;
+        L2Reward.ExtendedDuration[] memory extensions = new L2Reward.ExtendedDuration[](1);
+        extensions[0].lockID = 1;
+        extensions[0].durationExtension = 1;
 
         vm.mockCall(
             address(l2LockingPosition),
@@ -1440,14 +1291,14 @@ contract L2RewardTest is Test {
 
         vm.prank(staker);
         vm.expectRevert("L2Reward: msg.sender does not own the locking position");
-        l2Reward.extendDuration(locks);
+        l2Reward.extendDuration(extensions);
     }
 
     function test_extendDuration_durationCanOnlyBeExtendedByAnOwnerForAnExistingLockingPositions() public {
         address staker = address(0x1);
-        L2Reward.ExtendedDuration[] memory locks = new L2Reward.ExtendedDuration[](1);
-        locks[0].lockID = 1;
-        locks[0].durationExtension = 1;
+        L2Reward.ExtendedDuration[] memory extensions = new L2Reward.ExtendedDuration[](1);
+        extensions[0].lockID = 1;
+        extensions[0].durationExtension = 1;
 
         vm.mockCall(
             address(l2LockingPosition),
@@ -1458,14 +1309,14 @@ contract L2RewardTest is Test {
         vm.expectRevert("L2Reward: Locking position does not exist");
 
         vm.prank(staker);
-        l2Reward.extendDuration(locks);
+        l2Reward.extendDuration(extensions);
     }
 
     function test_extendDuration_extendedDurationShouldBeGreaterThanZero() public {
         address staker = address(0x1);
-        L2Reward.ExtendedDuration[] memory locks = new L2Reward.ExtendedDuration[](1);
-        locks[0].lockID = 1;
-        locks[0].durationExtension = 0;
+        L2Reward.ExtendedDuration[] memory extensions = new L2Reward.ExtendedDuration[](1);
+        extensions[0].lockID = 1;
+        extensions[0].durationExtension = 0;
 
         vm.mockCall(
             address(l2LockingPosition),
@@ -1476,7 +1327,7 @@ contract L2RewardTest is Test {
         vm.expectRevert("L2Reward: Extended duration should be greater than zero");
 
         vm.prank(staker);
-        l2Reward.extendDuration(locks);
+        l2Reward.extendDuration(extensions);
     }
 
     function test_extendDuration_updatesGlobalsAndClaimRewardsForActivePositionWithExpiryInFuture() public {
@@ -1485,44 +1336,34 @@ contract L2RewardTest is Test {
         uint256 balance = convertLiskToSmallestDenomination(1000);
         uint256 duration = 120;
         uint256 amount = convertLiskToSmallestDenomination(100);
-        L2Reward.ExtendedDuration[] memory locks = new L2Reward.ExtendedDuration[](1);
+        L2Reward.ExtendedDuration[] memory extensions = new L2Reward.ExtendedDuration[](1);
 
-        // staker and DAO gets balance
-        vm.startPrank(bridge);
-        l2LiskToken.mint(staker, balance);
-        l2LiskToken.mint(daoTreasury, balance);
-        vm.stopPrank();
+        given_accountHasBalance(daoTreasury, balance);
+        given_accountHasBalance(staker, balance);
+        given_daoTreasuryHasFundedStaking(
+            Funds({ amount: convertLiskToSmallestDenomination(35), duration: 350, delay: 1 })
+        );
 
-        // DAO funds staking
-        vm.startPrank(daoTreasury);
-        l2LiskToken.approve(address(l2Reward), convertLiskToSmallestDenomination(35));
-        l2Reward.fundStakingRewards(convertLiskToSmallestDenomination(35), 350, 1);
-        vm.stopPrank();
-
-        vm.startPrank(staker);
-        l2LiskToken.approve(address(l2Reward), amount);
-        locks[0].lockID = l2Reward.createPosition(amount, duration);
-        vm.stopPrank();
+        extensions[0].lockID = when_stakerCreatesPosition(staker, Position(amount, duration));
 
         skip(50 days);
 
-        locks[0].durationExtension = 50;
+        extensions[0].durationExtension = 50;
 
-        uint256 weightIncrease = amount * locks[0].durationExtension;
+        uint256 weightIncrease = amount * extensions[0].durationExtension;
         balance = l2LiskToken.balanceOf(staker);
 
         uint256 expectedReward = 4.9 * 10 ** 18;
 
         vm.startPrank(staker);
-        vm.expectEmit(true, true, true, true);
-        emit L2Reward.RewardsClaimed(locks[0].lockID, expectedReward);
-        l2Reward.extendDuration(locks);
+        then_eventRewardsClaimedIsEmitted(extensions[0].lockID, expectedReward);
+        l2Reward.extendDuration(extensions);
         vm.stopPrank();
 
         assertEq(l2Reward.totalWeight(), (27000 * 10 ** 18) - (5000 * 10 ** 18) + weightIncrease);
         assertEq(l2LiskToken.balanceOf(staker), balance + expectedReward);
         assertEq(l2Reward.dailyUnlockedAmounts(deploymentDate + duration), 0);
-        assertEq(l2Reward.dailyUnlockedAmounts(deploymentDate + duration + locks[0].durationExtension), amount);
+        assertEq(l2Reward.dailyUnlockedAmounts(deploymentDate + duration + extensions[0].durationExtension), amount);
     }
 
     function test_extendDuration_updatesGlobalsAndClaimRewardsForExpiredPositions() public {
@@ -1531,38 +1372,28 @@ contract L2RewardTest is Test {
         uint256 balance = convertLiskToSmallestDenomination(1000);
         uint256 duration = 120;
         uint256 amount = convertLiskToSmallestDenomination(100);
-        L2Reward.ExtendedDuration[] memory locks = new L2Reward.ExtendedDuration[](1);
+        L2Reward.ExtendedDuration[] memory extensions = new L2Reward.ExtendedDuration[](1);
 
-        // staker and DAO gets balance
-        vm.startPrank(bridge);
-        l2LiskToken.mint(staker, balance);
-        l2LiskToken.mint(daoTreasury, balance);
-        vm.stopPrank();
+        given_accountHasBalance(daoTreasury, balance);
+        given_accountHasBalance(staker, balance);
+        given_daoTreasuryHasFundedStaking(
+            Funds({ amount: convertLiskToSmallestDenomination(35), duration: 350, delay: 1 })
+        );
 
-        // DAO funds staking
-        vm.startPrank(daoTreasury);
-        l2LiskToken.approve(address(l2Reward), convertLiskToSmallestDenomination(35));
-        l2Reward.fundStakingRewards(convertLiskToSmallestDenomination(35), 350, 1);
-        vm.stopPrank();
-
-        vm.startPrank(staker);
-        l2LiskToken.approve(address(l2Reward), amount);
-        locks[0].lockID = l2Reward.createPosition(amount, duration);
-        vm.stopPrank();
+        extensions[0].lockID = when_stakerCreatesPosition(staker, Position(amount, duration));
 
         skip(121 days);
 
-        locks[0].durationExtension = 50;
+        extensions[0].durationExtension = 50;
         // For expired positions, amount is effectively re-locked for the extended duration.
-        uint256 weightIncrease = (amount * locks[0].durationExtension) + (amount * l2Reward.OFFSET());
+        uint256 weightIncrease = (amount * extensions[0].durationExtension) + (amount * l2Reward.OFFSET());
         balance = l2LiskToken.balanceOf(staker);
 
         uint256 expectedReward = 11.9 * 10 ** 18;
 
         vm.startPrank(staker);
-        vm.expectEmit(true, true, true, true);
-        emit L2Reward.RewardsClaimed(locks[0].lockID, expectedReward);
-        l2Reward.extendDuration(locks);
+        then_eventRewardsClaimedIsEmitted(extensions[0].lockID, expectedReward);
+        l2Reward.extendDuration(extensions);
         vm.stopPrank();
 
         assertEq(l2LiskToken.balanceOf(staker), balance + expectedReward);
@@ -1570,7 +1401,7 @@ contract L2RewardTest is Test {
 
         assertEq(l2Reward.totalAmountLocked(), amount);
         assertEq(l2Reward.pendingUnlockAmount(), amount);
-        assertEq(l2Reward.dailyUnlockedAmounts(deploymentDate + duration + locks[0].durationExtension), amount);
+        assertEq(l2Reward.dailyUnlockedAmounts(deploymentDate + duration + extensions[0].durationExtension), amount);
     }
 
     function test_extendDuration_updatesGlobalsAndClaimRewardsForPausedPositions() public {
@@ -1579,42 +1410,35 @@ contract L2RewardTest is Test {
         uint256 balance = convertLiskToSmallestDenomination(1000);
         uint256 duration = 120;
         uint256 amount = convertLiskToSmallestDenomination(100);
-        L2Reward.ExtendedDuration[] memory locks = new L2Reward.ExtendedDuration[](1);
+        L2Reward.ExtendedDuration[] memory extensions = new L2Reward.ExtendedDuration[](1);
         uint256[] memory lockIDs = new uint256[](1);
 
-        // staker and DAO gets balance
-        vm.startPrank(bridge);
-        l2LiskToken.mint(staker, balance);
-        l2LiskToken.mint(daoTreasury, balance);
-        vm.stopPrank();
-
-        // DAO funds staking
-        vm.startPrank(daoTreasury);
-        l2LiskToken.approve(address(l2Reward), convertLiskToSmallestDenomination(35));
-        l2Reward.fundStakingRewards(convertLiskToSmallestDenomination(35), 350, 1);
-        vm.stopPrank();
+        given_accountHasBalance(daoTreasury, balance);
+        given_accountHasBalance(staker, balance);
+        given_daoTreasuryHasFundedStaking(
+            Funds({ amount: convertLiskToSmallestDenomination(35), duration: 350, delay: 1 })
+        );
 
         vm.startPrank(staker);
         l2LiskToken.approve(address(l2Reward), amount);
-        locks[0].lockID = l2Reward.createPosition(amount, duration);
-        lockIDs[0] = locks[0].lockID;
+        extensions[0].lockID = l2Reward.createPosition(amount, duration);
+        lockIDs[0] = extensions[0].lockID;
         l2Reward.pauseUnlocking(lockIDs);
         vm.stopPrank();
 
         skip(120 days);
 
-        locks[0].durationExtension = 50;
+        extensions[0].durationExtension = 50;
 
-        uint256 weightIncrease = amount * locks[0].durationExtension;
+        uint256 weightIncrease = amount * extensions[0].durationExtension;
         uint256 expectedTotalWeight = l2Reward.totalWeight() + weightIncrease;
         uint256 expectedReward = 11.9 * 10 ** 18;
 
         balance = l2LiskToken.balanceOf(staker);
 
         vm.startPrank(staker);
-        vm.expectEmit(true, true, true, true);
-        emit L2Reward.RewardsClaimed(lockIDs[0], expectedReward);
-        l2Reward.extendDuration(locks);
+        then_eventRewardsClaimedIsEmitted(lockIDs[0], expectedReward);
+        l2Reward.extendDuration(extensions);
         vm.stopPrank();
 
         assertEq(l2LiskToken.balanceOf(staker), balance + expectedReward);
@@ -1663,22 +1487,13 @@ contract L2RewardTest is Test {
 
         uint256[] memory lockIDs = new uint256[](1);
 
-        // staker and DAO gets balance
-        vm.startPrank(bridge);
-        l2LiskToken.mint(staker, balance);
-        l2LiskToken.mint(daoTreasury, balance);
-        vm.stopPrank();
+        given_accountHasBalance(daoTreasury, balance);
+        given_accountHasBalance(staker, balance);
+        given_daoTreasuryHasFundedStaking(
+            Funds({ amount: convertLiskToSmallestDenomination(35), duration: 350, delay: 1 })
+        );
 
-        // DAO funds staking
-        vm.startPrank(daoTreasury);
-        l2LiskToken.approve(address(l2Reward), convertLiskToSmallestDenomination(35));
-        l2Reward.fundStakingRewards(convertLiskToSmallestDenomination(35), 350, 1);
-        vm.stopPrank();
-
-        vm.startPrank(staker);
-        l2LiskToken.approve(address(l2Reward), amount);
-        lockIDs[0] = l2Reward.createPosition(amount, duration);
-        vm.stopPrank();
+        lockIDs[0] = when_stakerCreatesPosition(staker, Position(amount, duration));
 
         skip(50 days);
 
@@ -1686,14 +1501,13 @@ contract L2RewardTest is Test {
         uint256 penalty = 4794520547945205479;
 
         vm.startPrank(staker);
-        vm.expectEmit(true, true, true, true);
-        emit L2Reward.RewardsClaimed(lockIDs[0], reward);
+        then_eventRewardsClaimedIsEmitted(lockIDs[0], reward);
         l2Reward.initiateFastUnlock(lockIDs);
         vm.stopPrank();
 
         uint256 expectedTotalWeight = (27000 * 10 ** 18) - (5000 * 10 ** 18)
             - (amount * (19860 - 19790 + l2Reward.OFFSET()))
-            + ((l2Staking.FAST_UNLOCK_DURATION() + l2Reward.OFFSET()) * (amount - penalty));
+            + (l2Staking.FAST_UNLOCK_DURATION() + l2Reward.OFFSET()) * (amount - penalty);
 
         assertEq(l2LiskToken.balanceOf(address(l2Reward)), convertLiskToSmallestDenomination(35) - reward + penalty);
         assertEq(l2Reward.dailyUnlockedAmounts(deploymentDate + duration), 0);
@@ -1724,24 +1538,15 @@ contract L2RewardTest is Test {
         uint256 duration = 120;
         uint256[] memory lockIDs = new uint256[](1);
 
-        // staker and DAO gets balance
-        vm.startPrank(bridge);
-        l2LiskToken.mint(staker, balance);
-        l2LiskToken.mint(daoTreasury, balance);
-        vm.stopPrank();
-
-        // DAO funds staking
-        vm.startPrank(daoTreasury);
-        l2LiskToken.approve(address(l2Reward), convertLiskToSmallestDenomination(35));
-        l2Reward.fundStakingRewards(convertLiskToSmallestDenomination(35), 350, 1);
-        vm.stopPrank();
+        given_accountHasBalance(daoTreasury, balance);
+        given_accountHasBalance(staker, balance);
+        given_daoTreasuryHasFundedStaking(
+            Funds({ amount: convertLiskToSmallestDenomination(35), duration: 350, delay: 1 })
+        );
 
         skip(1 days);
 
-        vm.startPrank(staker);
-        l2LiskToken.approve(address(l2Reward), amount);
-        lockIDs[0] = l2Reward.createPosition(amount, duration);
-        vm.stopPrank();
+        lockIDs[0] = when_stakerCreatesPosition(staker, Position(amount, duration));
 
         skip(20 days);
 
@@ -1755,13 +1560,12 @@ contract L2RewardTest is Test {
         skip(20 days);
 
         vm.startPrank(staker);
-        vm.expectEmit(true, true, true, true);
-        emit L2Reward.RewardsClaimed(lockIDs[0], rewardFor20Days);
+        then_eventRewardsClaimedIsEmitted(lockIDs[0], rewardFor20Days);
         l2Reward.initiateFastUnlock(lockIDs);
         vm.stopPrank();
 
         uint256 expectedTotalWeight = (27000 * 10 ** 18) - (2000 * 10 ** 18) - ((100 + l2Reward.OFFSET()) * amount)
-            + ((l2Staking.FAST_UNLOCK_DURATION() + l2Reward.OFFSET()) * (amount - penalty));
+            + (l2Staking.FAST_UNLOCK_DURATION() + l2Reward.OFFSET()) * (amount - penalty);
 
         assertEq(l2LiskToken.balanceOf(staker), balance - amount + rewardFor20Days * 2);
         assertEq(l2Reward.totalWeight(), expectedTotalWeight);
@@ -1920,29 +1724,19 @@ contract L2RewardTest is Test {
         address staker = address(0x1);
         uint256 balance = convertLiskToSmallestDenomination(1000);
 
-        // staker and DAO gets balance
-        vm.startPrank(bridge);
-        l2LiskToken.mint(staker, balance);
-        l2LiskToken.mint(daoTreasury, balance);
-        vm.stopPrank();
-
-        // DAO funds staking
-        vm.startPrank(daoTreasury);
-        l2LiskToken.approve(address(l2Reward), convertLiskToSmallestDenomination(1000));
-        l2Reward.fundStakingRewards(convertLiskToSmallestDenomination(1000), 350, 1);
-        vm.stopPrank();
+        given_accountHasBalance(daoTreasury, balance);
+        given_accountHasBalance(staker, balance);
+        given_daoTreasuryHasFundedStaking(
+            Funds({ amount: convertLiskToSmallestDenomination(1000), duration: 350, delay: 1 })
+        );
 
         // staker creates a positions on deploymentDate, 19740
-        vm.startPrank(staker);
-        l2LiskToken.approve(address(l2Reward), convertLiskToSmallestDenomination(100));
-        l2Reward.createPosition(convertLiskToSmallestDenomination(100), 120);
+        when_stakerCreatesPosition(staker, Position({ amount: convertLiskToSmallestDenomination(100), duration: 120 }));
 
         // staker creates another position on deploymentDate + 2, 19742
         // This will trigger updateGlobalState() for 19740 and 19741, with funds availbe only for 19741
         skip(2 days);
-        l2LiskToken.approve(address(l2Reward), convertLiskToSmallestDenomination(1));
-        l2Reward.createPosition(convertLiskToSmallestDenomination(1), 100);
-        vm.stopPrank();
+        when_stakerCreatesPosition(staker, Position({ amount: convertLiskToSmallestDenomination(1), duration: 100 }));
 
         uint256 invalidRewardAmount = l2Reward.rewardsSurplus() + 1;
         vm.expectRevert("L2Reward: Reward amount should not exceed available surplus funds");
@@ -1961,31 +1755,22 @@ contract L2RewardTest is Test {
 
         uint256[] memory lockIDs = new uint256[](2);
 
-        // staker and DAO gets balance
-        vm.startPrank(bridge);
-        l2LiskToken.mint(staker, balance);
-        l2LiskToken.mint(daoTreasury, balance);
-        vm.stopPrank();
-
-        // DAO funds staking
-        vm.startPrank(daoTreasury);
-        l2LiskToken.approve(address(l2Reward), convertLiskToSmallestDenomination(1000));
-        l2Reward.fundStakingRewards(convertLiskToSmallestDenomination(1000), 350, 1);
-        vm.stopPrank();
+        given_accountHasBalance(daoTreasury, balance);
+        given_accountHasBalance(staker, balance);
+        uint256 dailyReward = given_daoTreasuryHasFundedStaking(
+            Funds({ amount: convertLiskToSmallestDenomination(1000), duration: 350, delay: 1 })
+        );
 
         // staker creates a positions on deploymentDate, 19740
-        vm.startPrank(staker);
-        l2LiskToken.approve(address(l2Reward), convertLiskToSmallestDenomination(100));
-        lockIDs[0] = l2Reward.createPosition(convertLiskToSmallestDenomination(100), 120);
+        lockIDs[0] = when_stakerCreatesPosition(
+            staker, Position({ amount: convertLiskToSmallestDenomination(100), duration: 120 })
+        );
 
-        // staker creates another position on deploymentDate + 2, 19740
-        // This will trigger updateGlobalState() for 19740 and 19741, updating rewardsSurplus
         skip(2 days);
-        l2LiskToken.approve(address(l2Reward), convertLiskToSmallestDenomination(1));
-        lockIDs[1] = l2Reward.createPosition(convertLiskToSmallestDenomination(1), 100);
-        vm.stopPrank();
+        lockIDs[1] = when_stakerCreatesPosition(
+            staker, Position({ amount: convertLiskToSmallestDenomination(1), duration: 100 })
+        );
 
-        uint256 dailyReward = convertLiskToSmallestDenomination(1000) / 350;
         uint256 additionalReward = l2Reward.rewardsSurplus() / 10;
         uint256 cappedRewards = convertLiskToSmallestDenomination(100) / 365;
 
@@ -2008,10 +1793,7 @@ contract L2RewardTest is Test {
 
         // staker cerates another position on deploymentDate + 2 + 10, 19752
         // This will trigger updateGlobalState() from 19742 to 19751
-        vm.startPrank(staker);
-        l2LiskToken.approve(address(l2Reward), convertLiskToSmallestDenomination(100));
-        l2Reward.createPosition(convertLiskToSmallestDenomination(1), 100);
-        vm.stopPrank();
+        when_stakerCreatesPosition(staker, Position({ amount: convertLiskToSmallestDenomination(100), duration: 100 }));
 
         cappedRewards = convertLiskToSmallestDenomination(101) / 365;
 
