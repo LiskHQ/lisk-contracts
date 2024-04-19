@@ -374,8 +374,8 @@ contract L2RewardTest is Test {
         uint256 expectedBalance = l2LiskToken.balanceOf(staker) + expectedRewards;
 
         // staker claims rewards on, 19890
-        vm.expectEmit(true, true, true, true);
-        emit L2Reward.RewardsClaimed(lockIDs[0], expectedRewards);
+
+        then_eventRewardsClaimedIsEmitted(lockIDs[0], expectedRewards);
         vm.prank(staker);
         l2Reward.claimRewards(lockIDs);
 
@@ -383,8 +383,7 @@ contract L2RewardTest is Test {
         assertEq(l2LiskToken.balanceOf(staker), expectedBalance);
 
         // staker claims again on, 19890
-        vm.expectEmit(true, true, true, true);
-        emit L2Reward.RewardsClaimed(lockIDs[0], 0);
+        then_eventRewardsClaimedIsEmitted(lockIDs[0], 0);
         vm.prank(staker);
         l2Reward.claimRewards(lockIDs);
     }
@@ -413,8 +412,7 @@ contract L2RewardTest is Test {
         uint256 expectedRewards = 11.9 * 10 ** 18;
         uint256 expectedBalance = l2LiskToken.balanceOf(staker) + expectedRewards;
 
-        vm.expectEmit(true, true, true, true);
-        emit L2Reward.RewardsClaimed(lockIDs[0], expectedRewards);
+        then_eventRewardsClaimedIsEmitted(lockIDs[0], expectedRewards);
         vm.prank(staker);
         l2Reward.claimRewards(lockIDs);
 
@@ -451,10 +449,8 @@ contract L2RewardTest is Test {
         uint256 expectedRewards = 8819747074459443653 + 80252925540556258;
         uint256 expectedBalance = l2LiskToken.balanceOf(staker) + expectedRewards;
 
-        vm.expectEmit(true, true, true, true);
-        emit L2Reward.RewardsClaimed(lockIDs[0], 8819747074459443653);
-        vm.expectEmit(true, true, true, true);
-        emit L2Reward.RewardsClaimed(lockIDs[1], 80252925540556258);
+        then_eventRewardsClaimedIsEmitted(lockIDs[0], 8819747074459443653);
+        then_eventRewardsClaimedIsEmitted(lockIDs[1], 80252925540556258);
         vm.prank(staker);
         l2Reward.claimRewards(lockIDs);
 
@@ -495,10 +491,8 @@ contract L2RewardTest is Test {
         uint256 today = deploymentDate + 301;
         skip(301 days);
 
-        vm.expectEmit(true, true, true, true);
-        emit L2Reward.RewardsClaimed(lockIDs[0], 6575342465753424600);
-        vm.expectEmit(true, true, true, true);
-        emit L2Reward.RewardsClaimed(lockIDs[1], 9863013698630136900);
+        then_eventRewardsClaimedIsEmitted(lockIDs[0], 6575342465753424600);
+        then_eventRewardsClaimedIsEmitted(lockIDs[1], 9863013698630136900);
         vm.prank(staker);
         l2Reward.claimRewards(lockIDs);
 
@@ -537,9 +531,8 @@ contract L2RewardTest is Test {
             skip(100 days);
             for (uint8 j = 0; j < stakers.length; j++) {
                 locksToClaim[0] = lockIDs[j];
-                vm.expectEmit(true, true, true, true);
-                emit L2Reward.RewardsClaimed(lockIDs[j], expectedRewardsFor100Days);
-                vm.startPrank(stakers[j]);
+                then_eventRewardsClaimedIsEmitted(lockIDs[j], expectedRewardsFor100Days);
+                vm.prank(stakers[j]);
                 l2Reward.claimRewards(locksToClaim);
             }
         }
@@ -576,9 +569,9 @@ contract L2RewardTest is Test {
             skip(100 days);
             for (uint8 j = 0; j < stakers.length; j++) {
                 locksToClaim[0] = lockIDs[j];
-                vm.expectEmit(true, true, true, true);
-                emit L2Reward.RewardsClaimed(lockIDs[j], expectedRewardsFor100Days);
-                vm.startPrank(stakers[j]);
+                then_eventRewardsClaimedIsEmitted(lockIDs[j], expectedRewardsFor100Days);
+
+                vm.prank(stakers[j]);
                 l2Reward.claimRewards(locksToClaim);
             }
         }
@@ -588,10 +581,9 @@ contract L2RewardTest is Test {
         // All positions are expired, reward is zero
         for (uint8 i = 0; i < stakers.length; i++) {
             locksToClaim[0] = lockIDs[i];
-            vm.startPrank(stakers[i]);
+            then_eventRewardsClaimedIsEmitted(lockIDs[i], 0);
 
-            vm.expectEmit(true, true, true, true);
-            emit L2Reward.RewardsClaimed(lockIDs[i], 0);
+            vm.prank(stakers[i]);
             l2Reward.claimRewards(locksToClaim);
         }
 
@@ -622,38 +614,22 @@ contract L2RewardTest is Test {
                 when_stakerCreatesPosition(stakers[i], Position({ amount: amount * (i + 1), duration: duration }));
         }
 
-        uint256[] memory locksToClaim = new uint256[](1);
-        uint256[3] memory expectedRewardsAfter200Days =
-            [uint256(90867579908675798955), uint256(181735159817351598109), uint256(272602739726027397064)];
-
-        skip(200 days);
-        for (uint8 i = 0; i < stakers.length; i++) {
-            locksToClaim[0] = lockIDs[i];
-            vm.expectEmit(true, true, true, true);
-            emit L2Reward.RewardsClaimed(lockIDs[i], expectedRewardsAfter200Days[i]);
-            vm.startPrank(stakers[i]);
-            l2Reward.claimRewards(locksToClaim);
-        }
-
         uint256[3] memory expectedRewardsOnDeletion =
-            [uint256(45662100456621004500), uint256(91324200913242009100), uint256(136986301369863013600)];
+            [uint256(136529680365296803455), uint256(273059360730593607209), uint256(409589041095890410664)];
 
         uint256[] memory positionsToDelete = new uint256[](1);
 
-        skip(100 days);
+        skip(350 days);
         for (uint8 i = 0; i < stakers.length; i++) {
-            vm.expectEmit(true, true, true, true);
-            emit L2Reward.RewardsClaimed(lockIDs[i], expectedRewardsOnDeletion[i]);
+            then_eventRewardsClaimedIsEmitted(lockIDs[i], expectedRewardsOnDeletion[i]);
+
             vm.startPrank(stakers[i]);
             positionsToDelete[0] = lockIDs[i];
 
             l2Reward.deletePositions(positionsToDelete);
             vm.stopPrank();
 
-            assertEq(
-                l2LiskToken.balanceOf(stakers[i]),
-                (amount * (i + 1)) + (expectedRewardsAfter200Days[i]) + expectedRewardsOnDeletion[i]
-            );
+            assertEq(l2LiskToken.balanceOf(stakers[i]), (amount * (i + 1)) + expectedRewardsOnDeletion[i]);
         }
     }
 
