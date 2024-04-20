@@ -17,6 +17,7 @@ Additionally, it also includes various deployment scripts that are integral for 
   - [Deployment Directory Folder](#deployment-directory-folder)
   - [Deployment of L2 Lisk Token](#deployment-of-l2-lisk-token)
   - [Transferring Lisk Tokens After Smart Contracts Deployment](#transferring-lisk-tokens-after-smart-contracts-deployment)
+  - [Lisk L2 Staking](#lisk-l2-staking)
   - [Smart Contract Ownership](#smart-contract-ownership)
 - [Contributing](#contributing)
 - [Security](#security)
@@ -99,6 +100,14 @@ L2 Lisk Token is deployed using `CREATE2` opcode to ensure deterministic smart c
 After the successful deployment of all smart contracts using the `deployContracts.sh` script, the distribution of newly minted Lisk tokens takes place in accordance with the instructions specified in the `accounts.json` file. This file contains a list of addresses and the respective amounts of tokens that need to be sent to various accounts on both the L1 and L2 networks.
 
 The process ensures that each address specified in the `accounts.json` file receives the designated amount of tokens accurately. Any remaining Lisk Tokens, those not allocated to the addresses listed in the file, are then transferred to the [Claim smart contract](src/L2/L2Claim.sol). This systematic distribution is critical for ensuring that the tokens are correctly assigned to their intended recipients across the different network layers as part of the project's requirements.
+
+### Lisk L2 Staking
+Staking L2 tokens creates additional utility of L2 Lisk token by allowing user to stake an amount of token for a certain period of time allowing them to earn daily rewards and contribute to Governance.
+
+Implementation of L2 staking functionality is separated into;
+- `L2LockingPosition` contract represents staking positions as an implementation of ERC721 (NFT) interface.
+- `L2Staking` contract manages interactions with `L2LockingPosition` contract. It restricts manipulation of staking positions represented by `LockingPostion` structure to the creator role.
+- `L2Reward` contract exposes the public API to stakers, enabling them to lock funds, manipulate existing position they own and claim rewards.
 
 ### Smart Contract Ownership
 
