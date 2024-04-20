@@ -522,17 +522,6 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
         emit RewardsAdded(amount, duration, delay);
     }
 
-    // /// @notice Initializes the Lisk DAO Treasury address.
-    // /// @param _daoTreasury The treasury address of the Lisk DAO.
-    // function initializeDaoTreasury(address _daoTreasury) public onlyOwner {
-    //     require(daoTreasury == address(0), "L2Reward: Lisk DAO Treasury contract is already initialized");
-    //     require(_daoTreasury != address(0), "L2Reward: Lisk DAO Treasury contract address can not be zero");
-
-    //     daoTreasury = _daoTreasury;
-
-    //     emit DaoTreasuryAddressChanged(address(0x0), daoTreasury);
-    // }
-
     /// @notice Initializes the LockingPosition address.
     /// @param _lockingPositionContract Address of the locking position contract.
     function initializeLockingPosition(address _lockingPositionContract) public onlyOwner {
