@@ -37,14 +37,13 @@ contract L2VestingWalletScript is Script {
                 == bytes32(uint256(keccak256("eip1967.proxy.implementation")) - 1)
         );
 
-        Utils.VestingPlans memory plans = utils.readVestingPlansFile();
-        Utils.VestingWallet[] memory vestingWallets = new Utils.VestingWallet[](plans.vestingPlans.length);
-        for (uint256 i; i < plans.vestingPlans.length; i++) {
-            console2.log("Deploying Vesting Plan #%d: %s", i, plans.vestingPlans[i].name);
+        Utils.VestingPlan[] memory plans = utils.readVestingPlansFile();
+        Utils.VestingWallet[] memory vestingWallets = new Utils.VestingWallet[](plans.length);
+        for (uint256 i; i < plans.length; i++) {
+            Utils.VestingPlan memory vestingPlan = plans[i];
+            address beneficiary = utils.readVestingAddress(vestingPlan.beneficiaryAddressTag);
 
-            Utils.VestingPlan memory vestingPlan = plans.vestingPlans[i];
-            address beneficiary = vm.envAddress(vestingPlan.beneficiaryAddressTag);
-
+            console2.log("Deploying Vesting Plan #%d: %s to: %s", i, vestingPlan.name, beneficiary);
             vm.startBroadcast(deployerPrivateKey);
             ERC1967Proxy l2VestingWalletProxy = new ERC1967Proxy(
                 address(l2VestingWalletImplementation),

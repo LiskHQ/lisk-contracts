@@ -37,12 +37,12 @@ contract Utils is Script {
         address L2StakingImplementation;
         /// @notice L2 Timelock Controller address.
         address L2TimelockController;
+        /// @notice The Current implementation of L2 Vesting Wallet.
+        address L2VestingWalletImplementation;
         /// @notice L2 Voting Power contract (in Proxy), which users interact with.
         address L2VotingPower;
         /// @notice The Current implementation of L2 Voting Power Contract.
         address L2VotingPowerImplementation;
-        /// @notice The Current implementation of L2 Vesting Wallet.
-        address L2VestingWalletImplementation;
     }
 
     /// @notice This struct is used to read MerkleRoot from JSON file.
@@ -67,19 +67,23 @@ contract Utils is Script {
         uint256 amount;
     }
 
+    /// @notice This struct is used to store a single Vesting Plan.
     struct VestingPlan {
+        /// @notice Identifier of beneficiary address, which would match the address in JSON file.
         string beneficiaryAddressTag;
+        /// @notice Duration of the Vesting Plan in Days.
         uint64 durationDays;
+        /// @notice Name of the Vesting Plan.
         string name;
+        /// @notice Start timestamp of the Vesting Plan.
         uint64 startTimestamp;
     }
 
-    struct VestingPlans {
-        VestingPlan[] vestingPlans;
-    }
-
+    /// @notice This struct is when storing deployed Vesting Wallet Contract to file.
     struct VestingWallet {
+        /// @notice Name of the Vesting Plan.
         string name;
+        /// @notice Contract address of the Vesting Wallet.
         address vestingWalletAddress;
     }
 
@@ -174,6 +178,12 @@ contract Utils is Script {
             l2AddressesConfig.L2TimelockController = l2TimelockController;
         } catch { }
 
+        try vm.parseJsonAddress(addressJson, ".L2VestingWalletImplementation") returns (
+            address l2VestingWalletImplementation
+        ) {
+            l2AddressesConfig.L2VestingWalletImplementation = l2VestingWalletImplementation;
+        } catch { }
+
         try vm.parseJsonAddress(addressJson, ".L2VotingPower") returns (address l2VotingPower) {
             l2AddressesConfig.L2VotingPower = l2VotingPower;
         } catch { }
@@ -182,12 +192,6 @@ contract Utils is Script {
             address l2VotingPowerImplementation
         ) {
             l2AddressesConfig.L2VotingPowerImplementation = l2VotingPowerImplementation;
-        } catch { }
-
-        try vm.parseJsonAddress(addressJson, ".L2VestingWalletImplementation") returns (
-            address l2VestingWalletImplementation
-        ) {
-            l2AddressesConfig.L2VestingWalletImplementation = l2VestingWalletImplementation;
         } catch { }
 
         return l2AddressesConfig;
@@ -208,13 +212,16 @@ contract Utils is Script {
         vm.serializeAddress(json, "L2Staking", cfg.L2Staking);
         vm.serializeAddress(json, "L2StakingImplementation", cfg.L2StakingImplementation);
         vm.serializeAddress(json, "L2TimelockController", cfg.L2TimelockController);
+        vm.serializeAddress(json, "L2VestingWalletImplementation", cfg.L2VestingWalletImplementation);
         vm.serializeAddress(json, "L2VotingPower", cfg.L2VotingPower);
-        vm.serializeAddress(json, "L2VotingPowerImplementation", cfg.L2VotingPowerImplementation);
         string memory finalJson =
-            vm.serializeAddress(json, "L2VestingWalletImplementation", cfg.L2VestingWalletImplementation);
+            vm.serializeAddress(json, "L2VotingPowerImplementation", cfg.L2VotingPowerImplementation);
+
         finalJson.write(string.concat("deployment/", network, "/l2addresses.json"));
     }
 
+    /// @notice This function writes Vesting Wallets to JSON file.
+    /// @param vestingWallets Array of Vesting Wallets which will be written to JSON file.
     function writeVestingWalletsFile(VestingWallet[] memory vestingWallets) external {
         string memory network = getNetworkType();
 
@@ -249,13 +256,28 @@ contract Utils is Script {
         return abi.decode(accountsRaw, (Accounts));
     }
 
-    function readVestingPlansFile() external view returns (VestingPlans memory) {
+    /// @notice This function returns vesting address from JSON file by providing vestingAddressTag
+    /// @param vestingAddressTag Identifier of the Vesting Address
+    /// @return Vesting Address corresponding to vestingAddressTag.
+    function readVestingAddress(string memory vestingAddressTag) external view returns (address) {
+        string memory network = getNetworkType();
+        string memory root = vm.projectRoot();
+        string memory vestingAddressesPath = string.concat(root, "/script/data/", network, "/vestingPlans.json");
+        string memory vestingAddressesJson = vm.readFile(vestingAddressesPath);
+        bytes memory vestingAddressRaw =
+            vestingAddressesJson.parseRaw(string.concat(".vestingAddresses.", vestingAddressTag));
+        return abi.decode(vestingAddressRaw, (address));
+    }
+
+    /// @notice This function reads Vesting Plans from JSON file.
+    /// @return An array of Vesting Plans.
+    function readVestingPlansFile() external view returns (VestingPlan[] memory) {
         string memory network = getNetworkType();
         string memory root = vm.projectRoot();
         string memory vestingPlansPath = string.concat(root, "/script/data/", network, "/vestingPlans.json");
         string memory vestingPlansJson = vm.readFile(vestingPlansPath);
-        bytes memory vestingPlansRaw = vm.parseJson(vestingPlansJson);
-        return abi.decode(vestingPlansRaw, (VestingPlans));
+        bytes memory vestingPlansRaw = vestingPlansJson.parseRaw(string.concat(".vestingPlans"));
+        return abi.decode(vestingPlansRaw, (VestingPlan[]));
     }
 
     /// @notice This function returns salt as a string. keccak256 of this string is used as salt for calculating

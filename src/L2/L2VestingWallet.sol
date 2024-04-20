@@ -22,11 +22,10 @@ contract L2VestingWallet is Ownable2StepUpgradeable, UUPSUpgradeable, VestingWal
     }
 
     /// @notice Setting vesting params.
-    /// @param  _beneficiary            Beneficiary of the Vesting Plan, which is also the initial owner of this
-    /// contract.
-    /// @param  _startTimestamp         Timestamp the vesting starts.
-    /// @param  _durationSeconds        Duration of the vesting period.
-    /// @param  _name                   Name of this contract.
+    /// @param  _beneficiary        Beneficiary of the Vesting Plan, which is also the initial owner of this contract.
+    /// @param  _startTimestamp     Timestamp the vesting starts.
+    /// @param  _durationSeconds    Duration of the vesting period.
+    /// @param  _name               Name of this contract.
     function initialize(
         address _beneficiary,
         uint64 _startTimestamp,
