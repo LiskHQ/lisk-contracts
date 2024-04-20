@@ -1,7 +1,7 @@
 
 # Vesting
 
-This page documents the contract [L2VestingWallet.sol](../src/L2/L2VestingWallet.sol) used for vesting and the corresponding deployment script [script/L2VestingWallet.s.sol](script/L2VestingWallet.s.sol). As the basis for the vesting implementation for Lisk we use OpenZeppelin's [VestingWallet](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.5/contracts/finance/VestingWallet.sol). 
+This page documents the contract [L2VestingWallet.sol](../src/L2/L2VestingWallet.sol) used for vesting and the corresponding deployment script [L2VestingWallet.s.sol](../script/L2VestingWallet.s.sol). As the basis for the vesting implementation for Lisk we use OpenZeppelin's [VestingWallet](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.5/contracts/finance/VestingWallet.sol). 
 
 
 ## Vesting Schedules
