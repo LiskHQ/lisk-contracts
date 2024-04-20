@@ -25,7 +25,9 @@ For each of the four conditions below that a user satisfies, they are eligible f
 
 - The user has currently bridged at least 0.01 ETH to the Lisk L2.
 - The user has currently delegated their voting power in the Lisk DAO, either to themselves or a delegate.
-- The user has currently staked 5 times the maximum airdrop amount for 1 month.
-- The user has currently staked 5 times the maximum airdrop amount for 6 month.
+- The user has currently staked 5 times the maximum airdrop amount for 1 month (Staking Tier 1).
+- The user has currently staked 5 times the maximum airdrop amount for 6 month (Staking Tier 2).
+
+## Owner and Contract Upgrades
 
 
