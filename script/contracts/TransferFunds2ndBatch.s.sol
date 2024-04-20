@@ -53,10 +53,13 @@ contract TransferFunds2ndBatchScript is Script {
 
         // get L1LiskToken contract address
         Utils.L1AddressesConfig memory l1AddressesConfig = utils.readL1AddressesFile();
+        assert(l1AddressesConfig.L1LiskToken != address(0));
         console2.log("L1 Lisk token address: %s", l1AddressesConfig.L1LiskToken);
 
         // get L2LiskToken and L2Claim contracts addresses
         Utils.L2AddressesConfig memory l2AddressesConfig = utils.readL2AddressesFile();
+        assert(l2AddressesConfig.L2LiskToken != address(0));
+        assert(l2AddressesConfig.L2ClaimContract != address(0));
         console2.log("L2 Lisk token address: %s", l2AddressesConfig.L2LiskToken);
         console2.log("L2 Claim contract address: %s", l2AddressesConfig.L2ClaimContract);
 
