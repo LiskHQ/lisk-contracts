@@ -4,6 +4,7 @@ pragma solidity 0.8.23;
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import { Script, console2 } from "forge-std/Script.sol";
 import { L2Reward } from "src/L2/L2Reward.sol";
+import { IL2LiskToken } from "src/interfaces/L2/IL2LiskToken.sol";
 import "script/Utils.sol";
 
 /// @title L2RewardScript - L2 Reward contract deployment script.
@@ -20,6 +21,9 @@ contract L2RewardScript is Script {
     function run() public {
         // Deployer's private key. Owner of the L2 Reward. PRIVATE_KEY is set in .env file.
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+
+        // Funds available for rewards.
+        uint256 funds = 24000000 * 10 ** 18;
 
         console2.log("Deploying L2 Reward...");
 
@@ -46,6 +50,10 @@ contract L2RewardScript is Script {
             address(l2RewardImplementation),
             abi.encodeWithSelector(l2RewardImplementation.initialize.selector, l2AddressesConfig.L2LiskToken)
         );
+        // owner allots funds to reward contract
+        IL2LiskToken(l2AddressesConfig.L2LiskToken).approve(address(l2RewardImplementation), funds);
+        // reward contract funds staking for 2 years
+        l2RewardImplementation.fundStakingRewards(funds, 730, 1);
         vm.stopBroadcast();
         assert(address(l2RewardProxy) != address(0));
 
