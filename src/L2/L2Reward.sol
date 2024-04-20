@@ -59,9 +59,6 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
     /// @notice Address of the locking position contract.
     address public lockingPositionContract;
 
-    /// @notice Address of the DAO contract.
-    address public daoTreasury;
-
     /// @notice Address of the L2 token contract.
     address public l2TokenContract;
 
@@ -76,9 +73,6 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
 
     /// @notice Emitted when the Locking Position contract address is changed.
     event LockingPositionContractAddressChanged(address indexed oldAddress, address indexed newAddress);
-
-    /// @notice Emitted when the DAO Treasury address is changed.
-    event DaoTreasuryAddressChanged(address indexed oldAddress, address indexed newAddress);
 
     /// @notice Emitted when a position is rewarded.
     event RewardsClaimed(uint256 lockID, uint256 amount);
@@ -518,8 +512,7 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
     /// @param amount Amount to be added to daily rewards.
     /// @param duration Duration in days for which the daily rewards is to be added.
     /// @param delay Determines the start day from today till duration for which rewards should be added.
-    function fundStakingRewards(uint256 amount, uint16 duration, uint16 delay) public virtual {
-        require(msg.sender == daoTreasury, "L2Reward: Funds can only be added by DAO treasury");
+    function fundStakingRewards(uint256 amount, uint16 duration, uint16 delay) public virtual onlyOwner {
         require(delay > 0, "L2Reward: Funding should start from next day or later");
 
         IL2LiskToken(l2TokenContract).transferFrom(msg.sender, address(this), amount);
@@ -529,16 +522,16 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
         emit RewardsAdded(amount, duration, delay);
     }
 
-    /// @notice Initializes the Lisk DAO Treasury address.
-    /// @param _daoTreasury The treasury address of the Lisk DAO.
-    function initializeDaoTreasury(address _daoTreasury) public onlyOwner {
-        require(daoTreasury == address(0), "L2Reward: Lisk DAO Treasury contract is already initialized");
-        require(_daoTreasury != address(0), "L2Reward: Lisk DAO Treasury contract address can not be zero");
+    // /// @notice Initializes the Lisk DAO Treasury address.
+    // /// @param _daoTreasury The treasury address of the Lisk DAO.
+    // function initializeDaoTreasury(address _daoTreasury) public onlyOwner {
+    //     require(daoTreasury == address(0), "L2Reward: Lisk DAO Treasury contract is already initialized");
+    //     require(_daoTreasury != address(0), "L2Reward: Lisk DAO Treasury contract address can not be zero");
 
-        daoTreasury = _daoTreasury;
+    //     daoTreasury = _daoTreasury;
 
-        emit DaoTreasuryAddressChanged(address(0x0), daoTreasury);
-    }
+    //     emit DaoTreasuryAddressChanged(address(0x0), daoTreasury);
+    // }
 
     /// @notice Initializes the LockingPosition address.
     /// @param _lockingPositionContract Address of the locking position contract.
