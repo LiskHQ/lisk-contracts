@@ -1,10 +1,10 @@
 {
   "vestingAddresses": {
-    "foundationTreasuryAddress": "0x1111111111111111111111111111111111111111",
-    "teamVestingAddress": "0x2222222222222222222222222222222222222222",
-    "investorVestingAddress": "0x3333333333333333333333333333333333333333",
-    "ecosystemFundAddress": "0x4444444444444444444444444444444444444444",
-    "daoTreasuryAddress": "0x5555555555555555555555555555555555555555"
+    "foundationTreasuryAddress": "0xe708A1b91dDC44576731f7fEb4e193F48923Abba",
+    "teamVestingAddress": "0xe708A1b91dDC44576731f7fEb4e193F48923Abba",
+    "investorVestingAddress": "0xe708A1b91dDC44576731f7fEb4e193F48923Abba",
+    "ecosystemFundAddress": "0xe708A1b91dDC44576731f7fEb4e193F48923Abba",
+    "daoTreasuryAddress": "0xe708A1b91dDC44576731f7fEb4e193F48923Abba"
   },
   "vestingPlans": [
     {

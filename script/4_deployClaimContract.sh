@@ -43,10 +43,6 @@ else
 fi
 echo "Done."
 
-echo "Fund the L2Reward smart contract..."
-forge script --rpc-url="$L2_RPC_URL" --broadcast -vvvv script/contracts/L2/FundRewardContract.s.sol:FundRewardContractScript
-echo "Done."
-
 echo "Transferring funds to L1 and L2 addresses and L2Claim smart contract..."
 forge script --rpc-url="$L1_RPC_URL" --broadcast -vvvv script/contracts/TransferFunds2ndBatch.s.sol:TransferFunds2ndBatchScript
 echo "Done."

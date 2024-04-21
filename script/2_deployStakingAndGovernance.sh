@@ -106,3 +106,7 @@ else
       fi
 fi
 echo "Done."
+
+echo "Fund the L2Reward smart contract..."
+forge script --rpc-url="$L2_RPC_URL" --broadcast -vvvv script/contracts/L2/L2FundRewardContract.s.sol:FundRewardContractScript
+echo "Done."
