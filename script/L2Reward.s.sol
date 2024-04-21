@@ -33,7 +33,6 @@ contract L2RewardScript is Script {
         // get L2Reward contract owner address. Ownership is transferred to this address after deployment.
         address ownerAddress = vm.envAddress("L2_REWARD_OWNER_ADDRESS");
         assert(ownerAddress != address(0));
-        console2.log("L2 Reward owner address: %s (after ownership will be accepted)", ownerAddress);
 
         // deploy L2Reward implementation contract
         vm.startBroadcast(deployerPrivateKey);
@@ -65,16 +64,10 @@ contract L2RewardScript is Script {
         vm.startBroadcast(deployerPrivateKey);
         // reward contract is added as a creator at staking contract
         IL2Staking(l2AddressesConfig.L2Staking).addCreator(address(l2Reward));
-
-        // reward contract funds staking for 3 years
-        IL2LiskToken(l2AddressesConfig.L2LiskToken).approve(address(l2Reward), l2Reward.REWARD_FUNDS());
-        l2Reward.fundStakingRewards(
-            l2Reward.REWARD_FUNDS(), l2Reward.REWARD_FUNDING_DURATION(), l2Reward.REWARD_DURATION_DELAY()
-        );
         vm.stopBroadcast();
 
         assert(l2AddressesConfig.L2LockingPosition != address(0));
-        assert(l2AddressesConfig.L2LockingPosition != address(0));
+        assert(l2AddressesConfig.L2Staking != address(0));
         vm.startBroadcast(deployerPrivateKey);
         // reward contract initializes locking position and staking contracts
         l2Reward.initializeLockingPosition(l2AddressesConfig.L2LockingPosition);
@@ -82,6 +75,7 @@ contract L2RewardScript is Script {
 
         // transfer ownership of the L2VotingPower contract to the owner address; because of using
         // Ownable2StepUpgradeable contract, new owner has to accept ownership
+        console2.log("L2 Reward owner address: %s (after ownership will be accepted)", ownerAddress);
         l2Reward.transferOwnership(ownerAddress);
         vm.stopBroadcast();
 
