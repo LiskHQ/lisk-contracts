@@ -3,7 +3,7 @@ pragma solidity 0.8.23;
 
 import { Script, console2 } from "forge-std/Script.sol";
 import { L2Airdrop } from "src/L2/L2Airdrop.sol";
-import "script/Utils.sol";
+import "script/contracts/Utils.sol";
 
 /// @title L2AirdropScript - L2 Airdrop deployment script
 /// @notice This contract is used to deploy L2 Airdrop contract.
