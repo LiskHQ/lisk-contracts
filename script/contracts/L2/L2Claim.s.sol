@@ -4,7 +4,7 @@ pragma solidity 0.8.23;
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import { Script, console2 } from "forge-std/Script.sol";
 import { L2Claim } from "src/L2/L2Claim.sol";
-import "script/Utils.sol";
+import "script/contracts/Utils.sol";
 
 /// @title L2ClaimScript - L2 Claim contract deployment script
 /// @notice This contract is used to deploy L2 Claim contract and write its address to JSON file.
@@ -29,11 +29,17 @@ contract L2ClaimScript is Script {
 
         // owner Address, the ownership of L2Claim Proxy Contract is transferred to after deployment
         address ownerAddress = vm.envAddress("L2_CLAIM_OWNER_ADDRESS");
+        assert(ownerAddress != address(0));
         console2.log("L2 Claim contract owner address: %s (after ownership will be accepted)", ownerAddress);
 
         // get L2LiskToken contract address
         Utils.L2AddressesConfig memory l2AddressesConfig = utils.readL2AddressesFile();
+        assert(l2AddressesConfig.L2LiskToken != address(0));
         console2.log("L2 Lisk token address: %s", l2AddressesConfig.L2LiskToken);
+
+        // get L2TimelockController contract address
+        assert(l2AddressesConfig.L2TimelockController != address(0));
+        console2.log("L2 Timelock Controller address: %s", l2AddressesConfig.L2TimelockController);
 
         // get MerkleTree details
         Utils.MerkleRoot memory merkleRoot = utils.readMerkleRootFile();
@@ -69,6 +75,12 @@ contract L2ClaimScript is Script {
         assert(address(l2Claim.l2LiskToken()) == l2AddressesConfig.L2LiskToken);
         assert(l2Claim.merkleRoot() == merkleRoot.merkleRoot);
         assert(l2Claim.daoAddress() == address(0));
+
+        // set DAO address
+        vm.startBroadcast(deployerPrivateKey);
+        l2Claim.setDAOAddress(address(l2AddressesConfig.L2TimelockController));
+        vm.stopBroadcast();
+        assert(l2Claim.daoAddress() == address(l2AddressesConfig.L2TimelockController));
 
         // transfer ownership of L2Claim Proxy; because of using Ownable2StepUpgradeable contract, new owner has to
         // accept ownership

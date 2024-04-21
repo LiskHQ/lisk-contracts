@@ -21,7 +21,7 @@ contract L1LiskToken is ERC20Burnable, AccessControl, Ownable2Step, ERC20Permit 
     string private constant SYMBOL = "LSK";
 
     /// @notice Total supply of the token.
-    uint256 private constant TOTAL_SUPPLY = 300_000_000 * 10 ** 18; //300 million LSK tokens
+    uint256 private constant TOTAL_SUPPLY = 400_000_000 * 10 ** 18; //400 million LSK tokens
 
     /// @notice A unique role identifier for accounts with the ability to burn tokens.
     bytes32 public constant BURNER_ROLE = keccak256("BURNER_ROLE");

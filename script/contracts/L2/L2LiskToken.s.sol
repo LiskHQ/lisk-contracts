@@ -4,7 +4,7 @@ pragma solidity 0.8.23;
 import { Script, console2 } from "forge-std/Script.sol";
 import { StdUtils } from "forge-std/StdUtils.sol";
 import { L2LiskToken } from "src/L2/L2LiskToken.sol";
-import "script/Utils.sol";
+import "script/contracts/Utils.sol";
 
 /// @title L2LiskTokenScript - L2 Lisk token deployment script
 /// @notice This contract is used to deploy L2 Lisk token contract and write its address to JSON file.

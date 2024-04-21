@@ -7,7 +7,7 @@ import { TimelockController } from "@openzeppelin/contracts/governance/TimelockC
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import { Test, console } from "forge-std/Test.sol";
 import { L2Governor } from "src/L2/L2Governor.sol";
-import { Utils } from "script/Utils.sol";
+import { Utils } from "script/contracts/Utils.sol";
 
 contract L2GovernorV2 is L2Governor {
     uint256 public testNumber;

@@ -6,9 +6,8 @@ import { TimelockController } from "@openzeppelin/contracts/governance/TimelockC
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import { Script, console2 } from "forge-std/Script.sol";
 import { L2Governor } from "src/L2/L2Governor.sol";
-import { IL2Claim } from "src/interfaces/L2/IL2Claim.sol";
 import { IL2Staking } from "src/interfaces/L2/IL2Staking.sol";
-import "script/Utils.sol";
+import "script/contracts/Utils.sol";
 
 /// @title L2GovernorScript - L2 Timelock Controller and Governor contracts deployment script
 /// @notice This contract is used to deploy L2 TimelockController and Governor contracts.
@@ -32,13 +31,8 @@ contract L2GovernorScript is Script {
 
         console2.log("Deploying L2 TimelockController and Governor contracts...");
 
-        // get L2Claim contract address
-        Utils.L2AddressesConfig memory l2AddressesConfig = utils.readL2AddressesFile();
-        assert(l2AddressesConfig.L2ClaimContract != address(0));
-        console2.log("L2 Claim address: %s", l2AddressesConfig.L2ClaimContract);
-        IL2Claim l2Claim = IL2Claim(l2AddressesConfig.L2ClaimContract);
-
         // get L2Staking contract address
+        Utils.L2AddressesConfig memory l2AddressesConfig = utils.readL2AddressesFile();
         assert(l2AddressesConfig.L2Staking != address(0));
         console2.log("L2 Staking address: %s", l2AddressesConfig.L2Staking);
         IL2Staking stakingContract = IL2Staking(l2AddressesConfig.L2Staking);
@@ -102,12 +96,6 @@ contract L2GovernorScript is Script {
         stakingContract.initializeDaoTreasury(address(timelock));
         vm.stopBroadcast();
         assert(stakingContract.daoTreasury() == address(timelock));
-
-        // set DAO address in L2Claim contract
-        vm.startBroadcast(deployerPrivateKey);
-        l2Claim.setDAOAddress(address(timelock));
-        vm.stopBroadcast();
-        assert(l2Claim.daoAddress() == address(timelock));
 
         // grant the proposer role to the Governor contract
         vm.startBroadcast(deployerPrivateKey);

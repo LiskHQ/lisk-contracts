@@ -8,7 +8,7 @@ import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { OwnableUpgradeable } from "@openzeppelin-upgradeable/contracts/access/OwnableUpgradeable.sol";
 import { Test, console, stdJson } from "forge-std/Test.sol";
 import { L2Claim, ED25519Signature, MultisigKeys } from "src/L2/L2Claim.sol";
-import { Utils } from "script/Utils.sol";
+import { Utils } from "script/contracts/Utils.sol";
 import { MockERC20 } from "../mock/MockERC20.sol";
 
 struct SigPair {

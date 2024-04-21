@@ -4,7 +4,7 @@ pragma solidity 0.8.23;
 import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import { Script, console2 } from "forge-std/Script.sol";
 import { StdUtils } from "forge-std/StdUtils.sol";
-import "script/Utils.sol";
+import "script/contracts/Utils.sol";
 
 /// @title L2DemoToken - Demo L2 LSK Token
 /// @notice In Demo environment, this contract will be used due to the lack of bridge.

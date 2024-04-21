@@ -5,7 +5,7 @@ import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy
 import { Script, console2 } from "forge-std/Script.sol";
 import { L2LockingPosition } from "src/L2/L2LockingPosition.sol";
 import { IL2Staking } from "src/interfaces/L2/IL2Staking.sol";
-import "script/Utils.sol";
+import "script/contracts/Utils.sol";
 
 /// @title L2LockingPositionScript - L2 Locking Position contract deployment script
 /// @notice This contract is used to deploy L2 Locking Position contract.
@@ -29,6 +29,11 @@ contract L2LockingPositionScript is Script {
         assert(l2AddressesConfig.L2Staking != address(0));
         console2.log("L2 Staking address: %s", l2AddressesConfig.L2Staking);
         IL2Staking stakingContract = IL2Staking(l2AddressesConfig.L2Staking);
+
+        // Get L2LockingPosition contract owner address. Ownership is transferred to this address after deployment.
+        address ownerAddress = vm.envAddress("L2_LOCKING_POSITION_OWNER_ADDRESS");
+        assert(ownerAddress != address(0));
+        console2.log("L2 Locking Position owner address: %s (after ownership will be accepted)", ownerAddress);
 
         // deploy L2LockingPosition implementation contract
         vm.startBroadcast(deployerPrivateKey);
@@ -63,9 +68,16 @@ contract L2LockingPositionScript is Script {
         vm.stopBroadcast();
         assert(stakingContract.lockingPositionContract() == address(l2LockingPosition));
 
+        // transfer ownership of the L2LockingPosition contract to the owner address; because of using
+        // Ownable2StepUpgradeable contract, new owner has to accept ownership
+        vm.startBroadcast(deployerPrivateKey);
+        l2LockingPosition.transferOwnership(ownerAddress);
+        vm.stopBroadcast();
+        assert(l2LockingPosition.owner() == vm.addr(deployerPrivateKey)); // ownership is not yet accepted
+
         console2.log("L2 Locking Position (implementation) address: %s", address(l2LockingPositionImplementation));
         console2.log("L2 Locking Position (proxy) address: %s", address(l2LockingPosition));
-        console2.log("L2 Locking Position owner address: %s", l2LockingPosition.owner());
+        console2.log("L2 Locking Position owner address: %s (after ownership will be accepted)", ownerAddress);
 
         // write L2 Locking Position address to l2addresses.json
         l2AddressesConfig.L2LockingPositionImplementation = address(l2LockingPositionImplementation);
