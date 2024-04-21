@@ -7,3 +7,5 @@ This folder contains the following documents essential for understanding the dep
 2. [Smart Contracts Requirements](./contracts-requirements.md): This document outlines the requirements and specifications for the smart contracts, providing detailed guidance for their development and deployment.
 
 3. [Vesting Documentation](./vesting.md): This page explains the technical details concerning implementation, deployment and maintenance of vesting smart contracts that hold LSK tokens and release them according to predefined schedules.
+
+4. [Migration Airdrop Documentation](./airdrop.md): This page explains the technical details concerning design and lifecycle of the migration airdrop smart contract that distributes LSK tokens as a reward to the current Lisk users.
