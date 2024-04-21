@@ -32,6 +32,6 @@ For each of the four conditions below that a user satisfies, they are eligible f
 
 ## Owner and Contract Upgrades
 
-The owner address for the migration airdrop smart contract will be set to the multisignature controlled by the Security Council. The owner is authorized to upgrade the contracts. Airdrop contract will be upgraded exclusively if it is hacked or contains a vulnerability, and only to control the damage. This is a security measure protecting the airdorp LSK tokens.
+The owner address for the migration airdrop smart contract will be set to the multisignature controlled by the Security Council. The owner is authorized to upgrade the contracts. The airdrop contract will be upgraded exclusively if it is hacked or contains a vulnerability, and only to control the damage. This is a security measure protecting the LSK tokens allocated for the airdrop.
 
 Additionally the owner will be able initiate the transfer of unclaimed airdrop tokens to Lisk DAO treasury after the airdrop period elapses.
