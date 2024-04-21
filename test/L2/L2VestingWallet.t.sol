@@ -128,7 +128,7 @@ contract L2VestingWalletTest is Test {
         assertEq(mockToken2.balanceOf(beneficiary), vestAmount);
     }
 
-    // Token partially (50%) available after deployment
+    // Token partially (100/365) available after deployment
     function test_Release_PartiallyAvailable() public {
         // startTimestamp starts with 1, leap 10 years
         vm.warp(10 * 365 days);
