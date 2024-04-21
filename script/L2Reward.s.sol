@@ -5,6 +5,7 @@ import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy
 import { Script, console2 } from "forge-std/Script.sol";
 import { L2Reward } from "src/L2/L2Reward.sol";
 import { IL2LiskToken } from "src/interfaces/L2/IL2LiskToken.sol";
+import { IL2Staking } from "src/interfaces/L2/IL2Staking.sol";
 import "script/Utils.sol";
 
 /// @title L2RewardScript - L2 Reward contract deployment script.
@@ -22,15 +23,17 @@ contract L2RewardScript is Script {
         // Deployer's private key. Owner of the L2 Reward. PRIVATE_KEY is set in .env file.
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
 
-        // Funds available for rewards.
-        uint256 funds = 24000000 * 10 ** 18;
-
         console2.log("Deploying L2 Reward...");
 
         // get L2LiskToken contract address
         Utils.L2AddressesConfig memory l2AddressesConfig = utils.readL2AddressesFile();
         assert(l2AddressesConfig.L2LiskToken != address(0));
         console2.log("L2 Lisk Token address: %s", l2AddressesConfig.L2LiskToken);
+
+        // get L2Reward contract owner address. Ownership is transferred to this address after deployment.
+        address ownerAddress = vm.envAddress("L2_REWARD_OWNER_ADDRESS");
+        assert(ownerAddress != address(0));
+        console2.log("L2 Reward owner address: %s (after ownership will be accepted)", ownerAddress);
 
         // deploy L2Reward implementation contract
         vm.startBroadcast(deployerPrivateKey);
@@ -50,10 +53,6 @@ contract L2RewardScript is Script {
             address(l2RewardImplementation),
             abi.encodeWithSelector(l2RewardImplementation.initialize.selector, l2AddressesConfig.L2LiskToken)
         );
-        // owner allots funds to reward contract
-        IL2LiskToken(l2AddressesConfig.L2LiskToken).approve(address(l2RewardImplementation), funds);
-        // reward contract funds staking for 2 years
-        l2RewardImplementation.fundStakingRewards(funds, 730, 1);
         vm.stopBroadcast();
         assert(address(l2RewardProxy) != address(0));
 
@@ -62,6 +61,24 @@ contract L2RewardScript is Script {
         assert(keccak256(bytes(l2Reward.version())) == keccak256(bytes("1.0.0")));
         assert(l2Reward.owner() == vm.addr(deployerPrivateKey));
         assert(l2Reward.l2TokenContract() == l2AddressesConfig.L2LiskToken);
+
+        vm.startBroadcast(deployerPrivateKey);
+        // reward contract is added as a creator at staking contract
+        IL2Staking(l2AddressesConfig.L2Staking).addCreator(address(l2Reward));
+
+        // reward contract funds staking for 3 years
+        IL2LiskToken(l2AddressesConfig.L2LiskToken).approve(address(l2Reward), l2Reward.REWARD_FUNDS());
+        l2Reward.fundStakingRewards(
+            l2Reward.REWARD_FUNDS(), l2Reward.REWARD_FUNDING_DURATION(), l2Reward.REWARD_DURATION_DELAY()
+        );
+
+        l2Reward.initializeLockingPosition(l2AddressesConfig.L2LockingPosition);
+        l2Reward.initializeStaking(l2AddressesConfig.L2Staking);
+
+        // transfer ownership of the L2VotingPower contract to the owner address; because of using
+        // Ownable2StepUpgradeable contract, new owner has to accept ownership
+        l2Reward.transferOwnership(ownerAddress);
+        vm.stopBroadcast();
 
         console2.log("L2 Reward (implementation) address: %s", address(l2RewardImplementation));
         console2.log("L2 Reward (proxy) address: %s", address(l2Reward));

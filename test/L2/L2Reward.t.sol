@@ -115,6 +115,8 @@ contract L2RewardTest is Test {
 
     function test_initialize() public {
         assertEq(l2Reward.lastTrsDate(), deploymentDate);
+        assertEq(l2Reward.REWARD_FUNDS(), 24_000_000 * 10 ** 18);
+        assertEq(l2Reward.REWARD_FUNDING_DURATION(), 1095);
         assertEq(l2Reward.OFFSET(), 150);
         assertEq(l2Reward.REWARD_DURATION(), 30);
         assertEq(l2Reward.REWARD_DURATION_DELAY(), 1);
