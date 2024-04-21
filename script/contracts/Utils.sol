@@ -258,11 +258,12 @@ contract Utils is Script {
     }
 
     /// @notice This function reads MerkleRoot from JSON file.
+    /// @param fileName Name of the file containing nerkle root.
     /// @return MerkleRoot struct containing merkle root only.
-    function readMerkleRootFile() external view returns (MerkleRoot memory) {
+    function readMerkleRootFile(string memory fileName) external view returns (MerkleRoot memory) {
         string memory network = getNetworkType();
         string memory root = vm.projectRoot();
-        string memory merkleRootPath = string.concat(root, "/script/data/", network, "/merkle-root.json");
+        string memory merkleRootPath = string.concat(root, "/script/data/", network, "/", fileName);
         string memory merkleRootJson = vm.readFile(merkleRootPath);
         bytes memory merkleRootRaw = vm.parseJson(merkleRootJson);
         return abi.decode(merkleRootRaw, (MerkleRoot));
