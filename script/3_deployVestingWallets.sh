@@ -42,3 +42,7 @@ else
       fi
 fi
 echo "Done."
+
+echo "Fund the Vesting and DAO smart contracts..."
+forge script --rpc-url="$L1_RPC_URL" --broadcast -vvvv script/contracts/L2/L2FundVestingAndDAO.s.sol:FundVestingAndDAOScript
+echo "Done."

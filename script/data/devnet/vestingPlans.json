@@ -8,52 +8,60 @@
   },
   "vestingPlans": [
     {
-      "name": "Treasury 3 Years",
+      "name": "Treasury_3_Years",
       "beneficiaryAddressTag": "foundationTreasuryAddress",
       "startTimestamp": 1735689600,
-      "durationDays": 1095
+      "durationDays": 1095,
+      "amount": 8000000000000000000000000
     },
     {
-      "name": "Team 4 Years",
+      "name": "Team_4_Years",
       "beneficiaryAddressTag": "teamVestingAddress",
       "startTimestamp": 1735689600,
-      "durationDays": 1461
+      "durationDays": 1461,
+      "amount": 7000000000000000000000000
     },
     {
-      "name": "Investors 2 Years",
+      "name": "Investors_2_Years",
       "beneficiaryAddressTag": "investorVestingAddress",
       "startTimestamp": 1716163200,
-      "durationDays": 730
+      "durationDays": 730,
+      "amount": 20000000000000000000000000
     },
     {
       "name": "Ecosystem",
       "beneficiaryAddressTag": "ecosystemFundAddress",
       "startTimestamp": 1735689600,
-      "durationDays": 0
+      "durationDays": 0,
+      "amount": 2860417000000000000000000
     },
     {
-      "name": "DAO I",
+      "name": "DAO_I",
       "beneficiaryAddressTag": "daoTreasuryAddress",
       "startTimestamp": 1716163200,
-      "durationDays": 226
+      "durationDays": 226,
+      "amount": 8750000000000000000000000
     },
     {
-      "name": "DAO II",
+      "name": "DAO_II",
       "beneficiaryAddressTag": "daoTreasuryAddress",
       "startTimestamp": 1735689600,
-      "durationDays": 730
+      "durationDays": 730,
+      "amount": 30000000000000000000000000
     },
     {
-      "name": "DAO optional I",
+      "name": "DAO_optional_I",
       "beneficiaryAddressTag": "daoTreasuryAddress",
       "startTimestamp": 1798761600,
-      "durationDays": 2192
+      "durationDays": 2192,
+      "amount": 90000000000000000000000000
     },
     {
-      "name": "DAO optional II",
+      "name": "DAO_optional_II",
       "beneficiaryAddressTag": "daoTreasuryAddress",
       "startTimestamp": 1988150400,
-      "durationDays": 365
+      "durationDays": 365,
+      "amount": 10000000000000000000000000
     }
   ]
 }
