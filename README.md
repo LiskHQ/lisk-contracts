@@ -76,7 +76,7 @@ Private L1 and L2 test networks are established using the `anvil` tool, and the 
 3. Place the `accounts.json` and `merkle-root.json` files in the correct folder (`data/devnet`, `data/testnet`, or `data/mainnet`) corresponding to the previously set `NETWORK` environment variable. Example files for `accounts.json` and `merkle-root.json` may be found inside `data/devnet` directory.
 4. To create and launch a private test L1 network, execute the script: `./runL1TestNetwork.sh`
 5. To create and launch a private test L2 network, execute the script: `./runL2TestNetwork.sh`
-6. To deploy all smart contracts, execute the scripts: `./1_deployTokenContracts.sh`, `./2_deployStakingAndGovernance.sh` and `./3_deployClaimContract.sh`.
+6. To deploy all smart contracts, execute the scripts: `./1_deployTokenContracts.sh`, `./2_deployStakingAndGovernance.sh`, `./3_deployVestingWallets.sh` and `./4_deployClaimContract`.
 
 ## Deployment on Public Test Network
 
@@ -88,7 +88,7 @@ To deploy smart contracts on both L1 and L2 public networks, you will need to pr
 2. When `CONTRACT_VERIFIER` is configured as either `blockscout` or `etherscan`, there are specific additional variables that must be defined. For `blockscout`, it is necessary to set `L1_VERIFIER_URL` and `L2_VERIFIER_URL`. Conversely, for `etherscan`, it is necessary to set `L1_ETHERSCAN_API_KEY` and `L2_ETHERSCAN_API_KEY`.
 3. Navigate to the `script` directory.
 4. Place the `accounts.json` and `merkle-root.json` files in the correct folder (`data/devnet`, `data/testnet`, or `data/mainnet`) corresponding to the previously set `NETWORK` environment variable. Example files for `accounts.json` and `merkle-root.json` may be found inside `data/devnet` directory.
-5. To deploy all smart contracts, execute the scripts: `./1_deployTokenContracts.sh`, `./2_deployStakingAndGovernance.sh` and `./3_deployClaimContract.sh`.
+5. To deploy all smart contracts, execute the scripts: `./1_deployTokenContracts.sh`, `./2_deployStakingAndGovernance.sh`, `./3_deployVestingWallets.sh` and `./4_deployClaimContract`.
 
 ## Tips & Tricks
 
@@ -104,7 +104,7 @@ L2 Lisk Token is deployed using `CREATE2` opcode to ensure deterministic smart c
 
 ### Transferring Lisk Tokens After Smart Contracts Deployment
 
-The distribution of newly minted Lisk tokens takes place in accordance with the instructions specified in the files `accounts_1.json` and `accounts_2.json`. Both files contain a list of addresses and the respective amounts of tokens that need to be sent to various accounts on both the L1 and L2 networks. The funds specified in `accounts_1.json` will be transferred as part of `1_deployTokenContracts.sh` and the funds of `accounts_2.json` as part of `3_deployClaimContract.sh`.
+The distribution of newly minted Lisk tokens takes place in accordance with the instructions specified in the files `accounts_1.json` and `accounts_2.json`. Both files contain a list of addresses and the respective amounts of tokens that need to be sent to various accounts on both the L1 and L2 networks. The funds specified in `accounts_1.json` will be transferred as part of `1_deployTokenContracts.sh` and the funds of `accounts_2.json` as part of `4_deployClaimContract.sh`.
 
 The process ensures that each address specified in `accounts_1.json` and `accounts_2.json` receives the designated amount of tokens accurately. Any remaining Lisk Tokens, those not allocated to the addresses listed in the files, are then transferred to the [Claim smart contract](src/L2/L2Claim.sol). This systematic distribution is critical for ensuring that the tokens are correctly assigned to their intended recipients across the different network layers as part of the project's requirements.
 
