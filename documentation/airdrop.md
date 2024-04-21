@@ -2,7 +2,7 @@
 
 ## Overview
 
-This page documents the Lisk Migration Airdrop that is implemented in the contract [L2Airdrop.sol](../src/L2/L2Airdrop.sol) and the corresponding deployment script [L2Airdrop.s.sol](script/L2Airdrop.s.sol). Further, the Merkle tree generator for the maximum airdrop amounts for each Lisk v4 address is implemented
+This page documents the Lisk Migration Airdrop that is implemented in the contract [L2Airdrop.sol](../src/L2/L2Airdrop.sol) and the corresponding deployment script [L2Airdrop.s.sol](../script/L2Airdrop.s.sol). Further, the Merkle tree generator for the maximum airdrop amounts for each Lisk v4 address is implemented
 [here](https://github.com/LiskHQ/lisk-token-claim/tree/main/packages/tree-builder/src/applications/generate-airdrop-merkle-tree).
 
 The goal of the migration airdrop is to reward the existing Lisk community by airdropping LSK tokens proportionally to the migrated LSK amounts if the community members show activity and commitment to the new Lisk L2 via bridging assets, staking tokens and participating in onchain governance.
