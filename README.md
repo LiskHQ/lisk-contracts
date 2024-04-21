@@ -17,6 +17,7 @@ Additionally, it also includes various deployment scripts that are integral for 
   - [Deployment Directory Folder](#deployment-directory-folder)
   - [Deployment of L2 Lisk Token](#deployment-of-l2-lisk-token)
   - [Transferring Lisk Tokens After Smart Contracts Deployment](#transferring-lisk-tokens-after-smart-contracts-deployment)
+  - [Lisk L2 Staking](#lisk-l2-staking)
   - [Smart Contract Ownership](#smart-contract-ownership)
 - [Contributing](#contributing)
 - [Security](#security)
@@ -32,10 +33,15 @@ Additionally, it also includes various deployment scripts that are integral for 
 
 ### Contracts deployed to L2
 
-| Name                                    | Description                                                         |
-| --------------------------------------- | ------------------------------------------------------------------- |
-| [`L2LiskToken`](src/L2/L2LiskToken.sol) | Bridged Lisk token (LSK) deployed on Lisk L2 network                |
-| [`L2Claim`](src/L2/L2Claim.sol)         | Smart contract responsible for a claiming process of the LSK tokens |
+| Name                                                | Description                                                                                                                                    |
+| --------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`L2LiskToken`](src/L2/L2LiskToken.sol)             | Bridged Lisk token (LSK) deployed on Lisk L2 network                                                                                           |
+| [`L2Claim`](src/L2/L2Claim.sol)                     | Smart contract responsible for a claiming process of the LSK tokens                                                                            |
+| [`L2Governor`](src/L2/L2Governor.sol)               | The [Governor](https://docs.openzeppelin.com/contracts/5.x/governance) contract for the Lisk DAO which manages proposals                       |
+| [`L2VotingPower`](src/L2/L2VotingPower.sol)         | The [token](https://docs.openzeppelin.com/contracts/5.x/governance#token) contract for the Lisk DAO which manages the voting power of accounts |
+| [`L2Staking`](src/L2/L2Staking.sol)                 | Responsible for locking, unlocking and editing locking positions                                                                               |
+| [`L2LockingPosition`](src/L2/L2LockingPosition.sol) | Stores all information of locking positions                                                                                                    |
+| [`L2Reward`](src/L2/L2Reward.sol)                   | Responsible for staking rewards                                                                                                                |
 
 ## Installation
 
@@ -61,27 +67,29 @@ git submodule update --init --recursive
 
 **NOTE**: On a private test network, the deployment of smart contracts is feasible on both L1 and L2 networks. However, the transfer of tokens between these networks is not possible as it requires the operation of the Sequencer.
 
-**NOTE**: To successfully deploy all smart contracts and execute the required transactions, the deployer (specified by `PRIVATE_KEY` in the `.env` file) must have funds available in its address on the respective networks. For a private test network, you can use a any private key from the list provided by `anvil` when the network is created, or choose another private key with sufficient funds on both forked networks.
+**NOTE**: To successfully deploy all smart contracts and execute the required transactions, the deployer (specified by `PRIVATE_KEY` in the `.env` file) must have funds available in its address on the respective networks. For a private test network, you can use any private key from the list provided by `anvil` when the network is created, or choose another private key with sufficient funds on both forked networks.
 
 Private L1 and L2 test networks are established using the `anvil` tool, and the smart contracts are deployed using the `forge script` tool. To run private networks and deploy the smart contracts, follow these steps:
-1. Create `.env` file and set the vars `PRIVATE_KEY`, `NETWORK`, `L1_TOKEN_OWNER_ADDRESS`, `L2_CLAIM_OWNER_ADDRESS`, `DAO_ADDRESS`, `DETERMINISTIC_ADDRESS_SALT`, `L1_STANDARD_BRIDGE_ADDR`, `L1_RPC_URL`, `L2_RPC_URL`, `L1_FORK_RPC_URL`, `L2_FORK_RPC_URL` and `TEST_NETWORK_MNEMONIC`. You can copy and rename the `.env.example` file if the default values provided in `.env.example` are satisfactory. `L1_RPC_URL` should be set to `http://127.0.0.1:8545` and `L2_RPC_URL` should be set to `http://127.0.0.1:8546` if no changes are made in the `./runL1TestNetwork.sh` or `./runL2TestNetwork.sh` script files.
+
+1. Create `.env` file and set the vars `PRIVATE_KEY`, `NETWORK`, `L1_TOKEN_OWNER_ADDRESS`, `L2_CLAIM_OWNER_ADDRESS`, `L2_STAKING_OWNER_ADDRESS`, `L2_LOCKING_POSITION_OWNER_ADDRESS`, `L2_REWARD_OWNER_ADDRESS`, `L2_GOVERNOR_OWNER_ADDRESS`, `L2_VOTING_POWER_OWNER_ADDRESS`, `DETERMINISTIC_ADDRESS_SALT`, `L1_STANDARD_BRIDGE_ADDR`, `L1_RPC_URL`, `L2_RPC_URL`, `L1_FORK_RPC_URL`, `L2_FORK_RPC_URL` and `TEST_NETWORK_MNEMONIC`. You can copy and rename the `.env.example` file if the default values provided in `.env.example` are satisfactory. `L1_RPC_URL` should be set to `http://127.0.0.1:8545` and `L2_RPC_URL` should be set to `http://127.0.0.1:8546` if no changes are made in the `./runL1TestNetwork.sh` or `./runL2TestNetwork.sh` script files.
 2. Navigate to the `script` directory.
 3. Place the `accounts.json` and `merkle-root.json` files in the correct folder (`data/devnet`, `data/testnet`, or `data/mainnet`) corresponding to the previously set `NETWORK` environment variable. Example files for `accounts.json` and `merkle-root.json` may be found inside `data/devnet` directory.
 4. To create and launch a private test L1 network, execute the script: `./runL1TestNetwork.sh`
 5. To create and launch a private test L2 network, execute the script: `./runL2TestNetwork.sh`
-6. To deploy all smart contracts, execute the script: `./deployContracts.sh`
+6. To deploy all smart contracts, execute the scripts: `./1_deployTokenContracts.sh`, `./2_deployStakingAndGovernance.sh`, `./3_deployVestingWallets.sh` and `./4_deployClaimContract`.
 
 ## Deployment on Public Test Network
 
 **NOTE**: To successfully deploy all smart contracts and execute the required transactions, the deployer (specified by `PRIVATE_KEY` in the `.env` file) must have funds available in its address. This implies that a private key with a sufficient balance on both public test networks is required.
 
 To deploy smart contracts on both L1 and L2 public networks, you will need to provide for each network an URL for a public node from a RPC provider, such as Alchemy or Infura. Additionally, in order to verify smart contracts on Blockscout or Etherscan Block Explorers during the deployment process, it is necessary to provide verifier name along with additional information (URL and API key). Follow these steps to deploy the smart contracts:
-1. Create `.env` file and set the vars `PRIVATE_KEY`, `NETWORK`, `L1_TOKEN_OWNER_ADDRESS`, `L2_CLAIM_OWNER_ADDRESS`, `DAO_ADDRESS`, `DETERMINISTIC_ADDRESS_SALT`, `L1_STANDARD_BRIDGE_ADDR`, `L1_RPC_URL`, `L2_RPC_URL` and `CONTRACT_VERIFIER`. You can copy and rename the `.env.example` file if the default values provided in `.env.example` are satisfactory. `CONTRACT_VERIFIER` may be empty to skip smart contracts verification process on Blockscout or Etherscan Block Explorers.
-2. When `CONTRACT_VERIFIER` is configured as either `blockscout` or `etherscan`, there are specific additional variables that must be defined. For `blockscout`, it is necessary to set `L1_VERIFIER_URL` and `L2_VERIFIER_URL`. Conversely, for `etherscan`, it is necessary to set `L1_ETHERSCAN_API_KEY` and `L2_ETHERSCAN_API_KEY`.             
+
+1. Create `.env` file and set the vars `PRIVATE_KEY`, `NETWORK`, `L1_TOKEN_OWNER_ADDRESS`, `L2_CLAIM_OWNER_ADDRESS`, `L2_STAKING_OWNER_ADDRESS`, `L2_LOCKING_POSITION_OWNER_ADDRESS`, `L2_REWARD_OWNER_ADDRESS`, `L2_GOVERNOR_OWNER_ADDRESS`, `L2_VOTING_POWER_OWNER_ADDRESS`, `DETERMINISTIC_ADDRESS_SALT`, `L1_STANDARD_BRIDGE_ADDR`, `L1_RPC_URL`, `L2_RPC_URL` and `CONTRACT_VERIFIER`. You can copy and rename the `.env.example` file if the default values provided in `.env.example` are satisfactory. `CONTRACT_VERIFIER` may be empty to skip smart contracts verification process on Blockscout or Etherscan Block Explorers.
+2. When `CONTRACT_VERIFIER` is configured as either `blockscout` or `etherscan`, there are specific additional variables that must be defined. For `blockscout`, it is necessary to set `L1_VERIFIER_URL` and `L2_VERIFIER_URL`. Conversely, for `etherscan`, it is necessary to set `L1_ETHERSCAN_API_KEY` and `L2_ETHERSCAN_API_KEY`.
 3. Navigate to the `script` directory.
 4. Place the `accounts.json` and `merkle-root.json` files in the correct folder (`data/devnet`, `data/testnet`, or `data/mainnet`) corresponding to the previously set `NETWORK` environment variable. Example files for `accounts.json` and `merkle-root.json` may be found inside `data/devnet` directory.
-5. To deploy all smart contracts, execute the script: `./deployContracts.sh`
-   
+5. To deploy all smart contracts, execute the scripts: `./1_deployTokenContracts.sh`, `./2_deployStakingAndGovernance.sh`, `./3_deployVestingWallets.sh` and `./4_deployClaimContract`.
+
 ## Tips & Tricks
 
 **WARNING**: Foundry installs the latest versions of `openzeppelin-contracts` and `openzeppelin-contracts-upgradeable` initially, but subsequent `forge update` commands will use the `master` branch which is a development branch that should be avoided in favor of tagged releases. The release process involves security measures that the `master` branch does not guarantee.
@@ -96,9 +104,17 @@ L2 Lisk Token is deployed using `CREATE2` opcode to ensure deterministic smart c
 
 ### Transferring Lisk Tokens After Smart Contracts Deployment
 
-After the successful deployment of all smart contracts using the `deployContracts.sh` script, the distribution of newly minted Lisk tokens takes place in accordance with the instructions specified in the `accounts.json` file. This file contains a list of addresses and the respective amounts of tokens that need to be sent to various accounts on both the L1 and L2 networks.
+The distribution of newly minted Lisk tokens takes place in accordance with the instructions specified in the files `accounts_1.json`, `accounts_2.json` and `vestingWallets.json`. The two files `accounts_1.json` and `accounts_2.json` contain a list of addresses and the respective amounts of tokens that need to be sent to various accounts on both the L1 and L2 networks. The funds specified in `accounts_1.json` will be transferred as part of `1_deployTokenContracts.sh` and the funds of `accounts_2.json` as part of `4_deployClaimContract.sh`. The funds specified in `vestingWallets.json` are distributed to vesting wallets as part of `3_deployVestingWallets.sh`. Moreover, some initial amount is transferred to the DAO treasury within the same script.
 
-The process ensures that each address specified in the `accounts.json` file receives the designated amount of tokens accurately. Any remaining Lisk Tokens, those not allocated to the addresses listed in the file, are then transferred to the [Claim smart contract](src/L2/L2Claim.sol). This systematic distribution is critical for ensuring that the tokens are correctly assigned to their intended recipients across the different network layers as part of the project's requirements.
+The process ensures that each address specified in the json files receives the designated amount of tokens accurately. Any remaining Lisk Tokens, those not allocated to the addresses listed in the files, are then transferred to the [Claim smart contract](src/L2/L2Claim.sol). This systematic distribution is critical for ensuring that the tokens are correctly assigned to their intended recipients across the different network layers as part of the project's requirements.
+
+### Lisk L2 Staking
+Staking L2 tokens creates additional utility of L2 Lisk token by allowing user to stake an amount of token for a certain period of time allowing them to earn daily rewards and contribute to Governance.
+
+Implementation of L2 staking functionality is separated into;
+- `L2LockingPosition` contract represents staking positions as an implementation of ERC721 (NFT) interface.
+- `L2Staking` contract manages interactions with `L2LockingPosition` contract. It restricts manipulation of staking positions represented by `LockingPostion` structure to the creator role.
+- `L2Reward` contract exposes the public API to stakers, enabling them to lock funds, manipulate existing position they own and claim rewards.
 
 ### Smart Contract Ownership
 
