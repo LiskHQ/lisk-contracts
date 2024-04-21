@@ -171,7 +171,7 @@ contract Utils is Script {
         } catch { }
 
         try vm.parseJsonAddress(addressJson, ".L2RewardImplementation") returns (address l2RewardImplementation) {
-            l2AddressesConfig.L2Reward = l2RewardImplementation;
+            l2AddressesConfig.L2RewardImplementation = l2RewardImplementation;
         } catch { }
 
         try vm.parseJsonAddress(addressJson, ".L2Reward") returns (address l2Reward) {

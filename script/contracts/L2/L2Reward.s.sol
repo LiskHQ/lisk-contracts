@@ -6,7 +6,7 @@ import { Script, console2 } from "forge-std/Script.sol";
 import { L2Reward } from "src/L2/L2Reward.sol";
 import { IL2LiskToken } from "src/interfaces/L2/IL2LiskToken.sol";
 import { IL2Staking } from "src/interfaces/L2/IL2Staking.sol";
-import "script/Utils.sol";
+import "script/contracts/Utils.sol";
 
 /// @title L2RewardScript - L2 Reward contract deployment script.
 /// @notice This contract is used to deploy L2 Reward contract.
@@ -33,6 +33,7 @@ contract L2RewardScript is Script {
         // get L2Reward contract owner address. Ownership is transferred to this address after deployment.
         address ownerAddress = vm.envAddress("L2_REWARD_OWNER_ADDRESS");
         assert(ownerAddress != address(0));
+        console2.log("L2 Reward owner address: %s (after ownership will be accepted)", ownerAddress);
 
         // deploy L2Reward implementation contract
         vm.startBroadcast(deployerPrivateKey);
@@ -75,17 +76,16 @@ contract L2RewardScript is Script {
 
         // transfer ownership of the L2VotingPower contract to the owner address; because of using
         // Ownable2StepUpgradeable contract, new owner has to accept ownership
-        console2.log("L2 Reward owner address: %s (after ownership will be accepted)", ownerAddress);
         l2Reward.transferOwnership(ownerAddress);
         vm.stopBroadcast();
 
-        assert(l2Reward.owner() == vm.addr(deployerPrivateKey));
+        assert(l2Reward.owner() == vm.addr(deployerPrivateKey)); // ownership is not yet accepted
         assert(l2Reward.lockingPositionContract() == l2AddressesConfig.L2LockingPosition);
         assert(l2Reward.stakingContract() == l2AddressesConfig.L2Staking);
 
         console2.log("L2 Reward (implementation) address: %s", address(l2RewardImplementation));
         console2.log("L2 Reward (proxy) address: %s", address(l2Reward));
-        console2.log("L2 Reward owner address: %s", l2Reward.owner());
+        console2.log("L2 Reward owner address: %s (after ownership will be accepted)", ownerAddress);
 
         // write L2 Reward address to l2addresses.json
         l2AddressesConfig.L2RewardImplementation = address(l2RewardImplementation);
