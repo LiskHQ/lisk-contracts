@@ -31,6 +31,10 @@ contract Utils is Script {
         address L2LockingPosition;
         /// @notice The Current implementation of L2 Locking Position Contract.
         address L2LockingPositionImplementation;
+        /// @notice L2 Reward contract (in Proxy), which users interact with.
+        address L2Reward;
+        /// @notice The current implementation of L2 Reward contract.
+        address L2RewardImplementation;
         /// @notice L2 Staking contract (in Proxy), which users interact with.
         address L2Staking;
         /// @notice The current implementation of L2 Staking contract.
@@ -144,6 +148,14 @@ contract Utils is Script {
             l2AddressesConfig.L2LockingPositionImplementation = l2LockingPositionImplementation;
         } catch { }
 
+        try vm.parseJsonAddress(addressJson, ".L2RewardImplementation") returns (address l2RewardImplementation) {
+            l2AddressesConfig.L2Reward = l2RewardImplementation;
+        } catch { }
+
+        try vm.parseJsonAddress(addressJson, ".L2Reward") returns (address l2Reward) {
+            l2AddressesConfig.L2Reward = l2Reward;
+        } catch { }
+
         try vm.parseJsonAddress(addressJson, ".L2Staking") returns (address l2Staking) {
             l2AddressesConfig.L2Staking = l2Staking;
         } catch { }
@@ -181,6 +193,8 @@ contract Utils is Script {
         vm.serializeAddress(json, "L2LiskToken", cfg.L2LiskToken);
         vm.serializeAddress(json, "L2LockingPosition", cfg.L2LockingPosition);
         vm.serializeAddress(json, "L2LockingPositionImplementation", cfg.L2LockingPositionImplementation);
+        vm.serializeAddress(json, "L2Reward", cfg.L2Reward);
+        vm.serializeAddress(json, "L2RewardImplementation", cfg.L2RewardImplementation);
         vm.serializeAddress(json, "L2Staking", cfg.L2Staking);
         vm.serializeAddress(json, "L2StakingImplementation", cfg.L2StakingImplementation);
         vm.serializeAddress(json, "L2TimelockController", cfg.L2TimelockController);
