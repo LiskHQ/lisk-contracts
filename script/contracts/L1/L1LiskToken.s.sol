@@ -3,7 +3,7 @@ pragma solidity 0.8.23;
 
 import { Script, console2 } from "forge-std/Script.sol";
 import { L1LiskToken } from "src/L1/L1LiskToken.sol";
-import "script/Utils.sol";
+import "script/contracts/Utils.sol";
 
 /// @title L1LiskTokenScript - L1 Lisk token deployment script
 /// @notice This contract is used to deploy L1 Lisk token contract, transfers its ownership and writes its address to
@@ -39,8 +39,8 @@ contract L1LiskTokenScript is Script {
         assert(keccak256(bytes(l1LiskToken.name())) == keccak256(bytes("Lisk")));
         assert(keccak256(bytes(l1LiskToken.symbol())) == keccak256(bytes("LSK")));
         assert(l1LiskToken.decimals() == 18);
-        assert(l1LiskToken.totalSupply() == 300000000 * 10 ** 18);
-        assert(l1LiskToken.balanceOf(vm.addr(deployerPrivateKey)) == 300000000 * 10 ** 18);
+        assert(l1LiskToken.totalSupply() == 400000000 * 10 ** 18);
+        assert(l1LiskToken.balanceOf(vm.addr(deployerPrivateKey)) == 400000000 * 10 ** 18);
         assert(l1LiskToken.owner() == vm.addr(deployerPrivateKey));
         assert(l1LiskToken.pendingOwner() == newOwnerAddress);
         assert(l1LiskToken.hasRole(l1LiskToken.DEFAULT_ADMIN_ROLE(), vm.addr(deployerPrivateKey)) == false);

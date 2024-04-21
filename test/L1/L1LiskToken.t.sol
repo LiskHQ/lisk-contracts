@@ -18,7 +18,7 @@ contract L1LiskTokenTest is Test {
 
     string private constant NAME = "Lisk";
     string private constant SYMBOL = "LSK";
-    uint256 private constant TOTAL_SUPPLY = 300_000_000 * 10 ** 18; //300 million LSK tokens
+    uint256 private constant TOTAL_SUPPLY = 400_000_000 * 10 ** 18; //400 million LSK tokens
 
     L1LiskToken l1LiskToken;
 

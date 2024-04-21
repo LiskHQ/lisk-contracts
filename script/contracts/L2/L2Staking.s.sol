@@ -4,7 +4,7 @@ pragma solidity 0.8.23;
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import { Script, console2 } from "forge-std/Script.sol";
 import { L2Staking } from "src/L2/L2Staking.sol";
-import "script/Utils.sol";
+import "script/contracts/Utils.sol";
 
 /// @title L2StakingScript - L2 Staking contract deployment script
 /// @notice This contract is used to deploy L2 Staking contract.
@@ -27,6 +27,11 @@ contract L2StakingScript is Script {
         Utils.L2AddressesConfig memory l2AddressesConfig = utils.readL2AddressesFile();
         assert(l2AddressesConfig.L2LiskToken != address(0));
         console2.log("L2 Lisk Token address: %s", l2AddressesConfig.L2LiskToken);
+
+        // Get L2Staking contract owner address. Ownership is transferred to this address after deployment.
+        address ownerAddress = vm.envAddress("L2_STAKING_OWNER_ADDRESS");
+        assert(ownerAddress != address(0));
+        console2.log("L2 Staking owner address: %s (after ownership will be accepted)", ownerAddress);
 
         // deploy L2Staking implementation contract
         vm.startBroadcast(deployerPrivateKey);
@@ -56,9 +61,16 @@ contract L2StakingScript is Script {
         assert(l2Staking.l2LiskTokenContract() == l2AddressesConfig.L2LiskToken);
         assert(l2Staking.emergencyExitEnabled() == false);
 
+        // transfer ownership of the L2Staking contract to the owner address; because of using
+        // Ownable2StepUpgradeable contract, new owner has to accept ownership
+        vm.startBroadcast(deployerPrivateKey);
+        l2Staking.transferOwnership(ownerAddress);
+        vm.stopBroadcast();
+        assert(l2Staking.owner() == vm.addr(deployerPrivateKey)); // ownership is not yet accepted
+
         console2.log("L2 Staking (implementation) address: %s", address(l2StakingImplementation));
         console2.log("L2 Staking (proxy) address: %s", address(l2Staking));
-        console2.log("L2 Staking owner address: %s", l2Staking.owner());
+        console2.log("L2 Staking owner address: %s (after ownership will be accepted)", ownerAddress);
 
         // write L2 Staking address to l2addresses.json
         l2AddressesConfig.L2StakingImplementation = address(l2StakingImplementation);

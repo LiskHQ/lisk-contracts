@@ -4,7 +4,7 @@ pragma solidity 0.8.23;
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import { Script, console2 } from "forge-std/Script.sol";
 import { L2VestingWallet } from "src/L2/L2VestingWallet.sol";
-import "script/Utils.sol";
+import "script/contracts/Utils.sol";
 
 /// @title L2VestingWalletScript - L2 Vesting Wallet contract deployment script
 /// @notice This contract is used to deploy L2 Vesting Wallet contract.

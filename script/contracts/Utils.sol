@@ -73,6 +73,8 @@ contract Utils is Script {
 
     /// @notice This struct is used to store a single Vesting Plan.
     struct VestingPlan {
+        /// @notice Amount of LSK tokens to be vested.
+        uint256 amount;
         /// @notice Identifier of beneficiary address, which would match the address in JSON file.
         string beneficiaryAddressTag;
         /// @notice Duration of the Vesting Plan in Days.
@@ -171,7 +173,7 @@ contract Utils is Script {
         } catch { }
 
         try vm.parseJsonAddress(addressJson, ".L2RewardImplementation") returns (address l2RewardImplementation) {
-            l2AddressesConfig.L2Reward = l2RewardImplementation;
+            l2AddressesConfig.L2RewardImplementation = l2RewardImplementation;
         } catch { }
 
         try vm.parseJsonAddress(addressJson, ".L2Reward") returns (address l2Reward) {
@@ -260,11 +262,12 @@ contract Utils is Script {
     }
 
     /// @notice This function reads accounts from JSON file.
+    /// @param fileName Name of the file containing accounts.
     /// @return Accounts struct containing accounts.
-    function readAccountsFile() external view returns (Accounts memory) {
+    function readAccountsFile(string memory fileName) external view returns (Accounts memory) {
         string memory network = getNetworkType();
         string memory root = vm.projectRoot();
-        string memory accountsPath = string.concat(root, "/script/data/", network, "/accounts.json");
+        string memory accountsPath = string.concat(root, "/script/data/", network, "/", fileName);
         string memory accountsJson = vm.readFile(accountsPath);
         bytes memory accountsRaw = vm.parseJson(accountsJson);
         return abi.decode(accountsRaw, (Accounts));
@@ -292,6 +295,17 @@ contract Utils is Script {
         string memory vestingPlansJson = vm.readFile(vestingPlansPath);
         bytes memory vestingPlansRaw = vestingPlansJson.parseRaw(string.concat(".vestingPlans"));
         return abi.decode(vestingPlansRaw, (VestingPlan[]));
+    }
+
+    /// @notice This function reads Vesting Wallet Address from JSON file.
+    /// @param vestingWalletName Name of the Vesting Wallet.
+    /// @return Vesting Wallet Address.
+    function readVestingWalletAddress(string memory vestingWalletName) external view returns (address) {
+        string memory network = getNetworkType();
+        string memory root = vm.projectRoot();
+        string memory vestingWalletsPath = string.concat(root, "/deployment/", network, "/vestingWallets.json");
+        string memory vestingWalletsJson = vm.readFile(vestingWalletsPath);
+        return vm.parseJsonAddress(vestingWalletsJson, string.concat(".['", vestingWalletName, "']"));
     }
 
     /// @notice This function returns salt as a string. keccak256 of this string is used as salt for calculating

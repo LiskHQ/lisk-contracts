@@ -5,7 +5,7 @@ import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy
 import { Script, console2 } from "forge-std/Script.sol";
 import { IL2LockingPosition } from "src/interfaces/L2/IL2LockingPosition.sol";
 import { L2VotingPower } from "src/L2/L2VotingPower.sol";
-import "script/Utils.sol";
+import "script/contracts/Utils.sol";
 
 /// @title L2VotingPowerScript - L2 Voting Power contract deployment script
 /// @notice This contract is used to deploy L2 Voting Power contract.
