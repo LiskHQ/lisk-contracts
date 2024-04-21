@@ -50,4 +50,36 @@ The main aspects of our onchain governance system are planned as follows:
   - **General proposal**: Generic proposals about protocol parameters or the project direction in general. 
 - For the UI, we integrate with Tally. In particular, users will be able to delegate their tokens to delegates who can vote on their behalf.
 
+## Contracts Overview
 
+![Contracts Overview](diagrams/contracts_overview.png)
+
+The graphic above shows all contracts involved in the staking and governance system and their responsibilities. Additionally, Tally is show which serves as the front end for governance.
+
+### User Interaction
+
+### Locking/Unlocking
+
+![Locking/Unlocking/Modifying](diagrams/lock_unlock.png)
+
+There are two ways how the user can lock/unlock/modify a staking position. In the first one, the user calls the Staking contract. The Staking contract will create/delete/modify a locking position in the Locking Position Contract which in turn forwards a call to the Voting Power Contract to adjust the voting power of the owner of the locking position. The Voting Power contract will emit events which will be used by Tally for indexing. For locking positions created like this, the user will not receive any rewards.
+
+In the second way, the user calls the Reward contract. The Reward contract will call lock/unlock/modify in the Staking contract, which will trigger the same forwarded calls as in the first way. The difference is that the user will receive rewards for locking positions create this way.
+
+### Delegating
+
+![Delegating](diagrams/delegating.png)
+
+For delegating, the user is interacting with the Voting Power contract directly. The Voting Power contract will emit events which will be used by Tally for indexing.
+
+### Creating Proposals and Voting
+
+![Creating Proposals](diagrams/create_proposal.png)
+
+For creating a proposal or voting on a proposal, the user is interacting with the Governor contract. The Governor contract will request the voting power of the proposer/voter in order to see if the user has enough voting power to create a proposal or for counting the voting results. Moreover, the Governor contract will emit events which will be used by Tally for indexing.
+
+### Queueing and Executing Proposals
+
+![Queueing](diagrams/queue.png)
+
+If a proposal has an attached execution, e.g. a transfer of some treasury funds, and the proposal passed, then the proposal must be queued and then executed. For this, a user (this can be any user) must interact with the Governor contract. This one is forwarding the queue/execute operation to the Timelock Controller contract, and the Governor contract additionally emits events which Tally uses for indexing. The Governor contract is the only account that is allowed to queue proposals at the Timelock Controller. As all executions are eventually executed by the Timelock Controller, contracts owned by the Lisk DAO must be owned by the Timelock Controller, and the DAO treasury must be held by it as well.
