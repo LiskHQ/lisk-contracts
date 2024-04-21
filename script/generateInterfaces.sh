@@ -34,3 +34,7 @@ echo "Done."
 echo "Generating interface for L2Staking smart contract..."
 cast interface -o $INTERFACE_L2_DIR/IL2Staking.sol -n IL2Staking .././out/L2Staking.sol/L2Staking.json
 echo "Done."
+
+echo "Generating interface for L2VestingWallet smart contract..."
+cast interface -o $INTERFACE_L2_DIR/IL2VestingWallet.sol -n IL2VestingWallet .././out/L2VestingWallet.sol/L2VestingWallet.json
+echo "Done."
