@@ -79,7 +79,7 @@ contract L2RewardScript is Script {
         l2Reward.transferOwnership(ownerAddress);
         vm.stopBroadcast();
 
-        assert(l2Reward.owner() == ownerAddress);
+        assert(l2Reward.owner() == vm.addr(deployerPrivateKey));
         assert(l2Reward.lockingPositionContract() == l2AddressesConfig.L2LockingPosition);
         assert(l2Reward.stakingContract() == l2AddressesConfig.L2Staking);
 
