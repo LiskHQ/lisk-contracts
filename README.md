@@ -33,10 +33,15 @@ Additionally, it also includes various deployment scripts that are integral for 
 
 ### Contracts deployed to L2
 
-| Name                                    | Description                                                         |
-| --------------------------------------- | ------------------------------------------------------------------- |
-| [`L2LiskToken`](src/L2/L2LiskToken.sol) | Bridged Lisk token (LSK) deployed on Lisk L2 network                |
-| [`L2Claim`](src/L2/L2Claim.sol)         | Smart contract responsible for a claiming process of the LSK tokens |
+| Name                                                | Description                                                                                                                                    |
+| --------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`L2LiskToken`](src/L2/L2LiskToken.sol)             | Bridged Lisk token (LSK) deployed on Lisk L2 network                                                                                           |
+| [`L2Claim`](src/L2/L2Claim.sol)                     | Smart contract responsible for a claiming process of the LSK tokens                                                                            |
+| [`L2Governor`](src/L2/L2Governor.sol)               | The [Governor](https://docs.openzeppelin.com/contracts/5.x/governance) contract for the Lisk DAO which manages proposals                       |
+| [`L2VotingPower`](src/L2/L2VotingPower.sol)         | The [token](https://docs.openzeppelin.com/contracts/5.x/governance#token) contract for the Lisk DAO which manages the voting power of accounts |
+| [`L2Staking`](src/L2/L2Staking.sol)                 | Responsible for locking, unlocking and editing locking positions                                                                               |
+| [`L2LockingPosition`](src/L2/L2LockingPosition.sol) | Stores all information of locking positions                                                                                                    |
+| [`L2Reward`](src/L2/L2Reward.sol)                   | Responsible for staking rewards                                                                                                                |
 
 ## Installation
 
