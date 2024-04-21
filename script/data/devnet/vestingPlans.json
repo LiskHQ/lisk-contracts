@@ -8,21 +8,21 @@
   },
   "vestingPlans": [
     {
-      "name": "Treasury_3_Years",
+      "name": "Treasury 3 Years",
       "beneficiaryAddressTag": "foundationTreasuryAddress",
       "startTimestamp": 1735689600,
       "durationDays": 1095,
       "amount": 8000000000000000000000000
     },
     {
-      "name": "Team_4_Years",
+      "name": "Team 4 Years",
       "beneficiaryAddressTag": "teamVestingAddress",
       "startTimestamp": 1735689600,
       "durationDays": 1461,
       "amount": 7000000000000000000000000
     },
     {
-      "name": "Investors_2_Years",
+      "name": "Investors 2 Years",
       "beneficiaryAddressTag": "investorVestingAddress",
       "startTimestamp": 1716163200,
       "durationDays": 730,
@@ -36,28 +36,28 @@
       "amount": 2860417000000000000000000
     },
     {
-      "name": "DAO_I",
+      "name": "DAO I",
       "beneficiaryAddressTag": "daoTreasuryAddress",
       "startTimestamp": 1716163200,
       "durationDays": 226,
       "amount": 8750000000000000000000000
     },
     {
-      "name": "DAO_II",
+      "name": "DAO II",
       "beneficiaryAddressTag": "daoTreasuryAddress",
       "startTimestamp": 1735689600,
       "durationDays": 730,
       "amount": 30000000000000000000000000
     },
     {
-      "name": "DAO_optional_I",
+      "name": "DAO optional I",
       "beneficiaryAddressTag": "daoTreasuryAddress",
       "startTimestamp": 1798761600,
       "durationDays": 2192,
       "amount": 90000000000000000000000000
     },
     {
-      "name": "DAO_optional_II",
+      "name": "DAO optional II",
       "beneficiaryAddressTag": "daoTreasuryAddress",
       "startTimestamp": 1988150400,
       "durationDays": 365,

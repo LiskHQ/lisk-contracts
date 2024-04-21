@@ -305,7 +305,7 @@ contract Utils is Script {
         string memory root = vm.projectRoot();
         string memory vestingWalletsPath = string.concat(root, "/deployment/", network, "/vestingWallets.json");
         string memory vestingWalletsJson = vm.readFile(vestingWalletsPath);
-        return vm.parseJsonAddress(vestingWalletsJson, string.concat(".", vestingWalletName));
+        return vm.parseJsonAddress(vestingWalletsJson, string.concat(".['", vestingWalletName, "']"));
     }
 
     /// @notice This function returns salt as a string. keccak256 of this string is used as salt for calculating
