@@ -1403,9 +1403,7 @@ contract L2RewardTest is Test {
         l2Reward.initiateFastUnlock(lockIDs);
         vm.stopPrank();
 
-        uint256 expectedTotalWeight = (27000 * 10 ** 18) - (5000 * 10 ** 18)
-            - (amount * (19860 - 19790 + l2Reward.OFFSET()))
-            + (l2Staking.FAST_UNLOCK_DURATION() + l2Reward.OFFSET()) * (amount - penalty);
+        uint256 expectedTotalWeight = (l2Staking.FAST_UNLOCK_DURATION() + l2Reward.OFFSET()) * (amount - penalty);
 
         assertEq(l2LiskToken.balanceOf(address(l2Reward)), convertLiskToSmallestDenomination(35) - reward + penalty);
         assertEq(l2Reward.dailyUnlockedAmounts(deploymentDate + duration), 0);
@@ -1458,8 +1456,7 @@ contract L2RewardTest is Test {
         l2Reward.initiateFastUnlock(lockIDs);
         vm.stopPrank();
 
-        uint256 expectedTotalWeight = (27000 * 10 ** 18) - (2000 * 10 ** 18) - ((100 + l2Reward.OFFSET()) * amount)
-            + (l2Staking.FAST_UNLOCK_DURATION() + l2Reward.OFFSET()) * (amount - penalty);
+        uint256 expectedTotalWeight = (l2Staking.FAST_UNLOCK_DURATION() + l2Reward.OFFSET()) * (amount - penalty);
 
         assertEq(l2LiskToken.balanceOf(staker), balance - amount + rewardFor20Days * 2);
         assertEq(l2Reward.totalWeight(), expectedTotalWeight);
