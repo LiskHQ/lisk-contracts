@@ -29,11 +29,15 @@ interface IL1StandardBridge {
 }
 
 /// @title TransferFunds1stBatchScript - L1 Lisk token transfer script
-/// @notice This contract is used to transfer all deployer's L1 Lisk tokens to a different addresses on L1 and L2
-///         networks. When sending tokens to the L2 network, the L1 Standard Bridge contract is used.
+/// @notice This contract is used to transfer deployer's L1 Lisk tokens to a different addresses on L1 and L2 networks.
+///         When sending tokens to the L2 network, the L1 Standard Bridge contract is used.
 contract TransferFunds1stBatchScript is Script {
     /// @notice Utils contract which provides functions to read and write JSON files containing L1 and L2 addresses.
     Utils utils;
+
+    /// @notice Amount of LSK tokens to be allocated for L2Reward contract. Funds will be transferred to the deployer
+    ///         address on the L2 network and then in later script transferred to the L2Reward contract.
+    uint256 public constant REWARD_CONTRACT_AMOUNT = 24_000_000 * 10 ** 18; // 24 million LSK tokens
 
     function setUp() public {
         utils = new Utils();
@@ -100,6 +104,9 @@ contract TransferFunds1stBatchScript is Script {
             totalL2Amount += accounts.l2Addresses[i].amount;
         }
 
+        // add REWARD_CONTRACT_AMOUNT to the total amount of tokens to be sent to L2 addresses
+        totalL2Amount += REWARD_CONTRACT_AMOUNT;
+
         console2.log(
             "Approving L1 Lisk tokens to be transfered by L1 Standard Bridge to the L2 network: %s", totalL2Amount
         );
@@ -131,6 +138,20 @@ contract TransferFunds1stBatchScript is Script {
             );
             vm.stopBroadcast();
         }
+
+        // send L1 Lisk tokens to the deployer address on the L2 network
+        console2.log("Sending %s L1 Lisk tokens to the deployer address on the L2 network...", REWARD_CONTRACT_AMOUNT);
+
+        vm.startBroadcast(deployerPrivateKey);
+        bridge.depositERC20To(
+            l1AddressesConfig.L1LiskToken,
+            l2AddressesConfig.L2LiskToken,
+            vm.addr(deployerPrivateKey),
+            REWARD_CONTRACT_AMOUNT,
+            1000000,
+            ""
+        );
+        vm.stopBroadcast();
 
         assert(l1LiskToken.balanceOf(vm.addr(deployerPrivateKey)) == balanceBefore - totalL2Amount);
         assert(l1LiskToken.balanceOf(l1StandardBridge) == totalL2Amount);
