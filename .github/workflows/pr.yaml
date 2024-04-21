@@ -2,7 +2,6 @@ name: PR CI
 
 on:
   pull_request:
-    branches: [ main ]
 
 permissions:
   contents: read
@@ -16,13 +15,19 @@ jobs:
       fail-fast: true
       matrix:
         system:
-          - os: macos-12
-            target: x86_64-apple-darwin
-          - os: ubuntu-latest
-            target: x86_64-unknown-linux-gnu
-          - os: windows-latest
-            target: x86_64-pc-windows-msvc
-      
+          # - os: macos-12
+          #   target: x86_64-apple-darwin
+          # - os: ubuntu-latest
+          #   target: x86_64-unknown-linux-gnu
+          # - os: windows-latest
+          #   target: x86_64-pc-windows-msvc
+          - os:
+              - self-hosted
+              - macOS
+              - ARM64
+            target: aarch64-apple-darwin
+            architecture: arm64
+            rust_version: stable-aarch64-apple-darwin
     runs-on: ${{ matrix.system.os }}
     steps:
       - uses: actions/checkout@v3
