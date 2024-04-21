@@ -36,7 +36,7 @@ contract FundRewardContractScript is Script {
         IL2Reward l2Reward = IL2Reward(l2AddressesConfig.L2Reward);
 
         // check that deployer has enough L2 Lisk tokens to fund the L2Reward contract
-        assert(l2LiskToken.balanceOf(vm.addr(deployerPrivateKey)) == REWARD_CONTRACT_AMOUNT);
+        assert(l2LiskToken.balanceOf(vm.addr(deployerPrivateKey)) >= REWARD_CONTRACT_AMOUNT);
 
         // approve L2Reward contract to transfer L2 Lisk tokens
         vm.startBroadcast(deployerPrivateKey);
