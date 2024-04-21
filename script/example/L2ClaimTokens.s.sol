@@ -53,7 +53,7 @@ contract L2ClaimTokensScript is Script {
         l2Claim = L2Claim(l2AddressesConfig.L2ClaimContract);
 
         // Get Merkle Root from /devnet/merkle-root.json
-        Utils.MerkleRoot memory merkleRoot = utils.readMerkleRootFile();
+        Utils.MerkleRoot memory merkleRoot = utils.readMerkleRootFile("merkle-root.json");
         console2.log("MerkleRoot: %s", vm.toString(merkleRoot.merkleRoot));
 
         // Read devnet Json files

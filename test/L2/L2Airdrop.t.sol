@@ -10,7 +10,7 @@ import { L2LockingPosition } from "src/L2/L2LockingPosition.sol";
 import { L2LiskToken } from "src/L2/L2LiskToken.sol";
 import { L2Staking } from "src/L2/L2Staking.sol";
 import { L2VotingPower } from "src/L2/L2VotingPower.sol";
-import { Utils } from "script/Utils.sol";
+import { Utils } from "script/contracts/Utils.sol";
 
 contract L2AirdropTest is Test {
     using stdStorage for StdStorage;
