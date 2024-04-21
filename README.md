@@ -104,9 +104,9 @@ L2 Lisk Token is deployed using `CREATE2` opcode to ensure deterministic smart c
 
 ### Transferring Lisk Tokens After Smart Contracts Deployment
 
-After the successful deployment of all smart contracts using the `deployContracts.sh` script, the distribution of newly minted Lisk tokens takes place in accordance with the instructions specified in the `accounts.json` file. This file contains a list of addresses and the respective amounts of tokens that need to be sent to various accounts on both the L1 and L2 networks.
+The distribution of newly minted Lisk tokens takes place in accordance with the instructions specified in the files `accounts_1.json` and `accounts_2.json`. Both files contain a list of addresses and the respective amounts of tokens that need to be sent to various accounts on both the L1 and L2 networks. The funds specified in `accounts_1.json` will be transferred as part of `1_deployTokenContracts.sh` and the funds of `accounts_2.json` as part of `3_deployClaimContract.sh`.
 
-The process ensures that each address specified in the `accounts.json` file receives the designated amount of tokens accurately. Any remaining Lisk Tokens, those not allocated to the addresses listed in the file, are then transferred to the [Claim smart contract](src/L2/L2Claim.sol). This systematic distribution is critical for ensuring that the tokens are correctly assigned to their intended recipients across the different network layers as part of the project's requirements.
+The process ensures that each address specified in `accounts_1.json` and `accounts_2.json` receives the designated amount of tokens accurately. Any remaining Lisk Tokens, those not allocated to the addresses listed in the files, are then transferred to the [Claim smart contract](src/L2/L2Claim.sol). This systematic distribution is critical for ensuring that the tokens are correctly assigned to their intended recipients across the different network layers as part of the project's requirements.
 
 ### Lisk L2 Staking
 Staking L2 tokens creates additional utility of L2 Lisk token by allowing user to stake an amount of token for a certain period of time allowing them to earn daily rewards and contribute to Governance.
