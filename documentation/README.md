@@ -6,4 +6,4 @@ This folder contains the following documents essential for understanding the dep
 
 2. [Smart Contracts Requirements](./contracts-requirements.md): This document outlines the requirements and specifications for the smart contracts, providing detailed guidance for their development and deployment.
 
-3. [Vesting Documentation](./vesting.md): This page explains the technical details concerning deployment and maintenance of vesting smart contracts that hold LSK tokens and release them according to predefined schedules.
+3. [Vesting Documentation](./vesting.md): This page explains the technical details concerning implementation, deployment and maintenance of vesting smart contracts that hold LSK tokens and release them according to predefined schedules.
