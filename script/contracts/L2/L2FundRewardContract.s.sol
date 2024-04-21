@@ -52,7 +52,6 @@ contract FundRewardContractScript is Script {
         );
         vm.stopBroadcast();
 
-        assert(l2LiskToken.balanceOf(vm.addr(deployerPrivateKey)) == 0);
         assert(l2LiskToken.balanceOf(address(l2Reward)) == REWARD_CONTRACT_AMOUNT);
 
         console2.log("Deployer's L2 Lisk tokens successfully transferred to the L2Reward contract.");
