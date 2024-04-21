@@ -71,7 +71,12 @@ contract L2RewardScript is Script {
         l2Reward.fundStakingRewards(
             l2Reward.REWARD_FUNDS(), l2Reward.REWARD_FUNDING_DURATION(), l2Reward.REWARD_DURATION_DELAY()
         );
+        vm.stopBroadcast();
 
+        assert(l2AddressesConfig.L2LockingPosition != address(0));
+        assert(l2AddressesConfig.L2LockingPosition != address(0));
+        vm.startBroadcast(deployerPrivateKey);
+        // reward contract initializes locking position and staking contracts
         l2Reward.initializeLockingPosition(l2AddressesConfig.L2LockingPosition);
         l2Reward.initializeStaking(l2AddressesConfig.L2Staking);
 
@@ -79,6 +84,10 @@ contract L2RewardScript is Script {
         // Ownable2StepUpgradeable contract, new owner has to accept ownership
         l2Reward.transferOwnership(ownerAddress);
         vm.stopBroadcast();
+
+        assert(l2Reward.owner() == ownerAddress);
+        assert(l2Reward.lockingPositionContract() == l2AddressesConfig.L2LockingPosition);
+        assert(l2Reward.stakingContract() == l2AddressesConfig.L2Staking);
 
         console2.log("L2 Reward (implementation) address: %s", address(l2RewardImplementation));
         console2.log("L2 Reward (proxy) address: %s", address(l2Reward));
