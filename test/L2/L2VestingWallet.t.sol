@@ -21,6 +21,34 @@ contract L2VestingWalletTest is Test {
 
     uint256 public vestAmount = 1_000_000;
 
+    function _deployVestingWallet(
+        address _beneficiary,
+        uint64 _startTimestamp,
+        uint64 _durationSeconds,
+        string memory _name
+    )
+        public
+        returns (L2VestingWallet l2VestingWalletProxy)
+    {
+        l2VestingWalletProxy = L2VestingWallet(
+            payable(
+                address(
+                    new ERC1967Proxy(
+                        address(l2VestingWalletImplementation),
+                        abi.encodeWithSelector(
+                            l2VestingWalletImplementation.initialize.selector,
+                            _beneficiary,
+                            _startTimestamp,
+                            _durationSeconds,
+                            _name
+                        )
+                    )
+                )
+            )
+        );
+        assert(address(l2VestingWalletProxy) != address(0x0));
+    }
+
     function setUp() public {
         console.log("L2VestingWalletTest Address is: %s", address(this));
 
@@ -28,23 +56,7 @@ contract L2VestingWalletTest is Test {
         l2VestingWalletImplementation = new L2VestingWallet();
 
         // deploy L2VestingWallet contract via proxy and initialize it at the same time
-        l2VestingWallet = L2VestingWallet(
-            payable(
-                address(
-                    new ERC1967Proxy(
-                        address(l2VestingWalletImplementation),
-                        abi.encodeWithSelector(
-                            l2VestingWalletImplementation.initialize.selector,
-                            beneficiary,
-                            startTimestamp,
-                            durationSeconds,
-                            name
-                        )
-                    )
-                )
-            )
-        );
-        assert(address(l2VestingWallet) != address(0x0));
+        l2VestingWallet = _deployVestingWallet(beneficiary, startTimestamp, durationSeconds, name);
 
         mockToken = new MockERC20(vestAmount);
         mockToken.transfer(address(l2VestingWallet), vestAmount);
@@ -67,28 +79,89 @@ contract L2VestingWalletTest is Test {
     }
 
     // To verify if the contract works correctly when durationSeconds = 0
-    function test_InstantRelease() public {
-        L2VestingWallet l2VestingWalletInstant = L2VestingWallet(
-            payable(
-                address(
-                    new ERC1967Proxy(
-                        address(l2VestingWalletImplementation),
-                        abi.encodeWithSelector(
-                            l2VestingWalletImplementation.initialize.selector, beneficiary, startTimestamp, 0, name
-                        )
-                    )
-                )
-            )
-        );
-        assert(address(l2VestingWalletInstant) != address(0x0));
+    function test_Release_Instant() public {
+        L2VestingWallet newL2VestingWallet = _deployVestingWallet(beneficiary, startTimestamp, 0, name);
 
         MockERC20 mockToken2 = new MockERC20(vestAmount);
-        mockToken2.transfer(address(l2VestingWalletInstant), vestAmount);
-        assertEq(l2VestingWalletInstant.releasable(address(mockToken2)), vestAmount);
+        mockToken2.transfer(address(newL2VestingWallet), vestAmount);
+        assertEq(newL2VestingWallet.releasable(address(mockToken2)), vestAmount);
 
         vm.prank(beneficiary);
-        l2VestingWalletInstant.release(address(mockToken2));
+        newL2VestingWallet.release(address(mockToken2));
         assertEq(mockToken2.balanceOf(beneficiary), vestAmount);
+    }
+
+    // Similar to test_Release_Instant, but startTimeStamp is set in future
+    function test_Release_ZeroDurationSecondInFuture() public {
+        // startTimestamp starts with 1, leap 10 years
+        vm.warp(10 * 365 days);
+
+        uint64 newStartTimestamp = uint64(vm.getBlockTimestamp());
+        L2VestingWallet newL2VestingWallet = _deployVestingWallet(beneficiary, newStartTimestamp + 365 days, 0, name);
+
+        // leap 11 years
+        vm.warp(11 * 365 days + 1);
+        MockERC20 mockToken2 = new MockERC20(vestAmount);
+        mockToken2.transfer(address(newL2VestingWallet), vestAmount);
+        assertEq(newL2VestingWallet.releasable(address(mockToken2)), vestAmount);
+
+        vm.prank(beneficiary);
+        newL2VestingWallet.release(address(mockToken2));
+        assertEq(mockToken2.balanceOf(beneficiary), vestAmount);
+    }
+
+    // Token fully available after deployment
+    function test_Release_FullyAvailable() public {
+        // startTimestamp starts with 1, leap 10 years
+        vm.warp(10 * 365 days);
+
+        uint64 newStartTimestamp = uint64(vm.getBlockTimestamp());
+        L2VestingWallet newL2VestingWallet =
+            _deployVestingWallet(beneficiary, newStartTimestamp - 365 days, 100 days, name);
+
+        MockERC20 mockToken2 = new MockERC20(vestAmount);
+        mockToken2.transfer(address(newL2VestingWallet), vestAmount);
+        assertEq(newL2VestingWallet.releasable(address(mockToken2)), vestAmount);
+
+        vm.prank(beneficiary);
+        newL2VestingWallet.release(address(mockToken2));
+        assertEq(mockToken2.balanceOf(beneficiary), vestAmount);
+    }
+
+    // Token partially (50%) available after deployment
+    function test_Release_PartiallyAvailable() public {
+        // startTimestamp starts with 1, leap 10 years
+        vm.warp(10 * 365 days);
+
+        uint64 newStartTimestamp = uint64(vm.getBlockTimestamp());
+        L2VestingWallet newL2VestingWallet =
+            _deployVestingWallet(beneficiary, newStartTimestamp - 100 days, 365 days, name);
+
+        MockERC20 mockToken2 = new MockERC20(vestAmount);
+        mockToken2.transfer(address(newL2VestingWallet), vestAmount);
+        assertEq(newL2VestingWallet.releasable(address(mockToken2)), vestAmount * 100 days / 365 days);
+
+        vm.prank(beneficiary);
+        newL2VestingWallet.release(address(mockToken2));
+        assertEq(mockToken2.balanceOf(beneficiary), vestAmount * 100 days / 365 days);
+    }
+
+    // No token is available after deployment
+    function test_Release_NoneAvailable() public {
+        // startTimestamp starts with 1, leap 10 years
+        vm.warp(10 * 365 days);
+
+        uint64 newStartTimestamp = uint64(vm.getBlockTimestamp());
+        L2VestingWallet newL2VestingWallet =
+            _deployVestingWallet(beneficiary, newStartTimestamp + 365 days, 365 days, name);
+
+        MockERC20 mockToken2 = new MockERC20(vestAmount);
+        mockToken2.transfer(address(newL2VestingWallet), vestAmount);
+        assertEq(newL2VestingWallet.releasable(address(mockToken2)), 0);
+
+        vm.prank(beneficiary);
+        newL2VestingWallet.release(address(mockToken2));
+        assertEq(mockToken2.balanceOf(beneficiary), vestAmount * 0);
     }
 
     function test_TransferOwnership() public {

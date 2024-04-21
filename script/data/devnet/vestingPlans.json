@@ -22,7 +22,7 @@
     {
       "name": "Investors 2 Years",
       "beneficiaryAddressTag": "investorVestingAddress",
-      "startTimestamp": 1735689600,
+      "startTimestamp": 1716163200,
       "durationDays": 730
     },
     {
@@ -34,8 +34,8 @@
     {
       "name": "DAO I",
       "beneficiaryAddressTag": "daoTreasuryAddress",
-      "startTimestamp": 1704067200,
-      "durationDays": 366
+      "startTimestamp": 1716163200,
+      "durationDays": 226
     },
     {
       "name": "DAO II",
