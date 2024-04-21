@@ -23,12 +23,6 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
     /// @notice The default delay in days when adding rewards.
     uint16 public constant REWARD_DURATION_DELAY = 1;
 
-    /// @notice Amount of LSK tokens to be allocated for L2Reward contract.
-    uint256 public constant REWARD_FUNDS = 24_000_000 * 10 ** 18; // 24 million LSK tokens
-
-    /// @notice Duration for which L2Reward contract is funded.
-    uint16 public constant REWARD_FUNDING_DURATION = 1095; // 3 years
-
     /// @notice Total of weights of all stakes for each day.
     mapping(uint256 => uint256) public totalWeights;
 
