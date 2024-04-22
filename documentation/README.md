@@ -9,3 +9,5 @@ This folder contains the following documents essential for understanding the dep
 3. [Privilege Roles, Operations and Upgrades](./privilege-roles-operations.md): This document describes the privilege roles and operations that are defined in the smart contracts. It also explains how the upgrade process works for upgradable smart contracts.
 
 4. [Vesting Documentation](./vesting.md): This page explains the technical details concerning implementation, deployment and maintenance of vesting smart contracts that hold LSK tokens and release them according to predefined schedules.
+
+5. [Migration Airdrop Documentation](./airdrop.md): This page explains the technical details concerning design and lifecycle of the migration airdrop smart contract that distributes LSK tokens as a reward to the current Lisk users.
