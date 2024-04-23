@@ -71,7 +71,7 @@ contract TestBridgingScript is Test {
     function setUp() public {
         utils = new Utils();
 
-        l2Messenger = IL2CrossDomainMessenger(vm.envAddress("L2_CROSS_DOMAIN_MESSENGER_ADDR"));
+        l2Messenger = IL2CrossDomainMessenger(L2_CROSS_DOMAIN_MESSENGER_ADDR);
 
         swapAndBridgeLido = new SwapAndBridge(
             vm.envAddress("L1_LIDO_BRIDGE_ADDR"),
@@ -253,7 +253,6 @@ contract TestBridgingScript is Test {
     }
 
     function test_e2e_lido_L2() public {
-        address sequencer = vm.envAddress("SEQUENCER_ADDR");
         console2.log("Relaying message to L2 network...");
 
         bytes memory data = vm.readFileBinary(string.concat(vm.projectRoot(), "/test/swap_and_bridge/lido.data"));
@@ -264,7 +263,7 @@ contract TestBridgingScript is Test {
         uint256 balanceBefore = l2WstETH.balanceOf(vm.addr(vm.envUint("TOKEN_HOLDER_PRIV_KEY")));
         console2.log("balanceBefore: %d", balanceBefore);
 
-        vm.startBroadcast(sequencer);
+        vm.startBroadcast(SEQUENCER_ADDR);
         l2Messenger.relayMessage(messageNonce, sender, target, 0, gasLimit, message);
         vm.stopBroadcast();
 
@@ -401,8 +400,6 @@ contract TestBridgingScript is Test {
     }
 
     function test_e2e_diva_L2() public {
-        address sequencer = vm.envAddress("SEQUENCER_ADDR");
-
         bytes memory data = vm.readFileBinary(string.concat(vm.projectRoot(), "/test/swap_and_bridge/diva.data"));
         (address payable sender, address payable target, bytes memory message, uint256 messageNonce, uint256 gasLimit) =
             abi.decode(data, (address, address, bytes, uint256, uint256));
@@ -415,7 +412,7 @@ contract TestBridgingScript is Test {
 
         uint256 balanceBefore = l2WdivETH.balanceOf(vm.addr(vm.envUint("TOKEN_HOLDER_PRIV_KEY")));
 
-        vm.startBroadcast(sequencer);
+        vm.startBroadcast(SEQUENCER_ADDR);
         console2.log("Relaying message to L2 network...");
         l2Messenger.relayMessage(messageNonce, sender, target, 0, gasLimit, message);
         vm.stopBroadcast();
