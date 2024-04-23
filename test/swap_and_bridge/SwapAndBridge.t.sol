@@ -7,7 +7,7 @@ import { Test, console2, Vm } from "forge-std/Test.sol";
 // import { L2WdivETH } from "src/L2/L2WdivETH.sol";
 import { SwapAndBridge } from "src/L1/SwapAndBridge.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "script/Utils.sol";
+import "script/contracts/Utils.sol";
 
 /// @title IL2CrossDomainMessenger - L2 Cross Domain Messenger interface
 /// @notice This contract is used to relay messages from L1 to L2 network.
