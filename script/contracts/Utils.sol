@@ -49,6 +49,16 @@ contract Utils is Script {
         address L2VotingPowerImplementation;
     }
 
+    /// @notice This struct is used to read and write addresses related to swap-and-bridge feature to JSON file.
+    struct SwapAndBridgeAddressesConfig {
+        /// @notice L2WdivETH contract.
+        address L2WdivETH;
+        /// @notice The L1 swapAndBridge contract for Diva.
+        address SwapAndBridgeDiva;
+        /// @notice The L1 swapAndBridge contract for Lido.
+        address SwapAndBridgeLido;
+    }
+
     /// @notice This struct is used to read MerkleRoot from JSON file.
     struct MerkleRoot {
         bytes32 merkleRoot;
@@ -322,5 +332,42 @@ contract Utils is Script {
     /// @return bytes32 salt.
     function getSalt(string memory contractName) public view returns (bytes32) {
         return keccak256(abi.encodePacked(getPreHashedSalt(contractName)));
+    }
+
+    /// @notice This function reads swap and bridge addresses from JSON file.
+    /// @return SwapAndBridgeAddressesConfig struct containing swap and bridge addresses.
+    function readSwapAndBridgeAddressesFile() external view returns (SwapAndBridgeAddressesConfig memory) {
+        string memory network = getNetworkType();
+        string memory root = vm.projectRoot();
+        string memory addressPath = string.concat(root, "/deployment/", network, "/swapAndBridgeAddresses.json");
+        string memory addressJson = vm.readFile(addressPath);
+
+        SwapAndBridgeAddressesConfig memory swapAndBridgeAddressesConfig;
+
+        try vm.parseJsonAddress(addressJson, ".l2WdivETH") returns (address l2WdivETH) {
+            swapAndBridgeAddressesConfig.L2WdivETH = l2WdivETH;
+        } catch { }
+
+        try vm.parseJsonAddress(addressJson, ".swapAndBridgeDiva") returns (address swapAndBridgeDiva) {
+            swapAndBridgeAddressesConfig.SwapAndBridgeDiva = swapAndBridgeDiva;
+        } catch { }
+
+        try vm.parseJsonAddress(addressJson, ".swapAndBridgeLido") returns (address swapAndBridgeLido) {
+            swapAndBridgeAddressesConfig.SwapAndBridgeLido = swapAndBridgeLido;
+        } catch { }
+
+        return swapAndBridgeAddressesConfig;
+    }
+
+    /// @notice This function writes swap and bridge addresses to JSON file.
+    /// @param cfg SwapAndBridgeAddressesConfig struct containing swap and bridge addresses which will be written to
+    ///            JSON file.
+    function writeSwapAndBridgeAddressesFile(SwapAndBridgeAddressesConfig memory cfg) external {
+        string memory network = getNetworkType();
+        string memory json = "";
+        vm.serializeAddress(json, "l2WdivETH", cfg.L2WdivETH);
+        vm.serializeAddress(json, "swapAndBridgeDiva", cfg.SwapAndBridgeDiva);
+        string memory finalJson = vm.serializeAddress(json, "swapAndBridgeLido", cfg.SwapAndBridgeLido);
+        finalJson.write(string.concat("deployment/", network, "/swapAndBridgeAddresses.json"));
     }
 }
