@@ -4,7 +4,7 @@ pragma solidity 0.8.23;
 import { Script, console2 } from "forge-std/Script.sol";
 import { SwapAndBridge } from "src/L1/SwapAndBridge.sol";
 import { L2WdivETH } from "src/L2/L2WdivETH.sol";
-import "script/Utils.sol";
+import "script/contracts/Utils.sol";
 
 /// @title WdivETHScript - WdivETH deployment script
 /// @notice This contract is used to deploy WdivETH contract.
@@ -36,14 +36,14 @@ contract L2WdivETHScript is Script {
         try utils.readSwapAndBridgeAddressesFile() returns (
             Utils.SwapAndBridgeAddressesConfig memory swapAndBridgeAddressesConfig
         ) {
-            swapAndBridgeAddressesConfig.l2WdivETH = address(wdivETH);
+            swapAndBridgeAddressesConfig.L2WdivETH = address(wdivETH);
             utils.writeSwapAndBridgeAddressesFile(swapAndBridgeAddressesConfig);
         } catch {
             // Initialize SwapAndBridgeAddressesConfig with WdivETH address
             Utils.SwapAndBridgeAddressesConfig memory swapAndBridgeAddressesConfig = Utils.SwapAndBridgeAddressesConfig({
-                l2WdivETH: address(wdivETH),
-                swapAndBridgeDiva: address(0),
-                swapAndBridgeLido: address(0)
+                L2WdivETH: address(wdivETH),
+                SwapAndBridgeDiva: address(0),
+                SwapAndBridgeLido: address(0)
             });
             utils.writeSwapAndBridgeAddressesFile(swapAndBridgeAddressesConfig);
         }
@@ -73,14 +73,14 @@ contract SwapAndBridgeDivaScript is Script {
         SwapAndBridge swapAndBridgeDiva = new SwapAndBridge(
             vm.envAddress("L1_DIVA_BRIDGE_ADDR"),
             vm.envAddress("L1_DIVA_TOKEN_ADDR"),
-            swapAndBridgeAddressesConfig.l2WdivETH
+            swapAndBridgeAddressesConfig.L2WdivETH
         );
         vm.stopBroadcast();
         assert(address(swapAndBridgeDiva) != address(0));
         console2.log("SwapAndBridge (Diva) successfully deployed at address: %s", address(swapAndBridgeDiva));
 
         // write to json
-        swapAndBridgeAddressesConfig.swapAndBridgeDiva = address(swapAndBridgeDiva);
+        swapAndBridgeAddressesConfig.SwapAndBridgeDiva = address(swapAndBridgeDiva);
         utils.writeSwapAndBridgeAddressesFile(swapAndBridgeAddressesConfig);
     }
 }
@@ -114,7 +114,7 @@ contract SwapAndBridgeLidoScript is Script {
         console2.log("SwapAndBridge (Lido) successfully deployed at address: %s", address(swapAndBridgeLido));
 
         // write to json
-        swapAndBridgeAddressesConfig.swapAndBridgeLido = address(swapAndBridgeLido);
+        swapAndBridgeAddressesConfig.SwapAndBridgeLido = address(swapAndBridgeLido);
         utils.writeSwapAndBridgeAddressesFile(swapAndBridgeAddressesConfig);
     }
 }
