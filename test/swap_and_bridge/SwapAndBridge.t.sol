@@ -6,7 +6,6 @@ import { Test, console2, Vm } from "forge-std/Test.sol";
 // import { WstETH } from "src/L1/lido/WstETH.sol";
 // import { L2WdivETH } from "src/L2/L2WdivETH.sol";
 import { SwapAndBridge } from "src/L1/SwapAndBridge.sol";
-import { IERC20Permit } from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "script/Utils.sol";
 
@@ -33,7 +32,7 @@ interface IL2CrossDomainMessenger {
 
 /// @title IDivaEtherToken - Diva Ether Token interface
 /// @notice This contract is used to wrap the Diva Ether Token.
-interface IWrappedETH is IERC20, IERC20Permit {
+interface IWrappedETH is IERC20 {
     receive() external payable;
 }
 
@@ -297,74 +296,71 @@ contract TestBridgingScript is Test {
         vm.stopBroadcast();
 
         Vm.Log[] memory entries = vm.getRecordedLogs();
-        assertEq(entries.length, 11, "Invalid number of logs");
+        assertEq(entries.length, 9, "Invalid number of logs");
 
-        // entries[3] is the mint event, transferring from 0 to swapAndBridge contract
+        // entries[0] is the mint event, transferring from 0 to l1WdivETH contract
+        // Transfer(address indexed from, address indexed to, uint256 value)
+        assertEq(entries[0].topics.length, 3, "Transfer: Invalid number of topics");
+        assertEq(
+            entries[0].topics[0], keccak256("Transfer(address,address,uint256)"), "Transfer: Invalid default topic"
+        );
+        assertEq(entries[0].topics[1], bytes32(0), "Transfer: Invalid from address topic");
+        assertEq(
+            entries[0].topics[2], bytes32(uint256(uint160(address(l1WdivETH)))), "Transfer: Invalid to address topic"
+        );
+        uint256 mintedAmount = uint256(bytes32(entries[0].data));
+        assertEq(mintedAmount, 1 ether, "Transfer: Invalid amount");
+        // entries[2] is the approve event
+        // Approval(address indexed owner, address indexed spender, uint256 value)
+        assertEq(entries[2].topics.length, 3, "Approval: Invalid number of topics");
+        assertEq(
+            entries[2].topics[0], keccak256("Approval(address,address,uint256)"), "Approval: Invalid default topic"
+        );
+        assertEq(
+            entries[2].topics[1],
+            bytes32(uint256(uint160(address(swapAndBridgeDiva)))),
+            "Approval: Invalid owner address topic"
+        );
+        assertEq(
+            entries[2].topics[2],
+            bytes32(uint256(uint160(vm.envAddress("L1_DIVA_BRIDGE_ADDR")))),
+            "Approval: Invalid spender address topic"
+        );
+
+        // entries[3] is the transfer event from swapAndBridge to L1_DIVA_BRIDGE_ADDR
         // Transfer(address indexed from, address indexed to, uint256 value)
         assertEq(entries[3].topics.length, 3, "Transfer: Invalid number of topics");
         assertEq(
             entries[3].topics[0], keccak256("Transfer(address,address,uint256)"), "Transfer: Invalid default topic"
         );
-        assertEq(entries[3].topics[1], bytes32(0), "Transfer: Invalid from address topic");
         assertEq(
-            entries[3].topics[2],
-            bytes32(uint256(uint160(address(swapAndBridgeDiva)))),
-            "Transfer: Invalid to address topic"
-        );
-        uint256 mintedAmount = uint256(bytes32(entries[3].data));
-        assertEq(mintedAmount, 1 ether, "Transfer: Invalid amount");
-
-        // entries[4] is the approve event
-        // Approval(address indexed owner, address indexed spender, uint256 value)
-        assertEq(entries[4].topics.length, 3, "Approval: Invalid number of topics");
-        assertEq(
-            entries[4].topics[0], keccak256("Approval(address,address,uint256)"), "Approval: Invalid default topic"
-        );
-        assertEq(
-            entries[4].topics[1],
-            bytes32(uint256(uint160(address(swapAndBridgeDiva)))),
-            "Approval: Invalid owner address topic"
-        );
-        assertEq(
-            entries[4].topics[2],
-            bytes32(uint256(uint160(vm.envAddress("L1_DIVA_BRIDGE_ADDR")))),
-            "Approval: Invalid spender address topic"
-        );
-
-        // entries[5] is the transfer event from swapAndBridge to L1_DIVA_BRIDGE_ADDR
-        // Transfer(address indexed from, address indexed to, uint256 value)
-        assertEq(entries[5].topics.length, 3, "Transfer: Invalid number of topics");
-        assertEq(
-            entries[5].topics[0], keccak256("Transfer(address,address,uint256)"), "Transfer: Invalid default topic"
-        );
-        assertEq(
-            entries[5].topics[1],
+            entries[3].topics[1],
             bytes32(uint256(uint160(address(swapAndBridgeDiva)))),
             "Transfer: Invalid from address topic"
         );
         assertEq(
-            entries[5].topics[2],
+            entries[3].topics[2],
             bytes32(uint256(uint160(vm.envAddress("L1_DIVA_BRIDGE_ADDR")))),
             "Transfer: Invalid to address topic"
         );
 
-        // entries[8] is the SentMessage event
+        // entries[7] is the SentMessage event
         // SentMessage(address indexed target, address sender, bytes message, uint256 messageNonce, uint256 gasLimit)
         assertEq(entries[8].topics.length, 2, "SentMessage: Invalid number of topics");
         assertEq(
-            entries[8].topics[0],
+            entries[7].topics[0],
             keccak256("SentMessage(address,address,bytes,uint256,uint256)"),
             "SentMessage: Invalid default topic"
         );
 
         assertEq(
-            entries[8].topics[1],
+            entries[7].topics[1],
             bytes32(uint256(uint160(vm.envAddress("L2_DIVA_BRIDGE_ADDR")))),
             "SentMessage: Invalid target address topic"
         );
 
         (address sender, bytes memory message, uint256 messageNonce, uint256 gasLimit) =
-            abi.decode(entries[8].data, (address, bytes, uint256, uint256));
+            abi.decode(entries[7].data, (address, bytes, uint256, uint256));
         assertEq(sender, vm.envAddress("L1_DIVA_BRIDGE_ADDR"), "SentMessage: Invalid sender address");
         assertEq(
             gasLimit,
@@ -377,12 +373,12 @@ contract TestBridgingScript is Test {
         bytes memory selectorBytes = getSlice(1, 5, message);
         assertEq(
             bytes4(selectorBytes),
-            bytes4(keccak256("finalizeDeposit(address,address,address,address,uint256,bytes)")),
+            bytes4(keccak256("finalizeBridgeERC20(address,address,address,address,uint256,bytes)")),
             "SentMessage: Invalid selector"
         );
 
         bytes memory slicedMessage = getSlice(5, message.length, message);
-        (address remoteToken, address localToken, address from, address to, uint256 amount, bytes memory extraData) =
+        (address localToken, address remoteToken, address from, address to, uint256 amount, bytes memory extraData) =
             abi.decode(slicedMessage, (address, address, address, address, uint256, bytes));
 
         assertEq(remoteToken, vm.envAddress("L1_DIVA_TOKEN_ADDR"), "SentMessage: Invalid L1 token address");
@@ -428,5 +424,38 @@ contract TestBridgingScript is Test {
         console2.log("balanceBefore: %d", balanceBefore);
         console2.log("balanceAfter: %d", balanceAfter);
         assertEq(balanceAfter - balanceBefore, 1 ether);
+    }
+
+    function test_diva_L1_receive() public {
+        uint256 token_holder_priv_key = vm.envUint("TOKEN_HOLDER_PRIV_KEY");
+        console2.log("Token holder address: %s", vm.addr(token_holder_priv_key));
+        console2.log("Converting ETH to wdivETH on L1 network...");
+        console2.log("Current height", block.number);
+
+        console2.logBytes(address(l1WdivETH).code);
+        vm.recordLogs();
+
+        vm.startBroadcast(token_holder_priv_key);
+        uint256 ethBalanceBefore = vm.addr(token_holder_priv_key).balance;
+        console2.log("ethBalanceBefore: %d", ethBalanceBefore);
+        uint256 divBalanceBefore = l1WdivETH.balanceOf(vm.addr(token_holder_priv_key));
+        console2.log("divBalanceBefore: %d", divBalanceBefore);
+        (bool sent, bytes memory sendData) = address(l1WdivETH).call{ value: 1 ether }("");
+        console2.log("Sent: %s", sent ? "true" : "false");
+        console2.logBytes(sendData);
+        if (!sent) {
+            assembly {
+                let revertStringLength := mload(sendData)
+                let revertStringPtr := add(sendData, 0x20)
+                revert(revertStringPtr, revertStringLength)
+            }
+        }
+
+        assertEq(sent, true, "Failed to send Ether.");
+        uint256 ethBalanceAfter = vm.addr(token_holder_priv_key).balance;
+        console2.log("ethBalanceAfter: %d", ethBalanceAfter);
+        uint256 divBalanceAfter = l1WdivETH.balanceOf(vm.addr(vm.envUint("TOKEN_HOLDER_PRIV_KEY")));
+        console2.log("divBalanceAfter: %d", divBalanceAfter);
+        vm.stopBroadcast();
     }
 }
