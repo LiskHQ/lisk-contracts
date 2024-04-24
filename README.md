@@ -17,9 +17,6 @@ Additionally, it also includes various deployment scripts that are integral for 
   - [Deployment Directory Folder](#deployment-directory-folder)
   - [Deployment of L2 Lisk Token](#deployment-of-l2-lisk-token)
   - [Transferring Lisk Tokens After Smart Contracts Deployment](#transferring-lisk-tokens-after-smart-contracts-deployment)
-  - [Lisk L2 Staking](#lisk-l2-staking)
-    - [Events emitted on interactions](#events-emitted-on-interactions)
-    - [L2Reward interaction with dependencies and events](#l2reward-interaction-with-dependencies-and-events)
   - [Smart Contract Ownership](#smart-contract-ownership)
 - [Contributing](#contributing)
 - [Security](#security)
@@ -109,36 +106,6 @@ L2 Lisk Token is deployed using `CREATE2` opcode to ensure deterministic smart c
 The distribution of newly minted Lisk tokens takes place in accordance with the instructions specified in the files `accounts_1.json`, `accounts_2.json` and `vestingWallets.json`. The two files `accounts_1.json` and `accounts_2.json` contain a list of addresses and the respective amounts of tokens that need to be sent to various accounts on both the L1 and L2 networks. The funds specified in `accounts_1.json` will be transferred as part of `1_deployTokenContracts.sh` and the funds of `accounts_2.json` as part of `4_deployClaimContract.sh`. The funds specified in `vestingWallets.json` are distributed to vesting wallets as part of `3_deployVestingWallets.sh`. Moreover, some initial amount is transferred to the DAO treasury within the same script.
 
 The process ensures that each address specified in the json files receives the designated amount of tokens accurately. Any remaining Lisk Tokens, those not allocated to the addresses listed in the files, are then transferred to the [Claim smart contract](src/L2/L2Claim.sol). This systematic distribution is critical for ensuring that the tokens are correctly assigned to their intended recipients across the different network layers as part of the project's requirements.
-
-### Lisk L2 Staking
-Smart Contracts
-
-Implementation of L2 staking functionality is separated into,
-
-- `L2LockingPosition` contract maintains locking positions and allows owner to manipulate their positions. The contract is an implementation of ERC721 based NFT and interacts with L2VotingPower contract to adjust the voting power of the owner of the locking position when consumed by L2Staking contract.
-
-- `L2Staking` contract manages and controls access to core staking functionality allowing, “Creators” to lock amount and manipulate them, when interacted upon by `L2Reward` contract driven by end-user interactions. The contract consumes `L2LockingPosition` to modify locking positions and the relevant voting power of their owner.
-
-- `L2Reward` contract exposes the public interface to end-user enabling them to create and modify their locking positions and interacts with `L2Staking` contract by mirroring its API to interact with entire set of functionalities enabling users to create and manipulate their locking positions and as a result claim rewards and impact their voting power.
-
-- `L2VotingPower` is an implementation of `ERC20` token standard that maintains the voting power of an account.
-
-
-#### Events emitted on interactions
-`L2Reward` communicates changes to state made by the contract or other contracts it consumes through events:
-
-| Contract            | Event                     | Description                                                                                                                            |
-| ------------------- | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| `L2Reward`          | `RewardsAdded`            | Emitted when the owner of L2Reward add funds available for rewarding locking positions                                                 |
-| `L2Reward`          | `RewardsClaimed`          | Emitted when an external account claims rewards or other manipulations on locking positions are made                                   |
-| `L2LockingPosition` | `LockingPositionCreated`  | Emitted when an external account creates a locking position                                                                            |
-| `L2LockingPosition` | `LockingPositionModified` | Emitted when an external account modifies a locking position                                                                           |
-| `L2LockingPosition` | `Transfer`                | Emitted when an external account creates a locking position                                                                            |
-| `L2VotingPower`     | `Transfer`                | Emitted when external account creates or modifies a locking position, the amount locked by an account impacts its owner's voting power |
-
-
-#### L2Reward interaction with dependencies and events
-![L2Reward interaction withe dependencies and events](documentation/diagrams/interaction_reward_and_dependencies.png)
 
 ### Smart Contract Ownership
 
