@@ -1493,6 +1493,40 @@ contract L2RewardTest is Test {
         assertEq(l2Reward.totalWeight(), expectedTotalWeight);
     }
 
+    function test_extendDuration_forMultipleStakesUpdatesTotalWeightAndClaimRewards() public {
+        address staker = address(0x1);
+        uint256 balance = convertLiskToSmallestDenomination(1000);
+        uint256 duration = 120;
+        uint256 amount = convertLiskToSmallestDenomination(100);
+        uint256 durationExtension = 50;
+        L2Reward.ExtendedDuration[] memory extensions = new L2Reward.ExtendedDuration[](2);
+
+        given_accountHasBalance(address(this), balance);
+        given_accountHasBalance(staker, balance);
+        given_ownerHasFundedStaking(Funds({ amount: convertLiskToSmallestDenomination(35), duration: 350, delay: 1 }));
+
+        for (uint8 i = 0; i < extensions.length; i++) {
+            extensions[i].lockID = when_stakerCreatesPosition(staker, Position(amount, duration));
+
+            //sets the extension in duration
+            extensions[i].durationExtension = durationExtension;
+        }
+
+        skip(50 days);
+
+        uint256 totalWeightBeforeExtension = l2Reward.totalWeight();
+        uint256 expectedReward = 2.45 * 10 ** 18;
+
+        // after 50 days extend duration for 50 days, given the locked amount stays same total weight remains same
+        vm.startPrank(staker);
+        then_eventRewardsClaimedIsEmitted(extensions[0].lockID, expectedReward);
+        then_eventRewardsClaimedIsEmitted(extensions[1].lockID, expectedReward);
+        l2Reward.extendDuration(extensions);
+        vm.stopPrank();
+
+        assertEq(l2Reward.totalWeight(), totalWeightBeforeExtension);
+    }
+
     function test_initiateFastUnlock_onlyOwnerCanUnlockAPosition() public {
         address staker = address(0x1);
         uint256[] memory lockIDs = new uint256[](1);
