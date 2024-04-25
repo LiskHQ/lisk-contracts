@@ -84,4 +84,5 @@ For creating a proposal or voting on a proposal, the user is interacting with th
 
 If a proposal has an attached execution, e.g. a transfer of some treasury funds, and the proposal passed, then the proposal must be queued and then executed. For this, a user (this can be any user) must interact with the Governor contract. This one is forwarding the queue/execute operation to the Timelock Controller contract, and the Governor contract additionally emits events which Tally uses for indexing. The Governor contract is the only account that is allowed to queue proposals at the Timelock Controller. As all executions are eventually executed by the Timelock Controller, contracts owned by the Lisk DAO must be owned by the Timelock Controller, and the DAO treasury must be held by it as well.
 
-[Lisk Staking](./staking.md)
+### Implementation of Lisk Staking
+[See Lisk Staking implementation page](./staking.md)

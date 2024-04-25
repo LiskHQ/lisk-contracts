@@ -25,7 +25,7 @@ A locking position (or a stake) is represented as a custom data structure contai
 | creator               | `address` | Address of the creator, it could only be one from the set of creators that are added to the list of creators of `L2Staking` contract by its owner. This can either be the staking contract or the reward contract, as staking contract is the only contract allowed to modify a position, it uses this property to determine who should be allowed to trigger a modification. |
 | amount                | `uint256` | Amount to be locked.                                                                                                                                                                                                                                                                                                                                                          |
 | expDate               | `uint256` | The expiration date, i.e., the day when the locked amount becomes claimable for the user.                                                                                                                                                                                                                                                                                     |
-| pausedLockingDuration | `uint256` | Remaining duration in days till the expiry once a paused locking position is paused. It is set to zero if the locking position is not paused.                                                                                                                                                                                                                                 |
+| pausedLockingDuration | `uint256` | Remaining duration in days till the expiry once a paused locking position is resumed. It is set to zero if the locking position is not paused.                                                                                                                                                                                                                                |
 
 ### Identifying a Locking Position
 `L2LockingPosition` contract maintains a collection of locking positions against each user and uniquely identifies them with an identifier of type `uint256`.
@@ -49,7 +49,7 @@ The diagram highlights the public API accessible to external accounts and how cr
 ![API accessible to external user and Events](diagrams/l2reward_external_account_api_and_events.png)
 
 #### API accessible to the owner of L2Reward contract and Events
-L2Reward contract is ownable and allows the contract owner to add funds for rewarding locking position. Its owner can allocate new funds and unused rewards accumulated due to reward capping for a certain duration.
+L2Reward contract is ownable and allows the contract owner to add funds for rewarding locking positions. Its owner can allocate new funds and unused rewards accumulated due to reward capping for a certain duration.
 
 ![API accessible to the owner of L2Reward contract and Events](diagrams/l2reward_owner_api_and_events.png)
 
