@@ -10,7 +10,7 @@ Implementation of L2 staking functionality is separated into,
 
 - `L2Staking` contract manages and controls access to core staking functionality allowing “creators” to lock amounts and manipulate them. The contract consumes `L2LockingPosition` to modify locking positions and the relevant voting power of their owner.
 
-- `L2Reward` contract interacts with `L2Staking` contract by mirroring its API enabling its users to interact with the entire set of staking functionalities. Moreover, it manages rewards of locking positions, however it only enables rewards and allows manipulation of locking positions created via `L2Reward` contract. Rewards can only be claimed against locking positions created by `L2Staking` not the ones created via `L2Staking` contract.
+- `L2Reward` contract interacts with `L2Staking` contract by mirroring its API enabling its users to interact with the entire set of staking functionalities. Moreover, it manages rewards of locking positions, however it only enables rewards and allows manipulation of locking positions created via `L2Reward` contract. Rewards can only be claimed against locking positions created by `L2Reward` not the ones created via `L2Staking` contract.
 
 - `L2VotingPower` contract is an implementation of `ERC20Votes` token standard that maintains the voting power of an account.
 
