@@ -6,7 +6,7 @@ Staking L2 tokens creates additional utility of L2 Lisk token by allowing user t
 
 Implementation of L2 staking functionality is separated into,
 
-- `L2LockingPosition` contract maintains locking positions and allows owner to manipulate their positions. The contract is an implementation of ERC721 based NFT and interacts with L2VotingPower contract to adjust the voting power of the owner of the locking position when consumed by L2Staking contract.
+- `L2LockingPosition` contract maintains locking positions and allows owner to manipulate their positions. The contract is an implementation of ERC721 based NFT and interacts with L2VotingPower contract to adjust the voting power of the owner of the locking position when consumed by `L2Staking` contract.
 
 - `L2Staking` contract manages and controls access to core staking functionality allowing “creators” to lock amounts and manipulate them. The contract consumes `L2LockingPosition` to modify locking positions and the relevant voting power of their owner.
 
@@ -40,6 +40,7 @@ A locking position (or a stake) is represented as a custom data structure contai
 | `L2Reward`          | `RewardsClaimed`          | Emitted when rewards for a locking position are claimed. Note that this happens automatically when a locking position is modified.                                                            |
 | `L2LockingPosition` | `LockingPositionCreated`  | Emitted when an external account creates a locking position.                                                                                                                                  |
 | `L2LockingPosition` | `LockingPositionModified` | Emitted when an external account modifies a locking position.                                                                                                                                 |
+| `L2LockingPosition` | `LockingPositionRemoved`  | Emitted when an external account deletes a locking position.                                                                                                                                  |
 | `L2LockingPosition` | `Transfer`                | Emitted when a locking position is transferred to another account.                                                                                                                            |
 | `L2VotingPower`     | `Transfer`                | Emitted when external account creates or modifies a locking position, as the parameters of a locking position impact its owner's voting power by minting or burning some voting power tokens. |
 
