@@ -6,4 +6,6 @@ This folder contains the following documents essential for understanding the dep
 
 2. [Smart Contracts Requirements](./contracts-requirements.md): This document outlines the requirements and specifications for the smart contracts, providing detailed guidance for their development and deployment.
 
-3. [Vesting Documentation](./vesting.md): This page explains the technical details concerning implementation, deployment and maintenance of vesting smart contracts that hold LSK tokens and release them according to predefined schedules.
+3. [Privilege Roles and Operations](./privilege-roles-operations.md): This document describes the privilege roles and operations that are defined in the smart contracts. It also explains how the upgrade process works for upgradable smart contracts.
+
+4. [Vesting Documentation](./vesting.md): This page explains the technical details concerning implementation, deployment and maintenance of vesting smart contracts that hold LSK tokens and release them according to predefined schedules.
