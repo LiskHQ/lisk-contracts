@@ -324,6 +324,10 @@ contract L2Staking is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, I
             lock.pausedLockingDuration > 0 || lock.expDate > todayDay(),
             "L2Staking: can not increase amount for expired locking position"
         );
+        require(
+            remainingLockingDuration(lock) >= MIN_LOCKING_DURATION,
+            "L2Staking: can not increase amount, less than minimum locking duration remaining"
+        );
 
         // We assume that owner or creator has already approved the Staking contract to transfer the amount and in most
         // cases increaseLockingAmount will be called from a smart contract (creator).
