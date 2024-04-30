@@ -191,6 +191,23 @@ contract L2ClaimTest is Test {
         assertEq(l2Claim.version(), "1.0.0");
     }
 
+    function test_ClaimRegularAccount_RevertWhenZeroLengthProof() public {
+        uint256 accountIndex = 0;
+        MerkleTreeLeaf memory leaf = getMerkleLeaves().leaves[accountIndex];
+        Signature memory signature = getSignature(accountIndex);
+
+        leaf.proof[0] = bytes32AddOne(leaf.proof[0]);
+
+        vm.expectRevert("L2Claim: proof array is empty");
+        l2Claim.claimRegularAccount(
+            new bytes32[](0),
+            bytes32(signature.sigs[0].pubKey),
+            leaf.balanceBeddows,
+            address(this),
+            ED25519Signature(signature.sigs[0].r, signature.sigs[0].s)
+        );
+    }
+
     function test_ClaimRegularAccount_RevertWhenInvalidProof() public {
         uint256 accountIndex = 0;
         MerkleTreeLeaf memory leaf = getMerkleLeaves().leaves[accountIndex];
@@ -252,6 +269,28 @@ contract L2ClaimTest is Test {
             leaf.balanceBeddows,
             address(this),
             ED25519Signature(signature.sigs[0].r, signature.sigs[0].s)
+        );
+    }
+
+    function test_ClaimMultisigAccount_RevertWhenZeroLengthProof() public {
+        uint256 accountIndex = 50;
+        MerkleTreeLeaf memory leaf = getMerkleLeaves().leaves[accountIndex];
+        Signature memory signature = getSignature(accountIndex);
+
+        ED25519Signature[] memory ed25519Signatures = new ED25519Signature[](leaf.numberOfSignatures);
+
+        for (uint256 i; i < leaf.numberOfSignatures; i++) {
+            ed25519Signatures[i] = ED25519Signature(signature.sigs[i].r, signature.sigs[i].s);
+        }
+
+        vm.expectRevert("L2Claim: proof array is empty");
+        l2Claim.claimMultisigAccount(
+            new bytes32[](0),
+            bytes20(leaf.b32Address << 96),
+            leaf.balanceBeddows,
+            MultisigKeys(leaf.mandatoryKeys, leaf.optionalKeys),
+            address(this),
+            ed25519Signatures
         );
     }
 

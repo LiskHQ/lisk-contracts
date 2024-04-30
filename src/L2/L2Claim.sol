@@ -132,6 +132,7 @@ contract L2Claim is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, ISe
         internal
         virtual
     {
+        require(_proof.length > 0, "L2Claim: proof array is empty");
         require(claimedTo[_lskAddress] == address(0), "L2Claim: already Claimed");
         require(MerkleProof.verify(_proof, merkleRoot, _leaf), "L2Claim: invalid Proof");
 
