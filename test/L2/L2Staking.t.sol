@@ -1060,7 +1060,7 @@ contract L2StakingTest is Test {
 
         // position is already expired
         vm.prank(alice);
-        vm.expectRevert("L2Staking: can not increase amount for expired locking position");
+        vm.expectRevert("L2Staking: can not increase amount, less than minimum locking duration remaining");
         l2Staking.increaseLockingAmount(1, 100 * 10 ** 18);
     }
 

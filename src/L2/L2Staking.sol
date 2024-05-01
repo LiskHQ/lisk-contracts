@@ -321,10 +321,6 @@ contract L2Staking is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, I
         require(canLockingPositionBeModified(lockId, lock), "L2Staking: only owner or creator can call this function");
         require(amountIncrease > 0, "L2Staking: increased amount should be greater than zero");
         require(
-            lock.pausedLockingDuration > 0 || lock.expDate > todayDay(),
-            "L2Staking: can not increase amount for expired locking position"
-        );
-        require(
             remainingLockingDuration(lock) >= MIN_LOCKING_DURATION,
             "L2Staking: can not increase amount, less than minimum locking duration remaining"
         );
