@@ -4,6 +4,7 @@ pragma solidity 0.8.23;
 import { Test, console2, StdCheats } from "forge-std/Test.sol";
 import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import { L2LiskToken, IOptimismMintableERC20 } from "src/L2/L2LiskToken.sol";
+import { IL2LiskToken } from "src/interfaces/L2/IL2LiskToken.sol";
 import { SigUtils } from "test/SigUtils.sol";
 
 contract L2LiskTokenTest is Test {
@@ -187,17 +188,29 @@ contract L2LiskTokenTest is Test {
     }
 
     function test_Mint() public {
+        // check that the Mint event is emitted
+        vm.expectEmit(true, true, true, true);
+        emit IL2LiskToken.Mint(alice, 100 * 10 ** 18);
+
         vm.prank(bridge);
         l2LiskToken.mint(alice, 100 * 10 ** 18);
         assertEq(l2LiskToken.balanceOf(alice), 100 * 10 ** 18);
         assertEq(l2LiskToken.balanceOf(bob), 0);
         assertEq(l2LiskToken.totalSupply(), 100 * 10 ** 18);
 
+        // check that the Mint event is emitted
+        vm.expectEmit(true, true, true, true);
+        emit IL2LiskToken.Mint(alice, 50 * 10 ** 18);
+
         vm.prank(bridge);
         l2LiskToken.mint(alice, 50 * 10 ** 18);
         assertEq(l2LiskToken.balanceOf(alice), 150 * 10 ** 18);
         assertEq(l2LiskToken.balanceOf(bob), 0);
         assertEq(l2LiskToken.totalSupply(), 150 * 10 ** 18);
+
+        // check that the Mint event is emitted
+        vm.expectEmit(true, true, true, true);
+        emit IL2LiskToken.Mint(bob, 30 * 10 ** 18);
 
         vm.prank(bridge);
         l2LiskToken.mint(bob, 30 * 10 ** 18);
@@ -226,11 +239,19 @@ contract L2LiskTokenTest is Test {
         assertEq(l2LiskToken.balanceOf(bob), 50 * 10 ** 18);
         assertEq(l2LiskToken.totalSupply(), 150 * 10 ** 18);
 
+        // check that the Burn event is emitted
+        vm.expectEmit(true, true, true, true);
+        emit IL2LiskToken.Burn(alice, 50 * 10 ** 18);
+
         vm.prank(bridge);
         l2LiskToken.burn(alice, 50 * 10 ** 18);
         assertEq(l2LiskToken.balanceOf(alice), 50 * 10 ** 18);
         assertEq(l2LiskToken.balanceOf(bob), 50 * 10 ** 18);
         assertEq(l2LiskToken.totalSupply(), 100 * 10 ** 18);
+
+        // check that the Burn event is emitted
+        vm.expectEmit(true, true, true, true);
+        emit IL2LiskToken.Burn(alice, 20 * 10 ** 18);
 
         vm.prank(bridge);
         l2LiskToken.burn(alice, 20 * 10 ** 18);
@@ -238,11 +259,19 @@ contract L2LiskTokenTest is Test {
         assertEq(l2LiskToken.balanceOf(bob), 50 * 10 ** 18);
         assertEq(l2LiskToken.totalSupply(), 80 * 10 ** 18);
 
+        // check that the Burn event is emitted
+        vm.expectEmit(true, true, true, true);
+        emit IL2LiskToken.Burn(alice, 30 * 10 ** 18);
+
         vm.prank(bridge);
         l2LiskToken.burn(alice, 30 * 10 ** 18);
         assertEq(l2LiskToken.balanceOf(alice), 0);
         assertEq(l2LiskToken.balanceOf(bob), 50 * 10 ** 18);
         assertEq(l2LiskToken.totalSupply(), 50 * 10 ** 18);
+
+        // check that the Burn event is emitted
+        vm.expectEmit(true, true, true, true);
+        emit IL2LiskToken.Burn(bob, 50 * 10 ** 18);
 
         vm.prank(bridge);
         l2LiskToken.burn(bob, 50 * 10 ** 18);
