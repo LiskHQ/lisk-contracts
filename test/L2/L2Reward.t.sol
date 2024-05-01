@@ -786,7 +786,7 @@ contract L2RewardTest is Test {
         l2Reward.deletePositions(lockIDs);
     }
 
-    function test_deletePosition_onlyExistingLockingPositionCanBeDeletedByAnOwner() public {
+    function test_deletePositions_onlyExistingLockingPositionCanBeDeletedByAnOwner() public {
         address staker = address(0x1);
         uint256[] memory lockIDs = new uint256[](1);
         lockIDs[0] = 1;
@@ -802,7 +802,7 @@ contract L2RewardTest is Test {
         l2Reward.deletePositions(lockIDs);
     }
 
-    function test_deletePosition_onlyExpiredLockingPositionsCanBeDeleted() public {
+    function test_deletePositions_onlyExpiredLockingPositionsCanBeDeleted() public {
         address staker = address(0x1);
         uint256 balance = convertLiskToSmallestDenomination(1000);
 
@@ -824,27 +824,30 @@ contract L2RewardTest is Test {
         l2Reward.deletePositions(lockIDs);
     }
 
-    function test_deletePosition_issuesRewardAndUnlocksPosition() public {
+    function test_deletePositions_forMultipleStakesIssuesRewardAndUnlocksPositions() public {
         address staker = address(0x1);
         uint256 balance = convertLiskToSmallestDenomination(1000);
 
-        uint256[] memory lockIDs = new uint256[](1);
+        uint256[] memory lockIDs = new uint256[](2);
 
         given_accountHasBalance(address(this), balance);
         given_accountHasBalance(staker, balance);
         given_ownerHasFundedStaking(Funds({ amount: convertLiskToSmallestDenomination(35), duration: 350, delay: 1 }));
 
-        // staker creates a position on deploymentDate, 19740
-        lockIDs[0] = when_stakerCreatesPosition(
-            staker, Position({ amount: convertLiskToSmallestDenomination(100), duration: 120 })
-        );
+        // staker creates two positions on deploymentDate, 19740
+        for (uint8 i = 0; i < 2; i++) {
+            lockIDs[i] = when_stakerCreatesPosition(
+                staker, Position({ amount: convertLiskToSmallestDenomination(100), duration: 120 })
+            );
+        }
 
         skip(150 days);
 
-        uint256 expectedRewards = 11.9 * 10 ** 18;
+        uint256 expectedRewardsPerStake = 5.95 * 10 ** 18;
+
         // locked amount gets unlocked
         uint256 expectedBalance =
-            l2LiskToken.balanceOf(staker) + expectedRewards + convertLiskToSmallestDenomination(100);
+            l2LiskToken.balanceOf(staker) + expectedRewardsPerStake * 2 + convertLiskToSmallestDenomination(100) * 2;
 
         // staker deletes position
         then_eventRewardsClaimedIsEmitted(lockIDs[0], expectedRewards);
@@ -855,6 +858,7 @@ contract L2RewardTest is Test {
         balance = l2LiskToken.balanceOf(staker);
 
         assertEq(l2Reward.lastClaimDate(lockIDs[0]), 0);
+        assertEq(l2Reward.lastClaimDate(lockIDs[1]), 0);
         assertEq(balance, expectedBalance);
     }
 
