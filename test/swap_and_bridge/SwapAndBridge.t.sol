@@ -3,8 +3,6 @@ pragma solidity 0.8.23;
 
 import { Test, console2, Vm } from "forge-std/Test.sol";
 
-// import { WstETH } from "src/L1/lido/WstETH.sol";
-// import { L2WdivETH } from "src/L2/L2WdivETH.sol";
 import { SwapAndBridge } from "src/L1/SwapAndBridge.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "script/contracts/Utils.sol";
@@ -54,10 +52,12 @@ contract TestBridgingScript is Test {
     IWrappedETH l1WdivETH;
     IWrappedETH l2WdivETH;
 
+    address test_account;
+
     // L2 Cross Domain Messenger address
     address constant L2_CROSS_DOMAIN_MESSENGER_ADDR = 0x4200000000000000000000000000000000000007;
 
-    // L2 sequencer address
+    // L2 sequencer address (this is the Lisk Sepolia Sequencer address)
     address constant SEQUENCER_ADDR = 0x968924E6234f7733eCA4E9a76804fD1afA1a4B3D;
 
     // L1 address of the Diva bridge (this is the Lisk standard bridge)
@@ -65,6 +65,9 @@ contract TestBridgingScript is Test {
 
     // L1 address of the Diva token
     address constant L1_DIVA_TOKEN_ADDR = 0x91701E62B2DA59224e92C42a970d7901d02C2F24;
+
+    // L2 address of the Diva bridge (this is the standard bridge for Op chains)
+    address constant L2_DIVA_BRIDGE_ADDR = 0x4200000000000000000000000000000000000010;
 
     // L2 address of the Diva token (from previous deployment)
     address constant L2_DIVA_TOKEN_ADDR = 0x0164b1BF8683794d53b75fA6Ae7944C5e59E91d4;
@@ -74,6 +77,9 @@ contract TestBridgingScript is Test {
 
     // L1 address of the Lido token
     address constant L1_LIDO_TOKEN_ADDR = 0xB82381A3fBD3FaFA77B3a7bE693342618240067b;
+
+    // L2 address of the Lido bridge (this is the dedicated bridge from previous deployment)
+    address constant L2_LIDO_BRIDGE_ADDR = 0x7A7265ae66b094b60D9196fD5d677c11a6A03438;
 
     // L2 address of the Lido token (from previous deployment)
     address constant L2_LIDO_TOKEN_ADDR = 0xA363167588e8b3060fFFf69519bC440D1D8e4945;
@@ -100,59 +106,52 @@ contract TestBridgingScript is Test {
         l1WdivETH = IWrappedETH(payable(L1_DIVA_TOKEN_ADDR));
         l2WdivETH = IWrappedETH(payable(L2_DIVA_TOKEN_ADDR));
 
-        console2.log("SwapAndBridge (Lido) address: %s", address(swapAndBridgeLido));
-        console2.log("SwapAndBridge (Diva) address: %s", address(swapAndBridgeDiva));
-        console2.log("L1 WstETH address: %s", address(l1WstETH));
-        console2.log("L2 WstETH address: %s", address(l2WstETH));
-        console2.log("L1 WdivETH address: %s", address(l1WdivETH));
-        console2.log("L2 WdivETH address: %s", address(l2WdivETH));
+        test_account = address(0xc0ffee);
+        vm.deal(test_account, 500000 ether);
     }
 
     function test_unit_minL1TokensPerETH() public {
         console2.log("Testing minL1TokensPerETH...");
-        uint256 token_holder_priv_key = vm.envUint("TOKEN_HOLDER_PRIV_KEY");
 
         // The conversion rate is 1 ETH = 1e18 wstETH.
         // Any value of minL1TokensPerETH larger than 1e18 will revert the transaction.
-        vm.startBroadcast(token_holder_priv_key);
-        swapAndBridgeLido.swapAndBridgeToWithMinimumAmount{ value: 1 ether }(vm.addr(token_holder_priv_key), 0);
-        swapAndBridgeLido.swapAndBridgeToWithMinimumAmount{ value: 1 ether }(vm.addr(token_holder_priv_key), 1e18);
+        vm.startPrank(test_account);
+        swapAndBridgeLido.swapAndBridgeToWithMinimumAmount{ value: 1 ether }(test_account, 0);
+        swapAndBridgeLido.swapAndBridgeToWithMinimumAmount{ value: 1 ether }(test_account, 1e18);
         vm.expectRevert("Insufficient L1 tokens minted.");
-        swapAndBridgeLido.swapAndBridgeToWithMinimumAmount{ value: 1 ether }(vm.addr(token_holder_priv_key), 1e18 + 1);
+        swapAndBridgeLido.swapAndBridgeToWithMinimumAmount{ value: 1 ether }(test_account, 1e18 + 1);
 
         vm.expectRevert(); // Panic due to overflow.
-        swapAndBridgeLido.swapAndBridgeToWithMinimumAmount{ value: 10000 ether }(vm.addr(token_holder_priv_key), 1e75);
-        vm.stopBroadcast();
+        swapAndBridgeLido.swapAndBridgeToWithMinimumAmount{ value: 10000 ether }(test_account, 1e75);
+        vm.stopPrank();
     }
 
     function test_unit_lido_valueTooLarge() public {
         console2.log("Testing value too large...");
-        uint256 token_holder_priv_key = vm.envUint("TOKEN_HOLDER_PRIV_KEY");
 
         // The current value of getCurrentStakeLimit from
         // https://eth-sepolia.blockscout.com/address/0x3e3FE7dBc6B4C189E7128855dD526361c49b40Af?tab=read_proxy
         uint256 currentStakeLimit = 150000 ether;
-        vm.startBroadcast(token_holder_priv_key);
+        vm.startPrank(test_account);
         console2.log("Current stake limit: %d", currentStakeLimit);
         (bool sent,) = address(swapAndBridgeLido).call{ value: currentStakeLimit }("");
         assertEq(sent, true, "Failed to send Ether.");
         (bool sent2,) = address(swapAndBridgeLido).call{ value: currentStakeLimit + 1 }("");
-        assertEq(sent2, false, "Could send Ether too much Ether.");
-        vm.stopBroadcast();
+        assertEq(sent2, false, "Could send too much Ether.");
+        vm.stopPrank();
     }
 
     function test_e2e_lido_L1() public {
-        uint256 token_holder_priv_key = vm.envUint("TOKEN_HOLDER_PRIV_KEY");
-        console2.log("Token holder address: %s", vm.addr(token_holder_priv_key));
+        console2.log("Token holder address: %s", test_account);
         console2.log("Transferring ETH tokens from L1 to wstETH on L2 network...");
 
         vm.recordLogs();
 
         // Test bridging for Lido
-        vm.startBroadcast(token_holder_priv_key);
+        vm.startPrank(test_account);
         (bool sent,) = address(swapAndBridgeLido).call{ value: 10000 ether }("");
         assertEq(sent, true, "Failed to send Ether.");
-        vm.stopBroadcast();
+        vm.stopPrank();
 
         Vm.Log[] memory entries = vm.getRecordedLogs();
         assertEq(entries.length, 11, "Invalid number of logs");
@@ -215,7 +214,7 @@ contract TestBridgingScript is Test {
 
         assertEq(
             entries[8].topics[1],
-            bytes32(uint256(uint160(vm.envAddress("L2_LIDO_BRIDGE_ADDR")))),
+            bytes32(uint256(uint160(L2_LIDO_BRIDGE_ADDR))),
             "SentMessage: Invalid target address topic"
         );
 
@@ -244,19 +243,19 @@ contract TestBridgingScript is Test {
         assertEq(remoteToken, L1_LIDO_TOKEN_ADDR, "SentMessage: Invalid L1 token address");
         assertEq(localToken, L2_LIDO_TOKEN_ADDR, "SentMessage: Invalid L2 token address");
         assertEq(from, address(swapAndBridgeLido), "SentMessage: Invalid sender address");
-        assertEq(to, vm.addr(vm.envUint("TOKEN_HOLDER_PRIV_KEY")), "SentMessage: Invalid recipient address");
+        assertEq(to, test_account, "SentMessage: Invalid recipient address");
         assertEq(amount, 10000 ether, "SentMessage: Invalid amount");
         assertEq(extraData.length, 2, "SentMessage: Invalid extra data");
 
         vm.serializeAddress("", "sender", sender);
-        vm.serializeAddress("", "target", vm.envAddress("L2_LIDO_BRIDGE_ADDR"));
+        vm.serializeAddress("", "target", L2_LIDO_BRIDGE_ADDR);
         vm.serializeBytes("", "message", message);
         vm.serializeUint("", "messageNonce", messageNonce);
         string memory json = vm.serializeUint("", "gasLimit", gasLimit);
         console2.log("Saved to JSON");
         vm.writeJson(json, string.concat(vm.projectRoot(), "/test/swap_and_bridge/lido.json"));
 
-        bytes memory data = abi.encode(sender, vm.envAddress("L2_LIDO_BRIDGE_ADDR"), message, messageNonce, gasLimit);
+        bytes memory data = abi.encode(sender, L2_LIDO_BRIDGE_ADDR, message, messageNonce, gasLimit);
         vm.writeFileBinary(string.concat(vm.projectRoot(), "/test/swap_and_bridge/lido.data"), data);
     }
 
@@ -268,30 +267,28 @@ contract TestBridgingScript is Test {
         (address payable sender, address payable target, bytes memory message, uint256 messageNonce, uint256 gasLimit) =
             abi.decode(data, (address, address, bytes, uint256, uint256));
 
-        uint256 balanceBefore = l2WstETH.balanceOf(vm.addr(vm.envUint("TOKEN_HOLDER_PRIV_KEY")));
+        uint256 balanceBefore = l2WstETH.balanceOf(test_account);
         console2.log("balanceBefore: %d", balanceBefore);
 
         vm.startBroadcast(SEQUENCER_ADDR);
         l2Messenger.relayMessage(messageNonce, sender, target, 0, gasLimit, message);
-        vm.stopBroadcast();
+        vm.stopPrank();
 
-        uint256 balanceAfter = l2WstETH.balanceOf(vm.addr(vm.envUint("TOKEN_HOLDER_PRIV_KEY")));
+        uint256 balanceAfter = l2WstETH.balanceOf(test_account);
 
         console2.log("balanceAfter: %d", balanceAfter);
         assertEq(balanceAfter - balanceBefore, 10000 ether);
     }
 
     function test_e2e_diva_L1() public {
-        uint256 token_holder_priv_key = vm.envUint("TOKEN_HOLDER_PRIV_KEY");
-        console2.log("Token holder address: %s", vm.addr(token_holder_priv_key));
+        console2.log("Token holder address: %s", test_account);
         console2.log("Transferring ETH tokens from L1 to wdivETH on L2 network...");
 
         vm.recordLogs();
 
         // Test bridging for Diva
-        vm.startBroadcast(token_holder_priv_key);
+        vm.startPrank(test_account);
         (bool sent, bytes memory sendData) = address(swapAndBridgeDiva).call{ value: 1 ether }("");
-        console2.log("Sent: %s", sent ? "true" : "false");
         if (!sent) {
             assembly {
                 let revertStringLength := mload(sendData)
@@ -300,7 +297,7 @@ contract TestBridgingScript is Test {
             }
         }
         assertEq(sent, true, "Failed to send Ether.");
-        vm.stopBroadcast();
+        vm.stopPrank();
 
         Vm.Log[] memory entries = vm.getRecordedLogs();
         assertEq(entries.length, 9, "Invalid number of logs");
@@ -360,7 +357,7 @@ contract TestBridgingScript is Test {
 
         assertEq(
             entries[7].topics[1],
-            bytes32(uint256(uint160(vm.envAddress("L2_DIVA_BRIDGE_ADDR")))),
+            bytes32(uint256(uint160(L2_DIVA_BRIDGE_ADDR))),
             "SentMessage: Invalid target address topic"
         );
 
@@ -389,19 +386,19 @@ contract TestBridgingScript is Test {
         assertEq(remoteToken, L1_DIVA_TOKEN_ADDR, "SentMessage: Invalid L1 token address");
         assertEq(localToken, L2_DIVA_TOKEN_ADDR, "SentMessage: Invalid L2 token address");
         assertEq(from, address(swapAndBridgeDiva), "SentMessage: Invalid sender address");
-        assertEq(to, vm.addr(vm.envUint("TOKEN_HOLDER_PRIV_KEY")), "SentMessage: Invalid recipient address");
+        assertEq(to, test_account, "SentMessage: Invalid recipient address");
         assertEq(amount, 1 ether, "SentMessage: Invalid amount");
         assertEq(extraData.length, 2, "SentMessage: Invalid extra data");
 
         vm.serializeAddress("", "sender", sender);
-        vm.serializeAddress("", "target", vm.envAddress("L2_DIVA_BRIDGE_ADDR"));
+        vm.serializeAddress("", "target", L2_DIVA_BRIDGE_ADDR);
         vm.serializeBytes("", "message", message);
         vm.serializeUint("", "messageNonce", messageNonce);
         string memory json = vm.serializeUint("", "gasLimit", gasLimit);
         console2.log("Saved to JSON");
         vm.writeJson(json, string.concat(vm.projectRoot(), "/test/swap_and_bridge/diva.json"));
 
-        bytes memory data = abi.encode(sender, vm.envAddress("L2_DIVA_BRIDGE_ADDR"), message, messageNonce, gasLimit);
+        bytes memory data = abi.encode(sender, L2_DIVA_BRIDGE_ADDR, message, messageNonce, gasLimit);
         vm.writeFileBinary(string.concat(vm.projectRoot(), "/test/swap_and_bridge/diva.data"), data);
     }
 
@@ -416,35 +413,33 @@ contract TestBridgingScript is Test {
             "SentMessage: Invalid gas limit, not matching contract MIN_DEPOSIT_GAS"
         );
 
-        uint256 balanceBefore = l2WdivETH.balanceOf(vm.addr(vm.envUint("TOKEN_HOLDER_PRIV_KEY")));
+        uint256 balanceBefore = l2WdivETH.balanceOf(test_account);
 
         vm.startBroadcast(SEQUENCER_ADDR);
         console2.log("Relaying message to L2 network...");
         l2Messenger.relayMessage(messageNonce, sender, target, 0, gasLimit, message);
-        vm.stopBroadcast();
+        vm.stopPrank();
 
-        uint256 balanceAfter = l2WdivETH.balanceOf(vm.addr(vm.envUint("TOKEN_HOLDER_PRIV_KEY")));
+        uint256 balanceAfter = l2WdivETH.balanceOf(test_account);
         console2.log("balanceBefore: %d", balanceBefore);
         console2.log("balanceAfter: %d", balanceAfter);
         assertEq(balanceAfter - balanceBefore, 1 ether);
     }
 
     function test_diva_L1_receive() public {
-        uint256 token_holder_priv_key = vm.envUint("TOKEN_HOLDER_PRIV_KEY");
-        console2.log("Token holder address: %s", vm.addr(token_holder_priv_key));
+        console2.log("Token holder address: %s", test_account);
         console2.log("Converting ETH to wdivETH on L1 network...");
         console2.log("Current height", block.number);
 
         console2.logBytes(address(l1WdivETH).code);
         vm.recordLogs();
 
-        vm.startBroadcast(token_holder_priv_key);
-        uint256 ethBalanceBefore = vm.addr(token_holder_priv_key).balance;
+        vm.startPrank(test_account);
+        uint256 ethBalanceBefore = test_account.balance;
         console2.log("ethBalanceBefore: %d", ethBalanceBefore);
-        uint256 divBalanceBefore = l1WdivETH.balanceOf(vm.addr(token_holder_priv_key));
+        uint256 divBalanceBefore = l1WdivETH.balanceOf(test_account);
         console2.log("divBalanceBefore: %d", divBalanceBefore);
         (bool sent, bytes memory sendData) = address(l1WdivETH).call{ value: 1 ether }("");
-        console2.log("Sent: %s", sent ? "true" : "false");
         console2.logBytes(sendData);
         if (!sent) {
             assembly {
@@ -455,10 +450,10 @@ contract TestBridgingScript is Test {
         }
 
         assertEq(sent, true, "Failed to send Ether.");
-        uint256 ethBalanceAfter = vm.addr(token_holder_priv_key).balance;
+        uint256 ethBalanceAfter = test_account.balance;
         console2.log("ethBalanceAfter: %d", ethBalanceAfter);
-        uint256 divBalanceAfter = l1WdivETH.balanceOf(vm.addr(vm.envUint("TOKEN_HOLDER_PRIV_KEY")));
+        uint256 divBalanceAfter = l1WdivETH.balanceOf(test_account);
         console2.log("divBalanceAfter: %d", divBalanceAfter);
-        vm.stopBroadcast();
+        vm.stopPrank();
     }
 }
