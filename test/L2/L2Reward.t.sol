@@ -1306,7 +1306,8 @@ contract L2RewardTest is Test {
 
         assertEq(l2Reward.totalAmountLocked(), amount);
         assertEq(l2Reward.pendingUnlockAmount(), amount);
-        assertEq(l2Reward.dailyUnlockedAmounts(deploymentDate + duration + extensions[0].durationExtension), amount);
+        // today is assumed to be the expiry date
+        assertEq(l2Reward.dailyUnlockedAmounts(l2Reward.todayDay() + extensions[0].durationExtension), amount);
     }
 
     function test_extendDuration_updatesGlobalsAndClaimRewardsForPausedPositions() public {
