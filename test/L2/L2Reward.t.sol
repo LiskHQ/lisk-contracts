@@ -956,6 +956,47 @@ contract L2RewardTest is Test {
         assertEq(lockingPosition.pausedLockingDuration, expectedPausedLockingDuration);
     }
 
+    function test_pauseUnlocking_forMultipleStakesIssuesRewardsAndUpdatesLockingPosition() public {
+        address staker = address(0x1);
+        uint256 balance = convertLiskToSmallestDenomination(1000);
+
+        uint256[] memory lockIDs = new uint256[](2);
+
+        given_accountHasBalance(address(this), balance);
+        given_accountHasBalance(staker, balance);
+        given_ownerHasFundedStaking(Funds({ amount: convertLiskToSmallestDenomination(35), duration: 350, delay: 1 }));
+
+        // staker creates two positions on deploymentDate, 19740
+        for (uint8 i = 0; i < 2; i++) {
+            lockIDs[i] = when_stakerCreatesPosition(
+                staker, Position({ amount: convertLiskToSmallestDenomination(100), duration: 120 })
+            );
+        }
+
+        skip(75 days);
+        uint256 today = deploymentDate + 75;
+
+        uint256 expectedRewardsPerStake = 3.7 * 10 ** 18;
+        uint256 expectedBalance = l2LiskToken.balanceOf(staker) + expectedRewardsPerStake * 2;
+        uint256 expectedPausedLockingDuration = 45;
+
+        // staker pauses positions
+        then_eventRewardsClaimedIsEmitted(lockIDs[0], expectedRewardsPerStake);
+        then_eventRewardsClaimedIsEmitted(lockIDs[1], expectedRewardsPerStake);
+        vm.prank(staker);
+        l2Reward.pauseUnlocking(lockIDs);
+
+        balance = l2LiskToken.balanceOf(staker);
+
+        assertEq(balance, expectedBalance);
+        assertEq(l2Reward.pendingUnlockAmount(), 0);
+        assertEq(l2Reward.dailyUnlockedAmounts(deploymentDate + 120), 0);
+        assertEq(l2Reward.lastClaimDate(lockIDs[0]), today);
+        assertEq(l2Reward.lastClaimDate(lockIDs[1]), today);
+        assertEq(l2LockingPosition.getLockingPosition(lockIDs[0]).pausedLockingDuration, expectedPausedLockingDuration);
+        assertEq(l2LockingPosition.getLockingPosition(lockIDs[1]).pausedLockingDuration, expectedPausedLockingDuration);
+    }
+
     function test_resumeUnlockingCountdown_onlyOwnerCanResumeUnlockingForALockingPosition() public {
         address staker = address(0x1);
         uint256[] memory lockIDs = new uint256[](1);
