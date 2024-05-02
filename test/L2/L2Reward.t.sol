@@ -1740,6 +1740,49 @@ contract L2RewardTest is Test {
         );
     }
 
+    function test_initiateFastUnlock_forMultipleStakesUpdatesGlobalsAndClaimsRewards() public {
+        address staker = address(0x1);
+        uint256 balance = convertLiskToSmallestDenomination(1000);
+        uint256 amount = convertLiskToSmallestDenomination(100);
+        uint256[] memory lockIDs = new uint256[](2);
+
+        uint256 duration = 120;
+
+        given_accountHasBalance(address(this), balance);
+        given_accountHasBalance(staker, balance);
+        given_ownerHasFundedStaking(Funds({ amount: convertLiskToSmallestDenomination(35), duration: 350, delay: 1 }));
+
+        skip(1 days);
+
+        // staker creates two positions on expiry date + 1, 19741
+        for (uint8 i = 0; i < lockIDs.length; i++) {
+            lockIDs[i] = when_stakerCreatesPosition(staker, Position(amount, duration));
+        }
+
+        uint256 votingPowerAtLocking = l2VotingPower.balanceOf(staker);
+
+        skip(30 days);
+
+        uint256 expectedRewardsPerStakeAfter30Days = 1.5 * 10 ** 18;
+        uint256 expectedPenaltyPerStakeAfter30Days = 5958904109589041095;
+
+        // staker initates fast unlock after 30 days
+        then_eventRewardsClaimedIsEmitted(lockIDs[0], expectedRewardsPerStakeAfter30Days);
+        then_eventRewardsClaimedIsEmitted(lockIDs[1], expectedRewardsPerStakeAfter30Days);
+        vm.startPrank(staker);
+        l2Reward.initiateFastUnlock(lockIDs);
+
+        uint256 expectedTotalWeight =
+            2 * (l2Staking.FAST_UNLOCK_DURATION() + l2Reward.OFFSET()) * (amount - expectedPenaltyPerStakeAfter30Days);
+
+        assertEq(l2Reward.totalAmountLocked(), 2 * (amount - expectedPenaltyPerStakeAfter30Days));
+        assertEq(l2Reward.totalWeight(), expectedTotalWeight);
+
+        // penalty is burned from voting power
+        assertEq(l2VotingPower.balanceOf(staker), votingPowerAtLocking - expectedPenaltyPerStakeAfter30Days * 2);
+        assertEq(l2LiskToken.balanceOf(staker), balance - (amount * 2) + (expectedRewardsPerStakeAfter30Days * 2));
+    }
+
     function test_initializeLockingPosition_onlyOwnerCanInitializeLockingPosition() public {
         vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(0x1)));
         vm.prank(address(0x1));
