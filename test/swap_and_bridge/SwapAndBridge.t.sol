@@ -91,11 +91,7 @@ contract TestBridgingScript is Test {
 
         l2Messenger = IL2CrossDomainMessenger(L2_CROSS_DOMAIN_MESSENGER_ADDR);
 
-        swapAndBridgeLido = new SwapAndBridge(
-            L1_LIDO_BRIDGE_ADDR,
-            L1_LIDO_TOKEN_ADDR,
-            L2_LIDO_TOKEN_ADDR
-        );
+        swapAndBridgeLido = new SwapAndBridge(L1_LIDO_BRIDGE_ADDR, L1_LIDO_TOKEN_ADDR, L2_LIDO_TOKEN_ADDR);
         swapAndBridgeDiva = new SwapAndBridge(L1_DIVA_BRIDGE_ADDR, L1_DIVA_TOKEN_ADDR, L2_DIVA_TOKEN_ADDR);
 
         l1WstETH = IWrappedETH(payable(L1_LIDO_TOKEN_ADDR));
@@ -205,9 +201,7 @@ contract TestBridgingScript is Test {
             "Transfer: Invalid from address topic"
         );
         assertEq(
-            entries[5].topics[2],
-            bytes32(uint256(uint160(L1_LIDO_BRIDGE_ADDR))),
-            "Transfer: Invalid to address topic"
+            entries[5].topics[2], bytes32(uint256(uint160(L1_LIDO_BRIDGE_ADDR))), "Transfer: Invalid to address topic"
         );
 
         // entries[8] is the SentMessage event
