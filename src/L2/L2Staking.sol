@@ -144,7 +144,11 @@ contract L2Staking is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, I
             return 0;
         }
 
-        return (amount * remainingDuration) / (MAX_LOCKING_DURATION * PENALTY_DENOMINATOR);
+        // initiateFastUnlock can only be called if remaining duration is more than FAST_UNLOCK_DURATION; so we can
+        // safely assume that remainingDuration is greater than FAST_UNLOCK_DURATION.
+        require(remainingDuration > FAST_UNLOCK_DURATION, "L2Staking: less than 3 days until unlock required");
+
+        return (amount * (remainingDuration - FAST_UNLOCK_DURATION)) / (MAX_LOCKING_DURATION * PENALTY_DENOMINATOR);
     }
 
     /// @notice Returns the remaining locking duration for the given locking position.
