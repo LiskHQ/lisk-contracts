@@ -1060,8 +1060,38 @@ contract L2StakingTest is Test {
 
         // position is already expired
         vm.prank(alice);
-        vm.expectRevert("L2Staking: can not increase amount for expired locking position");
+        vm.expectRevert("L2Staking: can not increase amount, less than minimum locking duration remaining");
         l2Staking.increaseLockingAmount(1, 100 * 10 ** 18);
+    }
+
+    function test_IncreaseLockingAmount_MinimumLockingDuration() public {
+        vm.prank(alice);
+        l2Staking.lockAmount(alice, 50 * 10 ** 18, 365);
+        assertEq(l2LockingPosition.totalSupply(), 1);
+        assertEq(l2LockingPosition.balanceOf(alice), 1);
+        assertEq(l2LockingPosition.getLockingPosition(1).amount, 50 * 10 ** 18);
+
+        // advance block time that it will be exactly MIN_LOCKING_DURATION day left until unlock
+        uint256 currentDay = 365 days - (l2Staking.MIN_LOCKING_DURATION() * 1 days);
+        vm.warp(currentDay);
+
+        // it is exactly MIN_LOCKING_DURATION days until unlock, so increasing amount is still allowed
+        vm.prank(alice);
+        l2Staking.increaseLockingAmount(1, 30 * 10 ** 18);
+        assertEq(l2LockingPosition.getLockingPosition(1).amount, 80 * 10 ** 18); // 50 + 30 LSK tokens
+        assertEq(l2LockingPosition.getLockingPosition(1).expDate, 365);
+
+        // advance block time for additional day so that it is less than MIN_LOCKING_DURATION days until unlock
+        currentDay += 1 days;
+        vm.warp(currentDay);
+
+        // it is less than MIN_LOCKING_DURATION days until unlock
+        vm.prank(alice);
+        vm.expectRevert("L2Staking: can not increase amount, less than minimum locking duration remaining");
+        l2Staking.increaseLockingAmount(1, 20 * 10 ** 18);
+
+        // amount is still the same
+        assertEq(l2LockingPosition.getLockingPosition(1).amount, 80 * 10 ** 18); // still 50 + 30 LSK tokens
     }
 
     function test_IncreaseLockingAmount_ExpiredLockingPosition_PausedLockingDurationNotZero() public {
