@@ -20,19 +20,44 @@ The following are the privilege roles that are defined in the smart contracts:
 
 The following are the smart contracts that have privilege roles defined in their code:
 
-- [L1LiskToken.sol](../src/L1/L1LiskToken.sol): This contract has the `owner` and `burner` roles defined. The `owner` role is required to add or remove the `burner` role to and from an account. The `burner` role is required to burn LSK tokens.
+- [L1LiskToken.sol](../src/L1/L1LiskToken.sol): This contract has the `owner` and `burner` roles defined. The `owner` role is required to add or remove the `burner` role to and from an account:
+    - `addBurner`: Assigns the `burner` role to an account.
+    - `renounceBurner`: Removes the `burner` role from an account.
+    
+  The `burner` role is required to burn LSK tokens:
+    - `burn`: Burns LSK tokens from the caller's account.
+    - `burnFrom`: Burns LSK tokens from another account, deducting from the caller's allowance.
 
-- [L2Claim.sol](../src/L2/L2Claim.sol): This contract has the `owner` role defined. The `owner` role is required to upgrade the contract, set DAO treasury address and execute `recoverLSK()` function which is used to recover unclaimed LSK tokens to the DAO address after the claim period is over.
+- [L2Claim.sol](../src/L2/L2Claim.sol): This contract has the `owner` role defined. The `owner` role is required to upgrade the contract, set DAO treasury address and recover unclaimed LSK tokens to the DAO address after the claim period is over:
+    - `setDAOAddress`: Sets the DAO treasury address which will receive all unclaimed LSK tokens. (called only once)
+    - `recoverLSK`: Recovers unclaimed LSK tokens to the DAO treasury address after the claim period is over. (called only once)
 
 - [L2Governor.sol](../src/L2/L2Governor.sol): This contract has the `owner` role defined. The `owner` role is required to upgrade the contract.
 
-- [L2LockingPosition.sol](../src/L2/L2LockingPosition.sol): This contract has the `owner` role defined. The `owner` role is required to upgrade the contract and set [L2VotingPower](../src/L2/L2VotingPower.sol) smart contract address inside this contract.
+- [L2LockingPosition.sol](../src/L2/L2LockingPosition.sol): This contract has the `owner` role defined. The `owner` role is required to upgrade the contract and set [L2VotingPower](../src/L2/L2VotingPower.sol) smart contract address inside this contract:
+    - `initializeVotingPower`: Sets `L2VotingPower` contract address. (called only once)
 
 - [L2Reward.sol](../src/L2/L2Reward.sol): This contract has the `owner` role defined. The `owner` role is required to upgrade the contract, set [L2LockingPosition](../src/L2/L2LockingPosition.sol) and [L2Staking](../src/L2/L2Staking.sol) smart contracts addresses inside this contract and execute functions:
     - `addUnusedRewards`: Redistributes unused rewards.
     - `fundStakingRewards`: Adds new daily rewards between provided duration.
+    - `initializeLockingPosition`: Sets `L2LockingPosition` contract address. (called only once)
+    - `initializeStaking`: Sets `L2Staking` contract address. (called only once)
 
-- [L2Staking.sol](../src/L2/L2Staking.sol): This contract has the `owner` and `creator` roles defined. The `owner` role is required to upgrade the contract, set [L2LockingPosition](../src/L2/L2LockingPosition.sol) and DAO treasury addresses inside this contract, set emergency exit and add or remove `creator`. The `creator` role is allowed to lock LSK tokens and manipulate with them on behalf of the users inside this smart contract.
+- [L2Staking.sol](../src/L2/L2Staking.sol): This contract has the `owner` and `creator` roles defined. The `owner` role is required to upgrade the contract, set [L2LockingPosition](../src/L2/L2LockingPosition.sol) and DAO treasury addresses inside this contract, set emergency exit and add or remove `creator`:
+    - `initializeLockingPosition`: Sets `L2LockingPosition` contract address. (called only once)
+    - `initializeDaoTreasury`: Sets DAO treasury address. (called only once)
+    - `setEmergencyExitEnabled`: Sets the emergency exit enabled flag to true or false.
+    - `addCreator`: Adds a new creator to the list of allowed creators.
+    - `removeCreator`: Removes a creator from the list of allowed creators.
+
+  The `creator` role is allowed to lock LSK tokens and manipulate with them on behalf of the users inside this smart contract:
+    - `lockAmount`: Locks the given amount for the given owner for the given locking duration and creates a new locking position and returns its ID.
+    - `unlock`: Unlocks the given locking position and transfers the locked amount back to the owner.
+    - `initiateFastUnlock`: Initiates a fast unlock and apply a penalty to the locked amount. Sends the penalty amount to the Lisk DAO Treasury or the creator of the locking position.
+    - `increaseLockingAmount`: Increases the amount of the given locking position.
+    - `extendLockingDuration`: Extends the duration of the given locking position.
+    - `pauseRemainingLockingDuration`: Pauses the countdown of the remaining locking duration of the given locking position.
+    - `resumeCountdown`: Resumes the remaining locking duration of the given locking position.
 
 - [L2VestingWallet.sol](../src/L2/L2VestingWallet.sol): This contract has the `owner` role defined. The `owner` role is required to upgrade the contract.
 
