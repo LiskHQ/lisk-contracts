@@ -60,6 +60,24 @@ contract TestBridgingScript is Test {
     // L2 sequencer address
     address constant SEQUENCER_ADDR = 0x968924E6234f7733eCA4E9a76804fD1afA1a4B3D;
 
+    // L1 address of the Diva bridge (this is the Lisk standard bridge)
+    address constant L1_DIVA_BRIDGE_ADDR = 0x1Fb30e446eA791cd1f011675E5F3f5311b70faF5;
+
+    // L1 address of the Diva token
+    address constant L1_DIVA_TOKEN_ADDR = 0x91701E62B2DA59224e92C42a970d7901d02C2F24;
+
+    // L2 address of the Diva token (from previous deployment)
+    address constant L2_DIVA_TOKEN_ADDR = 0x0164b1BF8683794d53b75fA6Ae7944C5e59E91d4;
+
+    // L1 address of the Lido bridge (this is the dedicated bridge from previous deployment)
+    address constant L1_LIDO_BRIDGE_ADDR = 0xdDDbC273a81e6BC49c269Af55d007c08c005ea56;
+
+    // L1 address of the Lido token
+    address constant L1_LIDO_TOKEN_ADDR = 0xB82381A3fBD3FaFA77B3a7bE693342618240067b;
+
+    // L2 address of the Lido token (from previous deployment)
+    address constant L2_LIDO_TOKEN_ADDR = 0xA363167588e8b3060fFFf69519bC440D1D8e4945;
+
     function getSlice(uint256 begin, uint256 end, bytes memory text) public pure returns (bytes memory) {
         bytes memory a = new bytes(end - begin + 1);
         for (uint256 i = 0; i <= end - begin; i++) {
@@ -74,21 +92,17 @@ contract TestBridgingScript is Test {
         l2Messenger = IL2CrossDomainMessenger(L2_CROSS_DOMAIN_MESSENGER_ADDR);
 
         swapAndBridgeLido = new SwapAndBridge(
-            vm.envAddress("L1_LIDO_BRIDGE_ADDR"),
-            vm.envAddress("L1_LIDO_TOKEN_ADDR"),
-            vm.envAddress("L2_LIDO_TOKEN_ADDR")
+            L1_LIDO_BRIDGE_ADDR,
+            L1_LIDO_TOKEN_ADDR,
+            L2_LIDO_TOKEN_ADDR
         );
-        swapAndBridgeDiva = new SwapAndBridge(
-            vm.envAddress("L1_DIVA_BRIDGE_ADDR"),
-            vm.envAddress("L1_DIVA_TOKEN_ADDR"),
-            vm.envAddress("L2_DIVA_TOKEN_ADDR")
-        );
+        swapAndBridgeDiva = new SwapAndBridge(L1_DIVA_BRIDGE_ADDR, L1_DIVA_TOKEN_ADDR, L2_DIVA_TOKEN_ADDR);
 
-        l1WstETH = IWrappedETH(payable(vm.envAddress("L1_LIDO_TOKEN_ADDR")));
-        l2WstETH = IWrappedETH(payable(vm.envAddress("L2_LIDO_TOKEN_ADDR")));
+        l1WstETH = IWrappedETH(payable(L1_LIDO_TOKEN_ADDR));
+        l2WstETH = IWrappedETH(payable(L2_LIDO_TOKEN_ADDR));
 
-        l1WdivETH = IWrappedETH(payable(vm.envAddress("L1_DIVA_TOKEN_ADDR")));
-        l2WdivETH = IWrappedETH(payable(vm.envAddress("L2_DIVA_TOKEN_ADDR")));
+        l1WdivETH = IWrappedETH(payable(L1_DIVA_TOKEN_ADDR));
+        l2WdivETH = IWrappedETH(payable(L2_DIVA_TOKEN_ADDR));
 
         console2.log("SwapAndBridge (Lido) address: %s", address(swapAndBridgeLido));
         console2.log("SwapAndBridge (Diva) address: %s", address(swapAndBridgeDiva));
@@ -175,7 +189,7 @@ contract TestBridgingScript is Test {
         );
         assertEq(
             entries[4].topics[2],
-            bytes32(uint256(uint160(vm.envAddress("L1_LIDO_BRIDGE_ADDR")))),
+            bytes32(uint256(uint160(L1_LIDO_BRIDGE_ADDR))),
             "Approval: Invalid spender address topic"
         );
 
@@ -192,7 +206,7 @@ contract TestBridgingScript is Test {
         );
         assertEq(
             entries[5].topics[2],
-            bytes32(uint256(uint160(vm.envAddress("L1_LIDO_BRIDGE_ADDR")))),
+            bytes32(uint256(uint160(L1_LIDO_BRIDGE_ADDR))),
             "Transfer: Invalid to address topic"
         );
 
@@ -213,7 +227,7 @@ contract TestBridgingScript is Test {
 
         (address sender, bytes memory message, uint256 messageNonce, uint256 gasLimit) =
             abi.decode(entries[8].data, (address, bytes, uint256, uint256));
-        assertEq(sender, vm.envAddress("L1_LIDO_BRIDGE_ADDR"), "SentMessage: Invalid sender address");
+        assertEq(sender, L1_LIDO_BRIDGE_ADDR, "SentMessage: Invalid sender address");
         assertEq(
             gasLimit,
             swapAndBridgeLido.MIN_DEPOSIT_GAS(),
@@ -233,8 +247,8 @@ contract TestBridgingScript is Test {
         (address remoteToken, address localToken, address from, address to, uint256 amount, bytes memory extraData) =
             abi.decode(slicedMessage, (address, address, address, address, uint256, bytes));
 
-        assertEq(remoteToken, vm.envAddress("L1_LIDO_TOKEN_ADDR"), "SentMessage: Invalid L1 token address");
-        assertEq(localToken, vm.envAddress("L2_LIDO_TOKEN_ADDR"), "SentMessage: Invalid L2 token address");
+        assertEq(remoteToken, L1_LIDO_TOKEN_ADDR, "SentMessage: Invalid L1 token address");
+        assertEq(localToken, L2_LIDO_TOKEN_ADDR, "SentMessage: Invalid L2 token address");
         assertEq(from, address(swapAndBridgeLido), "SentMessage: Invalid sender address");
         assertEq(to, vm.addr(vm.envUint("TOKEN_HOLDER_PRIV_KEY")), "SentMessage: Invalid recipient address");
         assertEq(amount, 10000 ether, "SentMessage: Invalid amount");
@@ -322,7 +336,7 @@ contract TestBridgingScript is Test {
         );
         assertEq(
             entries[2].topics[2],
-            bytes32(uint256(uint160(vm.envAddress("L1_DIVA_BRIDGE_ADDR")))),
+            bytes32(uint256(uint160(L1_DIVA_BRIDGE_ADDR))),
             "Approval: Invalid spender address topic"
         );
 
@@ -338,9 +352,7 @@ contract TestBridgingScript is Test {
             "Transfer: Invalid from address topic"
         );
         assertEq(
-            entries[3].topics[2],
-            bytes32(uint256(uint160(vm.envAddress("L1_DIVA_BRIDGE_ADDR")))),
-            "Transfer: Invalid to address topic"
+            entries[3].topics[2], bytes32(uint256(uint160(L1_DIVA_BRIDGE_ADDR))), "Transfer: Invalid to address topic"
         );
 
         // entries[7] is the SentMessage event
@@ -360,7 +372,7 @@ contract TestBridgingScript is Test {
 
         (address sender, bytes memory message, uint256 messageNonce, uint256 gasLimit) =
             abi.decode(entries[7].data, (address, bytes, uint256, uint256));
-        assertEq(sender, vm.envAddress("L1_DIVA_BRIDGE_ADDR"), "SentMessage: Invalid sender address");
+        assertEq(sender, L1_DIVA_BRIDGE_ADDR, "SentMessage: Invalid sender address");
         assertEq(
             gasLimit,
             swapAndBridgeDiva.MIN_DEPOSIT_GAS(),
@@ -380,8 +392,8 @@ contract TestBridgingScript is Test {
         (address localToken, address remoteToken, address from, address to, uint256 amount, bytes memory extraData) =
             abi.decode(slicedMessage, (address, address, address, address, uint256, bytes));
 
-        assertEq(remoteToken, vm.envAddress("L1_DIVA_TOKEN_ADDR"), "SentMessage: Invalid L1 token address");
-        assertEq(localToken, vm.envAddress("L2_DIVA_TOKEN_ADDR"), "SentMessage: Invalid L2 token address");
+        assertEq(remoteToken, L1_DIVA_TOKEN_ADDR, "SentMessage: Invalid L1 token address");
+        assertEq(localToken, L2_DIVA_TOKEN_ADDR, "SentMessage: Invalid L2 token address");
         assertEq(from, address(swapAndBridgeDiva), "SentMessage: Invalid sender address");
         assertEq(to, vm.addr(vm.envUint("TOKEN_HOLDER_PRIV_KEY")), "SentMessage: Invalid recipient address");
         assertEq(amount, 1 ether, "SentMessage: Invalid amount");
