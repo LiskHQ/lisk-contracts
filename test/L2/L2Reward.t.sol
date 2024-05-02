@@ -1100,6 +1100,51 @@ contract L2RewardTest is Test {
         assertEq(l2LiskToken.balanceOf(staker), expectedBalance);
     }
 
+    function test_resumeUnlockingCountdown_forMultipleStakesIssuesRewardsAndUpdatesLockingPosition() public {
+        address staker = address(0x1);
+        uint256 balance = convertLiskToSmallestDenomination(1000);
+        uint256 duration = 120;
+        uint256[] memory lockIDs = new uint256[](2);
+
+        given_accountHasBalance(address(this), balance);
+        given_accountHasBalance(staker, balance);
+        given_ownerHasFundedStaking(Funds({ amount: convertLiskToSmallestDenomination(35), duration: 350, delay: 1 }));
+
+        for (uint8 i = 0; i < 2; i++) {
+            lockIDs[i] = when_stakerCreatesPosition(
+                staker, Position({ amount: convertLiskToSmallestDenomination(100), duration: duration })
+            );
+        }
+
+        // staker pauses the position on deploymentDate, rewards when pausing is zero
+        then_eventRewardsClaimedIsEmitted(lockIDs[0], 0);
+        then_eventRewardsClaimedIsEmitted(lockIDs[1], 0);
+        vm.prank(staker);
+        l2Reward.pauseUnlocking(lockIDs);
+
+        balance = l2LiskToken.balanceOf(staker);
+
+        skip(100 days);
+
+        uint256 expectedRewardsPerStake = 4.95 * 10 ** 18;
+        uint256 today = deploymentDate + 100;
+        uint256 expectedBalance = expectedRewardsPerStake * 2 + balance;
+
+        // staker resumes the positions
+        then_eventRewardsClaimedIsEmitted(lockIDs[0], expectedRewardsPerStake);
+        then_eventRewardsClaimedIsEmitted(lockIDs[1], expectedRewardsPerStake);
+        vm.prank(staker);
+        l2Reward.resumeUnlockingCountdown(lockIDs);
+
+        balance = l2LiskToken.balanceOf(staker);
+
+        assertEq(l2Reward.lastClaimDate(lockIDs[0]), today);
+        assertEq(l2Reward.lastClaimDate(lockIDs[1]), today);
+        assertEq(balance, expectedBalance);
+        assertEq(l2LockingPosition.getLockingPosition(lockIDs[0]).expDate, today + duration);
+        assertEq(l2LockingPosition.getLockingPosition(lockIDs[1]).expDate, today + duration);
+    }
+
     function test_increaseLockingAmount_onlyOwnerCanIncreaseAmountForALockingPosition() public {
         address staker = address(0x1);
         L2Reward.IncreasedAmount[] memory increasingAmounts = new L2Reward.IncreasedAmount[](1);
