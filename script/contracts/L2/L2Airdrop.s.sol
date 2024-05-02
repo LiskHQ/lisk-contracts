@@ -27,6 +27,11 @@ contract L2AirdropScript is Script {
         assert(newOwnerAddress != address(0));
         console2.log("L2 Airdrop owner address: %s (after ownership will be accepted)", newOwnerAddress);
 
+        // address to which the airdrop wallet is set
+        address airdropWalletAddress = vm.envAddress("L2_AIRDROP_WALLET_ADDRESS");
+        assert(airdropWalletAddress != address(0));
+        console2.log("L2 Airdrop wallet address: %s", airdropWalletAddress);
+
         // get L2LiskToken contract address
         Utils.L2AddressesConfig memory l2AddressesConfig = utils.readL2AddressesFile();
         assert(l2AddressesConfig.L2LiskToken != address(0));
@@ -44,10 +49,6 @@ contract L2AirdropScript is Script {
         assert(l2AddressesConfig.L2VotingPower != address(0));
         console2.log("L2 Voting Power address: %s", l2AddressesConfig.L2VotingPower);
 
-        // get DAO (L2TimelockController) contract address
-        assert(l2AddressesConfig.L2TimelockController != address(0));
-        console2.log("DAO (L2TimelockController) address: %s", l2AddressesConfig.L2TimelockController);
-
         // deploy L2Airdrop contract, set Merkle Root and transfer its ownership; new owner has to accept ownership to
         // become the owner of the contract
         vm.startBroadcast(deployerPrivateKey);
@@ -56,7 +57,7 @@ contract L2AirdropScript is Script {
             l2AddressesConfig.L2ClaimContract,
             l2AddressesConfig.L2LockingPosition,
             l2AddressesConfig.L2VotingPower,
-            l2AddressesConfig.L2TimelockController
+            airdropWalletAddress
         );
         l2Airdrop.transferOwnership(newOwnerAddress);
         vm.stopBroadcast();
@@ -66,7 +67,7 @@ contract L2AirdropScript is Script {
         assert(l2Airdrop.l2ClaimAddress() == l2AddressesConfig.L2ClaimContract);
         assert(l2Airdrop.l2LockingPositionAddress() == l2AddressesConfig.L2LockingPosition);
         assert(l2Airdrop.l2VotingPowerAddress() == l2AddressesConfig.L2VotingPower);
-        assert(l2Airdrop.daoTreasuryAddress() == l2AddressesConfig.L2TimelockController);
+        assert(l2Airdrop.airdropWalletAddress() == airdropWalletAddress);
         assert(l2Airdrop.merkleRoot() == bytes32(0));
         assert(l2Airdrop.owner() == vm.addr(deployerPrivateKey));
         assert(l2Airdrop.pendingOwner() == newOwnerAddress);

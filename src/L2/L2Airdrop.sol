@@ -76,14 +76,14 @@ contract L2Airdrop is Ownable2Step {
     /// @notice Address of the L2VotingPower contract.
     address public immutable l2VotingPowerAddress;
 
-    /// @notice The treasury address of the Lisk DAO.
-    address public immutable daoTreasuryAddress;
+    /// @notice Address of the Airdrop wallet where the remaining LSK tokens are sent after the airdrop is completed.
+    address public immutable airdropWalletAddress;
 
     /// @notice Emitted when the Merkle root is set.
     event MerkleRootSet(bytes32 merkleRoot);
 
-    /// @notice Emitted when the remaining LSK tokens are sent to the Lisk DAO treasury.
-    event LSKSentToDaoTreasury(address indexed daoTreasuryAddress, uint256 amount);
+    /// @notice Emitted when the remaining LSK tokens are sent to the Airdrop wallet.
+    event LSKSentToAirdropWallet(address indexed airdropWalletAddress, uint256 amount);
 
     /// @notice Emitted when the airdrop is (partially) claimed for the recipient.
     event AirdropClaimed(bytes20 indexed liskAddress, uint256 amount, address indexed recipient, uint8 airdropStatus);
@@ -93,13 +93,13 @@ contract L2Airdrop is Ownable2Step {
     /// @param _l2ClaimAddress Address of the L2Claim contract.
     /// @param _l2LockingPositionAddress Address of the L2LockingPosition contract.
     /// @param _l2VotingPowerAddress Address of the L2VotingPower contract.
-    /// @param _daoTreasuryAddress The treasury address of the Lisk DAO.
+    /// @param _airdropWalletAddress Address of the Airdrop wallet.
     constructor(
         address _l2LiskTokenAddress,
         address _l2ClaimAddress,
         address _l2LockingPositionAddress,
         address _l2VotingPowerAddress,
-        address _daoTreasuryAddress
+        address _airdropWalletAddress
     )
         Ownable(msg.sender)
     {
@@ -109,12 +109,12 @@ contract L2Airdrop is Ownable2Step {
             _l2LockingPositionAddress != address(0), "L2Airdrop: L2 Locking Position contract address can not be zero"
         );
         require(_l2VotingPowerAddress != address(0), "L2Airdrop: L2 Voting Power contract address can not be zero");
-        require(_daoTreasuryAddress != address(0), "L2Airdrop: DAO treasury address can not be zero");
+        require(_airdropWalletAddress != address(0), "L2Airdrop: Airdrop wallet address can not be zero");
         l2LiskTokenAddress = _l2LiskTokenAddress;
         l2LockingPositionAddress = _l2LockingPositionAddress;
         l2ClaimAddress = _l2ClaimAddress;
         l2VotingPowerAddress = _l2VotingPowerAddress;
-        daoTreasuryAddress = _daoTreasuryAddress;
+        airdropWalletAddress = _airdropWalletAddress;
     }
 
     /// @notice Check if the recipient satisfies the staking requirement of the provided tier.
@@ -174,9 +174,9 @@ contract L2Airdrop is Ownable2Step {
         emit MerkleRootSet(merkleRoot);
     }
 
-    /// @notice Send the remaining LSK tokens to the Lisk DAO treasury.
-    /// @dev Only the owner can send the remaining LSK tokens to the Lisk DAO treasury.
-    function sendLSKToDaoTreasury() public onlyOwner {
+    /// @notice Send the remaining LSK tokens to the Airdrop wallet.
+    /// @dev Only the owner can send the remaining LSK tokens to the Airdrop wallet.
+    function sendLSKToAirdropWallet() public onlyOwner {
         require(merkleRoot != 0, "L2Airdrop: airdrop has not started yet");
         require(
             airdropStartTime + (MIGRATION_AIRDROP_DURATION * 1 days) < block.timestamp,
@@ -186,9 +186,9 @@ contract L2Airdrop is Ownable2Step {
         // reentrancy won't be an issue here because the L2 Lisk Token contract is trusted and managed by the team
         // slither-disable-next-line reentrancy-no-eth
         // slither-disable-next-line reentrancy-events
-        bool status = IL2LiskToken(l2LiskTokenAddress).transfer(daoTreasuryAddress, balance);
-        require(status, "L2Airdrop: LSK token transfer to DAO failed");
-        emit LSKSentToDaoTreasury(daoTreasuryAddress, balance);
+        bool status = IL2LiskToken(l2LiskTokenAddress).transfer(airdropWalletAddress, balance);
+        require(status, "L2Airdrop: LSK token transfer to Airdrop wallet failed");
+        emit LSKSentToAirdropWallet(airdropWalletAddress, balance);
     }
 
     /// @notice Check if the Lisk v4 address has claimed the airdrop for min ETH.

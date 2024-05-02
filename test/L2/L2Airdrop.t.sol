@@ -27,14 +27,14 @@ contract L2AirdropTest is Test {
     L2LockingPosition public l2LockingPositionImplementation;
     L2Airdrop public l2Airdrop;
 
-    address daoTreasuryAddress;
+    address airdropWalletAddress;
     address alice;
     bytes20 aliceLSKAddress;
     address bob;
     address charlie;
 
     function setUp() public {
-        daoTreasuryAddress = address(0xDeaDbeefdEAdbeefdEadbEEFdeadbeEFdEaDbeeF);
+        airdropWalletAddress = address(0xDeaDbeefdEAdbeefdEadbEEFdeadbeEFdEaDbeeF);
         alice = address(0x1);
         aliceLSKAddress = bytes20(alice);
         bob = address(0x2);
@@ -108,8 +108,8 @@ contract L2AirdropTest is Test {
         assert(l2Staking.lockingPositionContract() == address(l2LockingPosition));
 
         // initialize Lisk DAO Treasury contract inside L2Staking contract
-        l2Staking.initializeDaoTreasury(daoTreasuryAddress);
-        assert(l2Staking.daoTreasury() == daoTreasuryAddress);
+        l2Staking.initializeDaoTreasury(airdropWalletAddress);
+        assert(l2Staking.daoTreasury() == airdropWalletAddress);
 
         // deploy L2Airdrop contract
         l2Airdrop = new L2Airdrop(
@@ -117,14 +117,14 @@ contract L2AirdropTest is Test {
             address(l2Claim),
             address(l2LockingPosition),
             address(l2VotingPower),
-            daoTreasuryAddress
+            airdropWalletAddress
         );
         assert(address(l2Airdrop) != address(0x0));
         assertEq(l2Airdrop.l2LiskTokenAddress(), address(l2LiskToken));
         assertEq(l2Airdrop.l2ClaimAddress(), address(l2Claim));
         assertEq(l2Airdrop.l2LockingPositionAddress(), address(l2LockingPosition));
         assertEq(l2Airdrop.l2VotingPowerAddress(), address(l2VotingPower));
-        assertEq(l2Airdrop.daoTreasuryAddress(), daoTreasuryAddress);
+        assertEq(l2Airdrop.airdropWalletAddress(), airdropWalletAddress);
 
         // set merkle root for L2Airdrop contract
         bytes32 merkleRoot = bytes32(0xba12d808fc6dfcb9f649bd8aba43c8ed5f58d0c3c2fce0e904b4a85f4b805c98);
@@ -174,31 +174,33 @@ contract L2AirdropTest is Test {
     function test_Constructor_ZeroL2LiskTokenAddress() public {
         vm.expectRevert("L2Airdrop: L2 Lisk Token contract address can not be zero");
         new L2Airdrop(
-            address(0x0), address(l2Claim), address(l2LockingPosition), address(l2VotingPower), daoTreasuryAddress
+            address(0x0), address(l2Claim), address(l2LockingPosition), address(l2VotingPower), airdropWalletAddress
         );
     }
 
     function test_Constructor_ZeroL2ClaimAddress() public {
         vm.expectRevert("L2Airdrop: L2 Claim contract address can not be zero");
         new L2Airdrop(
-            address(l2LiskToken), address(0x0), address(l2LockingPosition), address(l2VotingPower), daoTreasuryAddress
+            address(l2LiskToken), address(0x0), address(l2LockingPosition), address(l2VotingPower), airdropWalletAddress
         );
     }
 
     function test_Constructor_ZeroL2LockingPositionAddress() public {
         vm.expectRevert("L2Airdrop: L2 Locking Position contract address can not be zero");
-        new L2Airdrop(address(l2LiskToken), address(l2Claim), address(0x0), address(l2VotingPower), daoTreasuryAddress);
+        new L2Airdrop(
+            address(l2LiskToken), address(l2Claim), address(0x0), address(l2VotingPower), airdropWalletAddress
+        );
     }
 
     function test_Constructor_ZeroL2VotingPowerAddress() public {
         vm.expectRevert("L2Airdrop: L2 Voting Power contract address can not be zero");
         new L2Airdrop(
-            address(l2LiskToken), address(l2Claim), address(l2LockingPosition), address(0x0), daoTreasuryAddress
+            address(l2LiskToken), address(l2Claim), address(l2LockingPosition), address(0x0), airdropWalletAddress
         );
     }
 
-    function test_Constructor_ZeroDaoTreasuryAddress() public {
-        vm.expectRevert("L2Airdrop: DAO treasury address can not be zero");
+    function test_Constructor_ZeroAirdropWalletAddress() public {
+        vm.expectRevert("L2Airdrop: Airdrop wallet address can not be zero");
         new L2Airdrop(
             address(l2LiskToken), address(l2Claim), address(l2LockingPosition), address(l2VotingPower), address(0x0)
         );
@@ -213,7 +215,7 @@ contract L2AirdropTest is Test {
             address(l2Claim),
             address(l2LockingPosition),
             address(l2VotingPower),
-            daoTreasuryAddress
+            airdropWalletAddress
         );
 
         // check that the MerkleRootSet event is emitted
@@ -242,48 +244,48 @@ contract L2AirdropTest is Test {
         l2Airdrop.setMerkleRoot(merkleRoot);
     }
 
-    function test_SendLSKToDaoTreasury() public {
+    function test_SendLSKToAirdropWallet() public {
         // proceed time to MIGRATION_AIRDROP_DURATION + 1 so that airdrop period is over
         vm.warp(block.timestamp + l2Airdrop.MIGRATION_AIRDROP_DURATION() * 1 days + 1);
 
-        // check that the LSKSentToDaoTreasury event is emitted
+        // check that the LSKSentToAirdropWallet event is emitted
         vm.expectEmit(true, true, true, true);
-        emit L2Airdrop.LSKSentToDaoTreasury(daoTreasuryAddress, 10000 * 10 ** 18);
+        emit L2Airdrop.LSKSentToAirdropWallet(airdropWalletAddress, 10000 * 10 ** 18);
 
-        // send all L2LiskToken to DAO treasury
-        l2Airdrop.sendLSKToDaoTreasury();
+        // send all L2LiskToken to Airdrop wallet
+        l2Airdrop.sendLSKToAirdropWallet();
         assertEq(l2LiskToken.balanceOf(address(l2Airdrop)), 0);
-        assertEq(l2LiskToken.balanceOf(daoTreasuryAddress), 10000 * 10 ** 18);
+        assertEq(l2LiskToken.balanceOf(airdropWalletAddress), 10000 * 10 ** 18);
     }
 
-    function test_SendLSKToDaoTreasury_AirdropHasNotStarted() public {
+    function test_SendLSKToAirdropWallet_AirdropHasNotStarted() public {
         // re-deploy L2Airdrop contract because merkle root is already set in setup
         l2Airdrop = new L2Airdrop(
             address(l2LiskToken),
             address(l2Claim),
             address(l2LockingPosition),
             address(l2VotingPower),
-            daoTreasuryAddress
+            airdropWalletAddress
         );
 
         // Merkle root is not set so airdrop has not started yet
         vm.expectRevert("L2Airdrop: airdrop has not started yet");
-        l2Airdrop.sendLSKToDaoTreasury();
+        l2Airdrop.sendLSKToAirdropWallet();
     }
 
-    function test_SendLSKToDaoTreasury_AirdropPeriodNotOver() public {
+    function test_SendLSKToAirdropWallet_AirdropPeriodNotOver() public {
         // proceed time to MIGRATION_AIRDROP_DURATION so that airdrop period is not over
         vm.warp(block.timestamp + l2Airdrop.MIGRATION_AIRDROP_DURATION() * 1 days);
 
         vm.expectRevert("L2Airdrop: airdrop is not over yet");
-        l2Airdrop.sendLSKToDaoTreasury();
+        l2Airdrop.sendLSKToAirdropWallet();
     }
 
-    function test_SendLSKToDaoTreasury_OnlyOwner() public {
-        // alice tries to send all L2LiskToken to DAO treasury
+    function test_SendLSKAirdropWallet_OnlyOwner() public {
+        // alice tries to send all L2LiskToken to Airdrop wallet
         vm.prank(alice);
         vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, alice));
-        l2Airdrop.sendLSKToDaoTreasury();
+        l2Airdrop.sendLSKToAirdropWallet();
     }
 
     function aliceSatisfiesMinEth() internal {
@@ -821,7 +823,7 @@ contract L2AirdropTest is Test {
             address(l2Claim),
             address(l2LockingPosition),
             address(l2VotingPower),
-            daoTreasuryAddress
+            airdropWalletAddress
         );
 
         bytes32[] memory merkleProof = new bytes32[](1);
