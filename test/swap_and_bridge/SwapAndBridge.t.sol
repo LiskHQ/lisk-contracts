@@ -52,6 +52,7 @@ contract TestBridgingScript is Test {
     IWrappedETH l1WdivETH;
     IWrappedETH l2WdivETH;
 
+    // Address used for E2E tests
     address test_account;
 
     // L2 Cross Domain Messenger address
@@ -251,19 +252,14 @@ contract TestBridgingScript is Test {
         vm.serializeAddress("", "target", L2_LIDO_BRIDGE_ADDR);
         vm.serializeBytes("", "message", message);
         vm.serializeUint("", "messageNonce", messageNonce);
-        string memory json = vm.serializeUint("", "gasLimit", gasLimit);
-        console2.log("Saved to JSON");
-        vm.writeJson(json, string.concat(vm.projectRoot(), "/test/swap_and_bridge/lido.json"));
 
         bytes memory data = abi.encode(sender, L2_LIDO_BRIDGE_ADDR, message, messageNonce, gasLimit);
-        vm.writeFileBinary(string.concat(vm.projectRoot(), "/test/swap_and_bridge/lido.data"), data);
+        vm.writeFileBinary("./lido_e2e_data", data);
     }
 
     function test_e2e_lido_L2() public {
         console2.log("Relaying message to L2 network...");
-
-        bytes memory data = vm.readFileBinary(string.concat(vm.projectRoot(), "/test/swap_and_bridge/lido.data"));
-
+        bytes memory data = vm.readFileBinary( "./lido_e2e_data");
         (address payable sender, address payable target, bytes memory message, uint256 messageNonce, uint256 gasLimit) =
             abi.decode(data, (address, address, bytes, uint256, uint256));
 
@@ -394,16 +390,13 @@ contract TestBridgingScript is Test {
         vm.serializeAddress("", "target", L2_DIVA_BRIDGE_ADDR);
         vm.serializeBytes("", "message", message);
         vm.serializeUint("", "messageNonce", messageNonce);
-        string memory json = vm.serializeUint("", "gasLimit", gasLimit);
-        console2.log("Saved to JSON");
-        vm.writeJson(json, string.concat(vm.projectRoot(), "/test/swap_and_bridge/diva.json"));
 
         bytes memory data = abi.encode(sender, L2_DIVA_BRIDGE_ADDR, message, messageNonce, gasLimit);
-        vm.writeFileBinary(string.concat(vm.projectRoot(), "/test/swap_and_bridge/diva.data"), data);
+        vm.writeFileBinary("./diva_e2e_data", data);
     }
 
     function test_e2e_diva_L2() public {
-        bytes memory data = vm.readFileBinary(string.concat(vm.projectRoot(), "/test/swap_and_bridge/diva.data"));
+        bytes memory data = vm.readFileBinary("./diva_e2e_data");
         (address payable sender, address payable target, bytes memory message, uint256 messageNonce, uint256 gasLimit) =
             abi.decode(data, (address, address, bytes, uint256, uint256));
 
