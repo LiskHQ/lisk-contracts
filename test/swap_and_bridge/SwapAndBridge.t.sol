@@ -259,7 +259,7 @@ contract TestBridgingScript is Test {
 
     function test_e2e_lido_L2() public {
         console2.log("Relaying message to L2 network...");
-        bytes memory data = vm.readFileBinary( "./lido_e2e_data");
+        bytes memory data = vm.readFileBinary("./lido_e2e_data");
         (address payable sender, address payable target, bytes memory message, uint256 messageNonce, uint256 gasLimit) =
             abi.decode(data, (address, address, bytes, uint256, uint256));
 
