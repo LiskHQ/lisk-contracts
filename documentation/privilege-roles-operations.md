@@ -1,4 +1,4 @@
-# Privilege Roles and Operations
+# Privilege Roles, Operations and Upgrades
 
 ## Overview
 
