@@ -35,9 +35,6 @@ contract TransferFunds2ndBatchScript is Script {
     /// @notice Utils contract which provides functions to read and write JSON files containing L1 and L2 addresses.
     Utils utils;
 
-    /// @notice Amount of LSK tokens to be airdropped by the L2 Airdrop contract.
-    uint256 public constant AIRDROP_CONTRACT_AMOUNT = 3_000_000 * 10 ** 18; // 3 million LSK tokens
-
     function setUp() public {
         utils = new Utils();
     }
@@ -117,21 +114,6 @@ contract TransferFunds2ndBatchScript is Script {
 
         console2.log("Sending L1 Lisk tokens to %s L2 addresses...", accounts.l2Addresses.length);
 
-        // send L1 Lisk tokens to Airdrop contract
-        console2.log("Sending %s L1 Lisk tokens to L2 Airdrop contract...", AIRDROP_CONTRACT_AMOUNT);
-        vm.startBroadcast(deployerPrivateKey);
-        bridge.depositERC20To(
-            l1AddressesConfig.L1LiskToken,
-            l2AddressesConfig.L2LiskToken,
-            l2AddressesConfig.L2Airdrop,
-            AIRDROP_CONTRACT_AMOUNT,
-            1000000,
-            ""
-        );
-        vm.stopBroadcast();
-
-        assert(l1LiskToken.balanceOf(vm.addr(deployerPrivateKey)) == balanceBeforeDeployer - AIRDROP_CONTRACT_AMOUNT);
-
         // send L1 Lisk tokens to all L2 addresses
         for (uint256 i = 0; i < accounts.l2Addresses.length; i++) {
             console2.log(
@@ -156,10 +138,7 @@ contract TransferFunds2ndBatchScript is Script {
         for (uint256 i = 0; i < accounts.l2Addresses.length; i++) {
             totalAmount += accounts.l2Addresses[i].amount;
         }
-        assert(
-            l1LiskToken.balanceOf(vm.addr(deployerPrivateKey))
-                == balanceBeforeDeployer - AIRDROP_CONTRACT_AMOUNT - totalAmount
-        );
+        assert(l1LiskToken.balanceOf(vm.addr(deployerPrivateKey)) == balanceBeforeDeployer - totalAmount);
 
         console2.log("L1 Lisk tokens successfully sent to all L2 addresses!");
 
