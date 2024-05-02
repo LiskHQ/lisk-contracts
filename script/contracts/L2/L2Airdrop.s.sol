@@ -48,11 +48,6 @@ contract L2AirdropScript is Script {
         assert(l2AddressesConfig.L2TimelockController != address(0));
         console2.log("DAO (L2TimelockController) address: %s", l2AddressesConfig.L2TimelockController);
 
-        // get Merkle Root from airdrop-merkle-root.json
-        Utils.MerkleRoot memory merkleRoot = utils.readMerkleRootFile("airdrop-merkle-root.json");
-        assert(merkleRoot.merkleRoot != bytes32(0));
-        console2.log("Merkle Root: %s", vm.toString(merkleRoot.merkleRoot));
-
         // deploy L2Airdrop contract, set Merkle Root and transfer its ownership; new owner has to accept ownership to
         // become the owner of the contract
         vm.startBroadcast(deployerPrivateKey);
@@ -63,7 +58,6 @@ contract L2AirdropScript is Script {
             l2AddressesConfig.L2VotingPower,
             l2AddressesConfig.L2TimelockController
         );
-        l2Airdrop.setMerkleRoot(merkleRoot.merkleRoot);
         l2Airdrop.transferOwnership(newOwnerAddress);
         vm.stopBroadcast();
 
@@ -73,7 +67,7 @@ contract L2AirdropScript is Script {
         assert(l2Airdrop.l2LockingPositionAddress() == l2AddressesConfig.L2LockingPosition);
         assert(l2Airdrop.l2VotingPowerAddress() == l2AddressesConfig.L2VotingPower);
         assert(l2Airdrop.daoTreasuryAddress() == l2AddressesConfig.L2TimelockController);
-        assert(l2Airdrop.merkleRoot() == merkleRoot.merkleRoot);
+        assert(l2Airdrop.merkleRoot() == bytes32(0));
         assert(l2Airdrop.owner() == vm.addr(deployerPrivateKey));
         assert(l2Airdrop.pendingOwner() == newOwnerAddress);
 
