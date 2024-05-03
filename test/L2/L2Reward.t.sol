@@ -1292,8 +1292,6 @@ contract L2RewardTest is Test {
         extensions[0].durationExtension = 50;
         // For expired positions, amount is effectively re-locked for the extended duration.
         uint256 weightIncrease = (amount * extensions[0].durationExtension) + (amount * l2Reward.OFFSET());
-        balance = l2LiskToken.balanceOf(staker);
-
         uint256 expectedReward = 11.9 * 10 ** 18;
 
         vm.startPrank(staker);
@@ -1301,13 +1299,32 @@ contract L2RewardTest is Test {
         l2Reward.extendDuration(extensions);
         vm.stopPrank();
 
-        assertEq(l2LiskToken.balanceOf(staker), balance + expectedReward);
+        assertEq(l2LiskToken.balanceOf(staker), balance + expectedReward - amount);
         assertEq(l2Reward.totalWeight(), weightIncrease);
 
         assertEq(l2Reward.totalAmountLocked(), amount);
         assertEq(l2Reward.pendingUnlockAmount(), amount);
+
         // today is assumed to be the expiry date
         assertEq(l2Reward.dailyUnlockedAmounts(l2Reward.todayDay() + extensions[0].durationExtension), amount);
+
+        skip(60 days);
+
+        uint256[] memory lockIDs = new uint256[](1);
+        lockIDs[0] = extensions[0].lockID;
+
+        uint256 expectedRewardAfterExtension = 5 * 10 ** 18;
+        // staker claims rewards, after expiry date
+        then_eventRewardsClaimedIsEmitted(lockIDs[0], expectedRewardAfterExtension);
+        vm.prank(staker);
+        l2Reward.claimRewards(lockIDs);
+
+        // staker unlocks rewards
+        then_eventRewardsClaimedIsEmitted(lockIDs[0], 0);
+        vm.prank(staker);
+        l2Reward.deletePositions(lockIDs);
+
+        assertEq(l2LiskToken.balanceOf(staker), balance + expectedReward + expectedRewardAfterExtension);
     }
 
     function test_extendDuration_updatesGlobalsAndClaimRewardsForPausedPositions() public {

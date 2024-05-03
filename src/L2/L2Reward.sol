@@ -406,16 +406,18 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
             // locking period has not finished
             if (lockingPosition.expDate > todayDay()) {
                 dailyUnlockedAmounts[lockingPosition.expDate] -= lockingPosition.amount;
-                dailyUnlockedAmounts[lockingPosition.expDate + durationExtension] += lockingPosition.amount;
             }
-            // locking period has expired, re-lock amount and assume that expiry date is today
+            // locking period has expired, re-lock amount
             else {
-                dailyUnlockedAmounts[todayDay() + durationExtension] += lockingPosition.amount;
                 totalAmountLocked += lockingPosition.amount;
                 pendingUnlockAmount += lockingPosition.amount;
                 totalWeight += lockingPosition.amount * OFFSET;
             }
         }
+
+        // updated locking position
+        lockingPosition = IL2LockingPosition(lockingPositionContract).getLockingPosition(lockID);
+        dailyUnlockedAmounts[lockingPosition.expDate] += lockingPosition.amount;
     }
 
     /// @notice Pauses unlocking of multiple locking positions.
