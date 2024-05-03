@@ -56,14 +56,12 @@ contract TransferFunds2ndBatchScript is Script {
         assert(l1AddressesConfig.L1LiskToken != address(0));
         console2.log("L1 Lisk token address: %s", l1AddressesConfig.L1LiskToken);
 
-        // get L2LiskToken, L2Claim and L2Airdrop contracts addresses
+        // get L2LiskToken and L2Claim contracts addresses
         Utils.L2AddressesConfig memory l2AddressesConfig = utils.readL2AddressesFile();
         assert(l2AddressesConfig.L2LiskToken != address(0));
         assert(l2AddressesConfig.L2ClaimContract != address(0));
-        assert(l2AddressesConfig.L2Airdrop != address(0));
         console2.log("L2 Lisk token address: %s", l2AddressesConfig.L2LiskToken);
         console2.log("L2 Claim contract address: %s", l2AddressesConfig.L2ClaimContract);
-        console2.log("L2 Airdrop address: %s", l2AddressesConfig.L2Airdrop);
 
         // get accounts to which L1 Lisk tokens will be transferred
         Utils.Accounts memory accounts = utils.readAccountsFile("accounts_2.json");
