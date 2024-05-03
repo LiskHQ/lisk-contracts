@@ -834,7 +834,9 @@ contract L2RewardTest is Test {
         given_accountHasBalance(staker, balance);
         given_ownerHasFundedStaking(Funds({ amount: convertLiskToSmallestDenomination(35), duration: 350, delay: 1 }));
 
-        // staker creates two positions on deploymentDate, 19740
+        skip(1 days);
+
+        // staker creates two positions on deploymentDate + 1, 19741
         for (uint8 i = 0; i < 2; i++) {
             lockIDs[i] = when_stakerCreatesPosition(
                 staker, Position({ amount: convertLiskToSmallestDenomination(100), duration: 120 })
@@ -843,7 +845,7 @@ contract L2RewardTest is Test {
 
         skip(150 days);
 
-        uint256 expectedRewardsPerStake = 5.95 * 10 ** 18;
+        uint256 expectedRewardsPerStake = 6 * 10 ** 18;
 
         // locked amount gets unlocked
         uint256 expectedBalance =
@@ -966,7 +968,9 @@ contract L2RewardTest is Test {
         given_accountHasBalance(staker, balance);
         given_ownerHasFundedStaking(Funds({ amount: convertLiskToSmallestDenomination(35), duration: 350, delay: 1 }));
 
-        // staker creates two positions on deploymentDate, 19740
+        skip(1 days);
+
+        // staker creates two positions on deploymentDate + 1, 19741
         for (uint8 i = 0; i < 2; i++) {
             lockIDs[i] = when_stakerCreatesPosition(
                 staker, Position({ amount: convertLiskToSmallestDenomination(100), duration: 120 })
@@ -974,9 +978,9 @@ contract L2RewardTest is Test {
         }
 
         skip(75 days);
-        uint256 today = deploymentDate + 75;
+        uint256 today = deploymentDate + 1 + 75;
 
-        uint256 expectedRewardsPerStake = 3.7 * 10 ** 18;
+        uint256 expectedRewardsPerStake = 3.75 * 10 ** 18;
         uint256 expectedBalance = l2LiskToken.balanceOf(staker) + expectedRewardsPerStake * 2;
         uint256 expectedPausedLockingDuration = 45;
 
@@ -1110,13 +1114,16 @@ contract L2RewardTest is Test {
         given_accountHasBalance(staker, balance);
         given_ownerHasFundedStaking(Funds({ amount: convertLiskToSmallestDenomination(35), duration: 350, delay: 1 }));
 
+        skip(1 days);
+
+        // staker creates two positions on deploymentDate + 1, 19741
         for (uint8 i = 0; i < 2; i++) {
             lockIDs[i] = when_stakerCreatesPosition(
                 staker, Position({ amount: convertLiskToSmallestDenomination(100), duration: duration })
             );
         }
 
-        // staker pauses the position on deploymentDate, rewards when pausing is zero
+        // staker pauses the position on 19741, rewards when pausing is zero
         then_eventRewardsClaimedIsEmitted(lockIDs[0], 0);
         then_eventRewardsClaimedIsEmitted(lockIDs[1], 0);
         vm.prank(staker);
@@ -1126,8 +1133,8 @@ contract L2RewardTest is Test {
 
         skip(100 days);
 
-        uint256 expectedRewardsPerStake = 4.95 * 10 ** 18;
-        uint256 today = deploymentDate + 100;
+        uint256 expectedRewardsPerStake = 5 * 10 ** 18;
+        uint256 today = deploymentDate + 101;
         uint256 expectedBalance = expectedRewardsPerStake * 2 + balance;
 
         // staker resumes the positions
@@ -1590,31 +1597,43 @@ contract L2RewardTest is Test {
         uint256 amount = convertLiskToSmallestDenomination(100);
         uint256 durationExtension = 50;
         L2Reward.ExtendedDuration[] memory extensions = new L2Reward.ExtendedDuration[](2);
+        uint256[] memory lockIDs = new uint256[](2);
 
         given_accountHasBalance(address(this), balance);
         given_accountHasBalance(staker, balance);
         given_ownerHasFundedStaking(Funds({ amount: convertLiskToSmallestDenomination(35), duration: 350, delay: 1 }));
 
+        skip(1 days);
+
         for (uint8 i = 0; i < extensions.length; i++) {
-            extensions[i].lockID = when_stakerCreatesPosition(staker, Position(amount, duration));
+            lockIDs[i] = when_stakerCreatesPosition(staker, Position(amount, duration));
 
             //sets the extension in duration
+            extensions[i].lockID = lockIDs[i];
             extensions[i].durationExtension = durationExtension;
         }
 
-        skip(50 days);
-
         uint256 totalWeightBeforeExtension = l2Reward.totalWeight();
-        uint256 expectedReward = 2.45 * 10 ** 18;
+        uint256 expectedReward = 2.5 * 10 ** 18;
+
+        skip(50 days);
 
         // after 50 days extend duration for 50 days, given the locked amount stays same total weight remains same
         vm.startPrank(staker);
-        then_eventRewardsClaimedIsEmitted(extensions[0].lockID, expectedReward);
-        then_eventRewardsClaimedIsEmitted(extensions[1].lockID, expectedReward);
+        then_eventRewardsClaimedIsEmitted(lockIDs[0], expectedReward);
+        then_eventRewardsClaimedIsEmitted(lockIDs[1], expectedReward);
         l2Reward.extendDuration(extensions);
         vm.stopPrank();
 
         assertEq(l2Reward.totalWeight(), totalWeightBeforeExtension);
+
+        uint256 expectedRewardsFor20Days = 1 * 10 ** 18;
+
+        skip(20 days);
+        then_eventRewardsClaimedIsEmitted(lockIDs[0], expectedRewardsFor20Days);
+        then_eventRewardsClaimedIsEmitted(lockIDs[1], expectedRewardsFor20Days);
+        vm.prank(staker);
+        l2Reward.claimRewards(lockIDs);
     }
 
     function test_initiateFastUnlock_onlyOwnerCanUnlockAPosition() public {
@@ -1771,6 +1790,7 @@ contract L2RewardTest is Test {
         then_eventRewardsClaimedIsEmitted(lockIDs[1], expectedRewardsPerStakeAfter30Days);
         vm.startPrank(staker);
         l2Reward.initiateFastUnlock(lockIDs);
+        vm.stopPrank();
 
         uint256 expectedTotalWeight =
             2 * (l2Staking.FAST_UNLOCK_DURATION() + l2Reward.OFFSET()) * (amount - expectedPenaltyPerStakeAfter30Days);
@@ -1780,7 +1800,32 @@ contract L2RewardTest is Test {
 
         // penalty is burned from voting power
         assertEq(l2VotingPower.balanceOf(staker), votingPowerAtLocking - expectedPenaltyPerStakeAfter30Days * 2);
-        assertEq(l2LiskToken.balanceOf(staker), balance - (amount * 2) + (expectedRewardsPerStakeAfter30Days * 2));
+
+        uint256 expectedRewardsForFAST_UNLOCK_DURATION = 547260273972602738;
+
+        skip(5 days);
+
+        then_eventRewardsClaimedIsEmitted(lockIDs[0], expectedRewardsForFAST_UNLOCK_DURATION);
+        then_eventRewardsClaimedIsEmitted(lockIDs[1], expectedRewardsForFAST_UNLOCK_DURATION);
+        vm.startPrank(staker);
+        l2Reward.claimRewards(lockIDs);
+        vm.stopPrank();
+
+        uint256 balanceAfterClaimingAllRewards = balance - (amount * 2) + (expectedRewardsPerStakeAfter30Days * 2)
+            + (expectedRewardsForFAST_UNLOCK_DURATION * 2);
+
+        assertEq(l2LiskToken.balanceOf(staker), balanceAfterClaimingAllRewards);
+
+        then_eventRewardsClaimedIsEmitted(lockIDs[0], 0);
+        then_eventRewardsClaimedIsEmitted(lockIDs[1], 0);
+        vm.startPrank(staker);
+        l2Reward.deletePositions(lockIDs);
+        vm.stopPrank();
+
+        uint256 expectedBalanceAfterUnlocking =
+            balanceAfterClaimingAllRewards + amount * 2 - expectedPenaltyPerStakeAfter30Days * 2;
+
+        assertEq(l2LiskToken.balanceOf(staker), expectedBalanceAfterUnlocking);
     }
 
     function test_initializeLockingPosition_onlyOwnerCanInitializeLockingPosition() public {
