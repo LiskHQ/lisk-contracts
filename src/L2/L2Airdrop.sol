@@ -76,7 +76,7 @@ contract L2Airdrop is Ownable2Step {
     /// @notice Address of the L2VotingPower contract.
     address public immutable l2VotingPowerAddress;
 
-    /// @notice Address of the Airdrop wallet where the remaining LSK tokens are sent after the airdrop is completed.
+    /// @notice Address of the Airdrop wallet where the remaining LSK tokens are sent to after the airdrop is completed.
     address public immutable airdropWalletAddress;
 
     /// @notice Emitted when the Merkle root is set.
