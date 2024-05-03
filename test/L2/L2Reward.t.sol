@@ -1668,7 +1668,10 @@ contract L2RewardTest is Test {
         l2Reward.initiateFastUnlock(lockIDs);
     }
 
-    function test_initiateFastUnlock_forActivePositionAddsPenaltyAsRewardAlsoUpdatesGlobalsAndClaimRewards() public {
+    function test_initiateFastUnlock_forActivePositionAddsPenaltyAsRewardAlsoUpdatesGlobalsAndClaimRewardsAlsoReducesStakedAmountByPenalty(
+    )
+        public
+    {
         address staker = address(0x1);
         uint256 balance = convertLiskToSmallestDenomination(1000);
         uint256 amount = convertLiskToSmallestDenomination(100);
@@ -1713,9 +1716,13 @@ contract L2RewardTest is Test {
 
         assertEq(l2LiskToken.balanceOf(staker), convertLiskToSmallestDenomination(1000) - amount + reward);
         assertEq(l2Reward.dailyRewards(19821), dailyFundedReward);
+        assertEq(l2LockingPosition.getLockingPosition(lockIDs[0]).amount, amount - penalty);
     }
 
-    function test_initiateFastUnlock_forPausedPositionAddsPenaltyAsRewardAlsoUpdatesGlobalsAndClaimRewards() public {
+    function test_initiateFastUnlock_forPausedPositionAddsPenaltyAsRewardAlsoUpdatesGlobalsAndClaimRewardsAlsoReducesStakedAmountByPenalty(
+    )
+        public
+    {
         address staker = address(0x1);
         uint256 balance = convertLiskToSmallestDenomination(1000);
         uint256 amount = convertLiskToSmallestDenomination(100);
@@ -1757,6 +1764,7 @@ contract L2RewardTest is Test {
         assertEq(
             l2Reward.dailyUnlockedAmounts(deploymentDate + 1 + 40 + l2Staking.FAST_UNLOCK_DURATION()), amount - penalty
         );
+        assertEq(l2LockingPosition.getLockingPosition(lockIDs[0]).amount, amount - penalty);
     }
 
     function test_initiateFastUnlock_forMultipleStakesUpdatesGlobalsAndClaimsRewards() public {
