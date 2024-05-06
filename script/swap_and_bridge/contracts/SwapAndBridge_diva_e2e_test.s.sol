@@ -27,8 +27,8 @@ interface IL2CrossDomainMessenger {
         external;
 }
 
-/// @title IDivaEtherToken - Diva Ether Token interface
-/// @notice This contract is used to wrap the Diva Ether Token.
+/// @title IWrappedETH - Wrapped Ether Token interface
+/// @notice This contract is used to wrap the a LST.
 interface IWrappedETH is IERC20 {
     receive() external payable;
 }
@@ -36,8 +36,10 @@ interface IWrappedETH is IERC20 {
 // event SentMessage(address indexed target, address sender, bytes message, uint256 messageNonce, uint256 gasLimit);
 event SentMessage(address indexed target, bytes data);
 
-/// @title TestBridgingScript
+/// @title TestDivaBridgingL1Script
 /// @notice This contract is used to test bridging Diva tokens from L1 to L2 network.
+///         This contract runs the L1 part of it, by sending ETH to the SwapAndBridge contract and checking that the
+///         correct events are emitted.
 contract TestDivaBridgingL1Script is Script {
     // SwapAndBridge contract
     SwapAndBridge swapAndBridgeDiva;
@@ -195,7 +197,7 @@ contract TestDivaBridgingL1Script is Script {
     }
 }
 
-/// @title TestBridgingScript
+/// @title TestDivaBridgingL2Script
 /// @notice This contract is used to test bridging Diva tokens from L1 to L2 network.
 ///         This contract runs the L2 part of it, by relaying the message that was emitted on the L1.
 contract TestDivaBridgingL2Script is Script {
