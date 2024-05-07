@@ -66,6 +66,27 @@ contract L2Staking is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, I
     /// @notice Emitted when the EmergencyExitEnabled flag is changed.
     event EmergencyExitEnabledChanged(bool indexed oldEmergencyExitEnabled, bool indexed newEmergencyExitEnabled);
 
+    /// @notice Emitted when a new amount is locked.
+    event AmountLocked(uint256 indexed lockId, address indexed lockOwner, uint256 amount, uint256 lockingDuration);
+
+    /// @notice Emitted when an amount is unlocked.
+    event AmountUnlocked(uint256 indexed lockId);
+
+    /// @notice Emitted when a fast unlock is initiated.
+    event FastUnlockInitiated(uint256 indexed lockId, uint256 penalty);
+
+    /// @notice Emitted when the locking amount is increased.
+    event LockingAmountIncreased(uint256 indexed lockId, uint256 amountIncrease);
+
+    /// @notice Emitted when the locking duration is extended.
+    event LockingDurationExtended(uint256 indexed lockId, uint256 extendDays);
+
+    /// @notice Emitted when the remaining locking duration is paused.
+    event RemainingLockingDurationPaused(uint256 indexed lockId);
+
+    /// @notice Emitted when the countdown of the remaining locking duration is resumed.
+    event CountdownResumed(uint256 indexed lockId);
+
     /// @notice Disabling initializers on implementation contract to prevent misuse.
     constructor() {
         _disableInitializers();
@@ -259,6 +280,8 @@ contract L2Staking is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, I
             creator, lockOwner, amount, lockingDuration
         );
 
+        emit AmountLocked(lockId, lockOwner, amount, lockingDuration);
+
         return lockId;
     }
 
@@ -280,6 +303,8 @@ contract L2Staking is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, I
             // stake did not expire
             revert("L2Staking: locking duration active, can not unlock");
         }
+
+        emit AmountUnlocked(lockId);
     }
 
     /// @notice Initiates a fast unlock and apply a penalty to the locked amount. Sends the penalty amount to the Lisk
@@ -312,6 +337,8 @@ contract L2Staking is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, I
             require(success, "L2Staking: LSK token transfer from Staking contract to creator failed");
         }
 
+        emit FastUnlockInitiated(lockId, penalty);
+
         return penalty;
     }
 
@@ -339,6 +366,8 @@ contract L2Staking is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, I
         (IL2LockingPosition(lockingPositionContract)).modifyLockingPosition(
             lockId, lock.amount + amountIncrease, lock.expDate, lock.pausedLockingDuration
         );
+
+        emit LockingAmountIncreased(lockId, amountIncrease);
     }
 
     /// @notice Extends the duration of the given locking position.
@@ -367,6 +396,8 @@ contract L2Staking is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, I
         (IL2LockingPosition(lockingPositionContract)).modifyLockingPosition(
             lockId, lock.amount, lock.expDate, lock.pausedLockingDuration
         );
+
+        emit LockingDurationExtended(lockId, extendDays);
     }
 
     /// @notice Pauses the countdown of the remaining locking duration of the given locking position.
@@ -386,6 +417,8 @@ contract L2Staking is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, I
         (IL2LockingPosition(lockingPositionContract)).modifyLockingPosition(
             lockId, lock.amount, lock.expDate, lock.pausedLockingDuration
         );
+
+        emit RemainingLockingDurationPaused(lockId);
     }
 
     /// @notice Resumes the remaining locking duration of the given locking position.
@@ -403,5 +436,7 @@ contract L2Staking is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, I
         (IL2LockingPosition(lockingPositionContract)).modifyLockingPosition(
             lockId, lock.amount, lock.expDate, lock.pausedLockingDuration
         );
+
+        emit CountdownResumed(lockId);
     }
 }
