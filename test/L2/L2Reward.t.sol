@@ -1396,7 +1396,7 @@ contract L2RewardTest is Test {
         skip(50 days);
 
         uint256 reward = 4.9e18;
-        uint256 penalty = 4794520547945205479;
+        uint256 penalty = 4589041095890410958;
 
         vm.startPrank(staker);
         then_eventRewardsClaimedIsEmitted(lockIDs[0], reward);
@@ -1447,7 +1447,7 @@ contract L2RewardTest is Test {
         vm.stopPrank();
 
         uint256 rewardFor20Days = convertLiskToSmallestDenomination(2);
-        uint256 penalty = 6849315068493150684;
+        uint256 penalty = 6643835616438356164;
 
         skip(20 days);
 
