@@ -1248,6 +1248,68 @@ contract L2RewardTest is Test {
         vm.stopPrank();
     }
 
+    function test_increaseLockingAmount_forMultipleStakesIncreasesLockingAmountAndClaimRewards() public {
+        address staker = address(0x1);
+
+        uint256 funds = convertLiskToSmallestDenomination(35);
+        uint256 balance = convertLiskToSmallestDenomination(1000);
+        uint256 amount = convertLiskToSmallestDenomination(100);
+        uint256 amountIncrease = convertLiskToSmallestDenomination(65);
+
+        given_accountHasBalance(address(this), balance);
+        given_accountHasBalance(staker, balance * 2);
+        given_ownerHasFundedStaking(Funds({ amount: funds, duration: 350, delay: 1 }));
+
+        L2Reward.IncreasedAmount[] memory increasingAmounts = new L2Reward.IncreasedAmount[](2);
+        uint256[] memory lockIDs = new uint256[](2);
+
+        skip(1 days);
+
+        for (uint8 i = 0; i < increasingAmounts.length; i++) {
+            lockIDs[i] = when_stakerCreatesPosition(staker, Position({ amount: amount, duration: 120 }));
+
+            // sets the amount to be increased
+            increasingAmounts[i].lockID = lockIDs[i];
+            increasingAmounts[i].amountIncrease = amountIncrease;
+        }
+
+        skip(50 days);
+
+        uint256 expectedRewardPerStake = 2.5 * 10 ** 18;
+
+        vm.startPrank(staker);
+        l2LiskToken.approve(address(l2Reward), amountIncrease * 2);
+        then_eventRewardsClaimedIsEmitted(lockIDs[0], expectedRewardPerStake);
+        then_eventRewardsClaimedIsEmitted(lockIDs[1], expectedRewardPerStake);
+        l2Reward.increaseLockingAmount(increasingAmounts);
+        vm.stopPrank();
+
+        assertEq(l2Reward.totalAmountLocked(), (amount + amountIncrease) * 2);
+        assertEq(
+            l2LiskToken.balanceOf(address(l2Reward)),
+            convertLiskToSmallestDenomination(35) - (2 * expectedRewardPerStake)
+        );
+
+        skip(50 days);
+
+        then_eventRewardsClaimedIsEmitted(lockIDs[0], expectedRewardPerStake);
+        then_eventRewardsClaimedIsEmitted(lockIDs[1], expectedRewardPerStake);
+        vm.prank(staker);
+        l2Reward.claimRewards(lockIDs);
+
+        skip(30 days);
+
+        uint256 expectedRewardsForRemainingDuration = 1 * 10 ** 18;
+        then_eventRewardsClaimedIsEmitted(lockIDs[0], expectedRewardsForRemainingDuration);
+        then_eventRewardsClaimedIsEmitted(lockIDs[1], expectedRewardsForRemainingDuration);
+        vm.prank(staker);
+        l2Reward.claimRewards(lockIDs);
+
+        uint256 totalRewardsClaimedByStaker = expectedRewardPerStake * 4 + expectedRewardsForRemainingDuration * 2;
+
+        assertEq(l2LiskToken.balanceOf(address(l2Reward)), funds - totalRewardsClaimedByStaker);
+    }
+
     function test_extendDuration_onlyOwnerCanExtendDurationForALockingPosition() public {
         address staker = address(0x1);
         L2Reward.ExtendedDuration[] memory extensions = new L2Reward.ExtendedDuration[](1);
