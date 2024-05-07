@@ -336,7 +336,7 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
         uint256 today = todayDay();
         uint256 reward;
 
-        if (this.lastClaimDate(lockID) >= today) {
+        if (lastClaimDate[lockID] >= today) {
             emit RewardsClaimed(lockID, 0);
 
             return;
