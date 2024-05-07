@@ -98,11 +98,6 @@ contract SwapAndBridge {
         require(L1_TOKEN.balanceOf(address(this)) == 0, "Contract still has tokens.");
     }
 
-    /// @notice Swap ETH to wrapped LST and bridge it to the sender address on the L2.
-    function swapAndBridge() public payable {
-        swapAndBridgeTo(msg.sender);
-    }
-
     /// @notice Swap ETH to wrapped LST and bridge it to the recipient address on the L2.
     /// @param recipient The address to bridge the wrapped LST to.
     function swapAndBridgeTo(address recipient) public payable {
