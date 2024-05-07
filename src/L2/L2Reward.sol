@@ -444,9 +444,9 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
             }
 
             dailyUnlockedAmounts[lockingPosition.expDate + durationExtension] += lockingPosition.amount;
-
-            emit LockingDurationExtended(lockID, durationExtension);
         }
+
+        emit LockingDurationExtended(lockID, durationExtension);
     }
 
     /// @notice Pauses unlocking of multiple locking positions.

@@ -245,6 +245,7 @@ contract L2RewardTest is Test {
     function test_createPosition_aggregatesAmountAndWeightAndUpdatesGlobals() public {
         address staker = address(0x1);
         uint256 balance = convertLiskToSmallestDenomination(1000);
+        uint256 amount;
 
         given_accountHasBalance(address(this), balance);
         given_accountHasBalance(staker, balance);
@@ -254,11 +255,21 @@ contract L2RewardTest is Test {
         );
 
         // staker creates a position on deploymentDate, 19740
-        when_stakerCreatesPosition(staker, Position({ amount: convertLiskToSmallestDenomination(100), duration: 120 }));
+        amount = convertLiskToSmallestDenomination(100);
+        vm.startPrank(staker);
+        l2LiskToken.approve(address(l2Reward), amount);
+        then_eventLockingPositionCreatedIsEmitted(1);
+        l2Reward.createPosition(amount, 120);
+        vm.stopPrank();
 
         // staker creates another position on deploymentDate + 2, 19742
         skip(2 days);
-        when_stakerCreatesPosition(staker, Position({ amount: convertLiskToSmallestDenomination(1), duration: 100 }));
+        amount = convertLiskToSmallestDenomination(1);
+        vm.startPrank(staker);
+        l2LiskToken.approve(address(l2Reward), amount);
+        then_eventLockingPositionCreatedIsEmitted(2);
+        l2Reward.createPosition(amount, 100);
+        vm.stopPrank();
 
         uint256 expectedTotalWeight = convertLiskToSmallestDenomination(100) * (120 + l2Reward.OFFSET())
             + convertLiskToSmallestDenomination(1) * (100 + l2Reward.OFFSET()) - 200 * 10 ** 18;
@@ -272,10 +283,14 @@ contract L2RewardTest is Test {
         assertEq(l2Reward.dailyRewards(19741), cappedRewards);
         assertEq(l2Reward.rewardsSurplus(), dailyReward - cappedRewards);
 
-        skip(3 days);
-
         // staker creates another position on deploymentDate + 5, 19745
-        when_stakerCreatesPosition(staker, Position({ amount: convertLiskToSmallestDenomination(100), duration: 100 }));
+        skip(3 days);
+        amount = convertLiskToSmallestDenomination(100);
+        vm.startPrank(staker);
+        l2LiskToken.approve(address(l2Reward), amount);
+        then_eventLockingPositionCreatedIsEmitted(3);
+        l2Reward.createPosition(convertLiskToSmallestDenomination(100), 100);
+        vm.stopPrank();
 
         uint256 newCappedRewards = convertLiskToSmallestDenomination(101) / 365;
         for (uint16 i = 19742; i < 19745; i++) {
@@ -1387,6 +1402,7 @@ contract L2RewardTest is Test {
 
         vm.startPrank(staker);
         then_eventRewardsClaimedIsEmitted(lockIDs[0], expectedReward);
+        then_eventLockingDurationExtendedIsEmitted(lockIDs[0], extensions[0].durationExtension);
         l2Reward.extendDuration(extensions);
         vm.stopPrank();
 
@@ -1491,6 +1507,7 @@ contract L2RewardTest is Test {
         skip(20 days);
 
         vm.startPrank(staker);
+        then_eventLockingPositionPausedIsEmitted(lockIDs[0]);
         l2Reward.pauseUnlocking(lockIDs);
         vm.stopPrank();
 
