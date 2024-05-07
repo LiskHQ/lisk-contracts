@@ -758,6 +758,10 @@ contract L2StakingTest is Test {
         assertEq(l2VotingPower.totalSupply(), 100 * 10 ** 18);
         assertEq(l2VotingPower.balanceOf(alice), 100 * 10 ** 18);
 
+        // check that the RemainingLockingDurationPaused event is emitted
+        vm.expectEmit(true, true, true, true);
+        emit L2Staking.RemainingLockingDurationPaused(1);
+
         // pause the remaining locking duration
         vm.prank(alice);
         l2Staking.pauseRemainingLockingDuration(1);
@@ -769,6 +773,10 @@ contract L2StakingTest is Test {
         vm.prank(alice);
         vm.expectRevert("L2Staking: locking duration active, can not unlock");
         l2Staking.unlock(1);
+
+        // check that the CountdownResumed event is emitted
+        vm.expectEmit(true, true, true, true);
+        emit L2Staking.CountdownResumed(1);
 
         // resume the countdown
         vm.prank(alice);
