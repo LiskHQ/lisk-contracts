@@ -21,7 +21,7 @@ contract TestDivaIntegrationScript is Script {
     IWrappedETH l1WdivETH;
 
     // Address used for E2E tests
-    address testAccount;
+    address constant testAccount = address(0xc0ffee);
 
     // L1 address of the Diva bridge (this is the Lisk standard bridge)
     address constant L1_DIVA_BRIDGE_ADDR = 0x1Fb30e446eA791cd1f011675E5F3f5311b70faF5;
@@ -35,7 +35,6 @@ contract TestDivaIntegrationScript is Script {
     function setUp() public {
         swapAndBridgeDiva = new SwapAndBridge(L1_DIVA_BRIDGE_ADDR, L1_DIVA_TOKEN_ADDR, L2_DIVA_TOKEN_ADDR);
         l1WdivETH = IWrappedETH(payable(L1_DIVA_TOKEN_ADDR));
-        testAccount = address(0xc0ffee);
         vm.deal(testAccount, 500000 ether);
     }
 
@@ -44,19 +43,23 @@ contract TestDivaIntegrationScript is Script {
         // The conversion rate is 1 ETH = 1e18 wstETH.
         // Any value of minL1TokensPerETH larger than 1e18 will revert the transaction.
         vm.startPrank(testAccount);
+
         console2.log("Testing no minimum...");
         swapAndBridgeDiva.swapAndBridgeToWithMinimumAmount{ value: 1 ether }(testAccount, 0);
         console2.log("Ok");
+
         console2.log("Testing 'Insufficient L1 tokens minted'...");
-        swapAndBridgeDiva.swapAndBridgeToWithMinimumAmount{ value: 1 ether }(testAccount, 1e18);
         vm.expectRevert("Insufficient L1 tokens minted.");
-        console2.log("Ok");
-        console2.log("Testing 'Overflow'...");
         swapAndBridgeDiva.swapAndBridgeToWithMinimumAmount{ value: 1 ether }(testAccount, 1e18 + 1);
-        vm.expectRevert(); // Panic due to overflow.
         console2.log("Ok");
-        console2.log("Testing 'High enough limit'...");
+
+        console2.log("Testing 'Overflow'...");
+        vm.expectRevert(); // Panic due to overflow.
         swapAndBridgeDiva.swapAndBridgeToWithMinimumAmount{ value: 10000 ether }(testAccount, 1e75);
+        console2.log("Ok");
+
+        console2.log("Testing 'High enough limit'...");
+        swapAndBridgeDiva.swapAndBridgeToWithMinimumAmount{ value: 1 ether }(testAccount, 1e18);
         console2.log("Ok");
     }
 

@@ -45,7 +45,7 @@ contract TestLidoBridgingL1Script is Script {
     SwapAndBridge swapAndBridgeLido;
 
     // Address used for E2E tests
-    address testAccount;
+    address constant testAccount = address(0xc0ffee);
 
     // The test value to be bridged
     uint256 constant TEST_AMOUNT = 500 ether;
@@ -72,7 +72,6 @@ contract TestLidoBridgingL1Script is Script {
 
     function setUp() public {
         swapAndBridgeLido = new SwapAndBridge(L1_LIDO_BRIDGE_ADDR, L1_LIDO_TOKEN_ADDR, L2_LIDO_TOKEN_ADDR);
-        testAccount = address(0xc0ffee);
         vm.deal(testAccount, 500000 ether);
     }
 

@@ -28,7 +28,7 @@ contract TestLidoIntegrationScript is Script {
     IWrappedETH l1WstETH;
 
     // Address used for E2E tests
-    address testAccount;
+    address constant testAccount = address(0xc0ffee);
 
     // L1 address of the Lido bridge (this is the dedicated bridge from previous deployment)
     address constant L1_LIDO_BRIDGE_ADDR = 0xdDDbC273a81e6BC49c269Af55d007c08c005ea56;
@@ -42,7 +42,6 @@ contract TestLidoIntegrationScript is Script {
     function setUp() public {
         swapAndBridgeLido = new SwapAndBridge(L1_LIDO_BRIDGE_ADDR, L1_LIDO_TOKEN_ADDR, L2_LIDO_TOKEN_ADDR);
         l1WstETH = IWrappedETH(payable(L1_LIDO_TOKEN_ADDR));
-        testAccount = address(0xc0ffee);
         vm.deal(testAccount, 500_000 ether);
     }
 
@@ -51,19 +50,23 @@ contract TestLidoIntegrationScript is Script {
         // The conversion rate is 1 ETH = 1e18 wstETH.
         // Any value of minL1TokensPerETH larger than 1e18 will revert the transaction.
         vm.startPrank(testAccount);
+
         console2.log("Testing no minimum...");
         swapAndBridgeLido.swapAndBridgeToWithMinimumAmount{ value: 1 ether }(testAccount, 0);
         console2.log("Ok");
+
         console2.log("Testing 'Insufficient L1 tokens minted'...");
-        swapAndBridgeLido.swapAndBridgeToWithMinimumAmount{ value: 1 ether }(testAccount, 1e18);
         vm.expectRevert("Insufficient L1 tokens minted.");
-        console2.log("Ok");
-        console2.log("Testing 'Overflow'...");
         swapAndBridgeLido.swapAndBridgeToWithMinimumAmount{ value: 1 ether }(testAccount, 1e18 + 1);
-        vm.expectRevert(); // Panic due to overflow.
         console2.log("Ok");
-        console2.log("Testing 'High enough limit'...");
+
+        console2.log("Testing 'Overflow'...");
+        vm.expectRevert(); // Panic due to overflow.
         swapAndBridgeLido.swapAndBridgeToWithMinimumAmount{ value: 10000 ether }(testAccount, 1e75);
+        console2.log("Ok");
+
+        console2.log("Testing 'High enough limit'...");
+        swapAndBridgeLido.swapAndBridgeToWithMinimumAmount{ value: 1 ether }(testAccount, 1e18);
         console2.log("Ok");
     }
 

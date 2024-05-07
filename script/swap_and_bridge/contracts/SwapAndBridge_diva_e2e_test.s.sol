@@ -48,7 +48,7 @@ contract TestDivaBridgingL1Script is Script {
     IWrappedETH l1WdivETH;
 
     // Address used for E2E tests
-    address testAccount;
+    address constant testAccount = address(0xc0ffee);
 
     // The test value to be bridged
     uint256 constant TEST_AMOUNT = 500 ether;
@@ -76,7 +76,6 @@ contract TestDivaBridgingL1Script is Script {
     function setUp() public {
         swapAndBridgeDiva = new SwapAndBridge(L1_DIVA_BRIDGE_ADDR, L1_DIVA_TOKEN_ADDR, L2_DIVA_TOKEN_ADDR);
         l1WdivETH = IWrappedETH(payable(L1_DIVA_TOKEN_ADDR));
-        testAccount = address(0xc0ffee);
         vm.deal(testAccount, 500000 ether);
     }
 
