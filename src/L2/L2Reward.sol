@@ -365,7 +365,7 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
 
             require(locks[i].amountIncrease > 0, "L2Reward: Increased amount should be greater than zero");
 
-            _increaseLockingAmount(locks[0].lockID, locks[0].amountIncrease);
+            _increaseLockingAmount(locks[i].lockID, locks[i].amountIncrease);
         }
     }
 
