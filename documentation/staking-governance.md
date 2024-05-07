@@ -4,8 +4,8 @@
 
 In general, staking and governance in Lisk is inspired by the veToken Model and [this staking proposal for the Arbitrum DAO](https://snapshot.org/#/arbitrumfoundation.eth/proposal/0xf22530295daee96dffd7f70854475c06216a4d3594929672f71c12bf638bb0c8). The basic idea is that token holders have the option to lock their tokens in Lisk for a duration between 2 weeks and 2 years in return for:
 
-- **voting power** depending on the locked amount with the option of a boost for longer paused unlocking countdown
-- **staking rewards** depending on the locked amount and locking duration
+- **voting power** depending on the locked amount with the option of a boost for longer paused unlocking countdown.
+- **staking rewards** depending on the locked amount and locking duration.
 
 This design with selectable locking duration helps to align token holders with the long term success of the Lisk project.
 
@@ -83,3 +83,6 @@ For creating a proposal or voting on a proposal, the user is interacting with th
 ![Queueing](diagrams/queue.png)
 
 If a proposal has an attached execution, e.g. a transfer of some treasury funds, and the proposal passed, then the proposal must be queued and then executed. For this, a user (this can be any user) must interact with the Governor contract. This one is forwarding the queue/execute operation to the Timelock Controller contract, and the Governor contract additionally emits events which Tally uses for indexing. The Governor contract is the only account that is allowed to queue proposals at the Timelock Controller. As all executions are eventually executed by the Timelock Controller, contracts owned by the Lisk DAO must be owned by the Timelock Controller, and the DAO treasury must be held by it as well.
+
+### Implementation of Lisk Staking
+[See Lisk Staking implementation page](./staking.md)
