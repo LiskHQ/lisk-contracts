@@ -1280,7 +1280,10 @@ contract L2RewardTest is Test {
         vm.startPrank(staker);
         l2LiskToken.approve(address(l2Reward), amountIncrease * 2);
         then_eventRewardsClaimedIsEmitted(lockIDs[0], expectedRewardPerStake);
+        then_eventLockingAmountIncreasedIsEmitted(increasingAmounts[0].lockID, increasingAmounts[0].amountIncrease);
         then_eventRewardsClaimedIsEmitted(lockIDs[1], expectedRewardPerStake);
+        then_eventLockingAmountIncreasedIsEmitted(increasingAmounts[1].lockID, increasingAmounts[1].amountIncrease);
+
         l2Reward.increaseLockingAmount(increasingAmounts);
         vm.stopPrank();
 
