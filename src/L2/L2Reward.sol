@@ -96,7 +96,7 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
     event LockingPositionContractAddressChanged(address indexed oldAddress, address indexed newAddress);
 
     /// @notice Emitted when a position is rewarded.
-    event RewardsClaimed(uint256 lockID, uint256 amount);
+    event RewardsClaimed(uint256 indexed lockID, uint256 amount);
 
     /// @notice Represents duration extension for a position.
     struct ExtendedDuration {
