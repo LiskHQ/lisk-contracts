@@ -852,8 +852,10 @@ contract L2RewardTest is Test {
             l2LiskToken.balanceOf(staker) + expectedRewardsPerStake * 2 + convertLiskToSmallestDenomination(100) * 2;
 
         // staker deletes position
-        then_eventRewardsClaimedIsEmitted(lockIDs[0], expectedRewards);
+        then_eventRewardsClaimedIsEmitted(lockIDs[0], expectedRewardsPerStake);
         then_eventLockingPositionDeletedIsEmitted(lockIDs[0]);
+        then_eventRewardsClaimedIsEmitted(lockIDs[1], expectedRewardsPerStake);
+        then_eventLockingPositionDeletedIsEmitted(lockIDs[1]);
         vm.prank(staker);
         l2Reward.deletePositions(lockIDs);
 
@@ -986,7 +988,9 @@ contract L2RewardTest is Test {
 
         // staker pauses positions
         then_eventRewardsClaimedIsEmitted(lockIDs[0], expectedRewardsPerStake);
+        then_eventLockingPositionPausedIsEmitted(lockIDs[0]);
         then_eventRewardsClaimedIsEmitted(lockIDs[1], expectedRewardsPerStake);
+        then_eventLockingPositionPausedIsEmitted(lockIDs[1]);
         vm.prank(staker);
         l2Reward.pauseUnlocking(lockIDs);
 
@@ -1139,7 +1143,9 @@ contract L2RewardTest is Test {
 
         // staker resumes the positions
         then_eventRewardsClaimedIsEmitted(lockIDs[0], expectedRewardsPerStake);
+        then_eventUnlockingCountdownResumedIsEmitted(lockIDs[0]);
         then_eventRewardsClaimedIsEmitted(lockIDs[1], expectedRewardsPerStake);
+        then_eventUnlockingCountdownResumedIsEmitted(lockIDs[1]);
         vm.prank(staker);
         l2Reward.resumeUnlockingCountdown(lockIDs);
 
@@ -1283,6 +1289,8 @@ contract L2RewardTest is Test {
         l2Reward.increaseLockingAmount(increasingAmounts);
         vm.stopPrank();
 
+        assertEq(l2LockingPosition.getLockingPosition(lockIDs[0]).amount, amount + increasingAmounts[0].amountIncrease);
+
         assertEq(l2Reward.totalAmountLocked(), amount + increasingAmounts[0].amountIncrease);
         assertEq(l2LiskToken.balanceOf(staker), balance + expectedReward - increasingAmounts[0].amountIncrease);
         assertEq(l2Reward.totalWeight(), totalWeightIncrease + totalWeight);
@@ -1326,6 +1334,11 @@ contract L2RewardTest is Test {
 
         l2Reward.increaseLockingAmount(increasingAmounts);
         vm.stopPrank();
+
+        assertEq(
+            l2LockingPosition.getLockingPosition(increasingAmounts[0].lockID).amount,
+            amount + increasingAmounts[0].amountIncrease
+        );
 
         // daily rewards are capped
         for (uint256 i = 19750; i < 19760; i++) {
@@ -1383,6 +1396,9 @@ contract L2RewardTest is Test {
 
         l2Reward.increaseLockingAmount(increasingAmounts);
         vm.stopPrank();
+
+        assertEq(l2LockingPosition.getLockingPosition(lockIDs[0]).amount, amount + amountIncrease);
+        assertEq(l2LockingPosition.getLockingPosition(lockIDs[1]).amount, amount + amountIncrease);
 
         assertEq(l2Reward.totalAmountLocked(), (amount + amountIncrease) * 2);
         assertEq(
@@ -1491,6 +1507,10 @@ contract L2RewardTest is Test {
         l2Reward.extendDuration(extensions);
         vm.stopPrank();
 
+        uint256 expectedExpiryDate = deploymentDate + duration + extensions[0].durationExtension;
+
+        assertEq(l2LockingPosition.getLockingPosition(extensions[0].lockID).expDate, expectedExpiryDate);
+
         assertEq(l2Reward.totalWeight(), (27000 * 10 ** 18) - (5000 * 10 ** 18) + weightIncrease);
         assertEq(l2LiskToken.balanceOf(staker), balance + expectedReward);
         assertEq(l2Reward.dailyUnlockedAmounts(deploymentDate + duration), 0);
@@ -1531,6 +1551,10 @@ contract L2RewardTest is Test {
 
         // today is assumed to be the expiry date
         assertEq(l2Reward.dailyUnlockedAmounts(l2Reward.todayDay() + extensions[0].durationExtension), amount);
+        assertEq(
+            l2LockingPosition.getLockingPosition(extensions[0].lockID).expDate,
+            l2Reward.todayDay() + extensions[0].durationExtension
+        );
 
         skip(60 days);
 
@@ -1626,6 +1650,9 @@ contract L2RewardTest is Test {
         vm.stopPrank();
 
         assertEq(l2Reward.totalWeight(), totalWeightBeforeExtension);
+        assertEq(
+            l2LockingPosition.getLockingPosition(lockIDs[0]).expDate, deploymentDate + 1 + duration + durationExtension
+        );
 
         uint256 expectedRewardsFor20Days = 1 * 10 ** 18;
 
