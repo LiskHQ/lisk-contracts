@@ -1275,13 +1275,13 @@ contract L2RewardTest is Test {
 
         skip(50 days);
 
-        uint256 expectedRewardPerStake = 2.5 * 10 ** 18;
+        uint256 expectedRewardPerStakeFor50Days = 2.5 * 10 ** 18;
 
         vm.startPrank(staker);
         l2LiskToken.approve(address(l2Reward), amountIncrease * 2);
-        then_eventRewardsClaimedIsEmitted(lockIDs[0], expectedRewardPerStake);
+        then_eventRewardsClaimedIsEmitted(lockIDs[0], expectedRewardPerStakeFor50Days);
         then_eventLockingAmountIncreasedIsEmitted(increasingAmounts[0].lockID, increasingAmounts[0].amountIncrease);
-        then_eventRewardsClaimedIsEmitted(lockIDs[1], expectedRewardPerStake);
+        then_eventRewardsClaimedIsEmitted(lockIDs[1], expectedRewardPerStakeFor50Days);
         then_eventLockingAmountIncreasedIsEmitted(increasingAmounts[1].lockID, increasingAmounts[1].amountIncrease);
 
         l2Reward.increaseLockingAmount(increasingAmounts);
@@ -1290,25 +1290,25 @@ contract L2RewardTest is Test {
         assertEq(l2Reward.totalAmountLocked(), (amount + amountIncrease) * 2);
         assertEq(
             l2LiskToken.balanceOf(address(l2Reward)),
-            convertLiskToSmallestDenomination(35) - (2 * expectedRewardPerStake)
+            convertLiskToSmallestDenomination(35) - (2 * expectedRewardPerStakeFor50Days)
         );
 
         skip(50 days);
 
-        then_eventRewardsClaimedIsEmitted(lockIDs[0], expectedRewardPerStake);
-        then_eventRewardsClaimedIsEmitted(lockIDs[1], expectedRewardPerStake);
+        then_eventRewardsClaimedIsEmitted(lockIDs[0], expectedRewardPerStakeFor50Days);
+        then_eventRewardsClaimedIsEmitted(lockIDs[1], expectedRewardPerStakeFor50Days);
         vm.prank(staker);
         l2Reward.claimRewards(lockIDs);
 
         skip(30 days);
 
-        uint256 expectedRewardsForRemainingDuration = 1 * 10 ** 18;
-        then_eventRewardsClaimedIsEmitted(lockIDs[0], expectedRewardsForRemainingDuration);
-        then_eventRewardsClaimedIsEmitted(lockIDs[1], expectedRewardsForRemainingDuration);
+        uint256 expectedRewardsPerStakeFor20Days = 1 * 10 ** 18;
+        then_eventRewardsClaimedIsEmitted(lockIDs[0], expectedRewardsPerStakeFor20Days);
+        then_eventRewardsClaimedIsEmitted(lockIDs[1], expectedRewardsPerStakeFor20Days);
         vm.prank(staker);
         l2Reward.claimRewards(lockIDs);
 
-        uint256 totalRewardsClaimedByStaker = expectedRewardPerStake * 4 + expectedRewardsForRemainingDuration * 2;
+        uint256 totalRewardsClaimedByStaker = expectedRewardPerStakeFor50Days * 4 + expectedRewardsPerStakeFor20Days * 2;
 
         assertEq(l2LiskToken.balanceOf(address(l2Reward)), funds - totalRewardsClaimedByStaker);
     }
