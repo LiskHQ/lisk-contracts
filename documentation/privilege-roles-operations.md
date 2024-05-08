@@ -12,9 +12,9 @@ There are also additional actions that require the `owner` role, like setting a 
 
 The following are the privilege roles that are defined in the smart contracts:
 
-- `owner`: The account that owns the contract. This account has the highest level of privilege and can perform all critical operations like upgrading the contract, setting DAO treasury address, setting emergency exit, etc. The owner of deployed smart contracts is a `Security council`. This is a multisignature account that requires the approval of the majority of the members to perform any operation. The multisignature account is controlled by different parties, which ensures that no single party has full control over the contract.
-- `burner`: The account that is allowed to burn LSK tokens.
-- `creator`: The account (smart contract) which is allowed to lock LSK tokens and manipulate with them on behalf of the users inside [L2StakingContract](../src/L2/L2Staking.sol) smart contract. A security assumption is that the `creator` is a trusted smart contract that will not misuse the locked LSK tokens.
+- `owner`: The account that owns the contract. This account has the highest level of privilege and can perform all critical operations like upgrading the contract, setting DAO treasury address, setting emergency exit, etc. The owner of deployed smart contracts is a `Security council`. This is a multisignature account that requires the approval of the majority of the members to perform any operation. The multisignature account is controlled by different parties, which ensures that no single party has full control over the contract. Smart contract which have the `owner` role defined are [L1LiskToken](../src/L1/L1LiskToken.sol), [L2Claim](../src/L2/L2Claim.sol), [L2Governor](../src/L2/L2Governor.sol), [L2LockingPosition](../src/L2/L2LockingPosition.sol), [L2Reward](../src/L2/L2Reward.sol), [L2Staking](../src/L2/L2Staking.sol), [L2VestingWallet](../src/L2/L2VestingWallet.sol) and [L2VotingPower](../src/L2/L2VotingPower.sol).
+- `burner`: The account that is allowed to burn LSK tokens. This role is defined in the [L1LiskToken](../src/L1/L1LiskToken.sol) smart contract.
+- `creator`: The accounts (smart contracts) which are allowed to lock LSK tokens and manipulate with them on behalf of the users inside [L2StakingContract](../src/L2/L2Staking.sol) smart contract. It is expected that only one smart contract will be allowed to be a `creator` ([L2Reward](../src/L2/L2Reward.sol)) but in principle, there can be multiple `creators`. A security assumption is that the `creator` is a trusted smart contract that will not misuse the locked LSK tokens. This role is defined in the [L2Staking](../src/L2/L2Staking.sol) smart contract.
 
 ## Smart Contracts and Their Privilege Roles
 
@@ -46,7 +46,7 @@ The following are the smart contracts that have privilege roles defined in their
 - [L2Staking.sol](../src/L2/L2Staking.sol): This contract has the `owner` and `creator` roles defined. The `owner` role is required to upgrade the contract, set [L2LockingPosition](../src/L2/L2LockingPosition.sol) and DAO treasury addresses inside this contract, set emergency exit and add or remove `creator`:
     - `initializeLockingPosition`: Sets `L2LockingPosition` contract address. (called only once)
     - `initializeDaoTreasury`: Sets DAO treasury address. (called only once)
-    - `setEmergencyExitEnabled`: Sets the emergency exit enabled flag to true or false.
+    - `setEmergencyExitEnabled`: Sets the emergency exit enabled flag to true or false. This functionality is intended for scenarios where a new staking rewards program is initiated and users are permitted to withdraw their funds without incurring penalties. Although this function may be called multiple times, it is not anticipated to be a frequent occurrence.
     - `addCreator`: Adds a new creator to the list of allowed creators.
     - `removeCreator`: Removes a creator from the list of allowed creators.
 
