@@ -1415,13 +1415,13 @@ contract L2RewardTest is Test {
 
         skip(30 days);
 
-        uint256 expectedRewardsPerStakeFor20Days = 1 * 10 ** 18;
-        then_eventRewardsClaimedIsEmitted(lockIDs[0], expectedRewardsPerStakeFor20Days);
-        then_eventRewardsClaimedIsEmitted(lockIDs[1], expectedRewardsPerStakeFor20Days);
+        uint256 expectedRewardsPerStakeFor30Days = 1 * 10 ** 18;
+        then_eventRewardsClaimedIsEmitted(lockIDs[0], expectedRewardsPerStakeFor30Days);
+        then_eventRewardsClaimedIsEmitted(lockIDs[1], expectedRewardsPerStakeFor30Days);
         vm.prank(staker);
         l2Reward.claimRewards(lockIDs);
 
-        uint256 totalRewardsClaimedByStaker = expectedRewardPerStakeFor50Days * 4 + expectedRewardsPerStakeFor20Days * 2;
+        uint256 totalRewardsClaimedByStaker = expectedRewardPerStakeFor50Days * 4 + expectedRewardsPerStakeFor30Days * 2;
 
         assertEq(l2LiskToken.balanceOf(address(l2Reward)), funds - totalRewardsClaimedByStaker);
     }
@@ -1609,6 +1609,14 @@ contract L2RewardTest is Test {
         then_eventLockingDurationExtendedIsEmitted(lockIDs[0], extensions[0].durationExtension);
         l2Reward.extendDuration(extensions);
         vm.stopPrank();
+
+        // expDate does not change for paused position
+        assertEq(l2LockingPosition.getLockingPosition(extensions[0].lockID).expDate, deploymentDate + duration);
+        // pausedLockingDuration is extended by 50 days
+        assertEq(
+            l2LockingPosition.getLockingPosition(extensions[0].lockID).pausedLockingDuration,
+            duration + extensions[0].durationExtension
+        );
 
         assertEq(l2LiskToken.balanceOf(staker), balance + expectedReward);
         assertEq(l2Reward.totalWeight(), expectedTotalWeight);
