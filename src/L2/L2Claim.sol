@@ -2,6 +2,7 @@
 pragma solidity 0.8.23;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import { MerkleProof } from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import { Initializable } from "@openzeppelin-upgradeable/contracts/proxy/utils/Initializable.sol";
 import { Ownable2StepUpgradeable } from "@openzeppelin-upgradeable/contracts/access/Ownable2StepUpgradeable.sol";
@@ -194,8 +195,7 @@ contract L2Claim is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, ISe
             "L2Claim: signatures array has invalid length"
         );
 
-        // If numberOfSignatures passes MerkleProof in later stage, that means this value is correct.
-        uint32 numberOfSignatures = uint32(_keys.mandatoryKeys.length);
+        uint32 numberOfSignatures = SafeCast.toUint32(_keys.mandatoryKeys.length);
 
         for (uint256 i = 0; i < _keys.optionalKeys.length; i++) {
             if (_sigs[i + _keys.mandatoryKeys.length].r == bytes32(0)) {
