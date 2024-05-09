@@ -2,7 +2,7 @@ name: PR CI
 
 on:
   pull_request:
-    branches: [ main ]
+    branches: [ main, 'feature/improvements-and-recommendations' ]
 
 permissions:
   contents: read
