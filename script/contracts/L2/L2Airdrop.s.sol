@@ -49,8 +49,8 @@ contract L2AirdropScript is Script {
         assert(l2AddressesConfig.L2VotingPower != address(0));
         console2.log("L2 Voting Power address: %s", l2AddressesConfig.L2VotingPower);
 
-        // deploy L2Airdrop contract, set Merkle Root and transfer its ownership; new owner has to accept ownership to
-        // become the owner of the contract
+        // deploy L2Airdrop contract and transfer its ownership; new owner has to accept ownership to become the owner
+        // of the contract
         vm.startBroadcast(deployerPrivateKey);
         L2Airdrop l2Airdrop = new L2Airdrop(
             l2AddressesConfig.L2LiskToken,
