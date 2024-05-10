@@ -13,6 +13,8 @@ contract Utils is Script {
     struct L1AddressesConfig {
         /// @notice L1 Lisk token address.
         address L1LiskToken;
+        /// @notice The Current implementation of L1 Vesting Wallet.
+        address L1VestingWalletImplementation;
     }
 
     /// @notice This struct is used to read and write L2 addresses to JSON file.
@@ -120,6 +122,12 @@ contract Utils is Script {
             l1AddressesConfig.L1LiskToken = l1LiskToken;
         } catch { }
 
+        try vm.parseJsonAddress(addressJson, ".L1VestingWalletImplementation") returns (
+            address l1VestingWalletImplementation
+        ) {
+            l1AddressesConfig.L1VestingWalletImplementation = l1VestingWalletImplementation;
+        } catch { }
+
         return l1AddressesConfig;
     }
 
@@ -128,7 +136,9 @@ contract Utils is Script {
     function writeL1AddressesFile(L1AddressesConfig memory cfg) external {
         string memory network = getNetworkType();
         string memory json = "";
-        string memory finalJson = vm.serializeAddress(json, "L1LiskToken", cfg.L1LiskToken);
+        vm.serializeAddress(json, "L1LiskToken", cfg.L1LiskToken);
+        string memory finalJson =
+            vm.serializeAddress(json, "L1VestingWalletImplementation", cfg.L1VestingWalletImplementation);
         finalJson.write(string.concat("deployment/", network, "/l1addresses.json"));
     }
 
@@ -274,24 +284,35 @@ contract Utils is Script {
     }
 
     /// @notice This function returns vesting address from JSON file by providing vestingAddressTag
-    /// @param vestingAddressTag Identifier of the Vesting Address
+    /// @param _vestingAddressTag Identifier of the Vesting Address
+    /// @param _network Network of the running script, either be "L1" or "L2"
     /// @return Vesting Address corresponding to vestingAddressTag.
-    function readVestingAddress(string memory vestingAddressTag) external view returns (address) {
+    function readVestingAddress(
+        string memory _vestingAddressTag,
+        string memory _network
+    )
+        external
+        view
+        returns (address)
+    {
         string memory network = getNetworkType();
         string memory root = vm.projectRoot();
-        string memory vestingAddressesPath = string.concat(root, "/script/data/", network, "/vestingPlans.json");
+        string memory vestingAddressesPath =
+            string.concat(root, "/script/data/", network, string.concat("/vestingPlans_", _network, ".json"));
         string memory vestingAddressesJson = vm.readFile(vestingAddressesPath);
         bytes memory vestingAddressRaw =
-            vestingAddressesJson.parseRaw(string.concat(".vestingAddresses.", vestingAddressTag));
+            vestingAddressesJson.parseRaw(string.concat(".vestingAddresses.", _vestingAddressTag));
         return abi.decode(vestingAddressRaw, (address));
     }
 
     /// @notice This function reads Vesting Plans from JSON file.
+    /// @param _network Network of the running script, either be "L1" or "L2"
     /// @return An array of Vesting Plans.
-    function readVestingPlansFile() external view returns (VestingPlan[] memory) {
+    function readVestingPlansFile(string memory _network) external view returns (VestingPlan[] memory) {
         string memory network = getNetworkType();
         string memory root = vm.projectRoot();
-        string memory vestingPlansPath = string.concat(root, "/script/data/", network, "/vestingPlans.json");
+        string memory vestingPlansPath =
+            string.concat(root, "/script/data/", network, string.concat("/vestingPlans_", _network, ".json"));
         string memory vestingPlansJson = vm.readFile(vestingPlansPath);
         bytes memory vestingPlansRaw = vestingPlansJson.parseRaw(string.concat(".vestingPlans"));
         return abi.decode(vestingPlansRaw, (VestingPlan[]));

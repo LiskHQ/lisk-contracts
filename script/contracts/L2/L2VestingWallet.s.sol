@@ -12,6 +12,9 @@ contract L2VestingWalletScript is Script {
     /// @notice Utils contract which provides functions to read and write JSON files containing L2 addresses.
     Utils utils;
 
+    /// @notice Stating the network of this script
+    string public constant network = "L2";
+
     function setUp() public {
         utils = new Utils();
     }
@@ -37,11 +40,11 @@ contract L2VestingWalletScript is Script {
                 == bytes32(uint256(keccak256("eip1967.proxy.implementation")) - 1)
         );
 
-        Utils.VestingPlan[] memory plans = utils.readVestingPlansFile();
+        Utils.VestingPlan[] memory plans = utils.readVestingPlansFile(network);
         Utils.VestingWallet[] memory vestingWallets = new Utils.VestingWallet[](plans.length);
         for (uint256 i; i < plans.length; i++) {
             Utils.VestingPlan memory vestingPlan = plans[i];
-            address beneficiary = utils.readVestingAddress(vestingPlan.beneficiaryAddressTag);
+            address beneficiary = utils.readVestingAddress(vestingPlan.beneficiaryAddressTag, network);
 
             console2.log("Deploying Vesting Plan #%d: %s to: %s", i, vestingPlan.name, beneficiary);
             vm.startBroadcast(deployerPrivateKey);

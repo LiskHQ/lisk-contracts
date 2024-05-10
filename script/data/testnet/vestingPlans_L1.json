@@ -1,0 +1,46 @@
+{
+  "vestingAddresses": {
+    "team1Address": "0xE1F2e7E049A8484479f14aF62d831f70476fCDBc",
+    "team2Address": "0x74A898371f058056cD94F5D2D24d5d0BFacD3EB9",
+    "treasuryAddress": "0x1F90351deB07201c6C40e9079138a62ea640F31B",
+    "investorAddress": "0xA007F4dbEd55da3fC809232A233E154b9c8B9c3f",
+    "ecosystemAddress": "0xD7D4D62AdcF8bb8448ba17c5441c7a80F8D8b0Cf"
+  },
+  "vestingPlans": [
+    {
+      "name": "Team I",
+      "beneficiaryAddressTag": "team1Address",
+      "startTimestamp": 1735689600,
+      "durationDays": 1461,
+      "amount": 5500000000000000000000000
+    },
+    {
+      "name": "Team II",
+      "beneficiaryAddressTag": "team2Address",
+      "startTimestamp": 1735689600,
+      "durationDays": 1461,
+      "amount": 1500000000000000000000000
+    },
+    {
+      "name": "Treasury",
+      "beneficiaryAddressTag": "treasuryAddress",
+      "startTimestamp": 1735689600,
+      "durationDays": 1461,
+      "amount": 8000000000000000000000000
+    },
+    {
+      "name": "Investor",
+      "beneficiaryAddressTag": "treasuryAddress",
+      "startTimestamp": 1716163200,
+      "durationDays": 730,
+      "amount": 8000000000000000000000000
+    },
+    {
+      "name": "Ecosystem",
+      "beneficiaryAddressTag": "ecosystemAddress",
+      "startTimestamp": 1735689600,
+      "durationDays": 0,
+      "amount": 2860417000000000000000000
+    }
+  ]
+}

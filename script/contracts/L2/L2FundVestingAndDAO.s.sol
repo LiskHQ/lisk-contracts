@@ -65,7 +65,7 @@ contract FundVestingAndDAOScript is Script {
         L1LiskToken l1LiskToken = L1LiskToken(address(l1AddressesConfig.L1LiskToken));
         IL1StandardBridge bridge = IL1StandardBridge(l1StandardBridge);
 
-        Utils.VestingPlan[] memory plans = utils.readVestingPlansFile();
+        Utils.VestingPlan[] memory plans = utils.readVestingPlansFile("L2");
 
         for (uint256 i; i < plans.length; i++) {
             Utils.VestingPlan memory vestingPlan = plans[i];
