@@ -12,8 +12,8 @@ contract L1VestingWalletScript is Script {
     /// @notice Utils contract which provides functions to read and write JSON files containing L1 addresses.
     Utils utils;
 
-    /// @notice Stating the network of this script
-    string public constant network = "L1";
+    /// @notice Stating the network layer of this script
+    string public constant layer = "L1";
 
     function setUp() public {
         utils = new Utils();
@@ -40,11 +40,11 @@ contract L1VestingWalletScript is Script {
                 == bytes32(uint256(keccak256("eip1967.proxy.implementation")) - 1)
         );
 
-        Utils.VestingPlan[] memory plans = utils.readVestingPlansFile(network);
+        Utils.VestingPlan[] memory plans = utils.readVestingPlansFile(layer);
         Utils.VestingWallet[] memory vestingWallets = new Utils.VestingWallet[](plans.length);
         for (uint256 i; i < plans.length; i++) {
             Utils.VestingPlan memory vestingPlan = plans[i];
-            address beneficiary = utils.readVestingAddress(vestingPlan.beneficiaryAddressTag, network);
+            address beneficiary = utils.readVestingAddress(vestingPlan.beneficiaryAddressTag, layer);
 
             console2.log("Deploying Vesting Plan #%d: %s to: %s", i, vestingPlan.name, beneficiary);
             vm.startBroadcast(deployerPrivateKey);
@@ -75,7 +75,7 @@ contract L1VestingWalletScript is Script {
         }
 
         // Write all Vesting Contract addresses to vestingWallets.json
-        utils.writeVestingWalletsFile(vestingWallets);
+        utils.writeVestingWalletsFile(vestingWallets, layer);
 
         // write L1VestingWallet address to l1addresses.json
         l1AddressesConfig.L1VestingWalletImplementation = address(l1VestingWalletImplementation);

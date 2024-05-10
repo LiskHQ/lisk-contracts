@@ -36,6 +36,9 @@ contract FundVestingAndDAOScript is Script {
     /// @notice Utils contract which provides functions to read and write JSON files containing L1 and L2 addresses.
     Utils utils;
 
+    /// @notice Stating the network layer of this script
+    string public constant layer = "L2";
+
     /// @notice Amount of LSK tokens to be transferred to the DAO.
     uint256 public constant DAO_AMOUNT = 6_250_000 * 10 ** 18; // 6,250,000 LSK
 
@@ -65,11 +68,11 @@ contract FundVestingAndDAOScript is Script {
         L1LiskToken l1LiskToken = L1LiskToken(address(l1AddressesConfig.L1LiskToken));
         IL1StandardBridge bridge = IL1StandardBridge(l1StandardBridge);
 
-        Utils.VestingPlan[] memory plans = utils.readVestingPlansFile("L2");
+        Utils.VestingPlan[] memory plans = utils.readVestingPlansFile(layer);
 
         for (uint256 i; i < plans.length; i++) {
             Utils.VestingPlan memory vestingPlan = plans[i];
-            address vestingWalletAddress = utils.readVestingWalletAddress(vestingPlan.name);
+            address vestingWalletAddress = utils.readVestingWalletAddress(vestingPlan.name, layer);
 
             console2.log(
                 "Transferring %s Lisk tokens to the vesting wallet %s ... on L2",
