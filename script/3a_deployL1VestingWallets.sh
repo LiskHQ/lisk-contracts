@@ -27,7 +27,7 @@ else
 fi
 echo "Done."
 
-echo "Deploying and if enabled verifying L1LiskToken smart contract..."
+echo "Deploying and if enabled verifying L1VestingWallet smart contract..."
 if [ -z "$CONTRACT_VERIFIER" ]
 then
       forge script --rpc-url="$L1_RPC_URL" --broadcast -vvvv script/contracts/L1/L1VestingWallet.s.sol:L1VestingWalletScript
@@ -43,6 +43,6 @@ else
 fi
 echo "Done."
 
-echo "Fund the Vesting and DAO smart contracts..."
+echo "Fund the Vesting contracts..."
 forge script --rpc-url="$L1_RPC_URL" --broadcast -vvvv script/contracts/L1/L1FundVesting.s.sol:L1FundVestingScript
 echo "Done."

@@ -44,6 +44,7 @@ contract L1FundVestingScript is Script {
             // transfer L1 Lisk tokens to the vesting wallet
             vm.startBroadcast(deployerPrivateKey);
             l1LiskToken.transfer(vestingWalletAddress, vestingPlan.amount);
+            assert(l1LiskToken.balanceOf(vestingWalletAddress) == vestingPlan.amount);
             vm.stopBroadcast();
         }
 
