@@ -74,7 +74,7 @@ contract L1VestingWalletScript is Script {
             vestingWallets[i] = Utils.VestingWallet(vestingPlan.name, address(l1VestingWalletProxy));
         }
 
-        // Write all Vesting Contract addresses to vestingWallets.json
+        // Write all Vesting Contract addresses to vestingWallets_L1.json
         utils.writeVestingWalletsFile(vestingWallets, layer);
 
         // write L1VestingWallet address to l1addresses.json

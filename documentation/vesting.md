@@ -8,7 +8,7 @@ This page documents the contract [L2VestingWallet.sol](../src/L2/L2VestingWallet
 
 The following table gives an overview of the vesting schedules, each implemented by a separate deployed vesting contract. Note that the vesting for the DAO treasury is implemented in four distinct contracts as the addition of 100,000,000 LSK to the DAO treasury depends on a governance vote and there are slight differences in the emissions in the different years.
 
-The vesting schedules are read from the [vestingPlans.json](../script/data/devnet/vestingPlans.json) file. Note that the vested amount is not passed into the initializer of `VestingWalletUpgradeable` contract, rather all tokens transferred to this smart contract are vested over the provided period.
+The vesting schedules are read from the [vestingPlans_L1.json](../script/data/devnet/vestingPlans_L1.json) and [vestingPlans_L2.json](../script/data/devnet/vestingPlans_L2.json) file. Note that the vested amount is not passed into the initializer of `VestingWalletUpgradeable` contract, rather all tokens transferred to this smart contract are vested over the provided period.
 
 | Category | Amount (LSK) | Beneficiary Address | Start Timestamp | Duration in Days | Description |
 |----------|--------------|-----------------|------------------|-------------|-------------|
