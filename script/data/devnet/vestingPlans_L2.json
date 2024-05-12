@@ -20,7 +20,7 @@
       "beneficiaryAddressTag": "l2TimelockController",
       "startTimestamp": 1798761600,
       "durationDays": 2192,
-      "amount": 15000000000000000000000000
+      "amount": 90000000000000000000000000
     },
     {
       "name": "Vested DAO Funds 2033",

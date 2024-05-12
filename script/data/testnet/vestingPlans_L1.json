@@ -30,10 +30,10 @@
     },
     {
       "name": "Investor",
-      "beneficiaryAddressTag": "treasuryAddress",
-      "startTimestamp": 1716163200,
+      "beneficiaryAddressTag": "investorAddress",
+      "startTimestamp": 1735689600,
       "durationDays": 730,
-      "amount": 8000000000000000000000000
+      "amount": 20000000000000000000000000
     },
     {
       "name": "Ecosystem",
