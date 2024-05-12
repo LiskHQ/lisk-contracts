@@ -47,6 +47,7 @@ contract L2VestingWalletScript is Script {
             address beneficiary;
 
             if (keccak256(bytes(vestingPlan.beneficiaryAddressTag)) == keccak256("l2TimelockController")) {
+                console2.log("Deploying L2VestingWallet Implementation...");
                 beneficiary = l2AddressesConfig.L2TimelockController;
             } else {
                 beneficiary = utils.readVestingAddress(vestingPlan.beneficiaryAddressTag, layer);
