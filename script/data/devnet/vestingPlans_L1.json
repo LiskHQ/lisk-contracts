@@ -25,7 +25,7 @@
       "name": "Treasury",
       "beneficiaryAddressTag": "treasuryAddress",
       "startTimestamp": 1735689600,
-      "durationDays": 1461,
+      "durationDays": 1095,
       "amount": 8000000000000000000000000
     },
     {
