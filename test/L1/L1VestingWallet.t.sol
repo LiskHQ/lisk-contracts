@@ -82,6 +82,7 @@ contract L1VestingWalletTest is Test {
         assertEq(l1VestingWallet.start(), startTimestamp);
         assertEq(l1VestingWallet.duration(), durationSeconds);
         assertEq(l1VestingWallet.version(), "1.0.0");
+        assertEq(l1VestingWallet.hasRole(l1VestingWallet.CONTRACT_ADMIN_ROLE(), contractAdmin), true);
     }
 
     function test_Release() public {
