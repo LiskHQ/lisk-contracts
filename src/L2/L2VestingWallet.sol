@@ -52,7 +52,7 @@ contract L2VestingWallet is
         initializer
     {
         require(_beneficiary != address(0), "VestingWallet: _beneficiary address cannot be 0");
-        require(_contractAdmin != address(0), "VestingWallet: _beneficiary address cannot be 0");
+        require(_contractAdmin != address(0), "VestingWallet: _contractAdmin address cannot be 0");
 
         __Ownable2Step_init();
         __UUPSUpgradeable_init();

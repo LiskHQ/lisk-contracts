@@ -262,7 +262,7 @@ contract L2VestingWalletTest is Test {
         vm.stopPrank();
 
         vm.startPrank(nobody);
-        vm.expectRevert("VestingWallet:Not pendingContractAdmin");
+        vm.expectRevert("VestingWallet: Not pendingContractAdmin");
         l2VestingWallet.acceptContractAdminRole();
         vm.stopPrank();
     }
