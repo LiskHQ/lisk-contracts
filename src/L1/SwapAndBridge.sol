@@ -62,11 +62,13 @@ contract SwapAndBridge {
     }
 
     /// @notice Swap ETH to wrapped LST and bridge it to the recipient address on the L2.
-    /// If the amount of l1 token obtained per ETH is less than minL1TokensPerETH,
-    /// the transaction will revert.
+    /// If the amount of l1 token obtained is less than minL1Tokens, the transaction will revert.
     /// @param recipient The address to bridge the wrapped LST to.
-    /// @param minL1TokensPerETH The minimum amount of L1 tokens to be obtained per ETH.
-    function swapAndBridgeToWithMinimumAmount(address recipient, uint256 minL1TokensPerETH) public payable {
+    /// @param minL1Tokens The minimum amount of L1 tokens to be obtained.
+    function swapAndBridgeToWithMinimumAmount(address recipient, uint256 minL1Tokens) public payable {
+        // Check that the swap is for a non-zero ETH amount.
+        require(msg.value > 0, "Invalid msg value.");
+
         // Check recipient is not an invalid address.
         require(recipient != address(0), "Invalid recipient address.");
 
@@ -81,10 +83,9 @@ contract SwapAndBridge {
         require(balance > 0, "No wrapped tokens minted.");
 
         // Ensure that the amount of L1 tokens minted is greater than the minimum required.
-        // If minL1TokensPerETH == 0, then no check is performed.
-        if (minL1TokensPerETH > 0) {
-            uint256 minAmount = msg.value * minL1TokensPerETH / 1e18;
-            require(balance >= minAmount, "Insufficient L1 tokens minted.");
+        // If minL1Tokens == 0, then no check is performed.
+        if (minL1Tokens > 0) {
+            require(balance >= minL1Tokens, "Insufficient L1 tokens minted.");
         }
 
         // Approve the L1 bridge to transfer the wrapped tokens to the L2.
