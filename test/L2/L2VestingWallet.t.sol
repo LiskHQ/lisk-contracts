@@ -4,9 +4,20 @@ pragma solidity 0.8.23;
 import { Test, console, console2, StdCheats } from "forge-std/Test.sol";
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import { OwnableUpgradeable } from "@openzeppelin-upgradeable/contracts/access/OwnableUpgradeable.sol";
+import { IAccessControl } from "@openzeppelin/contracts/access/IAccessControl.sol";
 import { L2VestingWallet } from "src/L2/L2VestingWallet.sol";
 import { SigUtils } from "test/SigUtils.sol";
 import { MockERC20 } from "test/mock/MockERC20.sol";
+
+contract L2VestingWalletV2Mock is L2VestingWallet {
+    function initializeV2(string memory _version) public reinitializer(2) {
+        version = _version;
+    }
+
+    function isV2() public pure returns (bool) {
+        return true;
+    }
+}
 
 contract L2VestingWalletTest is Test {
     L2VestingWallet public l2VestingWallet;
@@ -15,6 +26,7 @@ contract L2VestingWalletTest is Test {
     MockERC20 public mockToken;
 
     address public beneficiary = vm.addr(uint256(bytes32("beneficiary")));
+    address public contractAdmin = vm.addr(uint256(bytes32("contractAdmin")));
     uint64 public startTimestamp = uint64(vm.getBlockTimestamp());
     uint64 public durationSeconds = 1000;
     string public name = "Vesting Wallet";
@@ -25,7 +37,8 @@ contract L2VestingWalletTest is Test {
         address _beneficiary,
         uint64 _startTimestamp,
         uint64 _durationSeconds,
-        string memory _name
+        string memory _name,
+        address _contractAdmin
     )
         public
         returns (L2VestingWallet l2VestingWalletProxy)
@@ -40,7 +53,8 @@ contract L2VestingWalletTest is Test {
                             _beneficiary,
                             _startTimestamp,
                             _durationSeconds,
-                            _name
+                            _name,
+                            _contractAdmin
                         )
                     )
                 )
@@ -56,7 +70,7 @@ contract L2VestingWalletTest is Test {
         l2VestingWalletImplementation = new L2VestingWallet();
 
         // deploy L2VestingWallet contract via proxy and initialize it at the same time
-        l2VestingWallet = _deployVestingWallet(beneficiary, startTimestamp, durationSeconds, name);
+        l2VestingWallet = _deployVestingWallet(beneficiary, startTimestamp, durationSeconds, name, contractAdmin);
 
         mockToken = new MockERC20(vestAmount);
         mockToken.transfer(address(l2VestingWallet), vestAmount);
@@ -67,6 +81,7 @@ contract L2VestingWalletTest is Test {
         assertEq(l2VestingWallet.start(), startTimestamp);
         assertEq(l2VestingWallet.duration(), durationSeconds);
         assertEq(l2VestingWallet.version(), "1.0.0");
+        assertEq(l2VestingWallet.hasRole(l2VestingWallet.CONTRACT_ADMIN_ROLE(), contractAdmin), true);
     }
 
     function test_Release() public {
@@ -80,7 +95,7 @@ contract L2VestingWalletTest is Test {
 
     // To verify if the contract works correctly when durationSeconds = 0
     function test_Release_Instant() public {
-        L2VestingWallet newL2VestingWallet = _deployVestingWallet(beneficiary, startTimestamp, 0, name);
+        L2VestingWallet newL2VestingWallet = _deployVestingWallet(beneficiary, startTimestamp, 0, name, contractAdmin);
 
         MockERC20 mockToken2 = new MockERC20(vestAmount);
         mockToken2.transfer(address(newL2VestingWallet), vestAmount);
@@ -97,7 +112,8 @@ contract L2VestingWalletTest is Test {
         vm.warp(10 * 365 days);
 
         uint64 newStartTimestamp = uint64(vm.getBlockTimestamp());
-        L2VestingWallet newL2VestingWallet = _deployVestingWallet(beneficiary, newStartTimestamp + 365 days, 0, name);
+        L2VestingWallet newL2VestingWallet =
+            _deployVestingWallet(beneficiary, newStartTimestamp + 365 days, 0, name, contractAdmin);
 
         // leap 11 years
         vm.warp(11 * 365 days + 1);
@@ -117,7 +133,7 @@ contract L2VestingWalletTest is Test {
 
         uint64 newStartTimestamp = uint64(vm.getBlockTimestamp());
         L2VestingWallet newL2VestingWallet =
-            _deployVestingWallet(beneficiary, newStartTimestamp - 365 days, 100 days, name);
+            _deployVestingWallet(beneficiary, newStartTimestamp - 365 days, 100 days, name, contractAdmin);
 
         MockERC20 mockToken2 = new MockERC20(vestAmount);
         mockToken2.transfer(address(newL2VestingWallet), vestAmount);
@@ -135,7 +151,7 @@ contract L2VestingWalletTest is Test {
 
         uint64 newStartTimestamp = uint64(vm.getBlockTimestamp());
         L2VestingWallet newL2VestingWallet =
-            _deployVestingWallet(beneficiary, newStartTimestamp - 100 days, 365 days, name);
+            _deployVestingWallet(beneficiary, newStartTimestamp - 100 days, 365 days, name, contractAdmin);
 
         MockERC20 mockToken2 = new MockERC20(vestAmount);
         mockToken2.transfer(address(newL2VestingWallet), vestAmount);
@@ -153,7 +169,7 @@ contract L2VestingWalletTest is Test {
 
         uint64 newStartTimestamp = uint64(vm.getBlockTimestamp());
         L2VestingWallet newL2VestingWallet =
-            _deployVestingWallet(beneficiary, newStartTimestamp + 365 days, 365 days, name);
+            _deployVestingWallet(beneficiary, newStartTimestamp + 365 days, 365 days, name, contractAdmin);
 
         MockERC20 mockToken2 = new MockERC20(vestAmount);
         mockToken2.transfer(address(newL2VestingWallet), vestAmount);
@@ -201,5 +217,120 @@ contract L2VestingWalletTest is Test {
         vm.prank(nobody);
         vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, nobody));
         l2VestingWallet.acceptOwnership();
+    }
+
+    function test_TransferContractAdminRole_RevertWhenNotCalledByContractAdmin() public {
+        address newContractAdmin = vm.addr(1);
+        address nobody = vm.addr(2);
+
+        vm.startPrank(nobody);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IAccessControl.AccessControlUnauthorizedAccount.selector, nobody, l2VestingWallet.CONTRACT_ADMIN_ROLE()
+            )
+        );
+        l2VestingWallet.transferContractAdminRole(newContractAdmin);
+        vm.stopPrank();
+
+        // Beneficiary also cannot change contractAdmin
+        vm.startPrank(beneficiary);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IAccessControl.AccessControlUnauthorizedAccount.selector,
+                beneficiary,
+                l2VestingWallet.CONTRACT_ADMIN_ROLE()
+            )
+        );
+        l2VestingWallet.transferContractAdminRole(newContractAdmin);
+        vm.stopPrank();
+    }
+
+    function test_TransferContractAdminRole() public {
+        address newContractAdmin = vm.addr(1);
+
+        vm.prank(contractAdmin);
+        l2VestingWallet.transferContractAdminRole(newContractAdmin);
+        assertEq(newContractAdmin, l2VestingWallet.pendingContractAdmin());
+    }
+
+    function test_AcceptContractAdminRole_RevertWhenNotCalledByPendingContractAdmin() public {
+        address newContractAdmin = vm.addr(1);
+        address nobody = vm.addr(2);
+
+        vm.startPrank(contractAdmin);
+        l2VestingWallet.transferContractAdminRole(newContractAdmin);
+        vm.stopPrank();
+
+        vm.startPrank(nobody);
+        vm.expectRevert("VestingWallet:Not pendingContractAdmin");
+        l2VestingWallet.acceptContractAdminRole();
+        vm.stopPrank();
+    }
+
+    function test_AcceptContractAdminRole() public {
+        address newContractAdmin = vm.addr(1);
+
+        vm.startPrank(contractAdmin);
+        l2VestingWallet.transferContractAdminRole(newContractAdmin);
+        vm.stopPrank();
+
+        vm.startPrank(newContractAdmin);
+        l2VestingWallet.acceptContractAdminRole();
+        vm.stopPrank();
+
+        // There is always only 1 contract admin
+        assertEq(l2VestingWallet.getRoleMemberCount(l2VestingWallet.CONTRACT_ADMIN_ROLE()), 1);
+
+        assertEq(l2VestingWallet.getRoleMember(l2VestingWallet.CONTRACT_ADMIN_ROLE(), 0), newContractAdmin);
+    }
+
+    function test_UpgradeToAndCall_RevertWhenNotContractAdmin() public {
+        L2VestingWalletV2Mock l2VestingWalletV2Implementation = new L2VestingWalletV2Mock();
+        address nobody = vm.addr(1);
+
+        vm.startPrank(nobody);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IAccessControl.AccessControlUnauthorizedAccount.selector, nobody, l2VestingWallet.CONTRACT_ADMIN_ROLE()
+            )
+        );
+        l2VestingWallet.upgradeToAndCall(address(l2VestingWalletV2Implementation), "");
+        vm.stopPrank();
+
+        // Beneficiary also cannot upgrade contract
+        vm.startPrank(beneficiary);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IAccessControl.AccessControlUnauthorizedAccount.selector,
+                beneficiary,
+                l2VestingWallet.CONTRACT_ADMIN_ROLE()
+            )
+        );
+        l2VestingWallet.upgradeToAndCall(
+            address(l2VestingWalletV2Implementation),
+            abi.encodeWithSelector(l2VestingWalletV2Implementation.initializeV2.selector, "2.0.0")
+        );
+        vm.stopPrank();
+    }
+
+    function test_UpgradeToAndCall_SuccessUpgrade() public {
+        L2VestingWalletV2Mock l2VestingWalletV2Implementation = new L2VestingWalletV2Mock();
+
+        vm.prank(contractAdmin);
+        l2VestingWallet.upgradeToAndCall(
+            address(l2VestingWalletV2Implementation),
+            abi.encodeWithSelector(l2VestingWalletV2Implementation.initializeV2.selector, "2.0.0")
+        );
+        L2VestingWalletV2Mock l2VestingWalletV2 = L2VestingWalletV2Mock(payable(address(l2VestingWallet)));
+
+        // version of L2VestingWallet changed to 2.0.0
+        assertEq(l2VestingWalletV2.version(), "2.0.0");
+
+        // new function introduced
+        assertEq(l2VestingWalletV2.isV2(), true);
+
+        // assure cannot re-reinitialize
+        vm.expectRevert();
+        l2VestingWalletV2.initializeV2("3.0.0");
     }
 }
