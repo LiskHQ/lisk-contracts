@@ -13,8 +13,11 @@ contract TestSwapAndBridge is Test {
     // Address used for unit tests
     address constant testAccount = address(0xc0ffee);
 
+    // test account balance
+    uint256 testBalance = 1e60;
+
     function setUp() public {
-        vm.deal(testAccount, 500000 ether);
+        vm.deal(testAccount, testBalance);
     }
 
     function test_InvalidConstructor() public {
@@ -31,82 +34,136 @@ contract TestSwapAndBridge is Test {
     function test_InvalidRecipient() public {
         SwapAndBridge swapAndBridge = new SwapAndBridge(address(0xdead), address(0xbeef), address(0x1111));
         vm.expectRevert("Invalid recipient address.");
-        swapAndBridge.swapAndBridgeTo(address(0));
+        swapAndBridge.swapAndBridgeTo{ value: 1 }(address(0));
     }
 
-    function test_ReceiveFallback() public {
-        MockERC20LST mockLST = new MockERC20LST(1e18);
+    function test_ReceiveFallback(uint256 tokensPerETH, uint256 value) public {
+        // We bound tokensPerETH in fuzzzing to avoid overflows in the MockERC20LST contract
+        // and 'No wrapped tokens minted.' and 'Invalid msg value' reverts.
+        vm.assume(tokensPerETH > 0);
+        vm.assume(tokensPerETH <= 1e38);
+        vm.assume(value > 0);
+        vm.assume(value <= 1e38);
+        // Ensure that some tokens will be minted in the MockERC20LST contract.
+        vm.assume(tokensPerETH * value >= 1e18);
+
+        MockERC20LST mockLST = new MockERC20LST(tokensPerETH);
         MockStandardBridge bridge = new MockStandardBridge();
         SwapAndBridge swapAndBridge = new SwapAndBridge(address(bridge), address(mockLST), address(0xbeef));
 
         vm.startPrank(testAccount);
-        (bool sent,) = address(swapAndBridge).call{ value: 1 ether }("");
+        (bool sent,) = address(swapAndBridge).call{ value: value }("");
         require(sent == true, "Failed to send Ether.");
         vm.stopPrank();
     }
 
-    function test_SwapAndBridgeTo() public {
-        MockERC20LST mockLST = new MockERC20LST(1e18);
+    function test_SwapAndBridgeTo(uint256 tokensPerETH, uint256 value, address recipient) public {
+        // We bound tokensPerETH in fuzzzing to avoid overflows in the MockERC20LST contract
+        // and 'No wrapped tokens minted.' and 'Invalid msg value' reverts.
+        vm.assume(tokensPerETH > 0);
+        vm.assume(tokensPerETH <= 1e38);
+        vm.assume(value > 0);
+        vm.assume(value <= 1e38);
+        // Ensure that some tokens will be minted in the MockERC20LST contract.
+        vm.assume(tokensPerETH * value >= 1e18);
+
+        MockERC20LST mockLST = new MockERC20LST(tokensPerETH);
         MockStandardBridge bridge = new MockStandardBridge();
         SwapAndBridge swapAndBridge = new SwapAndBridge(address(bridge), address(mockLST), address(0xbeef));
 
         vm.startPrank(testAccount);
-        swapAndBridge.swapAndBridgeTo{ value: 1 ether }(testAccount);
+        if (recipient != address(0)) {
+            swapAndBridge.swapAndBridgeTo{ value: value }(recipient);
+        }
         vm.stopPrank();
     }
 
-    function test_SwapAndBridgeToWithMinimumAmount() public {
-        uint256 conversionRate = 1e18;
-        uint256 value = 1 ether;
-        uint256 expectedMinAmount = conversionRate * value / 1e18;
+    function test_SwapAndBridgeToWithMinimumAmount(uint256 tokensPerETH, uint256 value) public {
+        // We bound tokensPerETH in fuzzzing to avoid overflows in the MockERC20LST contract
+        // and 'No wrapped tokens minted.' and 'Invalid msg value' reverts.
+        vm.assume(tokensPerETH > 0);
+        vm.assume(tokensPerETH <= 1e38);
+        vm.assume(value > 0);
+        vm.assume(value <= 1e38);
+        // Ensure that some tokens will be minted in the MockERC20LST contract.
+        vm.assume(tokensPerETH * value >= 1e18);
 
-        MockERC20LST mockLST = new MockERC20LST(conversionRate);
+        MockERC20LST mockLST = new MockERC20LST(tokensPerETH);
         MockStandardBridge bridge = new MockStandardBridge();
         SwapAndBridge swapAndBridge = new SwapAndBridge(address(bridge), address(mockLST), address(0xbeef));
+
+        uint256 expectedAmount = value * tokensPerETH / 1e18;
 
         vm.startPrank(testAccount);
-        swapAndBridge.swapAndBridgeToWithMinimumAmount{ value: value }(testAccount, 0);
-        swapAndBridge.swapAndBridgeToWithMinimumAmount{ value: value }(testAccount, expectedMinAmount - 1);
-        swapAndBridge.swapAndBridgeToWithMinimumAmount{ value: value }(testAccount, expectedMinAmount);
+        swapAndBridge.swapAndBridgeToWithMinimumAmount{ value: value }(testAccount, expectedAmount - 1);
+        swapAndBridge.swapAndBridgeToWithMinimumAmount{ value: value }(testAccount, expectedAmount);
         vm.stopPrank();
     }
 
-    function test_InsufficientTokensMinted() public {
-        uint256 conversionRate = 1e18;
-        uint256 value = 1 ether;
-        uint256 expectedMinAmount = conversionRate * value / 1e18;
+    function test_InsufficientTokensMinted(uint256 tokensPerETH, uint256 value) public {
+        // We bound tokensPerETH in fuzzzing to avoid overflows in the MockERC20LST contract.
+        vm.assume(tokensPerETH <= 1e38);
+        vm.assume(value > 0);
+        vm.assume(value <= 1e38);
+        // Ensure that some tokens will be minted in the MockERC20LST contract.
+        vm.assume(tokensPerETH * value >= 1e18);
 
-        MockERC20LST mockLST = new MockERC20LST(conversionRate);
+        MockERC20LST mockLST = new MockERC20LST(tokensPerETH);
         MockStandardBridge bridge = new MockStandardBridge();
         SwapAndBridge swapAndBridge = new SwapAndBridge(address(bridge), address(mockLST), address(0xbeef));
+
+        uint256 expectedAmount = value * tokensPerETH / 1e18;
 
         vm.startPrank(testAccount);
         vm.expectRevert("Insufficient L1 tokens minted.");
-        swapAndBridge.swapAndBridgeToWithMinimumAmount{ value: value }(testAccount, expectedMinAmount + 1);
+        swapAndBridge.swapAndBridgeToWithMinimumAmount{ value: value }(testAccount, expectedAmount + 1);
         vm.stopPrank();
     }
 
-    function test_TokensMintedOverflow() public {
-        uint256 conversionRate = 1e18;
+    function test_TokensMintedOverflow(uint256 value, uint256 tokensPerETH) public {
+        // Guaranteee overflow in MockERC20LST contract.
+        vm.assume(value > 1e40);
+        vm.assume(tokensPerETH > 1e40);
+        vm.assume(value <= testBalance);
 
-        MockERC20LST mockLST = new MockERC20LST(conversionRate);
+        MockERC20LST mockLST = new MockERC20LST(tokensPerETH);
         MockStandardBridge bridge = new MockStandardBridge();
         SwapAndBridge swapAndBridge = new SwapAndBridge(address(bridge), address(mockLST), address(0xbeef));
 
         vm.startPrank(testAccount);
-        vm.expectRevert(); // Panic due to overflow.
-        swapAndBridge.swapAndBridgeToWithMinimumAmount{ value: 10000 ether }(testAccount, 1e75);
+        vm.expectRevert(); // overflow panic.
+        swapAndBridge.swapAndBridgeToWithMinimumAmount{ value: value }(testAccount, tokensPerETH);
         vm.stopPrank();
     }
 
-    function test_NoTokensMinted() public {
-        MockERC20LST mockLST = new MockERC20LST(0);
+    function test_InvalidMsgValue(uint256 tokensPerETH, uint256 minL1Tokens) public {
+        MockERC20LST mockLST = new MockERC20LST(tokensPerETH);
+        MockStandardBridge bridge = new MockStandardBridge();
+        SwapAndBridge swapAndBridge = new SwapAndBridge(address(bridge), address(mockLST), address(0xbeef));
+
+        vm.startPrank(testAccount);
+        vm.expectRevert("Invalid msg value.");
+        swapAndBridge.swapAndBridgeToWithMinimumAmount{ value: 0 }(testAccount, minL1Tokens);
+        vm.stopPrank();
+    }
+
+    function test_NoTokensMinted(uint256 value, uint256 tokensPerETH) public {
+        // We bound tokensPerETH in fuzzzing to avoid overflows in the MockERC20LST contract.
+        vm.assume(tokensPerETH <= 1e38);
+        vm.assume(value > 0);
+        vm.assume(value <= 1e38);
+        // Ensure that no tokens will be minted in the MockERC20LST contract.
+        vm.assume(tokensPerETH * value < 1e18);
+
+        MockERC20LST mockLST = new MockERC20LST(tokensPerETH);
         MockStandardBridge bridge = new MockStandardBridge();
         SwapAndBridge swapAndBridge = new SwapAndBridge(address(bridge), address(mockLST), address(0xbeef));
 
         vm.startPrank(testAccount);
         vm.expectRevert("No wrapped tokens minted.");
-        swapAndBridge.swapAndBridgeTo{ value: 1 ether }(testAccount);
+        swapAndBridge.swapAndBridgeToWithMinimumAmount{ value: value }(testAccount, 0);
+        vm.expectRevert("No wrapped tokens minted.");
+        swapAndBridge.swapAndBridgeToWithMinimumAmount{ value: value }(testAccount, 1e18);
         vm.stopPrank();
     }
 }
