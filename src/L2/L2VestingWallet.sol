@@ -40,6 +40,7 @@ contract L2VestingWallet is
     /// @param  _startTimestamp     Timestamp the vesting starts.
     /// @param  _durationSeconds    Duration of the vesting period.
     /// @param  _name               Name of this contract.
+    /// @param  _contractAdmin      Initial contractAdmin who can upgrade the contract.
     function initialize(
         address _beneficiary,
         uint64 _startTimestamp,

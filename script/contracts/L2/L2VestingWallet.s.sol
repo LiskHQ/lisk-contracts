@@ -47,6 +47,7 @@ contract L2VestingWalletScript is Script {
         for (uint256 i; i < plans.length; i++) {
             Utils.VestingPlan memory vestingPlan = plans[i];
             address beneficiary = utils.readVestingAddress(vestingPlan.beneficiaryAddressTag);
+            assert(beneficiary != address(0));
 
             console2.log("Deploying Vesting Plan #%d: %s to: %s", i, vestingPlan.name, beneficiary);
             vm.startBroadcast(deployerPrivateKey);
