@@ -40,6 +40,10 @@ contract L1VestingWalletScript is Script {
                 == bytes32(uint256(keccak256("eip1967.proxy.implementation")) - 1)
         );
 
+        // owner Address, the ownership of L2VestingWallet Proxy Contract is transferred to after deployment
+        address ownerAddress = vm.envAddress("L1_VESTING_WALLET_OWNER_ADDRESS");
+        console2.log("L1 VestingWallet contract owner address: %s (after ownership will be accepted)", ownerAddress);
+
         Utils.VestingPlan[] memory plans = utils.readVestingPlansFile(layer);
         Utils.VestingWallet[] memory vestingWallets = new Utils.VestingWallet[](plans.length);
         for (uint256 i; i < plans.length; i++) {
@@ -55,7 +59,8 @@ contract L1VestingWalletScript is Script {
                     beneficiary,
                     vestingPlan.startTimestamp,
                     uint64(vestingPlan.durationDays * 1 days),
-                    vestingPlan.name
+                    vestingPlan.name,
+                    ownerAddress
                 )
             );
             vm.stopBroadcast();
