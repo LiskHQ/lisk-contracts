@@ -27,6 +27,7 @@ contract L2VestingWallet is
     /// @notice A unique role identifier for accounts with the ability to upgrade this contract.
     bytes32 public constant CONTRACT_ADMIN_ROLE = keccak256("CONTRACT_ADMIN_ROLE");
 
+    /// @notice The next contractAdmin, assigned by current contractAdmin
     address public pendingContractAdmin;
 
     /// @notice Disabling initializers on implementation contract to prevent misuse.
@@ -74,10 +75,13 @@ contract L2VestingWallet is
         Ownable2StepUpgradeable._transferOwnership(_newOwner);
     }
 
+    /// @notice Transfer contractAdmin to a new address.
+    /// @param  _pendingContractAdmin        New proposed contractAdmin.
     function transferContractAdminRole(address _pendingContractAdmin) public onlyRole(CONTRACT_ADMIN_ROLE) {
         pendingContractAdmin = _pendingContractAdmin;
     }
 
+    /// @notice Accept contractAdmin Role and revoke old contractAdmin right.
     function acceptContractAdminRole() public {
         require(msg.sender == pendingContractAdmin, "VestingWallet:Not pendingContractAdmin");
         _revokeRole(CONTRACT_ADMIN_ROLE, getRoleMember(CONTRACT_ADMIN_ROLE, 0));
@@ -85,7 +89,7 @@ contract L2VestingWallet is
         pendingContractAdmin = address(0);
     }
 
-    /// @notice Ensures that only the owner can authorize a contract upgrade. It reverts if called by any address other
+    /// @notice Ensures that only the contractAdmin can authorize a contract upgrade. It reverts if called by any address other
     ///         than the address with CONTRACT_ADMIN_ROLE.
     /// @param _newImplementation The address of the new contract implementation to which the proxy will be upgraded.
     function _authorizeUpgrade(address _newImplementation) internal virtual override onlyRole(CONTRACT_ADMIN_ROLE) { }
