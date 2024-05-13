@@ -1,0 +1,33 @@
+{
+  "vestingAddresses": {},
+  "vestingPlans": [
+    {
+      "name": "Guaranteed DAO 2024",
+      "beneficiaryAddressTag": "l2TimelockController",
+      "startTimestamp": 1716163200,
+      "durationDays": 226,
+      "amount": 8750000000000000000000000
+    },
+    {
+      "name": "Guaranteed DAO 2025 - 2026",
+      "beneficiaryAddressTag": "l2TimelockController",
+      "startTimestamp": 1735689600,
+      "durationDays": 730,
+      "amount": 30000000000000000000000000
+    },
+    {
+      "name": "Vested DAO Funds 2027 - 2032",
+      "beneficiaryAddressTag": "l2TimelockController",
+      "startTimestamp": 1798761600,
+      "durationDays": 2192,
+      "amount": 90000000000000000000000000
+    },
+    {
+      "name": "Vested DAO Funds 2033",
+      "beneficiaryAddressTag": "l2TimelockController",
+      "startTimestamp": 1988150400,
+      "durationDays": 365,
+      "amount": 10000000000000000000000000
+    }
+  ]
+}
