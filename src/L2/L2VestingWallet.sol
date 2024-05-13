@@ -89,8 +89,8 @@ contract L2VestingWallet is
         pendingContractAdmin = address(0);
     }
 
-    /// @notice Ensures that only the contractAdmin can authorize a contract upgrade. It reverts if called by any address other
-    ///         than the address with CONTRACT_ADMIN_ROLE.
+    /// @notice Ensures that only the contractAdmin can authorize a contract upgrade. It reverts if called by any
+    ///         address other than the address with CONTRACT_ADMIN_ROLE.
     /// @param _newImplementation The address of the new contract implementation to which the proxy will be upgraded.
     function _authorizeUpgrade(address _newImplementation) internal virtual override onlyRole(CONTRACT_ADMIN_ROLE) { }
 }
