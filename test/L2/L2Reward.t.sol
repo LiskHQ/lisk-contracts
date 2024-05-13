@@ -119,6 +119,9 @@ contract L2RewardTest is Test {
         assertEq(l2Reward.REWARD_DURATION(), 30);
         assertEq(l2Reward.REWARD_DURATION_DELAY(), 1);
         assertEq(l2Reward.version(), "1.0.0");
+        assertEq(l2Reward.totalWeight(), 0);
+        assertEq(l2Reward.totalAmountLocked(), 0);
+        assertEq(l2Reward.pendingUnlockAmount(), 0);
     }
 
     function given_accountHasBalance(address account, uint256 balance) private {
@@ -1113,6 +1116,7 @@ contract L2RewardTest is Test {
         uint256 balance = convertLiskToSmallestDenomination(1000);
         uint256 duration = 120;
         uint256[] memory lockIDs = new uint256[](2);
+        uint256 amount = convertLiskToSmallestDenomination(100);
 
         given_accountHasBalance(address(this), balance);
         given_accountHasBalance(staker, balance);
@@ -1122,9 +1126,7 @@ contract L2RewardTest is Test {
 
         // staker creates two positions on deploymentDate + 1, 19741
         for (uint8 i = 0; i < 2; i++) {
-            lockIDs[i] = when_stakerCreatesPosition(
-                staker, Position({ amount: convertLiskToSmallestDenomination(100), duration: duration })
-            );
+            lockIDs[i] = when_stakerCreatesPosition(staker, Position({ amount: amount, duration: duration }));
         }
 
         // staker pauses the position on 19741, rewards when pausing is zero
@@ -1133,13 +1135,17 @@ contract L2RewardTest is Test {
         vm.prank(staker);
         l2Reward.pauseUnlocking(lockIDs);
 
+        assertEq(l2Reward.pendingUnlockAmount(), 0);
+        assertEq(l2Reward.dailyUnlockedAmounts(19741), 0);
+        assertEq(l2Reward.totalAmountLocked(), amount * lockIDs.length);
+
         balance = l2LiskToken.balanceOf(staker);
 
         skip(100 days);
 
         uint256 expectedRewardsPerStake = 5 * 10 ** 18;
         uint256 today = deploymentDate + 101;
-        uint256 expectedBalance = expectedRewardsPerStake * 2 + balance;
+        uint256 expectedBalance = expectedRewardsPerStake * lockIDs.length + balance;
 
         // staker resumes the positions
         then_eventRewardsClaimedIsEmitted(lockIDs[0], expectedRewardsPerStake);
@@ -1156,6 +1162,11 @@ contract L2RewardTest is Test {
         assertEq(balance, expectedBalance);
         assertEq(l2LockingPosition.getLockingPosition(lockIDs[0]).expDate, today + duration);
         assertEq(l2LockingPosition.getLockingPosition(lockIDs[1]).expDate, today + duration);
+
+        assertEq(l2Reward.pendingUnlockAmount(), amount * lockIDs.length);
+        assertEq(l2Reward.dailyUnlockedAmounts(today + duration), amount * lockIDs.length);
+        assertEq(l2Reward.totalAmountLocked(), amount * lockIDs.length);
+        assertEq(l2Reward.pendingUnlockAmount(), l2Reward.totalAmountLocked());
     }
 
     function test_increaseLockingAmount_onlyOwnerCanIncreaseAmountForALockingPosition() public {
@@ -1241,6 +1252,11 @@ contract L2RewardTest is Test {
         then_eventLockingAmountIncreasedIsEmitted(increasingAmounts[0].lockID, increasingAmounts[0].amountIncrease);
         l2Reward.increaseLockingAmount(increasingAmounts);
         vm.stopPrank();
+
+        assertEq(
+            l2LockingPosition.getLockingPosition(increasingAmounts[0].lockID).amount,
+            amount + increasingAmounts[0].amountIncrease
+        );
 
         assertEq(l2Reward.totalAmountLocked(), amount + increasingAmounts[0].amountIncrease);
         assertEq(l2Reward.totalWeight(), expectedTotalWeight);
@@ -1530,7 +1546,7 @@ contract L2RewardTest is Test {
 
         extensions[0].lockID = when_stakerCreatesPosition(staker, Position(amount, duration));
 
-        skip(121 days);
+        skip(150 days);
 
         extensions[0].durationExtension = 50;
         // For expired positions, amount is effectively re-locked for the extended duration.
@@ -1995,6 +2011,8 @@ contract L2RewardTest is Test {
         vm.expectEmit(true, true, true, true);
         emit L2Reward.RewardsAdded(l2Reward.rewardsSurplus(), 10, 1);
         l2Reward.addUnusedRewards(l2Reward.rewardsSurplus(), 10, 1);
+
+        assertEq(l2Reward.rewardsSurplus(), 0);
     }
 
     function test_addUnusedRewards_updatesDailyRewardsAndEmitsRewardsAddedEvent() public {
@@ -2019,40 +2037,43 @@ contract L2RewardTest is Test {
             staker, Position({ amount: convertLiskToSmallestDenomination(1), duration: 100 })
         );
 
-        uint256 additionalReward = l2Reward.rewardsSurplus() / 10;
+        uint256 additionalReward = convertLiskToSmallestDenomination(1);
+        uint256 additionalRewardPerDay = additionalReward / 10;
         uint256 cappedRewards = convertLiskToSmallestDenomination(100) / 365;
 
         assertEq(l2Reward.dailyRewards(19741), cappedRewards);
 
+        uint256 rewardsSurplusBeforeAdditionalRewards = l2Reward.rewardsSurplus();
+
         // days 19743 to 19752 are funded
         vm.expectEmit(true, true, true, true);
-        emit L2Reward.RewardsAdded(l2Reward.rewardsSurplus(), 10, 1);
-        l2Reward.addUnusedRewards(l2Reward.rewardsSurplus(), 10, 1);
+        emit L2Reward.RewardsAdded(additionalReward, 10, 1);
+        l2Reward.addUnusedRewards(additionalReward, 10, 1);
         vm.stopPrank();
 
         for (uint16 i = 19743; i < 19753; i++) {
-            assertEq(l2Reward.dailyRewards(i), dailyReward + additionalReward);
+            assertEq(l2Reward.dailyRewards(i), dailyReward + additionalRewardPerDay);
         }
 
-        assertEq(l2Reward.rewardsSurplus(), 0);
+        assertEq(l2Reward.rewardsSurplus(), rewardsSurplusBeforeAdditionalRewards - additionalReward);
         assertEq(l2Reward.lastTrsDate(), 19742);
 
         skip(10 days);
 
+        uint256 rewardSurplusAfterAdditionalRewards = l2Reward.rewardsSurplus();
+
         // staker cerates another position on deploymentDate + 2 + 10, 19752
         // This will trigger updateGlobalState() from 19742 to 19751
         when_stakerCreatesPosition(staker, Position({ amount: convertLiskToSmallestDenomination(100), duration: 100 }));
-
         cappedRewards = convertLiskToSmallestDenomination(101) / 365;
-
-        // For day 19742 additional rewards are not assigned but for the
-        // remaining days from 19743 onwards additional rewards are assigned
-        uint256 expectedRewardSurplus =
-            (dailyReward - cappedRewards) + (9 * (dailyReward + additionalReward - cappedRewards));
-
         for (uint16 i = 19742; i < 19752; i++) {
             assertEq(l2Reward.dailyRewards(i), cappedRewards);
         }
+
+        // For day 19742 additional rewards are not assigned but for the
+        // remaining days from 19743 onwards additional rewards are assigned
+        uint256 expectedRewardSurplus = rewardSurplusAfterAdditionalRewards + (dailyReward - cappedRewards)
+            + (9 * (dailyReward + additionalRewardPerDay - cappedRewards));
 
         assertEq(l2Reward.rewardsSurplus(), expectedRewardSurplus);
     }
