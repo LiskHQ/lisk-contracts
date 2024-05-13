@@ -112,7 +112,8 @@ contract L1VestingWalletTest is Test {
         vm.warp(10 * 365 days);
 
         uint64 newStartTimestamp = uint64(vm.getBlockTimestamp());
-        L1VestingWallet newL1VestingWallet = _deployVestingWallet(beneficiary, newStartTimestamp + 365 days, 0, name, contractAdmin);
+        L1VestingWallet newL1VestingWallet =
+            _deployVestingWallet(beneficiary, newStartTimestamp + 365 days, 0, name, contractAdmin);
 
         // leap 11 years
         vm.warp(11 * 365 days + 1);

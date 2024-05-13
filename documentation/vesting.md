@@ -21,9 +21,9 @@ The vesting schedules are read from the [vestingPlans_L1.json](../script/data/de
 | DAO Fund - optional | 90,000,000 | <dao treasury> | 1798761600 | 2192 | 15,000,000 LSK are linearly released in the years 2027-2032. |
 | DAO Fund - optional | 10,000,000 | <dao treasury> | 1988150400 | 365 | 10,000,000 LSK are linearly released in 2033. |
 
-## Owner and Contract Upgrades
+## Owner, Contract Admin and Contract Upgrades
 
-The vesting smart contracts will hold a significant portion of LSK tokens vested for the community and other stakeholders. The owner address for these smart contract will be set to the multisignature controlled by the Security Council. The owner is authorized to upgrade the contracts.
+The vesting smart contracts will hold a significant portion of LSK tokens vested for the community and other stakeholders. By design, beneficiary address for these smart contract will be the owner of the vesting contract. While Contract Admin is authorized to upgrade the contracts, set to the multisignature controlled by the Security Council.
 
 Vesting contracts will be upgraded exclusively if any of them is hacked or contains a vulnerability, and only to control the damage. This is a security measure protecting the vested LSK tokens.
 
