@@ -67,6 +67,7 @@ contract L2VestingWallet is
     /// @param  _newOwner        New proposed owner.
     function transferOwnership(address _newOwner)
         public
+        virtual
         override(Ownable2StepUpgradeable, OwnableUpgradeable)
         onlyOwner
     {
@@ -75,18 +76,22 @@ contract L2VestingWallet is
 
     // Overriding _transferOwnership and solely uses `Ownable2StepUpgradeable`.
     /// @param  _newOwner        New proposed owner.
-    function _transferOwnership(address _newOwner) internal override(Ownable2StepUpgradeable, OwnableUpgradeable) {
+    function _transferOwnership(address _newOwner)
+        internal
+        virtual
+        override(Ownable2StepUpgradeable, OwnableUpgradeable)
+    {
         Ownable2StepUpgradeable._transferOwnership(_newOwner);
     }
 
     /// @notice Transfer contractAdmin to a new address.
     /// @param  _pendingContractAdmin        New proposed contractAdmin.
-    function transferContractAdminRole(address _pendingContractAdmin) public onlyRole(CONTRACT_ADMIN_ROLE) {
+    function transferContractAdminRole(address _pendingContractAdmin) public virtual onlyRole(CONTRACT_ADMIN_ROLE) {
         pendingContractAdmin = _pendingContractAdmin;
     }
 
     /// @notice Accept contractAdmin Role and revoke old contractAdmin right.
-    function acceptContractAdminRole() public {
+    function acceptContractAdminRole() public virtual {
         require(msg.sender == pendingContractAdmin, "VestingWallet: Not pendingContractAdmin");
         _revokeRole(CONTRACT_ADMIN_ROLE, getRoleMember(CONTRACT_ADMIN_ROLE, 0));
         _grantRole(CONTRACT_ADMIN_ROLE, pendingContractAdmin);
