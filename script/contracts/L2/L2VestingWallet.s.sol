@@ -39,7 +39,6 @@ contract L2VestingWalletScript is Script {
 
         // owner Address, the ownership of L2VestingWallet Proxy Contract is transferred to after deployment
         address ownerAddress = vm.envAddress("L2_VESTING_WALLET_OWNER_ADDRESS");
-        assert(ownerAddress != address(0));
         console2.log("L2 VestingWallet contract owner address: %s (after ownership will be accepted)", ownerAddress);
 
         Utils.VestingPlan[] memory plans = utils.readVestingPlansFile();
@@ -47,7 +46,6 @@ contract L2VestingWalletScript is Script {
         for (uint256 i; i < plans.length; i++) {
             Utils.VestingPlan memory vestingPlan = plans[i];
             address beneficiary = utils.readVestingAddress(vestingPlan.beneficiaryAddressTag);
-            assert(beneficiary != address(0));
 
             console2.log("Deploying Vesting Plan #%d: %s to: %s", i, vestingPlan.name, beneficiary);
             vm.startBroadcast(deployerPrivateKey);

@@ -51,6 +51,9 @@ contract L2VestingWallet is
         public
         initializer
     {
+        require(_beneficiary != address(0), "VestingWallet: _beneficiary address cannot be 0");
+        require(_contractAdmin != address(0), "VestingWallet: _beneficiary address cannot be 0");
+
         __Ownable2Step_init();
         __UUPSUpgradeable_init();
         __VestingWallet_init(_beneficiary, _startTimestamp, _durationSeconds);
@@ -84,7 +87,7 @@ contract L2VestingWallet is
 
     /// @notice Accept contractAdmin Role and revoke old contractAdmin right.
     function acceptContractAdminRole() public {
-        require(msg.sender == pendingContractAdmin, "VestingWallet:Not pendingContractAdmin");
+        require(msg.sender == pendingContractAdmin, "VestingWallet: Not pendingContractAdmin");
         _revokeRole(CONTRACT_ADMIN_ROLE, getRoleMember(CONTRACT_ADMIN_ROLE, 0));
         _grantRole(CONTRACT_ADMIN_ROLE, pendingContractAdmin);
         pendingContractAdmin = address(0);
