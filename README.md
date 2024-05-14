@@ -13,6 +13,8 @@ Additionally, it also includes various deployment scripts that are integral for 
   - [Cloning the Lisk Smart Contracts Repository](#cloning-the-lisk-smart-contracts-repository)
 - [Deployment on Private Test Network](#deployment-on-private-test-network)
 - [Deployment on Public Test Network](#deployment-on-public-test-network)
+- [Deployments](#deployments)
+  - [Current Testnet Deployment](#current-testnet-deployment)
 - [Tips \& Tricks](#tips--tricks)
   - [Deployment Directory Folder](#deployment-directory-folder)
   - [Deployment of L2 Lisk Token](#deployment-of-l2-lisk-token)
@@ -88,6 +90,13 @@ To deploy smart contracts on both L1 and L2 public networks, you will need to pr
 3. Navigate to the `script` directory.
 4. Place the `accounts.json` and `merkle-root.json` files in the correct folder (`data/devnet`, `data/testnet`, or `data/mainnet`) corresponding to the previously set `NETWORK` environment variable. Example files for `accounts.json` and `merkle-root.json` may be found inside `data/devnet` directory.
 5. To deploy all smart contracts, execute the scripts: `./1_deployTokenContracts.sh`, `./2_deployStakingAndGovernance.sh`, `./3_deployVestingWallets.sh` and `./4_deployClaimContract`.
+
+## Deployments
+
+### Current Testnet Deployment
+
+You may find the addresses of the deployed smart contracts on the Ethereum and Lisk testnets inside [deployment/addresses/sepolia/addresses.md](deployment/addresses/sepolia/addresses.md) file.
+
 
 ## Tips & Tricks
 
