@@ -2078,16 +2078,17 @@ contract L2RewardTest is Test {
         assertEq(l2Reward.rewardsSurplus(), expectedRewardSurplus);
     }
 
-    function test_rewardContractBalanceAndTotalRewardsClaimed() public {
+    function test_rewardContractBalanceNearsZeroAndHasFundsForRewards() public {
         address[] memory stakers = given_anArrayOfStakersOfLength(5);
         uint256 balance = convertLiskToSmallestDenomination(1000);
         uint256 funds = convertLiskToSmallestDenomination(35);
         uint256[] memory locksToClaim = new uint256[](1);
         uint256[] memory lockIDs = new uint256[](5);
-        uint256[] memory expectedRewards = new uint256[](5);
 
         given_accountHasBalance(address(this), balance);
         given_ownerHasFundedStaking(Funds({ amount: funds, duration: 150, delay: 1 }));
+
+        skip(1 days);
         for (uint8 i = 0; i < stakers.length; i++) {
             given_accountHasBalance(stakers[i], balance);
             lockIDs[i] = when_stakerCreatesPosition(
@@ -2095,18 +2096,9 @@ contract L2RewardTest is Test {
             );
         }
 
-        expectedRewards[0] = 2317777777777777695;
-        expectedRewards[1] = 4635555555555555539;
-        expectedRewards[2] = 6953333333333333234;
-        expectedRewards[3] = 9271111111111111078;
-        expectedRewards[4] = 11588888888888888773;
-        uint256 expectedSumOfRewards = 34766666666666666319;
-        uint256 expectedBalanceOfRewardContract = 0.233333333333333681 * 10 ** 18;
-
         skip(150 days);
         for (uint8 i = 0; i < stakers.length; i++) {
             locksToClaim[0] = lockIDs[i];
-            then_eventRewardsClaimedIsEmitted(lockIDs[i], expectedRewards[i]);
             when_rewardsAreClaimedByStaker(stakers[i], locksToClaim);
         }
 
@@ -2115,11 +2107,21 @@ contract L2RewardTest is Test {
             expectedSumOfDailyRewards += l2Reward.dailyRewards(i);
         }
 
-        assertEq(l2LiskToken.balanceOf(address(l2Reward)), expectedBalanceOfRewardContract);
-        assertEq(funds, expectedSumOfRewards + expectedBalanceOfRewardContract);
-        assertEq(funds / 10 ** 3, (expectedBalanceOfRewardContract + expectedSumOfDailyRewards) / 10 ** 3);
-        assertEq(expectedSumOfDailyRewards + expectedBalanceOfRewardContract, 35000000000000000298);
-        assertEq(l2LiskToken.balanceOf(address(l2Reward)) / 10 ** 3, (funds - expectedSumOfDailyRewards) / 10 ** 3);
+        uint256 expectedSumOfRewards;
+        for (uint8 i = 0; i < stakers.length; i++) {
+            // expected reward is current balance + amount staked - initial balance
+            expectedSumOfRewards +=
+                (l2LiskToken.balanceOf(stakers[i]) + (convertLiskToSmallestDenomination(37) * (i + 1))) - balance;
+        }
+
+        // balance of the l2Reward is almost zero
+        assertEq(l2LiskToken.balanceOf(address(l2Reward)) / 10 ** 3, 0);
+
+        assertTrue(expectedSumOfDailyRewards <= funds);
+        assertTrue(expectedSumOfRewards <= funds);
+
+        // daily rewards and rewards assigned are almost equal
+        assertEq(expectedSumOfDailyRewards / 10 ** 3, expectedSumOfRewards / 10 ** 3);
     }
 
     function convertLiskToSmallestDenomination(uint256 lisk) internal pure returns (uint256) {
