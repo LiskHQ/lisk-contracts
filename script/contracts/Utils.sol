@@ -13,6 +13,8 @@ contract Utils is Script {
     struct L1AddressesConfig {
         /// @notice L1 Lisk token address.
         address L1LiskToken;
+        /// @notice The Current implementation of L1 Vesting Wallet.
+        address L1VestingWalletImplementation;
     }
 
     /// @notice This struct is used to read and write L2 addresses to JSON file.
@@ -130,6 +132,12 @@ contract Utils is Script {
             l1AddressesConfig.L1LiskToken = l1LiskToken;
         } catch { }
 
+        try vm.parseJsonAddress(addressJson, ".L1VestingWalletImplementation") returns (
+            address l1VestingWalletImplementation
+        ) {
+            l1AddressesConfig.L1VestingWalletImplementation = l1VestingWalletImplementation;
+        } catch { }
+
         return l1AddressesConfig;
     }
 
@@ -138,7 +146,9 @@ contract Utils is Script {
     function writeL1AddressesFile(L1AddressesConfig memory cfg) external {
         string memory network = getNetworkType();
         string memory json = "";
-        string memory finalJson = vm.serializeAddress(json, "L1LiskToken", cfg.L1LiskToken);
+        vm.serializeAddress(json, "L1LiskToken", cfg.L1LiskToken);
+        string memory finalJson =
+            vm.serializeAddress(json, "L1VestingWalletImplementation", cfg.L1VestingWalletImplementation);
         finalJson.write(string.concat("deployment/", network, "/l1addresses.json"));
     }
 
@@ -247,17 +257,18 @@ contract Utils is Script {
     }
 
     /// @notice This function writes Vesting Wallets to JSON file.
-    /// @param vestingWallets Array of Vesting Wallets which will be written to JSON file.
-    function writeVestingWalletsFile(VestingWallet[] memory vestingWallets) external {
+    /// @param _vestingWallets Array of Vesting Wallets which will be written to JSON file.
+    /// @param _layer Network layer of the running script, either be "L1" or "L2"
+    function writeVestingWalletsFile(VestingWallet[] memory _vestingWallets, string memory _layer) external {
         string memory network = getNetworkType();
 
         string memory json = "vestingWallets";
         string memory finalJson;
-        for (uint256 i = 0; i < vestingWallets.length; i++) {
-            VestingWallet memory vestingWallet = vestingWallets[i];
+        for (uint256 i = 0; i < _vestingWallets.length; i++) {
+            VestingWallet memory vestingWallet = _vestingWallets[i];
             finalJson = vm.serializeAddress(json, vestingWallet.name, vestingWallet.vestingWalletAddress);
         }
-        finalJson.write(string.concat("deployment/", network, "/vestingWallets.json"));
+        finalJson.write(string.concat("deployment/", network, string.concat("/vestingWallets_", _layer, ".json")));
     }
 
     /// @notice This function reads MerkleRoot from JSON file.
@@ -284,38 +295,58 @@ contract Utils is Script {
     }
 
     /// @notice This function returns vesting address from JSON file by providing vestingAddressTag
-    /// @param vestingAddressTag Identifier of the Vesting Address
+    /// @param _vestingAddressTag Identifier of the Vesting Address
+    /// @param _layer Network layer of the running script, either be "L1" or "L2"
     /// @return Vesting Address corresponding to vestingAddressTag.
-    function readVestingAddress(string memory vestingAddressTag) external view returns (address) {
+    function readVestingAddress(
+        string memory _vestingAddressTag,
+        string memory _layer
+    )
+        external
+        view
+        returns (address)
+    {
         string memory network = getNetworkType();
         string memory root = vm.projectRoot();
-        string memory vestingAddressesPath = string.concat(root, "/script/data/", network, "/vestingPlans.json");
+        string memory vestingAddressesPath =
+            string.concat(root, "/script/data/", network, string.concat("/vestingPlans_", _layer, ".json"));
         string memory vestingAddressesJson = vm.readFile(vestingAddressesPath);
         bytes memory vestingAddressRaw =
-            vestingAddressesJson.parseRaw(string.concat(".vestingAddresses.", vestingAddressTag));
+            vestingAddressesJson.parseRaw(string.concat(".vestingAddresses.", _vestingAddressTag));
         return abi.decode(vestingAddressRaw, (address));
     }
 
     /// @notice This function reads Vesting Plans from JSON file.
+    /// @param _layer Network layer of the running script, either be "L1" or "L2"
     /// @return An array of Vesting Plans.
-    function readVestingPlansFile() external view returns (VestingPlan[] memory) {
+    function readVestingPlansFile(string memory _layer) external view returns (VestingPlan[] memory) {
         string memory network = getNetworkType();
         string memory root = vm.projectRoot();
-        string memory vestingPlansPath = string.concat(root, "/script/data/", network, "/vestingPlans.json");
+        string memory vestingPlansPath =
+            string.concat(root, "/script/data/", network, string.concat("/vestingPlans_", _layer, ".json"));
         string memory vestingPlansJson = vm.readFile(vestingPlansPath);
         bytes memory vestingPlansRaw = vestingPlansJson.parseRaw(string.concat(".vestingPlans"));
         return abi.decode(vestingPlansRaw, (VestingPlan[]));
     }
 
     /// @notice This function reads Vesting Wallet Address from JSON file.
-    /// @param vestingWalletName Name of the Vesting Wallet.
+    /// @param _vestingWalletName Name of the Vesting Wallet.
+    /// @param _layer Network layer of the running script, either be "L1" or "L2"
     /// @return Vesting Wallet Address.
-    function readVestingWalletAddress(string memory vestingWalletName) external view returns (address) {
+    function readVestingWalletAddress(
+        string memory _vestingWalletName,
+        string memory _layer
+    )
+        external
+        view
+        returns (address)
+    {
         string memory network = getNetworkType();
         string memory root = vm.projectRoot();
-        string memory vestingWalletsPath = string.concat(root, "/deployment/", network, "/vestingWallets.json");
+        string memory vestingWalletsPath =
+            string.concat(root, "/deployment/", network, string.concat("/vestingWallets_", _layer, ".json"));
         string memory vestingWalletsJson = vm.readFile(vestingWalletsPath);
-        return vm.parseJsonAddress(vestingWalletsJson, string.concat(".['", vestingWalletName, "']"));
+        return vm.parseJsonAddress(vestingWalletsJson, string.concat(".['", _vestingWalletName, "']"));
     }
 
     /// @notice This function returns salt as a string. keccak256 of this string is used as salt for calculating

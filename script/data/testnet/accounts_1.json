@@ -1,0 +1,29 @@
+{
+    "l1Addresses": [
+        {
+            "addr": "0x0a5bFdBbF7aDe3042da107EaA726d5A71D2DcbaD",
+            "amount": 2000000000000000000000000
+        },
+        {
+            "addr": "0xd8Aa2209FC6766A560f7d97F04b541Da5bD0bd55",
+            "amount": 1000000000000000000000000
+        },
+        {
+            "addr": "0xA007F4dbEd55da3fC809232A233E154b9c8B9c3f",
+            "amount": 7000000000000000000000000
+        },
+        {
+            "addr": "0xD7D4D62AdcF8bb8448ba17c5441c7a80F8D8b0Cf",
+            "amount": 5000000000000000000000000
+        },
+        {
+            "addr": "0xaF3f4B5033Ef666b3F3EA91a0f360541cC21e5d7",
+            "amount": 15000000000000000000000000
+        },
+        {
+            "addr": "0x9A78a9af92c5fB0fc9A3648745E08c38a0B0e884",
+            "amount": 10000000000000000000000000
+        }
+    ],
+    "l2Addresses": []
+}

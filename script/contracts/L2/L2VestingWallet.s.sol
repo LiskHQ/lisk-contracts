@@ -12,6 +12,9 @@ contract L2VestingWalletScript is Script {
     /// @notice Utils contract which provides functions to read and write JSON files containing L2 addresses.
     Utils utils;
 
+    /// @notice Stating the network layer of this script
+    string public constant layer = "L2";
+
     function setUp() public {
         utils = new Utils();
     }
@@ -37,11 +40,22 @@ contract L2VestingWalletScript is Script {
                 == bytes32(uint256(keccak256("eip1967.proxy.implementation")) - 1)
         );
 
-        Utils.VestingPlan[] memory plans = utils.readVestingPlansFile();
+        // owner Address, the ownership of L2VestingWallet Proxy Contract is transferred to after deployment
+        address ownerAddress = vm.envAddress("L2_VESTING_WALLET_OWNER_ADDRESS");
+        console2.log("L2 VestingWallet contract owner address: %s (after ownership will be accepted)", ownerAddress);
+
+        Utils.VestingPlan[] memory plans = utils.readVestingPlansFile(layer);
         Utils.VestingWallet[] memory vestingWallets = new Utils.VestingWallet[](plans.length);
         for (uint256 i; i < plans.length; i++) {
             Utils.VestingPlan memory vestingPlan = plans[i];
-            address beneficiary = utils.readVestingAddress(vestingPlan.beneficiaryAddressTag);
+            address beneficiary;
+
+            if (keccak256(bytes(vestingPlan.beneficiaryAddressTag)) == keccak256("l2TimelockController")) {
+                console2.log("Deploying L2VestingWallet Implementation...");
+                beneficiary = l2AddressesConfig.L2TimelockController;
+            } else {
+                beneficiary = utils.readVestingAddress(vestingPlan.beneficiaryAddressTag, layer);
+            }
 
             console2.log("Deploying Vesting Plan #%d: %s to: %s", i, vestingPlan.name, beneficiary);
             vm.startBroadcast(deployerPrivateKey);
@@ -52,7 +66,8 @@ contract L2VestingWalletScript is Script {
                     beneficiary,
                     vestingPlan.startTimestamp,
                     uint64(vestingPlan.durationDays * 1 days),
-                    vestingPlan.name
+                    vestingPlan.name,
+                    ownerAddress
                 )
             );
             vm.stopBroadcast();
@@ -71,8 +86,8 @@ contract L2VestingWalletScript is Script {
             vestingWallets[i] = Utils.VestingWallet(vestingPlan.name, address(l2VestingWalletProxy));
         }
 
-        // Write all Vesting Contract addresses to vestingWallets.json
-        utils.writeVestingWalletsFile(vestingWallets);
+        // Write all Vesting Contract addresses to vestingWallets_L2.json
+        utils.writeVestingWalletsFile(vestingWallets, layer);
 
         // write L2VestingWallet address to l2addresses.json
         l2AddressesConfig.L2VestingWalletImplementation = address(l2VestingWalletImplementation);

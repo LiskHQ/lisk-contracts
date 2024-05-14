@@ -520,6 +520,10 @@ contract L2StakingTest is Test {
         assertEq(l2LockingPosition.totalSupply(), 0);
         assertEq(l2VotingPower.totalSupply(), 0);
 
+        // check that the AmountLocked event is emitted
+        vm.expectEmit(true, true, true, true);
+        emit L2Staking.AmountLocked(1, alice, 100 * 10 ** 18, 365);
+
         vm.prank(alice);
         l2Staking.lockAmount(alice, 100 * 10 ** 18, 365);
 
@@ -553,12 +557,20 @@ contract L2StakingTest is Test {
         );
         l2Staking.lockAmount(alice, minAmount - 1, 365);
 
+        // check that the AmountLocked event is emitted
+        vm.expectEmit(true, true, true, true);
+        emit L2Staking.AmountLocked(1, alice, minAmount, 365);
+
         // amount is exactly MIN_LOCKING_AMOUNT
         vm.prank(alice);
         l2Staking.lockAmount(alice, minAmount, 365);
         assertEq(l2LockingPosition.totalSupply(), 1);
         assertEq(l2LockingPosition.balanceOf(alice), 1);
         assertEq(l2LockingPosition.getLockingPosition(1).amount, minAmount);
+
+        // check that the AmountLocked event is emitted
+        vm.expectEmit(true, true, true, true);
+        emit L2Staking.AmountLocked(2, alice, minAmount + 1, 365);
 
         // amount is greater than MIN_LOCKING_AMOUNT
         vm.prank(alice);
@@ -571,6 +583,11 @@ contract L2StakingTest is Test {
     function test_LockAmount_CreatorNotStakingContract() public {
         // execute the lockAmount function from a contract that is not the staking contract but is in the
         // allowedCreators list
+
+        // check that the AmountLocked event is emitted
+        vm.expectEmit(true, true, true, true);
+        emit L2Staking.AmountLocked(1, alice, 100 * 10 ** 18, 365);
+
         vm.prank(rewardsContract);
         l2Staking.lockAmount(alice, 100 * 10 ** 18, 365);
 
@@ -596,6 +613,11 @@ contract L2StakingTest is Test {
     function test_LockAmount_DurationIsExactlyMinOrMaxDuration() public {
         // minimum duration
         uint256 validDuration = l2Staking.MIN_LOCKING_DURATION();
+
+        // check that the AmountLocked event is emitted
+        vm.expectEmit(true, true, true, true);
+        emit L2Staking.AmountLocked(1, alice, 30 * 10 ** 18, validDuration);
+
         vm.prank(alice);
         l2Staking.lockAmount(alice, 30 * 10 ** 18, validDuration);
 
@@ -606,6 +628,11 @@ contract L2StakingTest is Test {
 
         // maximum duration
         validDuration = l2Staking.MAX_LOCKING_DURATION();
+
+        // check that the AmountLocked event is emitted
+        vm.expectEmit(true, true, true, true);
+        emit L2Staking.AmountLocked(2, alice, 50 * 10 ** 18, validDuration);
+
         vm.prank(alice);
         l2Staking.lockAmount(alice, 50 * 10 ** 18, validDuration);
 
@@ -672,6 +699,10 @@ contract L2StakingTest is Test {
         // advance block time by 365 days
         vm.warp(365 days);
 
+        // check that the AmountUnlocked event is emitted
+        vm.expectEmit(true, true, true, true);
+        emit L2Staking.AmountUnlocked(1);
+
         vm.prank(alice);
         l2Staking.unlock(1);
 
@@ -699,6 +730,10 @@ contract L2StakingTest is Test {
         // advance block time by 365 days
         vm.warp(365 days);
 
+        // check that the AmountUnlocked event is emitted
+        vm.expectEmit(true, true, true, true);
+        emit L2Staking.AmountUnlocked(1);
+
         vm.prank(rewardsContract);
         l2Staking.unlock(1);
 
@@ -723,6 +758,10 @@ contract L2StakingTest is Test {
         assertEq(l2VotingPower.totalSupply(), 100 * 10 ** 18);
         assertEq(l2VotingPower.balanceOf(alice), 100 * 10 ** 18);
 
+        // check that the RemainingLockingDurationPaused event is emitted
+        vm.expectEmit(true, true, true, true);
+        emit L2Staking.RemainingLockingDurationPaused(1);
+
         // pause the remaining locking duration
         vm.prank(alice);
         l2Staking.pauseRemainingLockingDuration(1);
@@ -735,6 +774,10 @@ contract L2StakingTest is Test {
         vm.expectRevert("L2Staking: locking duration active, can not unlock");
         l2Staking.unlock(1);
 
+        // check that the CountdownResumed event is emitted
+        vm.expectEmit(true, true, true, true);
+        emit L2Staking.CountdownResumed(1);
+
         // resume the countdown
         vm.prank(alice);
         l2Staking.resumeCountdown(1);
@@ -742,6 +785,10 @@ contract L2StakingTest is Test {
 
         // advance block time by additional 365 days
         vm.warp(366 days + 365 days);
+
+        // check that the AmountUnlocked event is emitted
+        vm.expectEmit(true, true, true, true);
+        emit L2Staking.AmountUnlocked(1);
 
         vm.prank(alice);
         l2Staking.unlock(1);
@@ -812,6 +859,10 @@ contract L2StakingTest is Test {
         // advance block time by 100 days
         vm.warp(100 days);
 
+        // check that the FastUnlockInitiated event is emitted
+        vm.expectEmit(true, true, true, true);
+        emit L2Staking.FastUnlockInitiated(1, 17945205479452054794);
+
         vm.prank(alice);
         uint256 penalty = l2Staking.initiateFastUnlock(1);
         assertEq(penalty, 17945205479452054794);
@@ -854,6 +905,10 @@ contract L2StakingTest is Test {
 
         // advance block time by additional 30 days
         vm.warp(130 days);
+
+        // check that the FastUnlockInitiated event is emitted
+        vm.expectEmit(true, true, true, true);
+        emit L2Staking.FastUnlockInitiated(1, 17945205479452054794);
 
         vm.prank(alice);
         uint256 penalty = l2Staking.initiateFastUnlock(1);
@@ -906,6 +961,10 @@ contract L2StakingTest is Test {
 
         // advance block time by 100 days
         vm.warp(100 days);
+
+        // check that the FastUnlockInitiated event is emitted
+        vm.expectEmit(true, true, true, true);
+        emit L2Staking.FastUnlockInitiated(1, 17945205479452054794);
 
         vm.prank(rewardsContract);
         uint256 penalty = l2Staking.initiateFastUnlock(1);
@@ -971,6 +1030,10 @@ contract L2StakingTest is Test {
         l2LiskToken.approve(address(l2Staking), 100 * 10 ** 18);
         assertEq(l2LiskToken.allowance(alice, address(l2Staking)), 100 * 10 ** 18);
 
+        // check that the LockingAmountIncreased event is emitted
+        vm.expectEmit(true, true, true, true);
+        emit L2Staking.LockingAmountIncreased(1, 100 * 10 ** 18);
+
         vm.prank(alice);
         l2Staking.increaseLockingAmount(1, 100 * 10 ** 18);
 
@@ -1013,6 +1076,10 @@ contract L2StakingTest is Test {
         vm.prank(alice);
         l2LiskToken.approve(address(l2Staking), 100 * 10 ** 18);
         assertEq(l2LiskToken.allowance(alice, address(l2Staking)), 100 * 10 ** 18);
+
+        // check that the LockingAmountIncreased event is emitted
+        vm.expectEmit(true, true, true, true);
+        emit L2Staking.LockingAmountIncreased(1, 100 * 10 ** 18);
 
         vm.prank(alice);
         l2Staking.increaseLockingAmount(1, 100 * 10 ** 18);
@@ -1088,6 +1155,10 @@ contract L2StakingTest is Test {
         uint256 currentDay = 365 days - (l2Staking.MIN_LOCKING_DURATION() * 1 days);
         vm.warp(currentDay);
 
+        // check that the LockingAmountIncreased event is emitted
+        vm.expectEmit(true, true, true, true);
+        emit L2Staking.LockingAmountIncreased(1, 30 * 10 ** 18);
+
         // it is exactly MIN_LOCKING_DURATION days until unlock, so increasing amount is still allowed
         vm.prank(alice);
         l2Staking.increaseLockingAmount(1, 30 * 10 ** 18);
@@ -1131,6 +1202,10 @@ contract L2StakingTest is Test {
         vm.prank(alice);
         l2LiskToken.approve(address(l2Staking), 100 * 10 ** 18);
         assertEq(l2LiskToken.allowance(alice, address(l2Staking)), 100 * 10 ** 18);
+
+        // check that the LockingAmountIncreased event is emitted
+        vm.expectEmit(true, true, true, true);
+        emit L2Staking.LockingAmountIncreased(1, 100 * 10 ** 18);
 
         // expDate is in the past, but there is still some remaining locking duration and its countdown is paused;
         // increasing amount is therefore allowed
@@ -1198,6 +1273,10 @@ contract L2StakingTest is Test {
         // advance block time by 200 days so that the locking position is not yet expired
         vm.warp(200 days);
 
+        // check that the LockingDurationExtended event is emitted
+        vm.expectEmit(true, true, true, true);
+        emit L2Staking.LockingDurationExtended(1, 100);
+
         vm.prank(alice);
         l2Staking.extendLockingDuration(1, 100);
 
@@ -1228,6 +1307,10 @@ contract L2StakingTest is Test {
 
         // advance block time by 500 days so that the locking position was already expired
         vm.warp(500 days);
+
+        // check that the LockingDurationExtended event is emitted
+        vm.expectEmit(true, true, true, true);
+        emit L2Staking.LockingDurationExtended(1, 100);
 
         vm.prank(alice);
         l2Staking.extendLockingDuration(1, 100);
@@ -1263,6 +1346,10 @@ contract L2StakingTest is Test {
         vm.prank(alice);
         l2Staking.pauseRemainingLockingDuration(1);
         assertEq(l2LockingPosition.getLockingPosition(1).pausedLockingDuration, 265); // 365 - 100 days
+
+        // check that the LockingDurationExtended event is emitted
+        vm.expectEmit(true, true, true, true);
+        emit L2Staking.LockingDurationExtended(1, 50);
 
         vm.prank(alice);
         l2Staking.extendLockingDuration(1, 50);
@@ -1348,6 +1435,10 @@ contract L2StakingTest is Test {
         // advance block time by 100 days
         vm.warp(100 days);
 
+        // check that the RemainingLockingDurationPaused event is emitted
+        vm.expectEmit(true, true, true, true);
+        emit L2Staking.RemainingLockingDurationPaused(1);
+
         vm.prank(alice);
         l2Staking.pauseRemainingLockingDuration(1);
 
@@ -1391,6 +1482,10 @@ contract L2StakingTest is Test {
         // advance block time by 100 days
         vm.warp(100 days);
 
+        // check that the RemainingLockingDurationPaused event is emitted
+        vm.expectEmit(true, true, true, true);
+        emit L2Staking.RemainingLockingDurationPaused(1);
+
         vm.prank(alice);
         l2Staking.pauseRemainingLockingDuration(1);
         assertEq(l2LockingPosition.getLockingPosition(1).pausedLockingDuration, 265); // 365 - 100 days
@@ -1433,6 +1528,10 @@ contract L2StakingTest is Test {
 
         // advance block time by another 50 days
         vm.warp(150 days);
+
+        // check that the CountdownResumed event is emitted
+        vm.expectEmit(true, true, true, true);
+        emit L2Staking.CountdownResumed(1);
 
         vm.prank(alice);
         l2Staking.resumeCountdown(1);

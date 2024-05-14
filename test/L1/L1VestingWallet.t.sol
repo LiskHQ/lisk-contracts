@@ -5,11 +5,11 @@ import { Test, console, console2, StdCheats } from "forge-std/Test.sol";
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import { OwnableUpgradeable } from "@openzeppelin-upgradeable/contracts/access/OwnableUpgradeable.sol";
 import { IAccessControl } from "@openzeppelin/contracts/access/IAccessControl.sol";
-import { L2VestingWallet } from "src/L2/L2VestingWallet.sol";
+import { L1VestingWallet } from "src/L1/L1VestingWallet.sol";
 import { SigUtils } from "test/SigUtils.sol";
 import { MockERC20 } from "test/mock/MockERC20.sol";
 
-contract L2VestingWalletV2Mock is L2VestingWallet {
+contract L1VestingWalletV2Mock is L1VestingWallet {
     function initializeV2(string memory _version) public reinitializer(2) {
         version = _version;
     }
@@ -19,14 +19,15 @@ contract L2VestingWalletV2Mock is L2VestingWallet {
     }
 }
 
-contract L2VestingWalletTest is Test {
-    L2VestingWallet public l2VestingWallet;
-    L2VestingWallet public l2VestingWalletImplementation;
+contract L1VestingWalletTest is Test {
+    L1VestingWallet public l1VestingWallet;
+    L1VestingWallet public l1VestingWalletImplementation;
 
     MockERC20 public mockToken;
 
     address public beneficiary = vm.addr(uint256(bytes32("beneficiary")));
     address public contractAdmin = vm.addr(uint256(bytes32("contractAdmin")));
+
     uint64 public startTimestamp = uint64(vm.getBlockTimestamp());
     uint64 public durationSeconds = 1000;
     string public name = "Vesting Wallet";
@@ -41,15 +42,15 @@ contract L2VestingWalletTest is Test {
         address _contractAdmin
     )
         public
-        returns (L2VestingWallet l2VestingWalletProxy)
+        returns (L1VestingWallet l1VestingWalletProxy)
     {
-        l2VestingWalletProxy = L2VestingWallet(
+        l1VestingWalletProxy = L1VestingWallet(
             payable(
                 address(
                     new ERC1967Proxy(
-                        address(l2VestingWalletImplementation),
+                        address(l1VestingWalletImplementation),
                         abi.encodeWithSelector(
-                            l2VestingWalletImplementation.initialize.selector,
+                            l1VestingWalletImplementation.initialize.selector,
                             _beneficiary,
                             _startTimestamp,
                             _durationSeconds,
@@ -60,49 +61,49 @@ contract L2VestingWalletTest is Test {
                 )
             )
         );
-        assert(address(l2VestingWalletProxy) != address(0x0));
+        assert(address(l1VestingWalletProxy) != address(0x0));
     }
 
     function setUp() public {
-        console.log("L2VestingWalletTest Address is: %s", address(this));
+        console.log("L1VestingWalletTest Address is: %s", address(this));
 
-        // deploy L2VestingWallet implementation contract
-        l2VestingWalletImplementation = new L2VestingWallet();
+        // deploy L1VestingWallet implementation contract
+        l1VestingWalletImplementation = new L1VestingWallet();
 
-        // deploy L2VestingWallet contract via proxy and initialize it at the same time
-        l2VestingWallet = _deployVestingWallet(beneficiary, startTimestamp, durationSeconds, name, contractAdmin);
+        // deploy L1VestingWallet contract via proxy and initialize it at the same time
+        l1VestingWallet = _deployVestingWallet(beneficiary, startTimestamp, durationSeconds, name, contractAdmin);
 
         mockToken = new MockERC20(vestAmount);
-        mockToken.transfer(address(l2VestingWallet), vestAmount);
+        mockToken.transfer(address(l1VestingWallet), vestAmount);
     }
 
     function test_Initialize() public {
-        assertEq(l2VestingWallet.name(), name);
-        assertEq(l2VestingWallet.start(), startTimestamp);
-        assertEq(l2VestingWallet.duration(), durationSeconds);
-        assertEq(l2VestingWallet.version(), "1.0.0");
-        assertEq(l2VestingWallet.hasRole(l2VestingWallet.CONTRACT_ADMIN_ROLE(), contractAdmin), true);
+        assertEq(l1VestingWallet.name(), name);
+        assertEq(l1VestingWallet.start(), startTimestamp);
+        assertEq(l1VestingWallet.duration(), durationSeconds);
+        assertEq(l1VestingWallet.version(), "1.0.0");
+        assertEq(l1VestingWallet.hasRole(l1VestingWallet.CONTRACT_ADMIN_ROLE(), contractAdmin), true);
     }
 
     function test_Release() public {
         vm.warp(startTimestamp + durationSeconds / 10);
-        assertEq(l2VestingWallet.releasable(address(mockToken)), vestAmount / 10);
+        assertEq(l1VestingWallet.releasable(address(mockToken)), vestAmount / 10);
 
         vm.prank(beneficiary);
-        l2VestingWallet.release(address(mockToken));
+        l1VestingWallet.release(address(mockToken));
         assertEq(mockToken.balanceOf(beneficiary), vestAmount / 10);
     }
 
     // To verify if the contract works correctly when durationSeconds = 0
     function test_Release_Instant() public {
-        L2VestingWallet newL2VestingWallet = _deployVestingWallet(beneficiary, startTimestamp, 0, name, contractAdmin);
+        L1VestingWallet newL1VestingWallet = _deployVestingWallet(beneficiary, startTimestamp, 0, name, contractAdmin);
 
         MockERC20 mockToken2 = new MockERC20(vestAmount);
-        mockToken2.transfer(address(newL2VestingWallet), vestAmount);
-        assertEq(newL2VestingWallet.releasable(address(mockToken2)), vestAmount);
+        mockToken2.transfer(address(newL1VestingWallet), vestAmount);
+        assertEq(newL1VestingWallet.releasable(address(mockToken2)), vestAmount);
 
         vm.prank(beneficiary);
-        newL2VestingWallet.release(address(mockToken2));
+        newL1VestingWallet.release(address(mockToken2));
         assertEq(mockToken2.balanceOf(beneficiary), vestAmount);
     }
 
@@ -112,17 +113,17 @@ contract L2VestingWalletTest is Test {
         vm.warp(10 * 365 days);
 
         uint64 newStartTimestamp = uint64(vm.getBlockTimestamp());
-        L2VestingWallet newL2VestingWallet =
+        L1VestingWallet newL1VestingWallet =
             _deployVestingWallet(beneficiary, newStartTimestamp + 365 days, 0, name, contractAdmin);
 
         // leap 11 years
         vm.warp(11 * 365 days + 1);
         MockERC20 mockToken2 = new MockERC20(vestAmount);
-        mockToken2.transfer(address(newL2VestingWallet), vestAmount);
-        assertEq(newL2VestingWallet.releasable(address(mockToken2)), vestAmount);
+        mockToken2.transfer(address(newL1VestingWallet), vestAmount);
+        assertEq(newL1VestingWallet.releasable(address(mockToken2)), vestAmount);
 
         vm.prank(beneficiary);
-        newL2VestingWallet.release(address(mockToken2));
+        newL1VestingWallet.release(address(mockToken2));
         assertEq(mockToken2.balanceOf(beneficiary), vestAmount);
     }
 
@@ -132,15 +133,15 @@ contract L2VestingWalletTest is Test {
         vm.warp(10 * 365 days);
 
         uint64 newStartTimestamp = uint64(vm.getBlockTimestamp());
-        L2VestingWallet newL2VestingWallet =
+        L1VestingWallet newL1VestingWallet =
             _deployVestingWallet(beneficiary, newStartTimestamp - 365 days, 100 days, name, contractAdmin);
 
         MockERC20 mockToken2 = new MockERC20(vestAmount);
-        mockToken2.transfer(address(newL2VestingWallet), vestAmount);
-        assertEq(newL2VestingWallet.releasable(address(mockToken2)), vestAmount);
+        mockToken2.transfer(address(newL1VestingWallet), vestAmount);
+        assertEq(newL1VestingWallet.releasable(address(mockToken2)), vestAmount);
 
         vm.prank(beneficiary);
-        newL2VestingWallet.release(address(mockToken2));
+        newL1VestingWallet.release(address(mockToken2));
         assertEq(mockToken2.balanceOf(beneficiary), vestAmount);
     }
 
@@ -150,15 +151,15 @@ contract L2VestingWalletTest is Test {
         vm.warp(10 * 365 days);
 
         uint64 newStartTimestamp = uint64(vm.getBlockTimestamp());
-        L2VestingWallet newL2VestingWallet =
+        L1VestingWallet newL1VestingWallet =
             _deployVestingWallet(beneficiary, newStartTimestamp - 100 days, 365 days, name, contractAdmin);
 
         MockERC20 mockToken2 = new MockERC20(vestAmount);
-        mockToken2.transfer(address(newL2VestingWallet), vestAmount);
-        assertEq(newL2VestingWallet.releasable(address(mockToken2)), vestAmount * 100 days / 365 days);
+        mockToken2.transfer(address(newL1VestingWallet), vestAmount);
+        assertEq(newL1VestingWallet.releasable(address(mockToken2)), vestAmount * 100 days / 365 days);
 
         vm.prank(beneficiary);
-        newL2VestingWallet.release(address(mockToken2));
+        newL1VestingWallet.release(address(mockToken2));
         assertEq(mockToken2.balanceOf(beneficiary), vestAmount * 100 days / 365 days);
     }
 
@@ -168,15 +169,15 @@ contract L2VestingWalletTest is Test {
         vm.warp(10 * 365 days);
 
         uint64 newStartTimestamp = uint64(vm.getBlockTimestamp());
-        L2VestingWallet newL2VestingWallet =
+        L1VestingWallet newL1VestingWallet =
             _deployVestingWallet(beneficiary, newStartTimestamp + 365 days, 365 days, name, contractAdmin);
 
         MockERC20 mockToken2 = new MockERC20(vestAmount);
-        mockToken2.transfer(address(newL2VestingWallet), vestAmount);
-        assertEq(newL2VestingWallet.releasable(address(mockToken2)), 0);
+        mockToken2.transfer(address(newL1VestingWallet), vestAmount);
+        assertEq(newL1VestingWallet.releasable(address(mockToken2)), 0);
 
         vm.prank(beneficiary);
-        newL2VestingWallet.release(address(mockToken2));
+        newL1VestingWallet.release(address(mockToken2));
         assertEq(mockToken2.balanceOf(beneficiary), vestAmount * 0);
     }
 
@@ -184,12 +185,12 @@ contract L2VestingWalletTest is Test {
         address newOwner = vm.addr(100);
 
         vm.prank(beneficiary);
-        l2VestingWallet.transferOwnership(newOwner);
-        assertEq(l2VestingWallet.owner(), beneficiary);
+        l1VestingWallet.transferOwnership(newOwner);
+        assertEq(l1VestingWallet.owner(), beneficiary);
 
         vm.prank(newOwner);
-        l2VestingWallet.acceptOwnership();
-        assertEq(l2VestingWallet.owner(), newOwner);
+        l1VestingWallet.acceptOwnership();
+        assertEq(l1VestingWallet.owner(), newOwner);
     }
 
     function test_TransferOwnership_RevertWhenNotCalledByOwner() public {
@@ -197,12 +198,12 @@ contract L2VestingWalletTest is Test {
         address nobody = vm.addr(2);
 
         // owner is this contract
-        assertEq(l2VestingWallet.owner(), beneficiary);
+        assertEq(l1VestingWallet.owner(), beneficiary);
 
         // address nobody is not the owner so it cannot call transferOwnership
         vm.startPrank(nobody);
         vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, nobody));
-        l2VestingWallet.transferOwnership(newOwner);
+        l1VestingWallet.transferOwnership(newOwner);
         vm.stopPrank();
     }
 
@@ -210,13 +211,13 @@ contract L2VestingWalletTest is Test {
         address newOwner = vm.addr(100);
 
         vm.prank(beneficiary);
-        l2VestingWallet.transferOwnership(newOwner);
-        assertEq(l2VestingWallet.owner(), beneficiary);
+        l1VestingWallet.transferOwnership(newOwner);
+        assertEq(l1VestingWallet.owner(), beneficiary);
 
         address nobody = vm.addr(200);
         vm.prank(nobody);
         vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, nobody));
-        l2VestingWallet.acceptOwnership();
+        l1VestingWallet.acceptOwnership();
     }
 
     function test_TransferContractAdminRole_RevertWhenNotCalledByContractAdmin() public {
@@ -226,10 +227,10 @@ contract L2VestingWalletTest is Test {
         vm.startPrank(nobody);
         vm.expectRevert(
             abi.encodeWithSelector(
-                IAccessControl.AccessControlUnauthorizedAccount.selector, nobody, l2VestingWallet.CONTRACT_ADMIN_ROLE()
+                IAccessControl.AccessControlUnauthorizedAccount.selector, nobody, l1VestingWallet.CONTRACT_ADMIN_ROLE()
             )
         );
-        l2VestingWallet.transferContractAdminRole(newContractAdmin);
+        l1VestingWallet.transferContractAdminRole(newContractAdmin);
         vm.stopPrank();
 
         // Beneficiary also cannot change contractAdmin
@@ -238,10 +239,10 @@ contract L2VestingWalletTest is Test {
             abi.encodeWithSelector(
                 IAccessControl.AccessControlUnauthorizedAccount.selector,
                 beneficiary,
-                l2VestingWallet.CONTRACT_ADMIN_ROLE()
+                l1VestingWallet.CONTRACT_ADMIN_ROLE()
             )
         );
-        l2VestingWallet.transferContractAdminRole(newContractAdmin);
+        l1VestingWallet.transferContractAdminRole(newContractAdmin);
         vm.stopPrank();
     }
 
@@ -249,8 +250,8 @@ contract L2VestingWalletTest is Test {
         address newContractAdmin = vm.addr(1);
 
         vm.prank(contractAdmin);
-        l2VestingWallet.transferContractAdminRole(newContractAdmin);
-        assertEq(newContractAdmin, l2VestingWallet.pendingContractAdmin());
+        l1VestingWallet.transferContractAdminRole(newContractAdmin);
+        assertEq(newContractAdmin, l1VestingWallet.pendingContractAdmin());
     }
 
     function test_AcceptContractAdminRole_RevertWhenNotCalledByPendingContractAdmin() public {
@@ -258,12 +259,12 @@ contract L2VestingWalletTest is Test {
         address nobody = vm.addr(2);
 
         vm.startPrank(contractAdmin);
-        l2VestingWallet.transferContractAdminRole(newContractAdmin);
+        l1VestingWallet.transferContractAdminRole(newContractAdmin);
         vm.stopPrank();
 
         vm.startPrank(nobody);
         vm.expectRevert("VestingWallet: Not pendingContractAdmin");
-        l2VestingWallet.acceptContractAdminRole();
+        l1VestingWallet.acceptContractAdminRole();
         vm.stopPrank();
     }
 
@@ -271,30 +272,30 @@ contract L2VestingWalletTest is Test {
         address newContractAdmin = vm.addr(1);
 
         vm.startPrank(contractAdmin);
-        l2VestingWallet.transferContractAdminRole(newContractAdmin);
+        l1VestingWallet.transferContractAdminRole(newContractAdmin);
         vm.stopPrank();
 
         vm.startPrank(newContractAdmin);
-        l2VestingWallet.acceptContractAdminRole();
+        l1VestingWallet.acceptContractAdminRole();
         vm.stopPrank();
 
         // There is always only 1 contract admin
-        assertEq(l2VestingWallet.getRoleMemberCount(l2VestingWallet.CONTRACT_ADMIN_ROLE()), 1);
+        assertEq(l1VestingWallet.getRoleMemberCount(l1VestingWallet.CONTRACT_ADMIN_ROLE()), 1);
 
-        assertEq(l2VestingWallet.getRoleMember(l2VestingWallet.CONTRACT_ADMIN_ROLE(), 0), newContractAdmin);
+        assertEq(l1VestingWallet.getRoleMember(l1VestingWallet.CONTRACT_ADMIN_ROLE(), 0), newContractAdmin);
     }
 
     function test_UpgradeToAndCall_RevertWhenNotContractAdmin() public {
-        L2VestingWalletV2Mock l2VestingWalletV2Implementation = new L2VestingWalletV2Mock();
+        L1VestingWalletV2Mock l1VestingWalletV2Implementation = new L1VestingWalletV2Mock();
         address nobody = vm.addr(1);
 
         vm.startPrank(nobody);
         vm.expectRevert(
             abi.encodeWithSelector(
-                IAccessControl.AccessControlUnauthorizedAccount.selector, nobody, l2VestingWallet.CONTRACT_ADMIN_ROLE()
+                IAccessControl.AccessControlUnauthorizedAccount.selector, nobody, l1VestingWallet.CONTRACT_ADMIN_ROLE()
             )
         );
-        l2VestingWallet.upgradeToAndCall(address(l2VestingWalletV2Implementation), "");
+        l1VestingWallet.upgradeToAndCall(address(l1VestingWalletV2Implementation), "");
         vm.stopPrank();
 
         // Beneficiary also cannot upgrade contract
@@ -303,34 +304,34 @@ contract L2VestingWalletTest is Test {
             abi.encodeWithSelector(
                 IAccessControl.AccessControlUnauthorizedAccount.selector,
                 beneficiary,
-                l2VestingWallet.CONTRACT_ADMIN_ROLE()
+                l1VestingWallet.CONTRACT_ADMIN_ROLE()
             )
         );
-        l2VestingWallet.upgradeToAndCall(
-            address(l2VestingWalletV2Implementation),
-            abi.encodeWithSelector(l2VestingWalletV2Implementation.initializeV2.selector, "2.0.0")
+        l1VestingWallet.upgradeToAndCall(
+            address(l1VestingWalletV2Implementation),
+            abi.encodeWithSelector(l1VestingWalletV2Implementation.initializeV2.selector, "2.0.0")
         );
         vm.stopPrank();
     }
 
     function test_UpgradeToAndCall_SuccessUpgrade() public {
-        L2VestingWalletV2Mock l2VestingWalletV2Implementation = new L2VestingWalletV2Mock();
+        L1VestingWalletV2Mock l1VestingWalletV2Implementation = new L1VestingWalletV2Mock();
 
         vm.prank(contractAdmin);
-        l2VestingWallet.upgradeToAndCall(
-            address(l2VestingWalletV2Implementation),
-            abi.encodeWithSelector(l2VestingWalletV2Implementation.initializeV2.selector, "2.0.0")
+        l1VestingWallet.upgradeToAndCall(
+            address(l1VestingWalletV2Implementation),
+            abi.encodeWithSelector(l1VestingWalletV2Implementation.initializeV2.selector, "2.0.0")
         );
-        L2VestingWalletV2Mock l2VestingWalletV2 = L2VestingWalletV2Mock(payable(address(l2VestingWallet)));
+        L1VestingWalletV2Mock l1VestingWalletV2 = L1VestingWalletV2Mock(payable(address(l1VestingWallet)));
 
-        // version of L2VestingWallet changed to 2.0.0
-        assertEq(l2VestingWalletV2.version(), "2.0.0");
+        // version of L1VestingWallet changed to 2.0.0
+        assertEq(l1VestingWalletV2.version(), "2.0.0");
 
         // new function introduced
-        assertEq(l2VestingWalletV2.isV2(), true);
+        assertEq(l1VestingWalletV2.isV2(), true);
 
         // assure cannot re-reinitialize
         vm.expectRevert();
-        l2VestingWalletV2.initializeV2("3.0.0");
+        l1VestingWalletV2.initializeV2("3.0.0");
     }
 }

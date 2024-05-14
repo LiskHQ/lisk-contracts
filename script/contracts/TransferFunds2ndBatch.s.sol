@@ -141,12 +141,16 @@ contract TransferFunds2ndBatchScript is Script {
         console2.log("L1 Lisk tokens successfully sent to all L2 addresses!");
 
         console2.log("Transferring all remaining L1 Lisk tokens to the L2 Claim contract...");
+
+        uint256 amountClaimContract = balanceBeforeDeployer - totalAmount;
+        console2.log("Sending %s L1 Lisk tokens to the L2 Claim contract...", amountClaimContract);
+
         vm.startBroadcast(deployerPrivateKey);
         bridge.depositERC20To(
             l1AddressesConfig.L1LiskToken,
             l2AddressesConfig.L2LiskToken,
             l2AddressesConfig.L2ClaimContract,
-            balanceBeforeDeployer - totalAmount,
+            amountClaimContract,
             1000000,
             ""
         );

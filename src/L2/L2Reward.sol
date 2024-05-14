@@ -62,6 +62,27 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
     /// @notice Address of the L2 token contract.
     address public l2TokenContract;
 
+    /// @notice Emitted when a locking position is created.
+    event LockingPositionCreated(uint256 indexed lockID);
+
+    /// @notice Emitted when a locking position is deleted.
+    event LockingPositionDeleted(uint256 indexed lockID);
+
+    /// @notice Emitted when fast unlock is initiated for a locking position.
+    event FastUnlockInitiated(uint256 indexed lockID);
+
+    /// @notice Emitted when locking amount is increased for a locking position.
+    event LockingAmountIncreased(uint256 indexed lockID, uint256 amountIncrease);
+
+    /// @notice Emitted when duration is extended against a locking position.
+    event LockingDurationExtended(uint256 indexed lockID, uint256 durationExtension);
+
+    /// @notice Emitted when a locking position is paused.
+    event LockingPositionPaused(uint256 indexed lockID);
+
+    /// @notice Emitted when a unlocking countdown is resumed against a paused position.
+    event UnlockingCountdownResumed(uint256 indexed lockID);
+
     /// @notice Emitted when rewards are added.
     event RewardsAdded(uint256 indexed amount, uint256 indexed duration, uint256 indexed delay);
 
@@ -75,7 +96,7 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
     event LockingPositionContractAddressChanged(address indexed oldAddress, address indexed newAddress);
 
     /// @notice Emitted when a position is rewarded.
-    event RewardsClaimed(uint256 lockID, uint256 amount);
+    event RewardsClaimed(uint256 indexed lockID, uint256 amount);
 
     /// @notice Represents duration extension for a position.
     struct ExtendedDuration {
@@ -164,6 +185,8 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
         dailyUnlockedAmounts[today + duration] += amount;
         pendingUnlockAmount += amount;
 
+        emit LockingPositionCreated(id);
+
         return id;
     }
 
@@ -190,6 +213,8 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
         IL2Staking(stakingContract).unlock(lockID);
 
         delete lastClaimDate[lockID];
+
+        emit LockingPositionDeleted(lockID);
     }
 
     /// @notice Initiates fast unlock of multiple locking positions.
@@ -241,6 +266,8 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
         dailyUnlockedAmounts[today + fastUnlockDuration] += lockingPositionBeforeInitiatingFastUnlock.amount - penalty;
         pendingUnlockAmount += lockingPositionBeforeInitiatingFastUnlock.amount - penalty;
         totalAmountLocked -= penalty;
+
+        emit FastUnlockInitiated(lockID);
     }
 
     /// @notice Calculate rewards of a locking position.
@@ -309,7 +336,7 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
         uint256 today = todayDay();
         uint256 reward;
 
-        if (this.lastClaimDate(lockID) >= today) {
+        if (lastClaimDate[lockID] >= today) {
             emit RewardsClaimed(lockID, 0);
 
             return;
@@ -338,7 +365,7 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
 
             require(locks[i].amountIncrease > 0, "L2Reward: Increased amount should be greater than zero");
 
-            _increaseLockingAmount(locks[0].lockID, locks[0].amountIncrease);
+            _increaseLockingAmount(locks[i].lockID, locks[i].amountIncrease);
         }
     }
 
@@ -369,6 +396,8 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
             // duration for paused position => lockingPosition.pausedLockingDuration
             totalWeight += amountIncrease * (lockingPosition.pausedLockingDuration + OFFSET);
         }
+
+        emit LockingAmountIncreased(lockID, amountIncrease);
     }
 
     /// @notice Extends duration of multiple locking positions.
@@ -406,16 +435,18 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
             // locking period has not finished
             if (lockingPosition.expDate > todayDay()) {
                 dailyUnlockedAmounts[lockingPosition.expDate] -= lockingPosition.amount;
+                dailyUnlockedAmounts[lockingPosition.expDate + durationExtension] += lockingPosition.amount;
             }
-            // locking period has expired, re-lock amount
+            // locking period has expired, re-lock amount and assume that expiry date is today
             else {
+                dailyUnlockedAmounts[todayDay() + durationExtension] += lockingPosition.amount;
                 totalAmountLocked += lockingPosition.amount;
                 pendingUnlockAmount += lockingPosition.amount;
                 totalWeight += lockingPosition.amount * OFFSET;
             }
-
-            dailyUnlockedAmounts[lockingPosition.expDate + durationExtension] += lockingPosition.amount;
         }
+
+        emit LockingDurationExtended(lockID, durationExtension);
     }
 
     /// @notice Pauses unlocking of multiple locking positions.
@@ -446,6 +477,8 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
         // update globals
         pendingUnlockAmount -= lockingPosition.amount;
         dailyUnlockedAmounts[lockingPosition.expDate] -= lockingPosition.amount;
+
+        emit LockingPositionPaused(lockID);
     }
 
     /// @notice Resumes unlocking of multiple locking positions.
@@ -476,6 +509,8 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
         // update globals
         pendingUnlockAmount += lockingPosition.amount;
         dailyUnlockedAmounts[lockingPosition.expDate] += lockingPosition.amount;
+
+        emit UnlockingCountdownResumed(lockID);
     }
 
     /// @notice Adds daily rewards between provided duration.
