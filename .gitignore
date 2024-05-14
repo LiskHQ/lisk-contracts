@@ -7,7 +7,6 @@ broadcast/
 
 # Dotenv file
 .env
-.env.old
 
 # Mac OS files
 .DS_Store
