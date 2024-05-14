@@ -1,5 +1,8 @@
-# Ignore everything in this directory
-*
+# Devnet folder
+devnet
 
-# Except for this file
-!.gitignore
+# Testnet folder
+testnet
+
+# Mainnet folder
+mainnet
