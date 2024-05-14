@@ -28,8 +28,8 @@ Below are the addresses of the deployed smart contracts on the Ethereum and Lisk
 
 | Name                                                                       | Address                                                                                                                              |
 | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| [`L2ClaimContract`](../../../src/L2/L2ClaimContract.sol)                   | [0x3D4190b08E3E30183f5AdE3A116f2534Ee3a4f94](https://sepolia-blockscout.lisk.com/address/0x3D4190b08E3E30183f5AdE3A116f2534Ee3a4f94) |
-| [`L2ClaimImplementation`](../../../src/L2/L2ClaimContract.sol)             | [0xAE4A95E412d7d669AbE6bB23031Ae0250B832710](https://sepolia-blockscout.lisk.com/address/0xAE4A95E412d7d669AbE6bB23031Ae0250B832710) |
+| [`L2ClaimContract`](../../../src/L2/L2Claim.sol)                           | [0x3D4190b08E3E30183f5AdE3A116f2534Ee3a4f94](https://sepolia-blockscout.lisk.com/address/0x3D4190b08E3E30183f5AdE3A116f2534Ee3a4f94) |
+| [`L2ClaimImplementation`](../../../src/L2/L2Claim.sol)                     | [0xAE4A95E412d7d669AbE6bB23031Ae0250B832710](https://sepolia-blockscout.lisk.com/address/0xAE4A95E412d7d669AbE6bB23031Ae0250B832710) |
 | [`L2Governor`](../../../src/L2/L2Governor.sol)                             | [0xf9181aaD773d423A2cc0155Cb4263E563D51B467](https://sepolia-blockscout.lisk.com/address/0xf9181aaD773d423A2cc0155Cb4263E563D51B467) |
 | [`L2GovernorImplementation`](../../../src/L2/L2Governor.sol)               | [0xff5e32726fF30E9a15F6485C3Bd1e31e63B26625](https://sepolia-blockscout.lisk.com/address/0xff5e32726fF30E9a15F6485C3Bd1e31e63B26625) |
 | [`L2LiskToken`](../../../src/L2/L2LiskToken.sol)                           | [0x8a21CF9Ba08Ae709D64Cb25AfAA951183EC9FF6D](https://sepolia-blockscout.lisk.com/address/0x8a21CF9Ba08Ae709D64Cb25AfAA951183EC9FF6D) |
