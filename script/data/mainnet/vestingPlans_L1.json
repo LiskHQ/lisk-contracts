@@ -31,7 +31,7 @@
     {
       "name": "Investor",
       "beneficiaryAddressTag": "investorAddress",
-      "startTimestamp": 1716249600,
+      "startTimestamp": 1716163200,
       "durationDays": 730,
       "amount": 20000000000000000000000000
     },
@@ -40,7 +40,7 @@
       "beneficiaryAddressTag": "ecosystemAddress",
       "startTimestamp": 1735689600,
       "durationDays": 0,
-      "amount": 2711643842568790000000000
+      "amount": 2711644000000000000000000
     }
   ]
 }
