@@ -1,4 +1,17 @@
 {
-    "l1Addresses": [],
+    "l1Addresses": [
+        {
+            "addr": "0x6cc8dcbca746a6e4fdefb98e1d0df903b107fd21",
+            "amount": 22375706712050000000000
+        },
+        {
+            "addr": "0xb85bd2a1d76586bb8f81494bfa061dfbf803b4db",
+            "amount": 75507555024860000000000
+        },
+        {
+            "addr": "0xFFB577Dc5ce2c523aBbBcE61c7943BB112200c79",
+            "amount": 197910000000000000
+        }
+    ],
     "l2Addresses": []
 }
