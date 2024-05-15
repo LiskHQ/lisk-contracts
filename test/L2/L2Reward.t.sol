@@ -325,6 +325,11 @@ contract L2RewardTest is Test {
         // days.
         // Description:
         // claim rewards agains all positions on day 105
+        // Act:
+        // move to day 106, claim rewards against all positions again
+        // Assert:
+        // total rewards claimed on day 106 is equal to daily rewards available for day 105.
+        // Act:
         // move to day 115, claim rewards against all positions again
         // Assert:
         // total rewards claimed on day 115 is equal to sum of daily rewards between day 105 and 114.
@@ -332,6 +337,8 @@ contract L2RewardTest is Test {
         uint256[] memory lockIDs;
         address[] memory stakers;
         uint256[] memory positionsToBeModified = new uint256[](1);
+        uint256[] memory balances = new uint256[](7);
+        uint256 totalRewards;
 
         (lockIDs, stakers) = createContractState();
 
@@ -346,9 +353,33 @@ contract L2RewardTest is Test {
             when_rewardsAreClaimedByStaker(stakers[i], positionsToBeModified);
         }
 
-        vm.warp(19740 days + 115 days);
+        // get balances before claiming rewards again
+        for (uint8 i = 0; i < stakers.length; i++) {
+            balances[i] = l2LiskToken.balanceOf(stakers[i]);
+        }
 
-        uint256[] memory balances = new uint256[](7);
+        vm.warp(19740 days + 106 days);
+        // all positions claim rewards on day 106 only position at index 1, 3, 4, 5, and 6 are valid
+        for (uint8 i = 0; i < stakers.length; i++) {
+            // balance before rewards claim
+            balances[i] = l2LiskToken.balanceOf(stakers[i]);
+            // lockIDs[3] has been deleted
+            if (i == 3) {
+                continue;
+            }
+            positionsToBeModified[0] = lockIDs[i];
+            when_rewardsAreClaimedByStaker(stakers[i], positionsToBeModified);
+        }
+
+        for (uint8 i = 0; i < stakers.length; i++) {
+            totalRewards += l2LiskToken.balanceOf(stakers[i]) - balances[i];
+        }
+
+        // total rewards calimed on day 106 are less than or equal to dailyRewards on day 105
+        assertTrue(totalRewards <= l2Reward.dailyRewards(19740 + 105));
+        assertEq(totalRewards / 10, l2Reward.dailyRewards(19740 + 105) / 10);
+
+        vm.warp(19740 days + 115 days);
 
         // get balances before claiming rewards again
         for (uint8 i = 0; i < stakers.length; i++) {
@@ -367,7 +398,6 @@ contract L2RewardTest is Test {
             when_rewardsAreClaimedByStaker(stakers[i], positionsToBeModified);
         }
 
-        uint256 totalRewards;
         for (uint8 i = 0; i < stakers.length; i++) {
             totalRewards += l2LiskToken.balanceOf(stakers[i]) - balances[i];
         }
@@ -378,7 +408,7 @@ contract L2RewardTest is Test {
         }
 
         assertTrue(sumOfDailyRewards > totalRewards);
-        assertEq(sumOfDailyRewards / 10 ** 18, totalRewards / 10 ** 18);
+        assertEq(sumOfDailyRewards / 10 ** 2, totalRewards / 10 ** 2);
     }
 
     function test_createPosition_l2RewardContractShouldBeApprovedToTransferFromStakerAccount() public {
