@@ -210,6 +210,177 @@ contract L2RewardTest is Test {
         vm.stopPrank();
     }
 
+    function createContractState() private returns (uint256[] memory, address[] memory) {
+        address[] memory stakers = given_anArrayOfStakersOfLength(7);
+        uint256[] memory lockIDs = new uint256[](7);
+
+        uint256 funds = convertLiskToSmallestDenomination(5000);
+        uint256 balance = convertLiskToSmallestDenomination(500);
+
+        uint256[] memory positionsToBeModified = new uint256[](1);
+
+        // owner gets balance
+        given_accountHasBalance(address(this), funds);
+        // fund the reward contract, 10 Lisk per day for 500
+        given_ownerHasFundedStaking(Funds({ amount: funds, duration: 500, delay: 1 }));
+
+        // all the stakers gets balance
+        for (uint8 i = 0; i < stakers.length; i++) {
+            given_accountHasBalance(stakers[i], balance);
+        }
+
+        vm.warp(19740 days + 1 days);
+
+        // stake 1: (100 LSK, 30 days)
+        // extended on day 50 by 30 days
+        lockIDs[0] = when_stakerCreatesPosition(
+            stakers[0], Position({ amount: convertLiskToSmallestDenomination(100), duration: 30 })
+        );
+
+        // stake 2: (100 LSK, 80 days)
+        // paused on day 30, resumes on day 80
+        lockIDs[1] = when_stakerCreatesPosition(
+            stakers[1], Position({ amount: convertLiskToSmallestDenomination(100), duration: 80 })
+        );
+
+        vm.warp(19740 days + 10 days);
+        // stake 3: (100 LSK, 100 days)
+        lockIDs[2] = when_stakerCreatesPosition(
+            stakers[2], Position({ amount: convertLiskToSmallestDenomination(100), duration: 100 })
+        );
+
+        vm.warp(19740 days + 30 days);
+        // pauses stake 1 on day 30
+        positionsToBeModified[0] = lockIDs[1];
+        vm.prank(stakers[1]);
+        l2Reward.pauseUnlocking(positionsToBeModified);
+
+        vm.warp(19740 days + 35 days);
+        // stake 4: (50 LSK, 14 days)
+        // staked on day 35, expires on day 49
+        lockIDs[3] = when_stakerCreatesPosition(
+            stakers[3], Position({ amount: convertLiskToSmallestDenomination(50), duration: 14 })
+        );
+
+        vm.warp(19740 days + 49 days);
+        // stake 4 is unlocked
+        positionsToBeModified[0] = lockIDs[3];
+        vm.prank(stakers[3]);
+        l2Reward.deletePositions(positionsToBeModified);
+
+        // stake 5: (80 LSK, 80 days)
+        // Staked on Day 49, paused on Day 89
+        lockIDs[4] = when_stakerCreatesPosition(
+            stakers[4], Position({ amount: convertLiskToSmallestDenomination(80), duration: 80 })
+        );
+
+        vm.warp(19740 days + 50 days);
+        // extend stake 1 by 30 days
+        L2Reward.ExtendedDuration[] memory durationExtensions = new L2Reward.ExtendedDuration[](1);
+        durationExtensions[0].lockID = lockIDs[0];
+        durationExtensions[0].durationExtension = 30;
+        vm.prank(stakers[0]);
+        l2Reward.extendDuration(durationExtensions);
+
+        vm.warp(19740 days + 70 days);
+        // stake 6: (100 LSK, 150 days)
+        // Increases amount at day 100 by 50
+        lockIDs[5] = when_stakerCreatesPosition(
+            stakers[5], Position({ amount: convertLiskToSmallestDenomination(100), duration: 150 })
+        );
+
+        vm.warp(19740 days + 80 days);
+        // resumes stake 2 on day 80
+        positionsToBeModified[0] = lockIDs[1];
+        vm.prank(stakers[1]);
+        l2Reward.resumeUnlockingCountdown(positionsToBeModified);
+
+        vm.warp(19740 days + 89 days);
+        // Pauses stake 5 on day 89
+        positionsToBeModified[0] = lockIDs[4];
+        vm.prank(stakers[4]);
+        l2Reward.pauseUnlocking(positionsToBeModified);
+
+        vm.warp(19740 days + 95 days);
+        // stake 7: (200 LSK, 200 days)
+        lockIDs[6] = when_stakerCreatesPosition(
+            stakers[6], Position({ amount: convertLiskToSmallestDenomination(200), duration: 200 })
+        );
+
+        vm.warp(19740 days + 100 days);
+        // Increases amount for stake 6
+        L2Reward.IncreasedAmount[] memory increasingAmounts = new L2Reward.IncreasedAmount[](1);
+        increasingAmounts[0].lockID = lockIDs[5];
+        increasingAmounts[0].amountIncrease = convertLiskToSmallestDenomination(50);
+        vm.startPrank(stakers[5]);
+        l2LiskToken.approve(address(l2Reward), increasingAmounts[0].amountIncrease);
+        l2Reward.increaseLockingAmount(increasingAmounts);
+        vm.stopPrank();
+
+        return (lockIDs, stakers);
+    }
+
+    function test_scenario_dailyRewards() public {
+        // Scenario: rewards alloted for a certain day(s) is less than or equal to dailyRewards available for those
+        // days.
+        // Description:
+        // claim rewards agains all positions on day 105
+        // move to day 115, claim rewards against all positions again
+        // Assert:
+        // total rewards claimed on day 115 is equal to sum of daily rewards between day 105 and 114.
+
+        uint256[] memory lockIDs;
+        address[] memory stakers;
+        uint256[] memory positionsToBeModified = new uint256[](1);
+
+        (lockIDs, stakers) = createContractState();
+
+        vm.warp(19740 days + 105 days);
+
+        for (uint8 i = 0; i < lockIDs.length; i++) {
+            // lockIDs[3] has been deleted
+            if (i == 3) {
+                continue;
+            }
+            positionsToBeModified[0] = lockIDs[i];
+            when_rewardsAreClaimedByStaker(stakers[i], positionsToBeModified);
+        }
+
+        vm.warp(19740 days + 115 days);
+
+        uint256[] memory balances = new uint256[](7);
+
+        // get balances before claiming rewards again
+        for (uint8 i = 0; i < stakers.length; i++) {
+            balances[i] = l2LiskToken.balanceOf(stakers[i]);
+        }
+
+        // all positions claim rewards on day 115 only position at index 1, 3, 4, 5, and 6 are valid
+        for (uint8 i = 0; i < stakers.length; i++) {
+            // balance before rewards claim
+            balances[i] = l2LiskToken.balanceOf(stakers[i]);
+            // lockIDs[3] has been deleted
+            if (i == 3) {
+                continue;
+            }
+            positionsToBeModified[0] = lockIDs[i];
+            when_rewardsAreClaimedByStaker(stakers[i], positionsToBeModified);
+        }
+
+        uint256 totalRewards;
+        for (uint8 i = 0; i < stakers.length; i++) {
+            totalRewards += l2LiskToken.balanceOf(stakers[i]) - balances[i];
+        }
+
+        uint256 sumOfDailyRewards;
+        for (uint256 i = 19740 + 105; i < 19740 + 115; i++) {
+            sumOfDailyRewards += l2Reward.dailyRewards(i);
+        }
+
+        assertTrue(sumOfDailyRewards > totalRewards);
+        assertEq(sumOfDailyRewards / 10 ** 18, totalRewards / 10 ** 18);
+    }
+
     function test_createPosition_l2RewardContractShouldBeApprovedToTransferFromStakerAccount() public {
         address staker = address(0x1);
         uint256 duration = 20;
