@@ -210,7 +210,7 @@ contract L2RewardTest is Test {
         vm.stopPrank();
     }
 
-    function createContractState() private returns (uint256[] memory, address[] memory) {
+    function createContractState1() private returns (uint256[] memory, address[] memory) {
         address[] memory stakers = given_anArrayOfStakersOfLength(7);
         uint256[] memory lockIDs = new uint256[](7);
 
@@ -320,7 +320,7 @@ contract L2RewardTest is Test {
         return (lockIDs, stakers);
     }
 
-    function test_scenario_dailyRewards() public {
+    function test_scenario1_dailyRewards() public {
         // Scenario: rewards alloted for a certain day(s) is less than or equal to dailyRewards available for those
         // days.
         // Description:
@@ -347,7 +347,7 @@ contract L2RewardTest is Test {
         uint256[] memory balances = new uint256[](7);
         uint256 totalRewards;
 
-        (lockIDs, stakers) = createContractState();
+        (lockIDs, stakers) = createContractState1();
 
         vm.warp(19740 days + 105 days);
 
