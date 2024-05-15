@@ -4,8 +4,8 @@
     {
       "name": "Guaranteed DAO 2024",
       "beneficiaryAddressTag": "l2TimelockController",
-      "startTimestamp": 1716163200,
-      "durationDays": 226,
+      "startTimestamp": 1716249600,
+      "durationDays": 225,
       "amount": 8750000000000000000000000
     },
     {
