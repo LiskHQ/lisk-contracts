@@ -2303,26 +2303,27 @@ contract L2RewardTest is Test {
             when_rewardsAreClaimedByStaker(stakers[i], locksToClaim);
         }
 
-        uint256 expectedSumOfDailyRewards;
+        uint256 sumOfDailyRewards;
         for (uint256 i = 19740; i < l2Reward.todayDay(); i++) {
-            expectedSumOfDailyRewards += l2Reward.dailyRewards(i);
+            sumOfDailyRewards += l2Reward.dailyRewards(i);
         }
 
-        uint256 expectedSumOfRewards;
+        uint256 sumOfRewards;
         for (uint8 i = 0; i < stakers.length; i++) {
             // expected reward is current balance + amount staked - initial balance
-            expectedSumOfRewards +=
+            sumOfRewards +=
                 (l2LiskToken.balanceOf(stakers[i]) + (convertLiskToSmallestDenomination(37) * (i + 1))) - balance;
         }
 
         // balance of the l2Reward is almost zero
         assertEq(l2LiskToken.balanceOf(address(l2Reward)) / 10 ** 3, 0);
 
-        assertTrue(expectedSumOfDailyRewards <= funds);
-        assertTrue(expectedSumOfRewards <= funds);
+        assertTrue(sumOfDailyRewards <= funds);
+        assertTrue(sumOfRewards <= funds);
+        assertTrue(sumOfDailyRewards > sumOfRewards);
 
         // daily rewards and rewards assigned are almost equal
-        assertEq(expectedSumOfDailyRewards / 10 ** 3, expectedSumOfRewards / 10 ** 3);
+        assertEq(sumOfDailyRewards / 10 ** 3, sumOfRewards / 10 ** 3);
     }
 
     function convertLiskToSmallestDenomination(uint256 lisk) internal pure returns (uint256) {
