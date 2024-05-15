@@ -334,8 +334,12 @@ contract L2RewardTest is Test {
         // Assert:
         // total rewards claimed on day 115 is equal to sum of daily rewards between day 105 and 114.
         // Assert:
-        // on day 115, pendingUnlockAmount is equal to sum dailyUnlockedAmounts from day 115 to day 295, the expiry date
+        // on day 115, pendingUnlockAmount is equal to sum of dailyUnlockedAmounts from day 115 to day 295, the expiry
+        // date
         // of the longest stake is 295.
+        // Assert:
+        // on day 115, totalAmountLocked is equal to sum of dailyUnlockedAmount from day 115 to day 295 aggregated to
+        // sum of amount of paused stakes
 
         uint256[] memory lockIDs;
         address[] memory stakers;
@@ -420,6 +424,19 @@ contract L2RewardTest is Test {
         }
 
         assertEq(sumOfDailyUnlockedAmount, l2Reward.pendingUnlockAmount());
+
+        uint256 sumOfAmountOfPausedStakes;
+        for (uint8 i = 0; i < lockIDs.length; i++) {
+            // lockIDs[3] has been deleted
+            if (i == 3) {
+                continue;
+            }
+            if (l2LockingPosition.getLockingPosition(lockIDs[i]).pausedLockingDuration != 0) {
+                sumOfAmountOfPausedStakes += l2LockingPosition.getLockingPosition(lockIDs[i]).amount;
+            }
+        }
+
+        assertEq(sumOfDailyUnlockedAmount + sumOfAmountOfPausedStakes, l2Reward.totalAmountLocked());
     }
 
     function test_createPosition_l2RewardContractShouldBeApprovedToTransferFromStakerAccount() public {
