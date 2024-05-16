@@ -458,11 +458,11 @@ contract L2RewardTest is Test {
     }
 
     function createScenario3() private returns (uint256[] memory, address[] memory) {
-        address[] memory stakers = given_anArrayOfStakersOfLength(5);
-        uint256[] memory lockIDs = new uint256[](5);
+        address[] memory stakers = given_anArrayOfStakersOfLength(14);
+        uint256[] memory lockIDs = new uint256[](14);
 
         uint256 funds = convertLiskToSmallestDenomination(5000);
-        uint256 balance = convertLiskToSmallestDenomination(500);
+        uint256 balance = convertLiskToSmallestDenomination(5000);
 
         uint256[] memory positionsToBeModified = new uint256[](1);
         L2Reward.ExtendedDuration[] memory durationExtensions = new L2Reward.ExtendedDuration[](1);
@@ -509,6 +509,22 @@ contract L2RewardTest is Test {
             stakers[3], Position({ amount: convertLiskToSmallestDenomination(5), duration: 300 })
         );
 
+        vm.warp(19740 days + 20 days);
+        // stake 5: (500 LSK, 50 days)
+        // Will: fast unlock (day 30), extendDuration by 21 days (day 31), increase amount by 30 LSK and pause Duration
+        // (day 40),
+        // resume (108)
+        lockIDs[4] = when_stakerCreatesPosition(
+            stakers[4], Position({ amount: convertLiskToSmallestDenomination(500), duration: 50 })
+        );
+
+        // stake 6: (1250LSK, 80 days)
+        // will: Initiate fast unlock (day 35), pause next day (36), extend to 20 days(day 75), resume unlocking (day
+        // 100)
+        lockIDs[5] = when_stakerCreatesPosition(
+            stakers[5], Position({ amount: convertLiskToSmallestDenomination(1250), duration: 80 })
+        );
+
         vm.warp(19740 days + 30 days);
         // stake 1: amount increase on day 30 by 90 LSK
         increasingAmounts[0].lockID = lockIDs[0];
@@ -526,11 +542,203 @@ contract L2RewardTest is Test {
         l2Reward.increaseLockingAmount(increasingAmounts);
         vm.stopPrank();
 
+        // stake 5: Initiate fast unlock
+        positionsToBeModified[0] = lockIDs[4];
+        vm.prank(stakers[4]);
+        l2Reward.initiateFastUnlock(positionsToBeModified);
+
+        vm.warp(19740 days + 31 days);
+        durationExtensions[0].lockID = lockIDs[4];
+        durationExtensions[0].durationExtension = 21;
+        vm.prank(stakers[4]);
+        l2Reward.extendDuration(durationExtensions);
+
+        vm.warp(19740 days + 35 days);
+        // stake 6: Initiate fast unlock
+        positionsToBeModified[0] = lockIDs[5];
+        vm.prank(stakers[5]);
+        l2Reward.initiateFastUnlock(positionsToBeModified);
+
+        vm.warp(19740 days + 36 days);
+        // stake 6 pauses locking duration
+        vm.prank(stakers[5]);
+        l2Reward.pauseUnlocking(positionsToBeModified);
+
+        // stake 7:  (125LSK, 80 days)
+        // will: Initiate fast unlock (day 60), extend locking duration to 8 (day 61), pauseLocking duration (day 61),
+        // extend duration by 4 days (day 65) and increase amount by 50 LSK (day 65), resume unlocking day 107
+        lockIDs[6] = when_stakerCreatesPosition(
+            stakers[6], Position({ amount: convertLiskToSmallestDenomination(125), duration: 80 })
+        );
+
+        vm.warp(19740 days + 40 days);
+        // increase amount and pause duration for stake 5
+        increasingAmounts[0].lockID = lockIDs[4];
+        increasingAmounts[0].amountIncrease = convertLiskToSmallestDenomination(30);
+        positionsToBeModified[0] = lockIDs[4];
+        vm.startPrank(stakers[4]);
+        l2LiskToken.approve(address(l2Reward), increasingAmounts[0].amountIncrease);
+        l2Reward.increaseLockingAmount(increasingAmounts);
+        l2Reward.pauseUnlocking(positionsToBeModified);
+        vm.stopPrank();
+
+        vm.warp(19740 days + 45 days);
+        // stake 8:  (2000LSK, 70 days)
+        // will: Initiate fast unlock (day 68), extend locking duration to 150 (day 69), initiateFastUnlock again day
+        // 107
+        lockIDs[7] = when_stakerCreatesPosition(
+            stakers[7], Position({ amount: convertLiskToSmallestDenomination(2000), duration: 70 })
+        );
+
+        // stake 9:  (220LSK, 600 days)
+        // will: pause (day 50), increaseAmount to 300 (day 55), initiateFastUnlock  (day 58), pause remaining duration
+        // day 59
+        lockIDs[8] = when_stakerCreatesPosition(
+            stakers[8], Position({ amount: convertLiskToSmallestDenomination(220), duration: 600 })
+        );
+
+        //stake 10: (300LSK, 534 days)
+        // will pause duration (day 51), extendDuration to 650 (by 116 days) (day 52), do nothing else until the end
+        lockIDs[9] = when_stakerCreatesPosition(
+            stakers[9], Position({ amount: convertLiskToSmallestDenomination(300), duration: 534 })
+        );
+
+        //stake 11: (80LSK, 53 days)
+        // will extend locking duration by 10 days (day 66), pause (day 68), extend duration by 10 days (day 101),
+        // resume (day 106)
+        lockIDs[10] = when_stakerCreatesPosition(
+            stakers[10], Position({ amount: convertLiskToSmallestDenomination(80), duration: 53 })
+        );
+
+        //stake 12: (110LSK, 23 days)
+        // let expire and then extend duration at day 76 by 50 days
+        lockIDs[11] = when_stakerCreatesPosition(
+            stakers[11], Position({ amount: convertLiskToSmallestDenomination(110), duration: 23 })
+        );
+
+        //stake 13: (1000LSK, 68 days)
+        // will extend duration by 100 days at day 100. Then (day 102) increase amount by 500LSK. Day 104 pause
+        // duration, day 107 increase amount by 500LSK, day 110 resume unlocking
+        lockIDs[12] = when_stakerCreatesPosition(
+            stakers[12], Position({ amount: convertLiskToSmallestDenomination(1000), duration: 68 })
+        );
+
+        vm.warp(19740 days + 50 days);
+        // stake 9 is paused
+        positionsToBeModified[0] = lockIDs[8];
+        vm.prank(stakers[8]);
+        l2Reward.pauseUnlocking(positionsToBeModified);
+
+        vm.warp(19740 days + 51 days);
+        // stake 10 paused
+        positionsToBeModified[0] = lockIDs[9];
+        vm.prank(stakers[9]);
+        l2Reward.pauseUnlocking(positionsToBeModified);
+
+        vm.warp(19740 days + 52 days);
+        // stake 10 extended by 116 days
+        durationExtensions[0].lockID = lockIDs[9];
+        durationExtensions[0].durationExtension = 116;
+        vm.prank(stakers[9]);
+        l2Reward.extendDuration(durationExtensions);
+
+        vm.warp(19740 days + 55 days);
+        // stake 9 increases amount by 300 LSK
+        increasingAmounts[0].lockID = lockIDs[8];
+        increasingAmounts[0].amountIncrease = convertLiskToSmallestDenomination(300);
+        vm.startPrank(stakers[8]);
+        l2LiskToken.approve(address(l2Reward), increasingAmounts[0].amountIncrease);
+        l2Reward.increaseLockingAmount(increasingAmounts);
+        vm.stopPrank();
+
+        vm.warp(19740 days + 58 days);
+        // stake 9 initiates fast unlock
+        positionsToBeModified[0] = lockIDs[8];
+        vm.prank(stakers[8]);
+        l2Reward.initiateFastUnlock(positionsToBeModified);
+
+        vm.warp(19740 days + 59 days);
+        // stake 9 is paused
+        positionsToBeModified[0] = lockIDs[8];
+        vm.prank(stakers[8]);
+        l2Reward.pauseUnlocking(positionsToBeModified);
+
+        vm.warp(19740 days + 60 days);
+        // stake 7: Initiate fast unlock
+        positionsToBeModified[0] = lockIDs[6];
+        vm.prank(stakers[6]);
+        l2Reward.initiateFastUnlock(positionsToBeModified);
+
+        vm.warp(19740 days + 61 days);
+        // stake 7 extends locking duration by 8 days and pauses unlocking
+        durationExtensions[0].lockID = lockIDs[6];
+        durationExtensions[0].durationExtension = 8;
+        vm.prank(stakers[6]);
+        l2Reward.extendDuration(durationExtensions);
+        positionsToBeModified[0] = lockIDs[6];
+        vm.prank(stakers[6]);
+        l2Reward.pauseUnlocking(positionsToBeModified);
+
+        vm.warp(19740 days + 65 days);
+        // stake 7 extends duration
+        durationExtensions[0].lockID = lockIDs[6];
+        durationExtensions[0].durationExtension = 4;
+        vm.prank(stakers[6]);
+        l2Reward.extendDuration(durationExtensions);
+
+        // stake 7 increases amount
+        increasingAmounts = new L2Reward.IncreasedAmount[](1);
+        increasingAmounts[0].lockID = lockIDs[6];
+        increasingAmounts[0].amountIncrease = convertLiskToSmallestDenomination(50);
+        vm.startPrank(stakers[6]);
+        l2LiskToken.approve(address(l2Reward), increasingAmounts[0].amountIncrease);
+        l2Reward.increaseLockingAmount(increasingAmounts);
+        vm.stopPrank();
+
+        vm.warp(19740 days + 66 days);
+        // stake 11 extended by 10 days
+        durationExtensions[0].lockID = lockIDs[10];
+        durationExtensions[0].durationExtension = 10;
+        vm.prank(stakers[10]);
+        l2Reward.extendDuration(durationExtensions);
+
+        vm.warp(19740 days + 68 days);
+        // stake 8 initiates fast unlock
+        positionsToBeModified[0] = lockIDs[7];
+        vm.prank(stakers[7]);
+        l2Reward.initiateFastUnlock(positionsToBeModified);
+
+        // stake 11 pauses
+        positionsToBeModified[0] = lockIDs[10];
+        vm.prank(stakers[10]);
+        l2Reward.pauseUnlocking(positionsToBeModified);
+
+        vm.warp(19740 days + 69 days);
+        // stake 8 extends duration by 150 days
+        durationExtensions[0].lockID = lockIDs[7];
+        durationExtensions[0].durationExtension = 150;
+        vm.prank(stakers[7]);
+        l2Reward.extendDuration(durationExtensions);
+
         vm.warp(19740 days + 70 days);
         // stake 1: paused on day 70
         positionsToBeModified[0] = lockIDs[0];
         vm.prank(stakers[0]);
         l2Reward.pauseUnlocking(positionsToBeModified);
+
+        vm.warp(19740 days + 75 days);
+        // stake 6: extended on day 75 by 20 days
+        durationExtensions[0].lockID = lockIDs[5];
+        durationExtensions[0].durationExtension = 20;
+        vm.prank(stakers[5]);
+        l2Reward.extendDuration(durationExtensions);
+
+        vm.warp(19740 days + 76 days);
+        // extends stake 12 by 50 days
+        durationExtensions[0].lockID = lockIDs[11];
+        durationExtensions[0].durationExtension = 50;
+        vm.prank(stakers[11]);
+        l2Reward.extendDuration(durationExtensions);
 
         vm.warp(19740 days + 100 days);
         // stake 1: resumed on day 100
@@ -538,16 +746,74 @@ contract L2RewardTest is Test {
         vm.prank(stakers[0]);
         l2Reward.resumeUnlockingCountdown(positionsToBeModified);
 
-        // stake 5: (500 LSK, 14 days)
+        // stake 6: resume unlocking
+        positionsToBeModified[0] = lockIDs[5];
+        vm.prank(stakers[5]);
+        l2Reward.resumeUnlockingCountdown(positionsToBeModified);
+
+        // stake 14: (500 LSK, 14 days)
         // created on day 100
         // paused right away
-        lockIDs[4] = when_stakerCreatesPosition(
-            stakers[4], Position({ amount: convertLiskToSmallestDenomination(500), duration: 14 })
+        lockIDs[13] = when_stakerCreatesPosition(
+            stakers[13], Position({ amount: convertLiskToSmallestDenomination(500), duration: 14 })
         );
 
+        positionsToBeModified[0] = lockIDs[13];
+        vm.prank(stakers[13]);
+        l2Reward.pauseUnlocking(positionsToBeModified);
+
+        // stake 13 extends duration by 100 days
+        durationExtensions[0].lockID = lockIDs[12];
+        durationExtensions[0].durationExtension = 100;
+        vm.prank(stakers[12]);
+        l2Reward.extendDuration(durationExtensions);
+
+        vm.warp(19740 days + 101 days);
+        // stake 11 extended by 10 days
+        durationExtensions[0].lockID = lockIDs[10];
+        durationExtensions[0].durationExtension = 10;
+        vm.prank(stakers[10]);
+        l2Reward.extendDuration(durationExtensions);
+
+        vm.warp(19740 days + 102 days);
+        // stake 13 increases amount by 500 LSK
+        increasingAmounts[0].lockID = lockIDs[12];
+        increasingAmounts[0].amountIncrease = 500;
+        vm.startPrank(stakers[12]);
+        l2LiskToken.approve(address(l2Reward), increasingAmounts[0].amountIncrease);
+        l2Reward.increaseLockingAmount(increasingAmounts);
+        vm.stopPrank();
+
+        vm.warp(19740 days + 104 days);
+        // stake 13 pauses
+        positionsToBeModified[0] = lockIDs[12];
+        vm.prank(stakers[12]);
+        l2Reward.pauseUnlocking(positionsToBeModified);
+
+        vm.warp(19740 days + 107 days);
+        // resumes stake 7 on day 107
+        positionsToBeModified[0] = lockIDs[6];
+        vm.prank(stakers[6]);
+        l2Reward.resumeUnlockingCountdown(positionsToBeModified);
+
+        // stake 8 initiates fast unlock on day 107
+        positionsToBeModified[0] = lockIDs[7];
+        vm.prank(stakers[7]);
+        l2Reward.initiateFastUnlock(positionsToBeModified);
+
+        // stake 13 increases amount by 500 LSK
+        increasingAmounts[0].lockID = lockIDs[12];
+        increasingAmounts[0].amountIncrease = 500;
+        vm.startPrank(stakers[12]);
+        l2LiskToken.approve(address(l2Reward), increasingAmounts[0].amountIncrease);
+        l2Reward.increaseLockingAmount(increasingAmounts);
+        vm.stopPrank();
+
+        vm.warp(19740 days + 108 days);
+        // resume unlocking for stake 5
         positionsToBeModified[0] = lockIDs[4];
         vm.prank(stakers[4]);
-        l2Reward.pauseUnlocking(positionsToBeModified);
+        l2Reward.resumeUnlockingCountdown(positionsToBeModified);
 
         vm.warp(19740 days + 110 days);
         // stake 1: extended on day 110 by 30 days
@@ -555,6 +821,11 @@ contract L2RewardTest is Test {
         durationExtensions[0].durationExtension = 30;
         vm.prank(stakers[0]);
         l2Reward.extendDuration(durationExtensions);
+
+        // stake 13 resumes
+        positionsToBeModified[0] = lockIDs[12];
+        vm.prank(stakers[12]);
+        l2Reward.resumeUnlockingCountdown(positionsToBeModified);
 
         return (lockIDs, stakers);
     }
@@ -840,7 +1111,7 @@ contract L2RewardTest is Test {
         uint256[] memory lockIDs;
         address[] memory stakers;
         uint256[] memory positionsToBeModified = new uint256[](1);
-        uint256[] memory balances = new uint256[](5);
+        uint256[] memory balances = new uint256[](14);
         uint256 totalRewards;
 
         (lockIDs, stakers) = createScenario3();
