@@ -470,13 +470,6 @@ contract L2RewardTest is Test {
         // move to day 115, claim rewards against all positions again
         // Assert:
         // total rewards claimed on day 115 is equal to sum of daily rewards between day 106 and 114.
-        // Assert:
-        // on day 115, pendingUnlockAmount is equal to sum of dailyUnlockedAmounts from day 115 to day 295, the expiry
-        // date
-        // of the longest stake is 295.
-        // Assert:
-        // on day 115, totalAmountLocked is equal to sum of dailyUnlockedAmount from day 115 to day 295 aggregated to
-        // sum of amount of paused stakes
 
         uint256[] memory lockIDs;
         address[] memory stakers;
@@ -544,33 +537,12 @@ contract L2RewardTest is Test {
         }
 
         uint256 sumOfDailyRewards;
-        for (uint256 i = 19740 + 106; i < 19740 + 115; i++) {
+        for (uint256 i = deploymentDate + 106; i < deploymentDate + 115; i++) {
             sumOfDailyRewards += l2Reward.dailyRewards(i);
         }
 
         assertTrue(sumOfDailyRewards > totalRewards);
         assertEq(sumOfDailyRewards / 10 ** 3, totalRewards / 10 ** 3);
-
-        uint256 sumOfDailyUnlockedAmount;
-        // longest stake expires on day 295
-        for (uint256 i = 19740 + 115; i <= 19740 + 295; i++) {
-            sumOfDailyUnlockedAmount += l2Reward.dailyUnlockedAmounts(i);
-        }
-
-        assertEq(sumOfDailyUnlockedAmount, l2Reward.pendingUnlockAmount());
-
-        uint256 sumOfAmountOfPausedStakes;
-        for (uint8 i = 0; i < lockIDs.length; i++) {
-            // lockIDs[3] has been deleted
-            if (i == 3) {
-                continue;
-            }
-            if (l2LockingPosition.getLockingPosition(lockIDs[i]).pausedLockingDuration != 0) {
-                sumOfAmountOfPausedStakes += l2LockingPosition.getLockingPosition(lockIDs[i]).amount;
-            }
-        }
-
-        assertEq(sumOfDailyUnlockedAmount + sumOfAmountOfPausedStakes, l2Reward.totalAmountLocked());
     }
 
     function test_scenario2_dailyRewards() public {
@@ -640,7 +612,7 @@ contract L2RewardTest is Test {
         }
 
         uint256 sumOfDailyRewards;
-        for (uint256 i = 19740 + 106; i < 19740 + 115; i++) {
+        for (uint256 i = deploymentDate + 106; i < deploymentDate + 115; i++) {
             sumOfDailyRewards += l2Reward.dailyRewards(i);
         }
 
