@@ -853,6 +853,20 @@ contract L2RewardTest is Test {
         assertEq(sumOfDailyUnlockedAmount + sumOfAmountOfPausedStakes, l2Reward.totalAmountLocked());
     }
 
+    function getLargestExpiryDate(uint256[] memory lockIDs) private view returns (uint256) {
+        uint256 expiryDate;
+        IL2LockingPosition.LockingPosition memory lockingPosition;
+
+        for (uint256 i = 0; i < lockIDs.length; i++) {
+            lockingPosition = l2LockingPosition.getLockingPosition(lockIDs[i]);
+            if (lockingPosition.expDate > expiryDate) {
+                expiryDate = lockingPosition.expDate;
+            }
+        }
+
+        return expiryDate;
+    }
+
     function test_scenario1_dailyRewards() public {
         // Scenario: rewards alloted for a certain day(s) is less than or equal to dailyRewards available for those
         // days.
@@ -1210,7 +1224,7 @@ contract L2RewardTest is Test {
 
         (lockIDs, stakers) = createScenario2();
 
-        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, 20471);
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
     }
 
     function test_scenario3_pendingUnlockAmount() public {
@@ -1219,7 +1233,7 @@ contract L2RewardTest is Test {
 
         (lockIDs, stakers) = createScenario3();
 
-        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, 20531);
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
     }
 
     function test_createPosition_l2RewardContractShouldBeApprovedToTransferFromStakerAccount() public {
