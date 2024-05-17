@@ -1215,7 +1215,7 @@ contract L2RewardTest is Test {
 
         (lockIDs, stakers) = createScenario1();
 
-        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, deploymentDate + 295);
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, deploymentDate + getLargestExpiryDate(lockIDs));
     }
 
     function test_scenario2_pendingUnlockAmount() public {
