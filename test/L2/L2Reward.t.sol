@@ -243,6 +243,8 @@ contract L2RewardTest is Test {
             given_accountHasBalance(stakers[i], balance);
         }
 
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
+
         vm.warp(19740 days + 1 days);
 
         // stake 1: (100 LSK, 30 days)
@@ -269,6 +271,8 @@ contract L2RewardTest is Test {
         vm.prank(stakers[1]);
         l2Reward.pauseUnlocking(positionsToBeModified);
 
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
+
         vm.warp(19740 days + 35 days);
         // stake 4: (50 LSK, 14 days)
         // staked on day 35, expires on day 49
@@ -276,17 +280,23 @@ contract L2RewardTest is Test {
             stakers[3], Position({ amount: convertLiskToSmallestDenomination(50), duration: 14 })
         );
 
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
+
         vm.warp(19740 days + 49 days);
         // stake 4 is unlocked
         positionsToBeModified[0] = lockIDs[3];
         vm.prank(stakers[3]);
         l2Reward.deletePositions(positionsToBeModified);
 
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
+
         // stake 5: (80 LSK, 80 days)
         // Staked on Day 49, paused on Day 89
         lockIDs[4] = when_stakerCreatesPosition(
             stakers[4], Position({ amount: convertLiskToSmallestDenomination(80), duration: 80 })
         );
+
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
 
         vm.warp(19740 days + 50 days);
         // extend stake 1 by 30 days
@@ -302,6 +312,8 @@ contract L2RewardTest is Test {
         lockIDs[5] = when_stakerCreatesPosition(
             stakers[5], Position({ amount: convertLiskToSmallestDenomination(100), duration: 150 })
         );
+
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
 
         vm.warp(19740 days + 80 days);
         // resumes stake 2 on day 80
@@ -321,6 +333,8 @@ contract L2RewardTest is Test {
             stakers[6], Position({ amount: convertLiskToSmallestDenomination(200), duration: 200 })
         );
 
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
+
         vm.warp(19740 days + 100 days);
         // Increases amount for stake 6
         L2Reward.IncreasedAmount[] memory increasingAmounts = new L2Reward.IncreasedAmount[](1);
@@ -330,6 +344,8 @@ contract L2RewardTest is Test {
         l2LiskToken.approve(address(l2Reward), increasingAmounts[0].amountIncrease);
         l2Reward.increaseLockingAmount(increasingAmounts);
         vm.stopPrank();
+
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
 
         return (lockIDs, stakers);
     }
@@ -355,6 +371,8 @@ contract L2RewardTest is Test {
 
         vm.warp(19740 days + 1 days);
 
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
+
         // stake 1: (100 LSK, 730 days max duration)
         // Will never get modified
         lockIDs[0] = when_stakerCreatesPosition(
@@ -378,6 +396,8 @@ contract L2RewardTest is Test {
         lockIDs[2] = when_stakerCreatesPosition(
             stakers[2], Position({ amount: convertLiskToSmallestDenomination(200), duration: 30 })
         );
+
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
 
         vm.warp(19740 days + 10 days);
         // stake 4: (50 LSK, 100 days)
@@ -412,6 +432,8 @@ contract L2RewardTest is Test {
             stakers[5], Position({ amount: convertLiskToSmallestDenomination(150), duration: 100 })
         );
 
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
+
         vm.warp(19740 days + 30 days);
         // pause unlocking of stake 5
         positionsToBeModified[0] = lockIDs[4];
@@ -436,6 +458,8 @@ contract L2RewardTest is Test {
         lockIDs[6] = when_stakerCreatesPosition(
             stakers[6], Position({ amount: convertLiskToSmallestDenomination(30), duration: 14 })
         );
+
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
 
         vm.warp(19740 days + 80 days);
         // resume countdown for stake 6
@@ -468,6 +492,8 @@ contract L2RewardTest is Test {
         l2Reward.increaseLockingAmount(increasingAmounts);
         vm.stopPrank();
 
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
+
         return (lockIDs, stakers);
     }
 
@@ -486,6 +512,8 @@ contract L2RewardTest is Test {
         given_accountHasBalance(address(this), funds);
         // fund the reward contract, 10 Lisk per day for 500 days
         given_ownerHasFundedStaking(Funds({ amount: funds, duration: 500, delay: 1 }));
+
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
 
         // all the stakers gets balance
         for (uint8 i = 0; i < stakers.length; i++) {
@@ -509,6 +537,8 @@ contract L2RewardTest is Test {
             stakers[1], Position({ amount: convertLiskToSmallestDenomination(30), duration: 50 })
         );
 
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
+
         // stake 3: (400 LSK, 730 days)
         // created on day 1
         lockIDs[2] = when_stakerCreatesPosition(
@@ -531,6 +561,8 @@ contract L2RewardTest is Test {
         lockIDs[4] = when_stakerCreatesPosition(
             stakers[4], Position({ amount: convertLiskToSmallestDenomination(500), duration: 50 })
         );
+
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
 
         // stake 6: (1250LSK, 80 days)
         // will: Initiate fast unlock (day 35), pause next day (36), extend to 20 days(day 75), resume unlocking (day
@@ -585,6 +617,8 @@ contract L2RewardTest is Test {
             stakers[6], Position({ amount: convertLiskToSmallestDenomination(125), duration: 80 })
         );
 
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
+
         vm.warp(19740 days + 40 days);
         // increase amount and pause duration for stake 5
         increasingAmounts[0].lockID = lockIDs[4];
@@ -617,6 +651,8 @@ contract L2RewardTest is Test {
             stakers[9], Position({ amount: convertLiskToSmallestDenomination(300), duration: 534 })
         );
 
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
+
         //stake 11: (80LSK, 53 days)
         // will extend locking duration by 10 days (day 66), pause (day 68), extend duration by 10 days (day 101),
         // resume (day 106)
@@ -629,6 +665,8 @@ contract L2RewardTest is Test {
         lockIDs[11] = when_stakerCreatesPosition(
             stakers[11], Position({ amount: convertLiskToSmallestDenomination(110), duration: 23 })
         );
+
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
 
         //stake 13: (1000LSK, 68 days)
         // will extend duration by 100 days at day 100. Then (day 102) increase amount by 500LSK. Day 104 pause
@@ -677,6 +715,8 @@ contract L2RewardTest is Test {
         vm.prank(stakers[8]);
         l2Reward.pauseUnlocking(positionsToBeModified);
 
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
+
         vm.warp(19740 days + 60 days);
         // stake 7: Initiate fast unlock
         positionsToBeModified[0] = lockIDs[6];
@@ -700,6 +740,8 @@ contract L2RewardTest is Test {
         vm.prank(stakers[6]);
         l2Reward.extendDuration(durationExtensions);
 
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
+
         // stake 7 increases amount
         increasingAmounts = new L2Reward.IncreasedAmount[](1);
         increasingAmounts[0].lockID = lockIDs[6];
@@ -715,6 +757,8 @@ contract L2RewardTest is Test {
         durationExtensions[0].durationExtension = 10;
         vm.prank(stakers[10]);
         l2Reward.extendDuration(durationExtensions);
+
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
 
         vm.warp(19740 days + 68 days);
         // stake 8 initiates fast unlock
@@ -739,6 +783,8 @@ contract L2RewardTest is Test {
         positionsToBeModified[0] = lockIDs[0];
         vm.prank(stakers[0]);
         l2Reward.pauseUnlocking(positionsToBeModified);
+
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
 
         vm.warp(19740 days + 75 days);
         // stake 6: extended on day 75 by 20 days
@@ -772,6 +818,8 @@ contract L2RewardTest is Test {
             stakers[13], Position({ amount: convertLiskToSmallestDenomination(500), duration: 14 })
         );
 
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
+
         positionsToBeModified[0] = lockIDs[13];
         vm.prank(stakers[13]);
         l2Reward.pauseUnlocking(positionsToBeModified);
@@ -798,11 +846,15 @@ contract L2RewardTest is Test {
         l2Reward.increaseLockingAmount(increasingAmounts);
         vm.stopPrank();
 
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
+
         vm.warp(19740 days + 104 days);
         // stake 13 pauses
         positionsToBeModified[0] = lockIDs[12];
         vm.prank(stakers[12]);
         l2Reward.pauseUnlocking(positionsToBeModified);
+
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
 
         vm.warp(19740 days + 107 days);
         // resumes stake 7 on day 107
@@ -814,6 +866,8 @@ contract L2RewardTest is Test {
         positionsToBeModified[0] = lockIDs[7];
         vm.prank(stakers[7]);
         l2Reward.initiateFastUnlock(positionsToBeModified);
+
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
 
         // stake 13 increases amount by 500 LSK
         increasingAmounts[0].lockID = lockIDs[12];
@@ -841,7 +895,46 @@ contract L2RewardTest is Test {
         vm.prank(stakers[12]);
         l2Reward.resumeUnlockingCountdown(positionsToBeModified);
 
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
+
         return (lockIDs, stakers);
+    }
+
+    function checkConsistencyPendingUnlockDailyUnlocked(
+        uint256[] memory lockIDs,
+        uint256 expiryDateOfLongestStake
+    )
+        private
+    {
+        uint256 sumOfDailyUnlockedAmount;
+        for (uint256 i = l2Reward.lastTrsDate() + 1; i <= expiryDateOfLongestStake; i++) {
+            sumOfDailyUnlockedAmount += l2Reward.dailyUnlockedAmounts(i);
+        }
+
+        assertEq(l2Reward.pendingUnlockAmount(), sumOfDailyUnlockedAmount);
+
+        uint256 sumOfAmountOfPausedStakes;
+        for (uint8 i = 0; i < lockIDs.length; i++) {
+            if (l2LockingPosition.getLockingPosition(lockIDs[i]).pausedLockingDuration != 0) {
+                sumOfAmountOfPausedStakes += l2LockingPosition.getLockingPosition(lockIDs[i]).amount;
+            }
+        }
+
+        assertEq(sumOfDailyUnlockedAmount + sumOfAmountOfPausedStakes, l2Reward.totalAmountLocked());
+    }
+
+    function getLargestExpiryDate(uint256[] memory lockIDs) private view returns (uint256) {
+        uint256 expiryDate;
+        IL2LockingPosition.LockingPosition memory lockingPosition;
+
+        for (uint256 i = 0; i < lockIDs.length; i++) {
+            lockingPosition = l2LockingPosition.getLockingPosition(lockIDs[i]);
+            if (lockingPosition.expDate > expiryDate) {
+                expiryDate = lockingPosition.expDate;
+            }
+        }
+
+        return expiryDate;
     }
 
     function test_scenario1_dailyRewards() public {
@@ -1186,6 +1279,33 @@ contract L2RewardTest is Test {
         assertEq(sumOfDailyRewards / 10 ** 3, totalRewards / 10 ** 3);
     }
 
+    function test_scenario1_pendingUnlockAmount() public {
+        uint256[] memory lockIDs;
+        address[] memory stakers;
+
+        (lockIDs, stakers) = createScenario1();
+
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
+    }
+
+    function test_scenario2_pendingUnlockAmount() public {
+        uint256[] memory lockIDs;
+        address[] memory stakers;
+
+        (lockIDs, stakers) = createScenario2();
+
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
+    }
+
+    function test_scenario3_pendingUnlockAmount() public {
+        uint256[] memory lockIDs;
+        address[] memory stakers;
+
+        (lockIDs, stakers) = createScenario3();
+
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
+    }
+
     function test_createPosition_l2RewardContractShouldBeApprovedToTransferFromStakerAccount() public {
         address staker = address(0x1);
         uint256 duration = 20;
@@ -1420,6 +1540,8 @@ contract L2RewardTest is Test {
             staker, Position({ amount: convertLiskToSmallestDenomination(100), duration: 120 })
         );
 
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
+
         // rewards are claimed from lastClaimDate for the lock (19740) till expiry day
         uint256 today = deploymentDate + 150;
         skip(150 days);
@@ -1430,6 +1552,8 @@ contract L2RewardTest is Test {
         then_eventRewardsClaimedIsEmitted(lockIDs[0], expectedRewards);
         vm.prank(staker);
         l2Reward.claimRewards(lockIDs);
+
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
 
         assertEq(l2Reward.lastClaimDate(lockIDs[0]), today);
         assertEq(l2LiskToken.balanceOf(staker), expectedBalance);
@@ -1453,6 +1577,8 @@ contract L2RewardTest is Test {
             staker, Position({ amount: convertLiskToSmallestDenomination(1), duration: 100 })
         );
 
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
+
         // rewards are claimed from lastClaimDate for the lock (19740) till today
 
         // today is 19830
@@ -1466,6 +1592,8 @@ contract L2RewardTest is Test {
         then_eventRewardsClaimedIsEmitted(lockIDs[1], 80252925540556258);
         vm.prank(staker);
         l2Reward.claimRewards(lockIDs);
+
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
 
         balance = l2LiskToken.balanceOf(staker);
 
@@ -1492,9 +1620,13 @@ contract L2RewardTest is Test {
             staker, Position({ amount: convertLiskToSmallestDenomination(10), duration: 300 })
         );
 
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
+
         vm.startPrank(staker);
         l2Reward.pauseUnlocking(lockIDs);
         vm.stopPrank();
+
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
 
         uint256 expectedRewards = 6575342465753424600 + 9863013698630136900;
         uint256 expectedBalance = l2LiskToken.balanceOf(staker) + expectedRewards;
@@ -1548,6 +1680,8 @@ contract L2RewardTest is Test {
             }
         }
 
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
+
         for (uint8 i = 0; i < 5; i++) {
             assertEq(l2LiskToken.balanceOf(stakers[i]), expectedRewardsFor100Days * 3);
         }
@@ -1571,6 +1705,8 @@ contract L2RewardTest is Test {
         for (uint8 i = 0; i < stakers.length; i++) {
             lockIDs[i] = when_stakerCreatesPosition(stakers[i], Position(amount, duration));
         }
+
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
 
         uint256[] memory locksToClaim = new uint256[](1);
 
@@ -1958,6 +2094,8 @@ contract L2RewardTest is Test {
             );
         }
 
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
+
         skip(75 days);
         uint256 today = deploymentDate + 1 + 75;
 
@@ -1972,6 +2110,8 @@ contract L2RewardTest is Test {
         then_eventLockingPositionPausedIsEmitted(lockIDs[1]);
         vm.prank(staker);
         l2Reward.pauseUnlocking(lockIDs);
+
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
 
         balance = l2LiskToken.balanceOf(staker);
 
@@ -2050,6 +2190,8 @@ contract L2RewardTest is Test {
             staker, Position({ amount: convertLiskToSmallestDenomination(100), duration: 120 })
         );
 
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
+
         skip(50 days);
         uint256 today = deploymentDate + 50;
 
@@ -2060,6 +2202,8 @@ contract L2RewardTest is Test {
         // staker pauses the position
         vm.prank(staker);
         l2Reward.pauseUnlocking(lockIDs);
+
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
 
         uint256 expectedPausedLockingDuration = 70;
         uint256 expectedRewardsWhenResuming = convertLiskToSmallestDenomination(5);
@@ -2073,6 +2217,8 @@ contract L2RewardTest is Test {
         then_eventUnlockingCountdownResumedIsEmitted(lockIDs[0]);
         vm.prank(staker);
         l2Reward.resumeUnlockingCountdown(lockIDs);
+
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
 
         uint256 expectedBalance = balance + expectedRewardsWhenResuming;
 
@@ -2105,11 +2251,15 @@ contract L2RewardTest is Test {
             lockIDs[i] = when_stakerCreatesPosition(staker, Position({ amount: amount, duration: duration }));
         }
 
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
+
         // staker pauses the position on 19741, rewards when pausing is zero
         then_eventRewardsClaimedIsEmitted(lockIDs[0], 0);
         then_eventRewardsClaimedIsEmitted(lockIDs[1], 0);
         vm.prank(staker);
         l2Reward.pauseUnlocking(lockIDs);
+
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
 
         assertEq(l2Reward.pendingUnlockAmount(), 0);
         assertEq(l2Reward.dailyUnlockedAmounts(19741), 0);
@@ -2257,10 +2407,12 @@ contract L2RewardTest is Test {
         increasingAmounts[0].lockID = when_stakerCreatesPosition(staker, Position({ amount: amount, duration: 120 }));
 
         lockIDs[0] = increasingAmounts[0].lockID;
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
 
         // pausedLockingDuration set to 120
         vm.prank(staker);
         l2Reward.pauseUnlocking(lockIDs);
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
 
         skip(50 days);
 
@@ -2280,6 +2432,8 @@ contract L2RewardTest is Test {
         then_eventLockingAmountIncreasedIsEmitted(increasingAmounts[0].lockID, increasingAmounts[0].amountIncrease);
         l2Reward.increaseLockingAmount(increasingAmounts);
         vm.stopPrank();
+
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
 
         assertEq(l2LockingPosition.getLockingPosition(lockIDs[0]).amount, amount + increasingAmounts[0].amountIncrease);
 
@@ -2375,6 +2529,8 @@ contract L2RewardTest is Test {
             increasingAmounts[i].amountIncrease = amountIncrease;
         }
 
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
+
         skip(50 days);
 
         uint256 expectedRewardPerStakeFor50Days = 2.5 * 10 ** 18;
@@ -2399,6 +2555,8 @@ contract L2RewardTest is Test {
         );
 
         skip(50 days);
+
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
 
         then_eventRewardsClaimedIsEmitted(lockIDs[0], expectedRewardPerStakeFor50Days);
         then_eventRewardsClaimedIsEmitted(lockIDs[1], expectedRewardPerStakeFor50Days);
@@ -2559,6 +2717,8 @@ contract L2RewardTest is Test {
         vm.prank(staker);
         l2Reward.claimRewards(lockIDs);
 
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
+
         // staker unlocks rewards
         then_eventRewardsClaimedIsEmitted(lockIDs[0], 0);
         vm.prank(staker);
@@ -2586,6 +2746,8 @@ contract L2RewardTest is Test {
         l2Reward.pauseUnlocking(lockIDs);
         vm.stopPrank();
 
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
+
         skip(120 days);
 
         extensions[0].durationExtension = 50;
@@ -2601,6 +2763,8 @@ contract L2RewardTest is Test {
         then_eventLockingDurationExtendedIsEmitted(lockIDs[0], extensions[0].durationExtension);
         l2Reward.extendDuration(extensions);
         vm.stopPrank();
+
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
 
         // expDate does not change for paused position
         assertEq(l2LockingPosition.getLockingPosition(extensions[0].lockID).expDate, deploymentDate + duration);
@@ -2637,6 +2801,8 @@ contract L2RewardTest is Test {
             extensions[i].durationExtension = durationExtension;
         }
 
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
+
         uint256 totalWeightBeforeExtension = l2Reward.totalWeight();
         uint256 expectedReward = 2.5 * 10 ** 18;
 
@@ -2661,6 +2827,8 @@ contract L2RewardTest is Test {
         then_eventRewardsClaimedIsEmitted(lockIDs[1], expectedRewardsFor20Days);
         vm.prank(staker);
         l2Reward.claimRewards(lockIDs);
+
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
     }
 
     function test_initiateFastUnlock_onlyOwnerCanUnlockAPosition() public {
@@ -2717,11 +2885,15 @@ contract L2RewardTest is Test {
         uint256 reward = 4.9e18;
         uint256 penalty = 4589041095890410958;
 
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
+
         vm.startPrank(staker);
         then_eventRewardsClaimedIsEmitted(lockIDs[0], reward);
         then_eventFastUnlockInitiatedIsEmitted(lockIDs[0]);
         l2Reward.initiateFastUnlock(lockIDs);
         vm.stopPrank();
+
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
 
         uint256 expectedTotalWeight = (l2Staking.FAST_UNLOCK_DURATION() + l2Reward.OFFSET()) * (amount - penalty);
 
@@ -2764,12 +2936,16 @@ contract L2RewardTest is Test {
 
         lockIDs[0] = when_stakerCreatesPosition(staker, Position(amount, duration));
 
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
+
         skip(20 days);
 
         vm.startPrank(staker);
         then_eventLockingPositionPausedIsEmitted(lockIDs[0]);
         l2Reward.pauseUnlocking(lockIDs);
         vm.stopPrank();
+
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
 
         uint256 rewardFor20Days = convertLiskToSmallestDenomination(2);
         uint256 penalty = 6643835616438356164;
@@ -2781,6 +2957,8 @@ contract L2RewardTest is Test {
         then_eventFastUnlockInitiatedIsEmitted(lockIDs[0]);
         l2Reward.initiateFastUnlock(lockIDs);
         vm.stopPrank();
+
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
 
         uint256 expectedTotalWeight = (l2Staking.FAST_UNLOCK_DURATION() + l2Reward.OFFSET()) * (amount - penalty);
 
@@ -2820,6 +2998,8 @@ contract L2RewardTest is Test {
         uint256 expectedRewardsPerStakeAfter30Days = 1.5 * 10 ** 18;
         uint256 expectedPenaltyPerStakeAfter30Days = 5958904109589041095;
 
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
+
         // staker initates fast unlock after 30 days
         then_eventRewardsClaimedIsEmitted(lockIDs[0], expectedRewardsPerStakeAfter30Days);
         then_eventRewardsClaimedIsEmitted(lockIDs[1], expectedRewardsPerStakeAfter30Days);
@@ -2856,6 +3036,8 @@ contract L2RewardTest is Test {
         vm.startPrank(staker);
         l2Reward.deletePositions(lockIDs);
         vm.stopPrank();
+
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
 
         uint256 expectedBalanceAfterUnlocking =
             balanceAfterClaimingAllRewards + amount * 2 - expectedPenaltyPerStakeAfter30Days * 2;
@@ -3077,6 +3259,8 @@ contract L2RewardTest is Test {
             locksToClaim[0] = lockIDs[i];
             when_rewardsAreClaimedByStaker(stakers[i], locksToClaim);
         }
+
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
 
         uint256 sumOfDailyRewards;
         for (uint256 i = 19740; i < l2Reward.todayDay(); i++) {
