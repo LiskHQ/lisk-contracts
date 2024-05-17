@@ -11,8 +11,8 @@ Additionally, it also includes various deployment scripts that are integral for 
   - [Contracts deployed to L2](#contracts-deployed-to-l2)
 - [Installation](#installation)
   - [Cloning the Lisk Smart Contracts Repository](#cloning-the-lisk-smart-contracts-repository)
-- [Deployment on Private Test Network](#deployment-on-private-test-network)
-- [Deployment on Public Test Network](#deployment-on-public-test-network)
+- [Deploying on Private Test Network](#deploying-on-private-test-network)
+- [Deploying on Public Test Network](#deploying-on-public-test-network)
 - [Deployments](#deployments)
   - [Current Mainnet Deployment](#current-mainnet-deployment)
     - [L1 Smart Contracts](#l1-smart-contracts)
@@ -67,7 +67,7 @@ Inside newly created `lisk-contracts` directory:
 git submodule update --init --recursive
 ```
 
-## Deployment on Private Test Network
+## Deploying on Private Test Network
 
 **NOTE**: On a private test network, the deployment of smart contracts is feasible on both L1 and L2 networks. However, the transfer of tokens between these networks is not possible as it requires the operation of the Sequencer.
 
@@ -82,7 +82,7 @@ Private L1 and L2 test networks are established using the `anvil` tool, and the 
 5. To create and launch a private test L2 network, execute the script: `./runL2TestNetwork.sh`
 6. To deploy all smart contracts, execute the scripts: `./1_deployTokenContracts.sh`, `./2_deployStakingAndGovernance.sh`, `./3_deployVestingWallets.sh` and `./4_deployClaimContract`.
 
-## Deployment on Public Test Network
+## Deploying on Public Test Network
 
 **NOTE**: To successfully deploy all smart contracts and execute the required transactions, the deployer (specified by `PRIVATE_KEY` in the `.env` file) must have funds available in its address. This implies that a private key with a sufficient balance on both public test networks is required.
 
