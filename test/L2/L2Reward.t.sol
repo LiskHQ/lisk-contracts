@@ -1172,6 +1172,78 @@ contract L2RewardTest is Test {
         assertEq(sumOfDailyRewards / 10 ** 3, totalRewards / 10 ** 3);
     }
 
+    function test_scenario1_pendingUnlockAmount() public {
+        uint256[] memory lockIDs;
+        address[] memory stakers;
+
+        (lockIDs, stakers) = createScenario1();
+
+        uint256 sumOfDailyUnlockedAmount;
+        // longest stake expires on day 295
+        for (uint256 i = l2Reward.todayDay(); i <= deploymentDate + 295; i++) {
+            sumOfDailyUnlockedAmount += l2Reward.dailyUnlockedAmounts(i);
+        }
+
+        assertEq(sumOfDailyUnlockedAmount, l2Reward.pendingUnlockAmount());
+
+        uint256 sumOfAmountOfPausedStakes;
+        for (uint8 i = 0; i < lockIDs.length; i++) {
+            if (l2LockingPosition.getLockingPosition(lockIDs[i]).pausedLockingDuration != 0) {
+                sumOfAmountOfPausedStakes += l2LockingPosition.getLockingPosition(lockIDs[i]).amount;
+            }
+        }
+
+        assertEq(sumOfDailyUnlockedAmount + sumOfAmountOfPausedStakes, l2Reward.totalAmountLocked());
+    }
+
+    function test_scenario2_pendingUnlockAmount() public {
+        uint256[] memory lockIDs;
+        address[] memory stakers;
+
+        (lockIDs, stakers) = createScenario2();
+
+        uint256 sumOfDailyUnlockedAmount;
+        // longest stake expires on day 20741
+        for (uint256 i = l2Reward.todayDay() + 1; i <= 20471; i++) {
+            sumOfDailyUnlockedAmount += l2Reward.dailyUnlockedAmounts(i);
+        }
+
+        assertEq(l2Reward.pendingUnlockAmount(), sumOfDailyUnlockedAmount);
+
+        uint256 sumOfAmountOfPausedStakes;
+        for (uint8 i = 0; i < lockIDs.length; i++) {
+            if (l2LockingPosition.getLockingPosition(lockIDs[i]).pausedLockingDuration != 0) {
+                sumOfAmountOfPausedStakes += l2LockingPosition.getLockingPosition(lockIDs[i]).amount;
+            }
+        }
+
+        assertEq(sumOfDailyUnlockedAmount + sumOfAmountOfPausedStakes, l2Reward.totalAmountLocked());
+    }
+
+    function test_scenario3_pendingUnlockAmount() public {
+        uint256[] memory lockIDs;
+        address[] memory stakers;
+
+        (lockIDs, stakers) = createScenario3();
+
+        uint256 sumOfDailyUnlockedAmount;
+        // longest stake expires on day 20531
+        for (uint256 i = l2Reward.todayDay() + 1; i <= 20531; i++) {
+            sumOfDailyUnlockedAmount += l2Reward.dailyUnlockedAmounts(i);
+        }
+
+        assertEq(l2Reward.pendingUnlockAmount(), sumOfDailyUnlockedAmount);
+
+        uint256 sumOfAmountOfPausedStakes;
+        for (uint8 i = 0; i < lockIDs.length; i++) {
+            if (l2LockingPosition.getLockingPosition(lockIDs[i]).pausedLockingDuration != 0) {
+                sumOfAmountOfPausedStakes += l2LockingPosition.getLockingPosition(lockIDs[i]).amount;
+            }
+        }
+
+        assertEq(sumOfDailyUnlockedAmount + sumOfAmountOfPausedStakes, l2Reward.totalAmountLocked());
+    }
+
     function test_createPosition_l2RewardContractShouldBeApprovedToTransferFromStakerAccount() public {
         address staker = address(0x1);
         uint256 duration = 20;
