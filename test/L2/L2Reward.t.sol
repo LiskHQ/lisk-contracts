@@ -830,7 +830,7 @@ contract L2RewardTest is Test {
         return (lockIDs, stakers);
     }
 
-    function verify_pendingUnlockAmountAndTotalAmountLocked(
+    function checkConsistencyPendingUnlockDailyUnlocked(
         uint256[] memory lockIDs,
         uint256 expiryDateOfLongestStake
     )
@@ -1201,7 +1201,7 @@ contract L2RewardTest is Test {
 
         (lockIDs, stakers) = createScenario1();
 
-        verify_pendingUnlockAmountAndTotalAmountLocked(lockIDs, deploymentDate + 295);
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, deploymentDate + 295);
     }
 
     function test_scenario2_pendingUnlockAmount() public {
@@ -1210,7 +1210,7 @@ contract L2RewardTest is Test {
 
         (lockIDs, stakers) = createScenario2();
 
-        verify_pendingUnlockAmountAndTotalAmountLocked(lockIDs, 20471);
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, 20471);
     }
 
     function test_scenario3_pendingUnlockAmount() public {
@@ -1219,7 +1219,7 @@ contract L2RewardTest is Test {
 
         (lockIDs, stakers) = createScenario3();
 
-        verify_pendingUnlockAmountAndTotalAmountLocked(lockIDs, 20531);
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, 20531);
     }
 
     function test_createPosition_l2RewardContractShouldBeApprovedToTransferFromStakerAccount() public {
