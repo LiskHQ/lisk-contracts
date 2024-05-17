@@ -13,3 +13,8 @@ broadcast/
 
 # Slither files
 slither-results.json
+
+# Deployment files
+deployment/devnet/
+deployment/testnet/
+deployment/mainnet/
