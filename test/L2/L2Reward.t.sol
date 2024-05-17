@@ -837,7 +837,7 @@ contract L2RewardTest is Test {
         private
     {
         uint256 sumOfDailyUnlockedAmount;
-        for (uint256 i = l2Reward.todayDay() + 1; i <= expiryDateOfLongestStake; i++) {
+        for (uint256 i = l2Reward.lastTrsDate() + 1; i <= expiryDateOfLongestStake; i++) {
             sumOfDailyUnlockedAmount += l2Reward.dailyUnlockedAmounts(i);
         }
 
