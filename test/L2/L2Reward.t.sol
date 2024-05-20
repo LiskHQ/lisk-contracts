@@ -210,7 +210,7 @@ contract L2RewardTest is Test {
         vm.stopPrank();
     }
 
-    function createScenario1() private returns (uint256[] memory, address[] memory) {
+    function createScenario1() private returns (uint256[] memory, address[] memory, uint256) {
         address[] memory stakers = given_anArrayOfStakersOfLength(7);
         uint256[] memory lockIDs = new uint256[](7);
 
@@ -333,7 +333,7 @@ contract L2RewardTest is Test {
 
         checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
 
-        return (lockIDs, stakers);
+        return (lockIDs, stakers, funds);
     }
 
     function createScenario2() private returns (uint256[] memory, address[] memory) {
@@ -909,6 +909,16 @@ contract L2RewardTest is Test {
         assertEq(sumOfDailyUnlockedAmount + sumOfAmountOfPausedStakes, l2Reward.totalAmountLocked());
     }
 
+    function checkRewardsContractBalance(uint256 funds) public {
+        uint256 sumOfDailyRewards;
+        for (uint256 i = deploymentDate; i < l2Reward.todayDay(); i++) {
+            sumOfDailyRewards += l2Reward.dailyRewards(i);
+        }
+
+        assertTrue(l2LiskToken.balanceOf(address(l2Reward)) > funds - sumOfDailyRewards);
+        assertEq(l2LiskToken.balanceOf(address(l2Reward)) / 10 ** 3, (funds - sumOfDailyRewards) / 10 ** 3);
+    }
+
     function getLargestExpiryDate(uint256[] memory lockIDs) private view returns (uint256) {
         uint256 expiryDate;
         IL2LockingPosition.LockingPosition memory lockingPosition;
@@ -941,9 +951,10 @@ contract L2RewardTest is Test {
         address[] memory stakers;
         uint256[] memory positionsToBeModified = new uint256[](1);
         uint256[] memory balances = new uint256[](7);
+        uint256 funds;
         uint256 totalRewards;
 
-        (lockIDs, stakers) = createScenario1();
+        (lockIDs, stakers, funds) = createScenario1();
 
         vm.warp(19740 days + 105 days);
 
@@ -955,6 +966,8 @@ contract L2RewardTest is Test {
             positionsToBeModified[0] = lockIDs[i];
             when_rewardsAreClaimedByStaker(stakers[i], positionsToBeModified);
         }
+
+        checkRewardsContractBalance(funds);
 
         // get balances before claiming rewards again
         for (uint8 i = 0; i < stakers.length; i++) {
@@ -971,6 +984,8 @@ contract L2RewardTest is Test {
             positionsToBeModified[0] = lockIDs[i];
             when_rewardsAreClaimedByStaker(stakers[i], positionsToBeModified);
         }
+
+        checkRewardsContractBalance(funds);
 
         for (uint8 i = 0; i < stakers.length; i++) {
             totalRewards += l2LiskToken.balanceOf(stakers[i]) - balances[i];
@@ -996,6 +1011,8 @@ contract L2RewardTest is Test {
             positionsToBeModified[0] = lockIDs[i];
             when_rewardsAreClaimedByStaker(stakers[i], positionsToBeModified);
         }
+
+        checkRewardsContractBalance(funds);
 
         totalRewards = 0;
         for (uint8 i = 0; i < stakers.length; i++) {
@@ -1027,6 +1044,8 @@ contract L2RewardTest is Test {
             when_rewardsAreClaimedByStaker(stakers[i], positionsToBeModified);
         }
 
+        checkRewardsContractBalance(funds);
+
         // all positions claim rewards on day 230
         vm.warp(19740 days + 230 days);
         for (uint8 i = 0; i < stakers.length; i++) {
@@ -1038,6 +1057,8 @@ contract L2RewardTest is Test {
             positionsToBeModified[0] = lockIDs[i];
             when_rewardsAreClaimedByStaker(stakers[i], positionsToBeModified);
         }
+
+        checkRewardsContractBalance(funds);
 
         totalRewards = 0;
         for (uint8 i = 0; i < stakers.length; i++) {
@@ -1269,7 +1290,7 @@ contract L2RewardTest is Test {
         uint256[] memory lockIDs;
         address[] memory stakers;
 
-        (lockIDs, stakers) = createScenario1();
+        (lockIDs, stakers,) = createScenario1();
 
         checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
     }
