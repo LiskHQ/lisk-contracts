@@ -2,7 +2,7 @@ name: PR CI
 
 on:
   pull_request:
-    branches: [ main, 'feature/migration-airdrop' ]
+    branches: [ main ]
 
 permissions:
   contents: read
