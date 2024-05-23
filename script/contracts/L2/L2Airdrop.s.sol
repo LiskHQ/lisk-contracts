@@ -11,6 +11,9 @@ contract L2AirdropScript is Script {
     /// @notice Utils contract which provides functions to read and write JSON files containing L2 addresses.
     Utils utils;
 
+    /// @notice Address of the wallet which will receive airdrop tokens.
+    address public constant L2_AIRDROP_WALLET_ADDRESS = address(0x38eA61E8084E27a087cF5CdBC3f22584f18773e6);
+
     function setUp() public {
         utils = new Utils();
     }
@@ -26,11 +29,6 @@ contract L2AirdropScript is Script {
         address newOwnerAddress = vm.envAddress("L2_AIRDROP_OWNER_ADDRESS");
         assert(newOwnerAddress != address(0));
         console2.log("L2 Airdrop owner address: %s (after ownership will be accepted)", newOwnerAddress);
-
-        // address to which the airdrop wallet is set
-        address airdropWalletAddress = vm.envAddress("L2_AIRDROP_WALLET_ADDRESS");
-        assert(airdropWalletAddress != address(0));
-        console2.log("L2 Airdrop wallet address: %s", airdropWalletAddress);
 
         // get L2LiskToken contract address
         Utils.L2AddressesConfig memory l2AddressesConfig = utils.readL2AddressesFile();
@@ -57,7 +55,7 @@ contract L2AirdropScript is Script {
             l2AddressesConfig.L2ClaimContract,
             l2AddressesConfig.L2LockingPosition,
             l2AddressesConfig.L2VotingPower,
-            airdropWalletAddress
+            L2_AIRDROP_WALLET_ADDRESS
         );
         l2Airdrop.transferOwnership(newOwnerAddress);
         vm.stopBroadcast();
@@ -67,7 +65,7 @@ contract L2AirdropScript is Script {
         assert(l2Airdrop.l2ClaimAddress() == l2AddressesConfig.L2ClaimContract);
         assert(l2Airdrop.l2LockingPositionAddress() == l2AddressesConfig.L2LockingPosition);
         assert(l2Airdrop.l2VotingPowerAddress() == l2AddressesConfig.L2VotingPower);
-        assert(l2Airdrop.airdropWalletAddress() == airdropWalletAddress);
+        assert(l2Airdrop.airdropWalletAddress() == L2_AIRDROP_WALLET_ADDRESS);
         assert(l2Airdrop.merkleRoot() == bytes32(0));
         assert(l2Airdrop.owner() == vm.addr(deployerPrivateKey));
         assert(l2Airdrop.pendingOwner() == newOwnerAddress);
