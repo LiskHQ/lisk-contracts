@@ -21,21 +21,21 @@ contract USDTTest is Test {
         remoteToken = vm.addr(uint256(bytes32("remoteToken")));
 
         vm.prank(address(this), address(this));
-        usdt = new USDT(bridge,remoteToken, "Tether USD", "USDT", 18);
+        usdt = new USDT(bridge, remoteToken, "Tether USD", "USDT", 18);
         vm.stopPrank();
 
         (alice, alicePrivateKey) = makeAddrAndKey("alice");
         (bob, bobPrivateKey) = makeAddrAndKey("bob");
-    }   
+    }
 
     function test_ConstructorFail_ZeroBridgeAddress() public {
         vm.expectRevert("USDT: _bridge can not be zero");
-        new USDT(address(0),remoteToken, "Tether USD", "USDT", 18);
+        new USDT(address(0), remoteToken, "Tether USD", "USDT", 18);
     }
 
     function test_ConstructorFail_ZeroRemoteTokenAddress() public {
         vm.expectRevert("USDT: _remoteToken can not be zero");
-        new USDT(bridge,address(0), "Tether USD", "USDT", 18);
+        new USDT(bridge, address(0), "Tether USD", "USDT", 18);
     }
 
     function test_GetBridge() public {
@@ -162,6 +162,4 @@ contract USDTTest is Test {
         // test bob balance
         assertEq(usdt.balanceOf(bob), amount);
     }
-
-   
 }
