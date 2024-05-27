@@ -6,13 +6,13 @@ import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {ILegacyMintableERC20, IOptimismMintableERC20} from "../utils/IOptimismMintableERC20.sol";
 import {ISemver} from "../utils/ISemver.sol";
 
-/// @title OptimismMintableERC20
-/// @notice OptimismMintableERC20 is a standard extension of the base ERC20 token contract designed
-///         to allow the StandardBridge contracts to mint and burn tokens. This makes it possible to
-///         use an OptimismMintablERC20 as the L2 representation of an L1 token, or vice-versa.
-///         Designed to be backwards compatible with the older StandardL2ERC20 token which was only
+/// @title USDT
+/// @notice USDT is Tether USD deployment on the Lisk L2. 
+///         It follows the standard OptimismMintablERC20 extension of the base ERC20 token contract designed
+///         to allow the StandardBridge contracts to mint and burn tokens.
+///         It is designed to be backwards compatible with the older StandardL2ERC20 token which was only
 ///         meant for use on L2.
-contract OptimismMintableERC20 is
+contract USDT is
     IOptimismMintableERC20,
     ILegacyMintableERC20,
     ERC20,
@@ -41,7 +41,7 @@ contract OptimismMintableERC20 is
     modifier onlyBridge() {
         require(
             msg.sender == BRIDGE,
-            "OptimismMintableERC20: only bridge can mint and burn"
+            "USDT: only bridge can mint and burn"
         );
         _;
     }
@@ -61,6 +61,8 @@ contract OptimismMintableERC20 is
         string memory _symbol,
         uint8 _decimals
     ) ERC20(_name, _symbol) {
+        require(_bridge != address(0), "USDT: _bridge can not be zero");
+        require(_remoteToken != address(0), "USDT: _remoteToken can not be zero");
         REMOTE_TOKEN = _remoteToken;
         BRIDGE = _bridge;
         DECIMALS = _decimals;
