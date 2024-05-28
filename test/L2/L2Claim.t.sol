@@ -196,8 +196,6 @@ contract L2ClaimTest is Test {
         MerkleTreeLeaf memory leaf = getMerkleLeaves().leaves[accountIndex];
         Signature memory signature = getSignature(accountIndex);
 
-        leaf.proof[0] = bytes32AddOne(leaf.proof[0]);
-
         vm.expectRevert("L2Claim: proof array is empty");
         l2Claim.claimRegularAccount(
             new bytes32[](0),
