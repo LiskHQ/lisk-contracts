@@ -19,6 +19,8 @@ contract Utils is Script {
 
     /// @notice This struct is used to read and write L2 addresses to JSON file.
     struct L2AddressesConfig {
+        /// @notice L2 Airdrop address.
+        address L2Airdrop;
         /// @notice L2 Claim contract (in Proxy), which users interact with.
         address L2ClaimContract;
         /// @notice The Current implementation of L2 Claim Contract.
@@ -152,6 +154,10 @@ contract Utils is Script {
 
         L2AddressesConfig memory l2AddressesConfig;
 
+        try vm.parseJsonAddress(addressJson, ".L2Airdrop") returns (address l2Airdrop) {
+            l2AddressesConfig.L2Airdrop = l2Airdrop;
+        } catch { }
+
         try vm.parseJsonAddress(addressJson, ".L2ClaimContract") returns (address l2ClaimContract) {
             l2AddressesConfig.L2ClaimContract = l2ClaimContract;
         } catch { }
@@ -226,6 +232,7 @@ contract Utils is Script {
     function writeL2AddressesFile(L2AddressesConfig memory cfg) external {
         string memory network = getNetworkType();
         string memory json = "";
+        vm.serializeAddress(json, "L2Airdrop", cfg.L2Airdrop);
         vm.serializeAddress(json, "L2ClaimContract", cfg.L2ClaimContract);
         vm.serializeAddress(json, "L2ClaimImplementation", cfg.L2ClaimImplementation);
         vm.serializeAddress(json, "L2Governor", cfg.L2Governor);
@@ -262,11 +269,12 @@ contract Utils is Script {
     }
 
     /// @notice This function reads MerkleRoot from JSON file.
+    /// @param fileName Name of the file containing nerkle root.
     /// @return MerkleRoot struct containing merkle root only.
-    function readMerkleRootFile() external view returns (MerkleRoot memory) {
+    function readMerkleRootFile(string memory fileName) external view returns (MerkleRoot memory) {
         string memory network = getNetworkType();
         string memory root = vm.projectRoot();
-        string memory merkleRootPath = string.concat(root, "/script/data/", network, "/merkle-root.json");
+        string memory merkleRootPath = string.concat(root, "/script/data/", network, "/", fileName);
         string memory merkleRootJson = vm.readFile(merkleRootPath);
         bytes memory merkleRootRaw = vm.parseJson(merkleRootJson);
         return abi.decode(merkleRootRaw, (MerkleRoot));
