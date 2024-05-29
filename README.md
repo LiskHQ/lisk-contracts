@@ -7,8 +7,8 @@ Additionally, it also includes various deployment scripts that are integral for 
 ## Table of Contents <!-- omit in toc -->
 
 - [Contracts Overview](#contracts-overview)
-  - [Contracts deployed to L1](#contracts-deployed-to-l1)
-  - [Contracts deployed to L2](#contracts-deployed-to-l2)
+  - [Contracts for L1](#contracts-for-l1)
+  - [Contracts for L2](#contracts-for-l2)
 - [Installation](#installation)
   - [Cloning the Lisk Smart Contracts Repository](#cloning-the-lisk-smart-contracts-repository)
 - [Deploying on Private Test Network](#deploying-on-private-test-network)
@@ -29,14 +29,14 @@ Additionally, it also includes various deployment scripts that are integral for 
 
 ## Contracts Overview
 
-### Contracts deployed to L1
+### Contracts for L1
 
 | Name                                            | Description                                          |
 | ----------------------------------------------- | ---------------------------------------------------- |
 | [`L1LiskToken`](src/L1/L1LiskToken.sol)         | Lisk token (LSK) deployed on Ethereum L1 network     |
 | [`L1VestingWallet`](src/L1/L1VestingWallet.sol) | Vesting wallet for LSK tokens on Ethereum L1 network |
 
-### Contracts deployed to L2
+### Contracts for L2
 
 | Name                                                                                                                                                                       | Description                                                                                                                                    |
 | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
