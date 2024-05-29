@@ -9,7 +9,7 @@ The goal of the migration airdrop is to reward the community of the Lisk L1 netw
 
 ## Computation of the Airdrop Amount at Token Migration
 
-Depending on the total amount of LSK distributed in the migration airdrop and the LSK token distribution at migration, we fix the value `MIGRATION_AIRDROP_PERCENTAGE` that is the percentage of the airdrop in relation to the account balance, based on the total amount of LSK distributed in the migration airdrop and the expected airdrop claims. The maximum airdrop amount in LSK that a Lisk v4 account owner can claim on the Lisk L2 is then given by:
+We fix the value `MIGRATION_AIRDROP_PERCENTAGE` that is the percentage of the airdrop in relation to the account balance and this impacts how much will be distributed in the airdrop. The maximum airdrop amount in LSK that a Lisk v4 account owner can claim on the Lisk L2 is then given by:
 
 - `lskBalance * MIGRATION_AIRDROP_PERCENTAGE / 100` for any account with `lskBalance >= 50 LSK` and `lskBalance <= 250,000 LSK`.
 - `0` for any account with `lskBalance < 50 LSK` (cutoff amount).
