@@ -7,7 +7,6 @@ import { Script, console2 } from "forge-std/Script.sol";
 import { stdJson } from "forge-std/StdJson.sol";
 import { L2Claim, ED25519Signature, MultisigKeys } from "src/L2/L2Claim.sol";
 import { Signature, MerkleTreeLeaf, MerkleLeaves } from "test/L2/L2Claim.t.sol";
-import { MockERC20 } from "../../test/mock/MockERC20.sol";
 import "script/contracts/Utils.sol";
 
 /// @title L2ClaimTokensScript - L2 Claim Lisk tokens script
