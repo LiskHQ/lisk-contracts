@@ -12,7 +12,7 @@ There are also additional actions that require the `owner` role, like setting a 
 
 The following are the privilege roles that are defined in the smart contracts:
 
-- `owner`: The account that owns the contract. This account has the highest level of privilege and can perform all critical operations like upgrading the contract, setting DAO treasury address, setting emergency exit, etc. The owner of deployed smart contracts is a `Security council`. This is a multisignature account that requires the approval of the majority of the members to perform any operation. The multisignature account is controlled by different parties, which ensures that no single party has full control over the contract. Smart contract which have the `owner` role defined are [L1LiskToken](../src/L1/L1LiskToken.sol), [L2Claim](../src/L2/L2Claim.sol), [L2Governor](../src/L2/L2Governor.sol), [L2LockingPosition](../src/L2/L2LockingPosition.sol), [L2Reward](../src/L2/L2Reward.sol), [L2Staking](../src/L2/L2Staking.sol), [L2VestingWallet](../src/L2/L2VestingWallet.sol) and [L2VotingPower](../src/L2/L2VotingPower.sol).
+- `owner`: The account that owns the contract. This account has the highest level of privilege and can perform all critical operations like upgrading the contract, setting DAO treasury address, setting emergency exit, etc. The owner of deployed smart contracts is a `Security council`. This is a multisignature account that requires the approval of the majority of the members to perform any operation. The multisignature account is controlled by different parties, which ensures that no single party has full control over the contract. Smart contract which have the `owner` role defined are [L1LiskToken](../src/L1/L1LiskToken.sol), [L1VestingWallet](../src/L1/L1VestingWallet.sol), [L2Airdrop](../src/L2/L2Airdrop.sol), [L2Claim](../src/L2/L2Claim.sol), [L2Governor](../src/L2/L2Governor.sol), [L2LockingPosition](../src/L2/L2LockingPosition.sol), [L2Reward](../src/L2/L2Reward.sol), [L2Staking](../src/L2/L2Staking.sol), [L2VestingWallet](../src/L2/L2VestingWallet.sol) and [L2VotingPower](../src/L2/L2VotingPower.sol).
 - `burner`: The account that is allowed to burn LSK tokens. This role is defined in the [L1LiskToken](../src/L1/L1LiskToken.sol) smart contract.
 - `creator`: The accounts (smart contracts) which are allowed to lock LSK tokens and manipulate with them on behalf of the users inside [L2StakingContract](../src/L2/L2Staking.sol) smart contract. It is expected that only one smart contract will be allowed to be a `creator` ([L2Reward](../src/L2/L2Reward.sol)) but in principle, there can be multiple `creators`. A security assumption is that the `creator` is a trusted smart contract that will not misuse the locked LSK tokens. This role is defined in the [L2Staking](../src/L2/L2Staking.sol) smart contract.
 
@@ -27,6 +27,12 @@ The following are the smart contracts that have privilege roles defined in their
   The `burner` role is required to burn LSK tokens:
     - `burn`: Burns LSK tokens from the caller's account.
     - `burnFrom`: Burns LSK tokens from another account, deducting from the caller's allowance.
+
+- [L1VestingWallet.sol](../src/L1/L1VestingWallet.sol): This contract has the `owner` role defined. The `owner` role is required to upgrade the contract.
+
+- [L2Airdrop.sol](../src/L2/L2Airdrop.sol): This contract has the `owner` role defined. The `owner` role is authorized to set the Merkle root to commence the airdrop period and transfer unclaimed airdrop LSK tokens to a designated airdrop wallet once the airdrop period concludes:
+    - `setMerkleRoot`: Sets the Merkle root to commence the airdrop period.
+    - `sendLSKToAirdropWallet`: Transfers unclaimed airdrop LSK tokens to a designated airdrop wallet once the airdrop period concludes.
 
 - [L2Claim.sol](../src/L2/L2Claim.sol): This contract has the `owner` role defined. The `owner` role is required to upgrade the contract, set DAO treasury address and recover unclaimed LSK tokens to the DAO address after the claim period is over:
     - `setDAOAddress`: Sets the DAO treasury address which will receive all unclaimed LSK tokens. (called only once)
@@ -70,6 +76,8 @@ The following are the operations that are defined in the smart contracts and the
 - `Upgrade Smart Contract`: The `owner` role is required to upgrade the contract code to a new version.
 - `Set DAO Treasury Address`: The `owner` role is required to set the DAO treasury address inside the contract.
 - `Set Address to Another Contract`: The `owner` role is required to set the address of another contract inside the contract.
+- `Set Merkle Root`: The `owner` role is required to set the Merkle root inside the [L2Airdrop](../src/L2/L2Airdrop.sol) smart contract.
+- `Send LSK to Airdrop Wallet`: The `owner` role is required to send unclaimed airdrop LSK tokens to a designated airdrop wallet inside the [L2Airdrop](../src/L2/L2Airdrop.sol) smart contract.
 - `Set Emergency Exit`: The `owner` role is required to set the emergency exit inside the [L2Staking](../src/L2/L2Staking.sol) smart contract.
 - `Add or Remove Burner`: The `owner` role is required to add or remove the `burner` role to and from an account inside the [L1LiskToken](../src/L1/L1LiskToken.sol) smart contract.
 - `Add or Remove Creator`: The `owner` role is required to add or remove `creator` inside the [L2Staking](../src/L2/L2Staking.sol) smart contract.

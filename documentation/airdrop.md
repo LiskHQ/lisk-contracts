@@ -30,8 +30,8 @@ For each of the four conditions below that a user satisfies, they are eligible f
 - The user has currently staked 5 times the maximum airdrop amount for 1 month (Staking Tier 1).
 - The user has currently staked 5 times the maximum airdrop amount for 6 month (Staking Tier 2).
 
-## Owner and Contract Upgrades
+## Owner
 
-The owner address for the migration airdrop smart contract will be set to the multisignature controlled by the Security Council. The owner is authorized to upgrade the contracts. The airdrop contract will be upgraded exclusively if it is hacked or contains a vulnerability, and only to control the damage. This is a security measure protecting the LSK tokens allocated for the airdrop.
+The owner address for the migration airdrop smart contract is assigned to the multisignature controlled by the Security Council. The owner is authorized to set the Merkle root to commence the airdrop period.
 
-Additionally the owner will be able initiate the transfer of unclaimed airdrop tokens to Lisk DAO treasury after the airdrop period elapses.
+Additionally, the owner has the authority to transfer unclaimed airdrop LSK tokens to a designated airdrop wallet once the airdrop period concludes.

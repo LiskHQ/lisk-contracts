@@ -31,21 +31,25 @@ Additionally, it also includes various deployment scripts that are integral for 
 
 ### Contracts deployed to L1
 
-| Name                                    | Description                                      |
-| --------------------------------------- | ------------------------------------------------ |
-| [`L1LiskToken`](src/L1/L1LiskToken.sol) | Lisk token (LSK) deployed on Ethereum L1 network |
+| Name                                            | Description                                          |
+| ----------------------------------------------- | ---------------------------------------------------- |
+| [`L1LiskToken`](src/L1/L1LiskToken.sol)         | Lisk token (LSK) deployed on Ethereum L1 network     |
+| [`L1VestingWallet`](src/L1/L1VestingWallet.sol) | Vesting wallet for LSK tokens on Ethereum L1 network |
 
 ### Contracts deployed to L2
 
-| Name                                                | Description                                                                                                                                    |
-| --------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| [`L2LiskToken`](src/L2/L2LiskToken.sol)             | Bridged Lisk token (LSK) deployed on Lisk L2 network                                                                                           |
-| [`L2Claim`](src/L2/L2Claim.sol)                     | Smart contract responsible for a claiming process of the LSK tokens                                                                            |
-| [`L2Governor`](src/L2/L2Governor.sol)               | The [Governor](https://docs.openzeppelin.com/contracts/5.x/governance) contract for the Lisk DAO which manages proposals                       |
-| [`L2VotingPower`](src/L2/L2VotingPower.sol)         | The [token](https://docs.openzeppelin.com/contracts/5.x/governance#token) contract for the Lisk DAO which manages the voting power of accounts |
-| [`L2Staking`](src/L2/L2Staking.sol)                 | Responsible for locking, unlocking and editing locking positions                                                                               |
-| [`L2LockingPosition`](src/L2/L2LockingPosition.sol) | Stores all information of locking positions                                                                                                    |
-| [`L2Reward`](src/L2/L2Reward.sol)                   | Responsible for staking rewards                                                                                                                |
+| Name                                                                                                                                                                       | Description                                                                                                                                    |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`L2Airdrop`](src/L2/L2Airdrop.sol)                                                                                                                                        | Smart contract responsible for the Lisk Migration Airdrop                                                                                      |
+| [`L2Claim`](src/L2/L2Claim.sol)                                                                                                                                            | Smart contract responsible for a claiming process of the LSK tokens                                                                            |
+| [`L2Governor`](src/L2/L2Governor.sol)                                                                                                                                      | The [Governor](https://docs.openzeppelin.com/contracts/5.x/governance) contract for the Lisk DAO which manages proposals                       |
+| [`L2LiskToken`](src/L2/L2LiskToken.sol)                                                                                                                                    | Bridged Lisk token (LSK) deployed on Lisk L2 network                                                                                           |
+| [`L2LockingPosition`](src/L2/L2LockingPosition.sol)                                                                                                                        | Stores all information of locking positions                                                                                                    |
+| [`L2Reward`](src/L2/L2Reward.sol)                                                                                                                                          | Responsible for staking rewards                                                                                                                |
+| [`L2Staking`](src/L2/L2Staking.sol)                                                                                                                                        | Responsible for locking, unlocking and editing locking positions                                                                               |
+| [`L2TimelockController`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/01ef448981be9d20ca85f2faf6ebdf591ce409f3/contracts/governance/TimelockController.sol) | Timelock controller for the Lisk DAO which manages the delay of proposals execution                                                            |
+| [`L2VestingWallet`](src/L2/L2VestingWallet.sol)                                                                                                                            | Vesting wallet for LSK tokens on Lisk L2 network                                                                                               |
+| [`L2VotingPower`](src/L2/L2VotingPower.sol)                                                                                                                                | The [token](https://docs.openzeppelin.com/contracts/5.x/governance#token) contract for the Lisk DAO which manages the voting power of accounts |
 
 ## Installation
 
@@ -75,12 +79,12 @@ git submodule update --init --recursive
 
 Private L1 and L2 test networks are established using the `anvil` tool, and the smart contracts are deployed using the `forge script` tool. To run private networks and deploy the smart contracts, follow these steps:
 
-1. Create `.env` file and set the vars `PRIVATE_KEY`, `NETWORK`, `L1_TOKEN_OWNER_ADDRESS`, `L2_CLAIM_OWNER_ADDRESS`, `L2_STAKING_OWNER_ADDRESS`, `L2_LOCKING_POSITION_OWNER_ADDRESS`, `L2_REWARD_OWNER_ADDRESS`, `L2_GOVERNOR_OWNER_ADDRESS`, `L2_VOTING_POWER_OWNER_ADDRESS`, `DETERMINISTIC_ADDRESS_SALT`, `L1_STANDARD_BRIDGE_ADDR`, `L1_RPC_URL`, `L2_RPC_URL`, `L1_FORK_RPC_URL`, `L2_FORK_RPC_URL` and `TEST_NETWORK_MNEMONIC`. You can copy and rename the `.env.example` file if the default values provided in `.env.example` are satisfactory. `L1_RPC_URL` should be set to `http://127.0.0.1:8545` and `L2_RPC_URL` should be set to `http://127.0.0.1:8546` if no changes are made in the `./runL1TestNetwork.sh` or `./runL2TestNetwork.sh` script files.
+1. Create `.env` file and set the vars `PRIVATE_KEY`, `NETWORK`, `L1_TOKEN_OWNER_ADDRESS`, `L2_CLAIM_OWNER_ADDRESS`, `L2_STAKING_OWNER_ADDRESS`, `L2_LOCKING_POSITION_OWNER_ADDRESS`, `L2_REWARD_OWNER_ADDRESS`, `L2_GOVERNOR_OWNER_ADDRESS`, `L2_VOTING_POWER_OWNER_ADDRESS`, `L2_AIRDROP_OWNER_ADDRESS`, `DETERMINISTIC_ADDRESS_SALT`, `L1_STANDARD_BRIDGE_ADDR`, `L1_RPC_URL`, `L2_RPC_URL`, `L1_FORK_RPC_URL`, `L2_FORK_RPC_URL` and `TEST_NETWORK_MNEMONIC`. You can copy and rename the `.env.example` file if the default values provided in `.env.example` are satisfactory. `L1_RPC_URL` should be set to `http://127.0.0.1:8545` and `L2_RPC_URL` should be set to `http://127.0.0.1:8546` if no changes are made in the `./runL1TestNetwork.sh` or `./runL2TestNetwork.sh` script files.
 2. Navigate to the `script` directory.
 3. Place the `accounts.json` and `merkle-root.json` files in the correct folder (`data/devnet`, `data/testnet`, or `data/mainnet`) corresponding to the previously set `NETWORK` environment variable. Example files for `accounts.json` and `merkle-root.json` may be found inside `data/devnet` directory.
 4. To create and launch a private test L1 network, execute the script: `./runL1TestNetwork.sh`
 5. To create and launch a private test L2 network, execute the script: `./runL2TestNetwork.sh`
-6. To deploy all smart contracts, execute the scripts: `./1_deployTokenContracts.sh`, `./2_deployStakingAndGovernance.sh`, `./3_deployVestingWallets.sh` and `./4_deployClaimContract`.
+6. To deploy all smart contracts, execute the scripts: `./1_deployTokenContracts.sh`, `./2_deployStakingAndGovernance.sh`, `./3_deployVestingWallets.sh`, `./4_deployClaimContract` and `./5_deployAirdropContract.sh`.
 
 ## Deploying on Public Test Network
 
@@ -88,11 +92,11 @@ Private L1 and L2 test networks are established using the `anvil` tool, and the 
 
 To deploy smart contracts on both L1 and L2 public networks, you will need to provide for each network an URL for a public node from a RPC provider, such as Alchemy or Infura. Additionally, in order to verify smart contracts on Blockscout or Etherscan Block Explorers during the deployment process, it is necessary to provide verifier name along with additional information (URL and API key). Follow these steps to deploy the smart contracts:
 
-1. Create `.env` file and set the vars `PRIVATE_KEY`, `NETWORK`, `L1_TOKEN_OWNER_ADDRESS`, `L2_CLAIM_OWNER_ADDRESS`, `L2_STAKING_OWNER_ADDRESS`, `L2_LOCKING_POSITION_OWNER_ADDRESS`, `L2_REWARD_OWNER_ADDRESS`, `L2_GOVERNOR_OWNER_ADDRESS`, `L2_VOTING_POWER_OWNER_ADDRESS`, `DETERMINISTIC_ADDRESS_SALT`, `L1_STANDARD_BRIDGE_ADDR`, `L1_RPC_URL`, `L2_RPC_URL` and `CONTRACT_VERIFIER`. You can copy and rename the `.env.example` file if the default values provided in `.env.example` are satisfactory. `CONTRACT_VERIFIER` may be empty to skip smart contracts verification process on Blockscout or Etherscan Block Explorers.
+1. Create `.env` file and set the vars `PRIVATE_KEY`, `NETWORK`, `L1_TOKEN_OWNER_ADDRESS`, `L2_CLAIM_OWNER_ADDRESS`, `L2_STAKING_OWNER_ADDRESS`, `L2_LOCKING_POSITION_OWNER_ADDRESS`, `L2_REWARD_OWNER_ADDRESS`, `L2_GOVERNOR_OWNER_ADDRESS`, `L2_VOTING_POWER_OWNER_ADDRESS`, `L2_AIRDROP_OWNER_ADDRESS`, `DETERMINISTIC_ADDRESS_SALT`, `L1_STANDARD_BRIDGE_ADDR`, `L1_RPC_URL`, `L2_RPC_URL` and `CONTRACT_VERIFIER`. You can copy and rename the `.env.example` file if the default values provided in `.env.example` are satisfactory. `CONTRACT_VERIFIER` may be empty to skip smart contracts verification process on Blockscout or Etherscan Block Explorers.
 2. When `CONTRACT_VERIFIER` is configured as either `blockscout` or `etherscan`, there are specific additional variables that must be defined. For `blockscout`, it is necessary to set `L1_VERIFIER_URL` and `L2_VERIFIER_URL`. Conversely, for `etherscan`, it is necessary to set `L1_ETHERSCAN_API_KEY` and `L2_ETHERSCAN_API_KEY`.
 3. Navigate to the `script` directory.
 4. Place the `accounts.json` and `merkle-root.json` files in the correct folder (`data/devnet`, `data/testnet`, or `data/mainnet`) corresponding to the previously set `NETWORK` environment variable. Example files for `accounts.json` and `merkle-root.json` may be found inside `data/devnet` directory.
-5. To deploy all smart contracts, execute the scripts: `./1_deployTokenContracts.sh`, `./2_deployStakingAndGovernance.sh`, `./3_deployVestingWallets.sh` and `./4_deployClaimContract`.
+5. To deploy all smart contracts, execute the scripts: `./1_deployTokenContracts.sh`, `./2_deployStakingAndGovernance.sh`, `./3_deployVestingWallets.sh`, `./4_deployClaimContract` and `./5_deployAirdropContract.sh`.
 
 ## Deployments
 
