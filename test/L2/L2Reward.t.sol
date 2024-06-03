@@ -430,7 +430,7 @@ contract L2RewardTest is Test {
         }
     }
 
-    function test_scenario2() private {
+    function test_scenario2() public {
         address[] memory stakers = given_anArrayOfStakersOfLength(7);
         uint256[] memory lockIDs = new uint256[](7);
         uint256 funds = convertLiskToSmallestDenomination(5000);
@@ -504,11 +504,11 @@ contract L2RewardTest is Test {
         lastClaimedRewardEqualsDailyRewardBetweenDays(scenario.lastClaimedAmount, 106, 114);
     }
 
-    function createScenario3() private returns (uint256[] memory, address[] memory) {
+    function test_scenario3() public {
         address[] memory stakers = given_anArrayOfStakersOfLength(14);
         uint256[] memory lockIDs = new uint256[](14);
-        uint256[] memory balances = new uint256[](7);
-        uint256[] memory oldBalances = new uint256[](7);
+        uint256[] memory balances = new uint256[](14);
+        uint256[] memory oldBalances = new uint256[](14);
         uint256 funds = convertLiskToSmallestDenomination(5000);
         uint256 balance = convertLiskToSmallestDenomination(5000);
 
@@ -634,8 +634,16 @@ contract L2RewardTest is Test {
         stakerExtendsPositionBy(0, 30, scenario);
         stakerReumesPosition(12, scenario);
         checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
-
-        return (lockIDs, stakers);
+        onDay(200);
+        allStakersClaim(scenario);
+        cacheBalances(scenario);
+        onDay(201);
+        allStakersClaim(scenario);
+        lastClaimedRewardEqualsDailyRewardBetweenDays(scenario.lastClaimedAmount, 200, 200);
+        cacheBalances(scenario);
+        onDay(250);
+        allStakersClaim(scenario);
+        lastClaimedRewardEqualsDailyRewardBetweenDays(scenario.lastClaimedAmount, 201, 249);
     }
 
     function checkConsistencyPendingUnlockDailyUnlocked(
@@ -684,84 +692,6 @@ contract L2RewardTest is Test {
 
         assertTrue(sumOfDailyRewards > reward);
         assertEq(sumOfDailyRewards / 10 ** 4, reward / 10 ** 4);
-    }
-
-    function test_scenario3_dailyRewards() public {
-        // Scenario: rewards alloted for a certain day(s) is less than or equal to dailyRewards available for those
-        // days.
-        // Description:
-        // claim rewards against all positions on day 200
-        // Act:
-        // move to day 201, claim rewards against all positions again
-        // Assert:
-        // total rewards claimed on day 201 is equal to daily rewards available for day 200
-        // Act:
-        // move to day 250, claim rewards against all positions again
-        // Assert:
-        // total rewards claimed on day 250 is equal to sum of daily rewards between 201 and 249
-
-        uint256[] memory lockIDs;
-        address[] memory stakers;
-        uint256[] memory positionsToBeModified = new uint256[](1);
-        uint256[] memory balances = new uint256[](14);
-        uint256 totalRewards;
-
-        (lockIDs, stakers) = createScenario3();
-
-        vm.warp(19740 days + 200 days);
-
-        // claim rewards against all positions on day 200
-        for (uint8 i = 0; i < lockIDs.length; i++) {
-            positionsToBeModified[0] = lockIDs[i];
-            when_rewardsAreClaimedByStaker(stakers[i], positionsToBeModified);
-        }
-
-        // get balances before claiming rewards again
-        for (uint8 i = 0; i < stakers.length; i++) {
-            balances[i] = l2LiskToken.balanceOf(stakers[i]);
-        }
-
-        vm.warp(19740 days + 201 days);
-        // all positions claim rewards on day 201
-        for (uint8 i = 0; i < lockIDs.length; i++) {
-            positionsToBeModified[0] = lockIDs[i];
-            when_rewardsAreClaimedByStaker(stakers[i], positionsToBeModified);
-        }
-
-        totalRewards = 0;
-        for (uint8 i = 0; i < stakers.length; i++) {
-            totalRewards += l2LiskToken.balanceOf(stakers[i]) - balances[i];
-        }
-
-        // total rewards claimed on day 201 are less than or equal to dailyRewards on day 200
-        assertTrue(totalRewards <= l2Reward.dailyRewards(19740 + 200));
-        assertEq(totalRewards / 10 ** 3, l2Reward.dailyRewards(19740 + 200) / 10 ** 3);
-
-        vm.warp(19740 days + 250 days);
-
-        // get balances before claiming rewards again
-        for (uint8 i = 0; i < stakers.length; i++) {
-            balances[i] = l2LiskToken.balanceOf(stakers[i]);
-        }
-
-        // all positions claim rewards on day 250
-        for (uint8 i = 0; i < stakers.length; i++) {
-            positionsToBeModified[0] = lockIDs[i];
-            when_rewardsAreClaimedByStaker(stakers[i], positionsToBeModified);
-        }
-
-        totalRewards = 0;
-        for (uint8 i = 0; i < stakers.length; i++) {
-            totalRewards += l2LiskToken.balanceOf(stakers[i]) - balances[i];
-        }
-
-        uint256 sumOfDailyRewards;
-        for (uint256 i = 19740 + 201; i < 19740 + 250; i++) {
-            sumOfDailyRewards += l2Reward.dailyRewards(i);
-        }
-
-        assertTrue(sumOfDailyRewards >= totalRewards);
-        assertEq(sumOfDailyRewards / 10 ** 3, totalRewards / 10 ** 3);
     }
 
     function test_createPosition_l2RewardContractShouldBeApprovedToTransferFromStakerAccount() public {
