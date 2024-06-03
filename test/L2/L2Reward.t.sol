@@ -430,7 +430,7 @@ contract L2RewardTest is Test {
         }
     }
 
-    function createScenario2() private returns (uint256[] memory, address[] memory) {
+    function test_scenario2() private {
         address[] memory stakers = given_anArrayOfStakersOfLength(7);
         uint256[] memory lockIDs = new uint256[](7);
         uint256 funds = convertLiskToSmallestDenomination(5000);
@@ -492,8 +492,16 @@ contract L2RewardTest is Test {
         onDay(93);
         stakerIncreasesAmountOfThePositionBy(5, LSK(30), scenario);
         checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
-
-        return (lockIDs, stakers);
+        onDay(105);
+        allStakersClaim(scenario);
+        cacheBalances(scenario);
+        onDay(106);
+        allStakersClaim(scenario);
+        lastClaimedRewardEqualsDailyRewardBetweenDays(scenario.lastClaimedAmount, 105, 105);
+        onDay(115);
+        cacheBalances(scenario);
+        allStakersClaim(scenario);
+        lastClaimedRewardEqualsDailyRewardBetweenDays(scenario.lastClaimedAmount, 106, 114);
     }
 
     function createScenario3() private returns (uint256[] memory, address[] memory) {
@@ -676,82 +684,6 @@ contract L2RewardTest is Test {
 
         assertTrue(sumOfDailyRewards > reward);
         assertEq(sumOfDailyRewards / 10 ** 4, reward / 10 ** 4);
-    }
-
-    function test_scenario2_dailyRewards() public {
-        // Scenario: rewards alloted for a certain day(s) is less than or equal to dailyRewards available for those
-        // days.
-        // Description:
-        // claim rewards against all positions on day 105
-        // Act:
-        // move to day 106, claim rewards against all positions again
-        // Assert:
-        // total rewards claimed on day 106 is equal to daily rewards available for day 105.
-        // Act:
-        // move to day 115, claim rewards against all positions again
-        // Assert:
-        // total rewards claimed on day 115 is equal to sum of daily rewards between day 106 and 114.
-        uint256[] memory lockIDs;
-        address[] memory stakers;
-        uint256[] memory positionsToBeModified = new uint256[](1);
-        uint256[] memory balances = new uint256[](7);
-        Scenario memory scenario;
-        uint256 totalRewards;
-
-        (lockIDs, stakers) = createScenario2();
-
-        vm.warp(19740 days + 105 days);
-
-        for (uint8 i = 0; i < lockIDs.length; i++) {
-            positionsToBeModified[0] = lockIDs[i];
-            when_rewardsAreClaimedByStaker(stakers[i], positionsToBeModified);
-        }
-
-        // get balances before claiming rewards again
-        for (uint8 i = 0; i < stakers.length; i++) {
-            balances[i] = l2LiskToken.balanceOf(stakers[i]);
-        }
-
-        vm.warp(19740 days + 106 days);
-        // all positions claim rewards on day 106
-        for (uint8 i = 0; i < stakers.length; i++) {
-            positionsToBeModified[0] = lockIDs[i];
-            when_rewardsAreClaimedByStaker(stakers[i], positionsToBeModified);
-        }
-
-        for (uint8 i = 0; i < stakers.length; i++) {
-            totalRewards += l2LiskToken.balanceOf(stakers[i]) - balances[i];
-        }
-
-        // total rewards claimed on day 106 are less than or equal to dailyRewards on day 105.
-        assertTrue(totalRewards <= l2Reward.dailyRewards(19740 + 105));
-        assertEq(totalRewards / 10, l2Reward.dailyRewards(19740 + 105) / 10);
-
-        vm.warp(19740 days + 115 days);
-
-        // get balances before claiming rewards again
-        for (uint8 i = 0; i < stakers.length; i++) {
-            balances[i] = l2LiskToken.balanceOf(stakers[i]);
-        }
-
-        // all positions claim rewards on day 115
-        for (uint8 i = 0; i < stakers.length; i++) {
-            positionsToBeModified[0] = lockIDs[i];
-            when_rewardsAreClaimedByStaker(stakers[i], positionsToBeModified);
-        }
-
-        totalRewards = 0;
-        for (uint8 i = 0; i < stakers.length; i++) {
-            totalRewards += l2LiskToken.balanceOf(stakers[i]) - balances[i];
-        }
-
-        uint256 sumOfDailyRewards;
-        for (uint256 i = deploymentDate + 106; i < deploymentDate + 115; i++) {
-            sumOfDailyRewards += l2Reward.dailyRewards(i);
-        }
-
-        assertTrue(sumOfDailyRewards > totalRewards);
-        assertEq(sumOfDailyRewards / 10 ** 2, totalRewards / 10 ** 2);
     }
 
     function test_scenario3_dailyRewards() public {
