@@ -13,6 +13,10 @@ broadcast/
 
 # Slither files
 slither-results.json
+slitherResults.md
 
 # Devnet deployment files
 deployment/devnet/
+
+# Slither-mutation files
+mutation_campaign
