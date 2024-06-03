@@ -296,6 +296,13 @@ contract L2RewardTest is Test {
         vm.stopPrank();
     }
 
+    function stakerClaimRewards(uint256 stakerIndex, Scenario memory scenario) private {
+        uint256[] memory positionsToBeModified = new uint256[](1);
+        positionsToBeModified[0] = scenario.lockIDs[stakerIndex];
+        vm.prank(scenario.stakers[stakerIndex]);
+        l2Reward.claimRewards(positionsToBeModified);
+    }
+
     function allStakersClaim(Scenario memory scenario) private {
         uint256[] memory positionsToBeModified = new uint256[](1);
         scenario.lastClaimedAmount = 0;
@@ -303,8 +310,6 @@ contract L2RewardTest is Test {
             if (scenario.lockIDs[i] == 0) {
                 continue;
             }
-
-            // scenario.oldBalances[i] = scenario.balances[i];
 
             positionsToBeModified[0] = scenario.lockIDs[i];
             vm.prank(scenario.stakers[i]);
@@ -322,13 +327,14 @@ contract L2RewardTest is Test {
         }
     }
 
-    function createScenario1() private returns (uint256[] memory, address[] memory, Scenario memory) {
+    function test_scenario1() public {
         address[] memory stakers = given_anArrayOfStakersOfLength(7);
         uint256[] memory lockIDs = new uint256[](7);
         uint256[] memory balances = new uint256[](7);
         uint256[] memory oldBalances = new uint256[](7);
         uint256 funds = convertLiskToSmallestDenomination(5000);
         uint256 balance = convertLiskToSmallestDenomination(500);
+        uint256[] memory positionsToBeModified = new uint256[](1);
 
         // owner gets balance
         given_accountHasBalance(address(this), funds);
@@ -380,8 +386,35 @@ contract L2RewardTest is Test {
         onDay(100);
         stakerIncreasesAmountOfThePositionBy(6, LSK(50), scenario);
         checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
-
-        return (lockIDs, stakers, scenario);
+        onDay(105);
+        allStakersClaim(scenario);
+        cacheBalances(scenario);
+        onDay(106);
+        allStakersClaim(scenario);
+        lastClaimedRewardEqualsDailyRewardBetweenDays(scenario.lastClaimedAmount, 105, 105);
+        onDay(115);
+        cacheBalances(scenario);
+        allStakersClaim(scenario);
+        lastClaimedRewardEqualsDailyRewardBetweenDays(scenario.lastClaimedAmount, 106, 114);
+        cacheBalances(scenario);
+        onDay(150);
+        allStakersClaim(scenario);
+        onDay(230);
+        allStakersClaim(scenario);
+        lastClaimedRewardEqualsDailyRewardBetweenDays(scenario.lastClaimedAmount, 115, 229);
+        // stake 4 gets resumed, expiry date should be 270
+        stakerReumesPosition(4, scenario);
+        assertEq(l2LockingPosition.getLockingPosition(scenario.lockIDs[4]).expDate, deploymentDate + 270);
+        onDay(240);
+        stakerInitiatesFastUnlock(6, scenario);
+        stakerClaimRewards(4, scenario);
+        cacheBalances(scenario);
+        onDay(275);
+        allStakersClaim(scenario);
+        lastClaimedRewardEqualsDailyRewardBetweenDays(scenario.lastClaimedAmount, 240, 269);
+        for (uint256 i = 19740 + 270; i < 19740 + 275; i++) {
+            assertEq(l2Reward.totalWeights(i), 0);
+        }
     }
 
     function createScenario2() private returns (uint256[] memory, address[] memory) {
@@ -634,65 +667,6 @@ contract L2RewardTest is Test {
         assertEq(sumOfDailyRewards / 10 ** 4, reward / 10 ** 4);
     }
 
-    function test_scenario1_dailyRewards() public {
-        // Scenario: rewards alloted for a certain day(s) is less than or equal to dailyRewards available for those
-        // days.
-        // Description:
-        // claim rewards agains all positions on day 105
-        // Act:
-        // move to day 106, claim rewards against all positions again
-        // Assert:
-        // total rewards claimed on day 106 is equal to daily rewards available for day 105.
-        // Act:
-        // move to day 115, claim rewards against all positions again
-        // Assert:
-        // total rewards claimed on day 115 is equal to sum of daily rewards between day 106 and 114.
-
-        uint256[] memory lockIDs;
-        address[] memory stakers;
-        uint256[] memory positionsToBeModified = new uint256[](1);
-        uint256[] memory balances = new uint256[](7);
-        uint256 sumOfDailyRewards;
-
-        uint256 totalRewards;
-        Scenario memory scenario;
-
-        (lockIDs, stakers, scenario) = createScenario1();
-
-        onDay(105);
-        allStakersClaim(scenario);
-        cacheBalances(scenario);
-        onDay(106);
-        allStakersClaim(scenario);
-        lastClaimedRewardEqualsDailyRewardBetweenDays(scenario.lastClaimedAmount, 105, 105);
-        onDay(115);
-        cacheBalances(scenario);
-        allStakersClaim(scenario);
-        lastClaimedRewardEqualsDailyRewardBetweenDays(scenario.lastClaimedAmount, 106, 114);
-        cacheBalances(scenario);
-        onDay(150);
-        allStakersClaim(scenario);
-        onDay(230);
-        allStakersClaim(scenario);
-        lastClaimedRewardEqualsDailyRewardBetweenDays(scenario.lastClaimedAmount, 115, 229);
-        // stake 4 gets resumed, expiry date should be 270
-        stakerReumesPosition(4, scenario);
-        assertEq(l2LockingPosition.getLockingPosition(scenario.lockIDs[4]).expDate, deploymentDate + 270);
-        // stake 7 initiates fast unlock on day 240
-        onDay(240);
-        stakerInitiatesFastUnlock(6, scenario);
-        // stake 5 claims rewards on day 240
-        positionsToBeModified[0] = lockIDs[4];
-        when_rewardsAreClaimedByStaker(stakers[4], positionsToBeModified);
-        cacheBalances(scenario);
-        onDay(275);
-        allStakersClaim(scenario);
-        lastClaimedRewardEqualsDailyRewardBetweenDays(scenario.lastClaimedAmount, 240, 269);
-        for (uint256 i = 19740 + 270; i < 19740 + 275; i++) {
-            assertEq(l2Reward.totalWeights(i), 0);
-        }
-    }
-
     function test_scenario2_dailyRewards() public {
         // Scenario: rewards alloted for a certain day(s) is less than or equal to dailyRewards available for those
         // days.
@@ -845,15 +819,6 @@ contract L2RewardTest is Test {
 
         assertTrue(sumOfDailyRewards >= totalRewards);
         assertEq(sumOfDailyRewards / 10 ** 3, totalRewards / 10 ** 3);
-    }
-
-    function test_scenario1_pendingUnlockAmount() public {
-        uint256[] memory lockIDs;
-        address[] memory stakers;
-
-        (lockIDs, stakers,) = createScenario1();
-
-        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
     }
 
     function test_scenario2_pendingUnlockAmount() public {
