@@ -38,7 +38,6 @@ contract L2RewardTest is Test {
     struct Scenario {
         address[] stakers;
         uint256[] lockIDs;
-        uint8 claimCount;
         uint256[] oldBalances;
         uint256[] balances;
         uint256 lastClaimedAmount;
@@ -327,6 +326,16 @@ contract L2RewardTest is Test {
         }
     }
 
+    function checkRewardsContractBalance(uint256 funds) public {
+        uint256 sumOfDailyRewards;
+        for (uint256 i = deploymentDate; i < l2Reward.todayDay(); i++) {
+            sumOfDailyRewards += l2Reward.dailyRewards(i);
+        }
+
+        assertTrue(l2LiskToken.balanceOf(address(l2Reward)) > funds - sumOfDailyRewards);
+        assertEq(l2LiskToken.balanceOf(address(l2Reward)) / 10 ** 4, (funds - sumOfDailyRewards) / 10 ** 4);
+    }
+
     function test_scenario1() public {
         address[] memory stakers = given_anArrayOfStakersOfLength(7);
         uint256[] memory lockIDs = new uint256[](7);
@@ -350,7 +359,6 @@ contract L2RewardTest is Test {
             lockIDs: lockIDs,
             balances: balances,
             oldBalances: oldBalances,
-            claimCount: 0,
             lastClaimedAmount: 0
         });
 
@@ -388,19 +396,24 @@ contract L2RewardTest is Test {
         checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
         onDay(105);
         allStakersClaim(scenario);
+        checkRewardsContractBalance(funds);
         cacheBalances(scenario);
         onDay(106);
         allStakersClaim(scenario);
+        checkRewardsContractBalance(funds);
         lastClaimedRewardEqualsDailyRewardBetweenDays(scenario.lastClaimedAmount, 105, 105);
         onDay(115);
         cacheBalances(scenario);
         allStakersClaim(scenario);
+        checkRewardsContractBalance(funds);
         lastClaimedRewardEqualsDailyRewardBetweenDays(scenario.lastClaimedAmount, 106, 114);
         cacheBalances(scenario);
         onDay(150);
         allStakersClaim(scenario);
+        checkRewardsContractBalance(funds);
         onDay(230);
         allStakersClaim(scenario);
+        checkRewardsContractBalance(funds);
         lastClaimedRewardEqualsDailyRewardBetweenDays(scenario.lastClaimedAmount, 115, 229);
         // stake 4 gets resumed, expiry date should be 270
         stakerReumesPosition(4, scenario);
@@ -441,7 +454,6 @@ contract L2RewardTest is Test {
             lockIDs: lockIDs,
             balances: balances,
             oldBalances: oldBalances,
-            claimCount: 0,
             lastClaimedAmount: 0
         });
         onDay(1);
@@ -513,7 +525,6 @@ contract L2RewardTest is Test {
             lockIDs: lockIDs,
             balances: balances,
             oldBalances: oldBalances,
-            claimCount: 0,
             lastClaimedAmount: 0
         });
 
