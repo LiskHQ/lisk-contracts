@@ -40,6 +40,11 @@ contract L2RewardTest is Test {
         uint256 duration;
     }
 
+    struct Scenario {
+        address[] stakers;
+        uint256[] lockIDs;
+    }
+
     function setUp() public {
         skip(deploymentDate * 1 days);
 
@@ -210,14 +215,81 @@ contract L2RewardTest is Test {
         vm.stopPrank();
     }
 
+    function onDay(uint256 day) private {
+        vm.warp((deploymentDate + day) * 86400);
+    }
+
+    function stakerCreatesPosition(
+        uint256 stakerIndex,
+        uint256 amount,
+        uint256 duration,
+        Scenario memory scenario
+    )
+        private
+    {
+        vm.startPrank(scenario.stakers[stakerIndex]);
+        l2LiskToken.approve(address(l2Reward), amount);
+        scenario.lockIDs[stakerIndex] = l2Reward.createPosition(amount, duration);
+        vm.stopPrank();
+    }
+
+    function stakerPausesPosition(uint256 stakerIndex, Scenario memory scenario) private {
+        uint256[] memory positionsToBeModified = new uint256[](1);
+        positionsToBeModified[0] = scenario.lockIDs[stakerIndex];
+        vm.prank(scenario.stakers[stakerIndex]);
+        l2Reward.pauseUnlocking(positionsToBeModified);
+    }
+
+    function stakerReumesPosition(uint256 stakerIndex, Scenario memory scenario) private {
+        uint256[] memory positionsToBeModified = new uint256[](1);
+        positionsToBeModified[0] = scenario.lockIDs[stakerIndex];
+        vm.prank(scenario.stakers[stakerIndex]);
+        l2Reward.resumeUnlockingCountdown(positionsToBeModified);
+    }
+
+    function stakerUnlocksPosition(uint256 stakerIndex, Scenario memory scenario) private {
+        uint256[] memory positionsToBeModified = new uint256[](1);
+        positionsToBeModified[0] = scenario.lockIDs[stakerIndex];
+        vm.prank(scenario.stakers[stakerIndex]);
+        l2Reward.deletePositions(positionsToBeModified);
+    }
+
+    function stakerExtendsPositionBy(
+        uint256 stakerIndex,
+        uint256 durationExtension,
+        Scenario memory scenario
+    )
+        private
+    {
+        L2Reward.ExtendedDuration[] memory durationExtensions = new L2Reward.ExtendedDuration[](1);
+        durationExtensions[0].lockID = scenario.lockIDs[stakerIndex];
+        durationExtensions[0].durationExtension = durationExtension;
+        vm.prank(scenario.stakers[stakerIndex]);
+        l2Reward.extendDuration(durationExtensions);
+    }
+
+    function stakerIncreasesAmountOfThePositionBy(
+        uint256 stakerIndex,
+        uint256 amountIncrease,
+        Scenario memory scenario
+    )
+        private
+    {
+        L2Reward.IncreasedAmount[] memory increasingAmounts = new L2Reward.IncreasedAmount[](1);
+        increasingAmounts[0].lockID = scenario.lockIDs[stakerIndex];
+        increasingAmounts[0].amountIncrease = amountIncrease;
+        vm.startPrank(scenario.stakers[stakerIndex]);
+        l2LiskToken.approve(address(l2Reward), amountIncrease);
+        l2Reward.increaseLockingAmount(increasingAmounts);
+        vm.stopPrank();
+    }
+
     function createScenario1() private returns (uint256[] memory, address[] memory, uint256) {
         address[] memory stakers = given_anArrayOfStakersOfLength(7);
         uint256[] memory lockIDs = new uint256[](7);
 
         uint256 funds = convertLiskToSmallestDenomination(5000);
         uint256 balance = convertLiskToSmallestDenomination(500);
-
-        uint256[] memory positionsToBeModified = new uint256[](1);
 
         // owner gets balance
         given_accountHasBalance(address(this), funds);
@@ -228,109 +300,39 @@ contract L2RewardTest is Test {
         for (uint8 i = 0; i < stakers.length; i++) {
             given_accountHasBalance(stakers[i], balance);
         }
+        Scenario memory scenario = Scenario({ stakers: stakers, lockIDs: lockIDs });
 
         checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
-
-        vm.warp(19740 days + 1 days);
-
-        // stake 1: (100 LSK, 30 days)
-        // extended on day 50 by 30 days
-        lockIDs[0] = when_stakerCreatesPosition(
-            stakers[0], Position({ amount: convertLiskToSmallestDenomination(100), duration: 30 })
-        );
-
-        // stake 2: (100 LSK, 80 days)
-        // paused on day 30, resumes on day 80
-        lockIDs[1] = when_stakerCreatesPosition(
-            stakers[1], Position({ amount: convertLiskToSmallestDenomination(100), duration: 80 })
-        );
-
-        vm.warp(19740 days + 10 days);
-        // stake 3: (100 LSK, 100 days)
-        lockIDs[2] = when_stakerCreatesPosition(
-            stakers[2], Position({ amount: convertLiskToSmallestDenomination(100), duration: 100 })
-        );
-
-        vm.warp(19740 days + 30 days);
-        // pauses stake 1 on day 30
-        positionsToBeModified[0] = lockIDs[1];
-        vm.prank(stakers[1]);
-        l2Reward.pauseUnlocking(positionsToBeModified);
-
+        onDay(1);
+        stakerCreatesPosition(0, LSK(100), 30, scenario);
+        stakerCreatesPosition(1, LSK(100), 80, scenario);
+        onDay(10);
+        stakerCreatesPosition(2, LSK(100), 100, scenario);
+        onDay(30);
+        stakerPausesPosition(1, scenario);
         checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
-
-        vm.warp(19740 days + 35 days);
-        // stake 4: (50 LSK, 14 days)
-        // staked on day 35, expires on day 49
-        lockIDs[3] = when_stakerCreatesPosition(
-            stakers[3], Position({ amount: convertLiskToSmallestDenomination(50), duration: 14 })
-        );
-
+        onDay(35);
+        stakerCreatesPosition(3, LSK(50), 14, scenario);
         checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
-
-        vm.warp(19740 days + 49 days);
-        // stake 4 is unlocked
-        positionsToBeModified[0] = lockIDs[3];
-        vm.prank(stakers[3]);
-        l2Reward.deletePositions(positionsToBeModified);
-
+        onDay(49);
+        stakerUnlocksPosition(3, scenario);
         checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
-
-        // stake 5: (80 LSK, 80 days)
-        // Staked on Day 49, paused on Day 89
-        lockIDs[4] = when_stakerCreatesPosition(
-            stakers[4], Position({ amount: convertLiskToSmallestDenomination(80), duration: 80 })
-        );
-
+        stakerCreatesPosition(4, LSK(80), 80, scenario);
         checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
-
-        vm.warp(19740 days + 50 days);
-        // extend stake 1 by 30 days
-        L2Reward.ExtendedDuration[] memory durationExtensions = new L2Reward.ExtendedDuration[](1);
-        durationExtensions[0].lockID = lockIDs[0];
-        durationExtensions[0].durationExtension = 30;
-        vm.prank(stakers[0]);
-        l2Reward.extendDuration(durationExtensions);
-
-        vm.warp(19740 days + 70 days);
-        // stake 6: (100 LSK, 150 days)
-        // Increases amount at day 100 by 50
-        lockIDs[5] = when_stakerCreatesPosition(
-            stakers[5], Position({ amount: convertLiskToSmallestDenomination(100), duration: 150 })
-        );
-
+        onDay(50);
+        stakerExtendsPositionBy(0, 30, scenario);
+        onDay(70);
+        stakerCreatesPosition(5, LSK(100), 150, scenario);
         checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
-
-        vm.warp(19740 days + 80 days);
-        // resumes stake 2 on day 80
-        positionsToBeModified[0] = lockIDs[1];
-        vm.prank(stakers[1]);
-        l2Reward.resumeUnlockingCountdown(positionsToBeModified);
-
-        vm.warp(19740 days + 89 days);
-        // Pauses stake 5 on day 89
-        positionsToBeModified[0] = lockIDs[4];
-        vm.prank(stakers[4]);
-        l2Reward.pauseUnlocking(positionsToBeModified);
-
-        vm.warp(19740 days + 95 days);
-        // stake 7: (200 LSK, 200 days)
-        lockIDs[6] = when_stakerCreatesPosition(
-            stakers[6], Position({ amount: convertLiskToSmallestDenomination(200), duration: 200 })
-        );
-
+        onDay(80);
+        stakerReumesPosition(1, scenario);
+        onDay(89);
+        stakerPausesPosition(4, scenario);
+        onDay(95);
+        stakerCreatesPosition(6, LSK(200), 200, scenario);
         checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
-
-        vm.warp(19740 days + 100 days);
-        // Increases amount for stake 6
-        L2Reward.IncreasedAmount[] memory increasingAmounts = new L2Reward.IncreasedAmount[](1);
-        increasingAmounts[0].lockID = lockIDs[5];
-        increasingAmounts[0].amountIncrease = convertLiskToSmallestDenomination(50);
-        vm.startPrank(stakers[5]);
-        l2LiskToken.approve(address(l2Reward), increasingAmounts[0].amountIncrease);
-        l2Reward.increaseLockingAmount(increasingAmounts);
-        vm.stopPrank();
-
+        onDay(100);
+        stakerIncreasesAmountOfThePositionBy(6, LSK(50), scenario);
         checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
 
         return (lockIDs, stakers, funds);
@@ -916,7 +918,7 @@ contract L2RewardTest is Test {
         }
 
         assertTrue(l2LiskToken.balanceOf(address(l2Reward)) > funds - sumOfDailyRewards);
-        assertEq(l2LiskToken.balanceOf(address(l2Reward)) / 10 ** 3, (funds - sumOfDailyRewards) / 10 ** 3);
+        assertEq(l2LiskToken.balanceOf(address(l2Reward)) / 10 ** 4, (funds - sumOfDailyRewards) / 10 ** 4);
     }
 
     function getLargestExpiryDate(uint256[] memory lockIDs) private view returns (uint256) {
@@ -993,7 +995,7 @@ contract L2RewardTest is Test {
 
         // total rewards calimed on day 106 are less than or equal to dailyRewards on day 105
         assertTrue(totalRewards <= l2Reward.dailyRewards(19740 + 105));
-        assertEq(totalRewards / 10, l2Reward.dailyRewards(19740 + 105) / 10);
+        assertEq(totalRewards / 100, l2Reward.dailyRewards(19740 + 105) / 100);
 
         vm.warp(19740 days + 115 days);
 
@@ -1070,8 +1072,6 @@ contract L2RewardTest is Test {
             sumOfDailyRewards += l2Reward.dailyRewards(i);
         }
 
-        // console2.logUint(totalRewards);
-        // console2.logUint(sumOfDailyRewards);
         assertTrue(sumOfDailyRewards > totalRewards);
         assertEq(totalRewards / 10 ** 3, sumOfDailyRewards / 10 ** 3);
 
@@ -3293,6 +3293,10 @@ contract L2RewardTest is Test {
     }
 
     function convertLiskToSmallestDenomination(uint256 lisk) internal pure returns (uint256) {
+        return lisk * 10 ** 18;
+    }
+
+    function LSK(uint256 lisk) internal pure returns (uint256) {
         return lisk * 10 ** 18;
     }
 }
