@@ -28,7 +28,7 @@ fi
 echo "Done."
 
 echo "Deploying and if enabled verifying L2WdivETH smart contract..."
-forge script --rpc-url="$L2_RPC_URL" --broadcast --verify --verifier blockscout --verifier-url $L2_VERIFIER_URL -vvvv script/swap_and_bridge/SwapAndBridge.s.sol:L2WdivETHScript 
+./script/mintableERC20Deployment/deploy.sh 0x91701E62B2DA59224e92C42a970d7901d02C2F24 "Wrapped Diva Ether Token" wdivETH 18 
 echo "Done."
 
 echo "Deploying and if enabled verifying SwapAndBridge smart contract..."

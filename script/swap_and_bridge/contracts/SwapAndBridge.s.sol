@@ -3,52 +3,8 @@ pragma solidity 0.8.23;
 
 import { Script, console2 } from "forge-std/Script.sol";
 import { SwapAndBridge } from "src/L1/SwapAndBridge.sol";
-import { L2WdivETH } from "src/L2/L2WdivETH.sol";
+import { OptimismMintableERC20 } from "@optimism/universal/OptimismMintableERC20.sol";
 import "script/contracts/Utils.sol";
-
-/// @title WdivETHScript - WdivETH deployment script
-/// @notice This contract is used to deploy WdivETH contract.
-contract L2WdivETHScript is Script {
-    /// @notice Utils contract which provides functions to read and write JSON files containing L1 and L2 addresses.
-    Utils utils;
-
-    function setUp() public {
-        utils = new Utils();
-    }
-
-    /// @notice This function deploys the SwapAndBridge contract.
-    function run() public {
-        // Deployer's private key. L2_SWAP_AND_BRIDGE_DEPLOYER_PRIVATE_KEY is set in .env file.
-        uint256 deployerPrivateKey = vm.envUint("L2_SWAP_AND_BRIDGE_DEPLOYER_PRIVATE_KEY");
-        assert(vm.envAddress("L1_DIVA_TOKEN_ADDR") != address(0));
-        assert(vm.envAddress("L2_DIVA_BRIDGE_ADDR") != address(0));
-
-        console2.log("Deploying WdivETH contract on Lisk...");
-        vm.startBroadcast(deployerPrivateKey);
-        L2WdivETH wdivETH = new L2WdivETH(vm.envAddress("L1_DIVA_TOKEN_ADDR"));
-        wdivETH.initialize(vm.envAddress("L2_DIVA_BRIDGE_ADDR"));
-        console2.log("WdivETH successfully initialized");
-        vm.stopBroadcast();
-
-        assert(address(wdivETH) != address(0));
-        console2.log("WdivETH successfully deployed at address: %s", address(wdivETH));
-        // read swap and bridge addresses from file
-        try utils.readSwapAndBridgeAddressesFile() returns (
-            Utils.SwapAndBridgeAddressesConfig memory swapAndBridgeAddressesConfig
-        ) {
-            swapAndBridgeAddressesConfig.L2WdivETH = address(wdivETH);
-            utils.writeSwapAndBridgeAddressesFile(swapAndBridgeAddressesConfig);
-        } catch {
-            // Initialize SwapAndBridgeAddressesConfig with WdivETH address
-            Utils.SwapAndBridgeAddressesConfig memory swapAndBridgeAddressesConfig = Utils.SwapAndBridgeAddressesConfig({
-                L2WdivETH: address(wdivETH),
-                SwapAndBridgeDiva: address(0),
-                SwapAndBridgeLido: address(0)
-            });
-            utils.writeSwapAndBridgeAddressesFile(swapAndBridgeAddressesConfig);
-        }
-    }
-}
 
 /// @title SwapAndBridgeScript - SwapAndBridge deployment script
 /// @notice This contract is used to deploy SwapAndBridge contract.
