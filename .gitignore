@@ -13,3 +13,4 @@ broadcast/
 
 # Slither files
 slither-results.json
+node_modules
