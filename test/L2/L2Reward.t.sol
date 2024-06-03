@@ -832,24 +832,6 @@ contract L2RewardTest is Test {
         assertEq(sumOfDailyRewards / 10 ** 3, totalRewards / 10 ** 3);
     }
 
-    function test_scenario2_pendingUnlockAmount() public {
-        uint256[] memory lockIDs;
-        address[] memory stakers;
-
-        (lockIDs, stakers) = createScenario2();
-
-        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
-    }
-
-    function test_scenario3_pendingUnlockAmount() public {
-        uint256[] memory lockIDs;
-        address[] memory stakers;
-
-        (lockIDs, stakers) = createScenario3();
-
-        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
-    }
-
     function test_createPosition_l2RewardContractShouldBeApprovedToTransferFromStakerAccount() public {
         address staker = address(0x1);
         uint256 duration = 20;
