@@ -240,6 +240,13 @@ contract L2RewardTest is Test {
         l2Reward.pauseUnlocking(positionsToBeModified);
     }
 
+    function stakerInitiatesFastUnlock(uint256 stakerIndex, Scenario memory scenario) private {
+        uint256[] memory positionsToBeModified = new uint256[](1);
+        positionsToBeModified[0] = scenario.lockIDs[stakerIndex];
+        vm.prank(scenario.stakers[stakerIndex]);
+        l2Reward.initiateFastUnlock(positionsToBeModified);
+    }
+
     function stakerReumesPosition(uint256 stakerIndex, Scenario memory scenario) private {
         uint256[] memory positionsToBeModified = new uint256[](1);
         positionsToBeModified[0] = scenario.lockIDs[stakerIndex];
@@ -341,7 +348,7 @@ contract L2RewardTest is Test {
     function createScenario2() private returns (uint256[] memory, address[] memory) {
         address[] memory stakers = given_anArrayOfStakersOfLength(7);
         uint256[] memory lockIDs = new uint256[](7);
-
+        Scenario memory scenario = Scenario({ stakers: stakers, lockIDs: lockIDs });
         uint256 funds = convertLiskToSmallestDenomination(5000);
         uint256 balance = convertLiskToSmallestDenomination(500);
 
@@ -357,129 +364,41 @@ contract L2RewardTest is Test {
             given_accountHasBalance(stakers[i], balance);
         }
 
-        vm.warp(19740 days + 1 days);
-
+        onDay(1);
         checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
-
-        // stake 1: (100 LSK, 730 days max duration)
-        // Will never get modified
-        lockIDs[0] = when_stakerCreatesPosition(
-            stakers[0], Position({ amount: convertLiskToSmallestDenomination(100), duration: 730 })
-        );
-
-        // stake 2: (100 LSK, 730 days - max duration)
-        // paused after 2 days, then no modifications
-        lockIDs[1] = when_stakerCreatesPosition(
-            stakers[1], Position({ amount: convertLiskToSmallestDenomination(100), duration: 730 })
-        );
-
-        vm.warp(19740 days + 2 days);
-        // Pause lockIDs[1]
-        positionsToBeModified[0] = lockIDs[1];
-        vm.prank(stakers[1]);
-        l2Reward.pauseUnlocking(positionsToBeModified);
-
-        vm.warp(19740 days + 5 days);
-        // stake 3: (200 LSK, 30 days), let expire and do nothing
-        lockIDs[2] = when_stakerCreatesPosition(
-            stakers[2], Position({ amount: convertLiskToSmallestDenomination(200), duration: 30 })
-        );
-
+        stakerCreatesPosition(0, LSK(100), 730, scenario);
+        stakerCreatesPosition(1, LSK(100), 730, scenario);
+        onDay(2);
+        stakerPausesPosition(1, scenario);
+        onDay(5);
+        stakerCreatesPosition(2, LSK(200), 30, scenario);
         checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
-
-        vm.warp(19740 days + 10 days);
-        // stake 4: (50 LSK, 100 days)
-        // pause immediately. At day 20 increase amount, at day 90 extend duration
-        lockIDs[3] = when_stakerCreatesPosition(
-            stakers[3], Position({ amount: convertLiskToSmallestDenomination(50), duration: 100 })
-        );
-        positionsToBeModified[0] = lockIDs[3];
-        vm.prank(stakers[3]);
-        l2Reward.pauseUnlocking(positionsToBeModified);
-
-        vm.warp(19740 days + 20 days);
-        // increase amount for stake 4 by 30 LSK
-        L2Reward.IncreasedAmount[] memory increasingAmounts = new L2Reward.IncreasedAmount[](1);
-        increasingAmounts[0].lockID = lockIDs[3];
-        increasingAmounts[0].amountIncrease = convertLiskToSmallestDenomination(30);
-        vm.startPrank(stakers[3]);
-        l2LiskToken.approve(address(l2Reward), increasingAmounts[0].amountIncrease);
-        l2Reward.increaseLockingAmount(increasingAmounts);
-        vm.stopPrank();
-
-        // stake 5: (100 LSK, 200 days).
-        // At day 30 will be paused, day 40 fast unlock
-        lockIDs[4] = when_stakerCreatesPosition(
-            stakers[4], Position({ amount: convertLiskToSmallestDenomination(100), duration: 200 })
-        );
-
-        vm.warp(19740 days + 25 days);
-        // stake 6: (150 LSK, 100 days)
-        // day 50 will be paused, day 80 resumed, day 93 increase amount to 180
-        lockIDs[5] = when_stakerCreatesPosition(
-            stakers[5], Position({ amount: convertLiskToSmallestDenomination(150), duration: 100 })
-        );
-
+        onDay(10);
+        stakerCreatesPosition(3, LSK(50), 100, scenario);
+        stakerPausesPosition(3, scenario);
+        onDay(20);
+        stakerIncreasesAmountOfThePositionBy(3, LSK(30), scenario);
+        stakerCreatesPosition(4, LSK(100), 200, scenario);
+        onDay(25);
+        stakerCreatesPosition(5, LSK(150), 100, scenario);
         checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
-
-        vm.warp(19740 days + 30 days);
-        // pause unlocking of stake 5
-        positionsToBeModified[0] = lockIDs[4];
-        vm.prank(stakers[4]);
-        l2Reward.pauseUnlocking(positionsToBeModified);
-
-        vm.warp(19740 days + 40 days);
-        // initiate fast unlock for stake 5
-        positionsToBeModified[0] = lockIDs[4];
-        vm.prank(stakers[4]);
-        l2Reward.initiateFastUnlock(positionsToBeModified);
-
-        vm.warp(19740 days + 50 days);
-        // pause stake 6
-        positionsToBeModified[0] = lockIDs[5];
-        vm.prank(stakers[5]);
-        l2Reward.pauseUnlocking(positionsToBeModified);
-
-        vm.warp(19740 days + 55 days);
-        // stake 7 (30LSK, 14 days - min duration)
-        // Expires in day 69. Then in day 85 extended by 25 days
-        lockIDs[6] = when_stakerCreatesPosition(
-            stakers[6], Position({ amount: convertLiskToSmallestDenomination(30), duration: 14 })
-        );
-
+        onDay(30);
+        stakerPausesPosition(4, scenario);
+        onDay(40);
+        stakerInitiatesFastUnlock(4, scenario);
+        onDay(50);
+        stakerPausesPosition(5, scenario);
+        onDay(55);
+        stakerCreatesPosition(6, LSK(30), 14, scenario);
         checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
-
-        vm.warp(19740 days + 80 days);
-        // resume countdown for stake 6
-        positionsToBeModified[0] = lockIDs[5];
-        vm.prank(stakers[5]);
-        l2Reward.resumeUnlockingCountdown(positionsToBeModified);
-
-        vm.warp(19740 days + 85 days);
-        // extend stake 7 by 25 days
-        L2Reward.ExtendedDuration[] memory durationExtensions = new L2Reward.ExtendedDuration[](1);
-        durationExtensions[0].lockID = lockIDs[6];
-        durationExtensions[0].durationExtension = 25;
-        vm.prank(stakers[6]);
-        l2Reward.extendDuration(durationExtensions);
-
-        vm.warp(19740 days + 90 days);
-        // extend duration for stake 4 by 65
-        durationExtensions = new L2Reward.ExtendedDuration[](1);
-        durationExtensions[0].lockID = lockIDs[3];
-        durationExtensions[0].durationExtension = 65;
-        vm.prank(stakers[3]);
-        l2Reward.extendDuration(durationExtensions);
-
-        vm.warp(19740 days + 93 days);
-        // increase amount for stake 6
-        increasingAmounts[0].lockID = lockIDs[5];
-        increasingAmounts[0].amountIncrease = convertLiskToSmallestDenomination(30);
-        vm.startPrank(stakers[5]);
-        l2LiskToken.approve(address(l2Reward), increasingAmounts[0].amountIncrease);
-        l2Reward.increaseLockingAmount(increasingAmounts);
-        vm.stopPrank();
-
+        onDay(80);
+        stakerReumesPosition(5, scenario);
+        onDay(85);
+        stakerExtendsPositionBy(6, 25, scenario);
+        onDay(90);
+        stakerExtendsPositionBy(3, 65, scenario);
+        onDay(93);
+        stakerIncreasesAmountOfThePositionBy(5, LSK(30), scenario);
         checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
 
         return (lockIDs, stakers);
