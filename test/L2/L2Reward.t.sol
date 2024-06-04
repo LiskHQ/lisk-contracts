@@ -41,6 +41,7 @@ contract L2RewardTest is Test {
         uint256[] oldBalances;
         uint256[] balances;
         uint256 lastClaimedAmount;
+        uint256 rewardsSurplus;
     }
 
     struct Position {
@@ -320,7 +321,7 @@ contract L2RewardTest is Test {
         }
     }
 
-    function cacheBalances(Scenario memory scenario) private {
+    function cacheBalances(Scenario memory scenario) private view {
         for (uint8 i = 0; i < scenario.stakers.length; i++) {
             scenario.oldBalances[i] = l2LiskToken.balanceOf(scenario.stakers[i]);
         }
@@ -336,6 +337,26 @@ contract L2RewardTest is Test {
         assertEq(l2LiskToken.balanceOf(address(l2Reward)) / 10 ** 4, (funds - sumOfDailyRewards) / 10 ** 4);
     }
 
+    function verifyRewardsSurplusForLockedAmountBetweenDays(
+        uint256 dailyRewards,
+        uint256 totalAmountLocked,
+        uint256 startDay,
+        uint256 endDay,
+        Scenario memory scenario
+    )
+        public
+    {
+        uint256 rewardsCap = totalAmountLocked / 365;
+        uint256 expectedSurplus;
+
+        for (uint256 d = deploymentDate + startDay; d <= deploymentDate + endDay; d++) {
+            expectedSurplus += dailyRewards - rewardsCap;
+        }
+
+        scenario.rewardsSurplus += expectedSurplus;
+        assertEq(scenario.rewardsSurplus, l2Reward.rewardsSurplus());
+    }
+
     function test_scenario1() public {
         address[] memory stakers = given_anArrayOfStakersOfLength(7);
         uint256[] memory lockIDs = new uint256[](7);
@@ -343,7 +364,6 @@ contract L2RewardTest is Test {
         uint256[] memory oldBalances = new uint256[](7);
         uint256 funds = convertLiskToSmallestDenomination(5000);
         uint256 balance = convertLiskToSmallestDenomination(500);
-        uint256[] memory positionsToBeModified = new uint256[](1);
 
         // owner gets balance
         given_accountHasBalance(address(this), funds);
@@ -359,7 +379,8 @@ contract L2RewardTest is Test {
             lockIDs: lockIDs,
             balances: balances,
             oldBalances: oldBalances,
-            lastClaimedAmount: 0
+            lastClaimedAmount: 0,
+            rewardsSurplus: 0
         });
 
         checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
@@ -437,7 +458,6 @@ contract L2RewardTest is Test {
         uint256 balance = convertLiskToSmallestDenomination(500);
         uint256[] memory balances = new uint256[](7);
         uint256[] memory oldBalances = new uint256[](7);
-        uint256[] memory positionsToBeModified = new uint256[](1);
 
         // owner gets balance
         given_accountHasBalance(address(this), funds);
@@ -454,7 +474,8 @@ contract L2RewardTest is Test {
             lockIDs: lockIDs,
             balances: balances,
             oldBalances: oldBalances,
-            lastClaimedAmount: 0
+            lastClaimedAmount: 0,
+            rewardsSurplus: 0
         });
         onDay(1);
         checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
@@ -512,10 +533,6 @@ contract L2RewardTest is Test {
         uint256 funds = convertLiskToSmallestDenomination(5000);
         uint256 balance = convertLiskToSmallestDenomination(5000);
 
-        uint256[] memory positionsToBeModified = new uint256[](1);
-        L2Reward.ExtendedDuration[] memory durationExtensions = new L2Reward.ExtendedDuration[](1);
-        L2Reward.IncreasedAmount[] memory increasingAmounts = new L2Reward.IncreasedAmount[](1);
-
         // owner gets balance
         given_accountHasBalance(address(this), funds);
         // fund the reward contract, 10 Lisk per day for 500 days
@@ -533,7 +550,8 @@ contract L2RewardTest is Test {
             lockIDs: lockIDs,
             balances: balances,
             oldBalances: oldBalances,
-            lastClaimedAmount: 0
+            lastClaimedAmount: 0,
+            rewardsSurplus: 0
         });
 
         onDay(1);
@@ -644,6 +662,55 @@ contract L2RewardTest is Test {
         onDay(250);
         allStakersClaim(scenario);
         lastClaimedRewardEqualsDailyRewardBetweenDays(scenario.lastClaimedAmount, 201, 249);
+    }
+
+    function test_scenario4() public {
+        address[] memory stakers = given_anArrayOfStakersOfLength(5);
+        uint256[] memory lockIDs = new uint256[](5);
+        uint256[] memory balances = new uint256[](5);
+        uint256[] memory oldBalances = new uint256[](5);
+        uint256 funds = LSK(5000);
+        uint256 balance = LSK(500);
+
+        // owner gets balance
+        given_accountHasBalance(address(this), funds);
+        // fund the reward contact, 1 LSK per day for 500 days
+        uint256 dailyRewards = given_ownerHasFundedStaking(Funds({ amount: funds, duration: 500, delay: 1 }));
+
+        // all the stakers gets balance
+        for (uint8 i = 0; i < stakers.length; i++) {
+            given_accountHasBalance(stakers[i], balance);
+        }
+
+        Scenario memory scenario = Scenario({
+            stakers: stakers,
+            lockIDs: lockIDs,
+            balances: balances,
+            oldBalances: oldBalances,
+            lastClaimedAmount: 0,
+            rewardsSurplus: 0
+        });
+
+        onDay(1);
+        stakerCreatesPosition(0, LSK(150), 150, scenario);
+        stakerCreatesPosition(1, LSK(250), 250, scenario);
+        onDay(10);
+        stakerCreatesPosition(2, LSK(250), 150, scenario);
+        verifyRewardsSurplusForLockedAmountBetweenDays(dailyRewards, LSK(400), 1, 9, scenario);
+        onDay(30);
+        stakerCreatesPosition(3, LSK(50), 100, scenario);
+        verifyRewardsSurplusForLockedAmountBetweenDays(dailyRewards, LSK(650), 10, 29, scenario);
+        onDay(35);
+        stakerCreatesPosition(4, LSK(10), 120, scenario);
+        verifyRewardsSurplusForLockedAmountBetweenDays(dailyRewards, LSK(700), 30, 34, scenario);
+        onDay(40);
+        allStakersClaim(scenario);
+        verifyRewardsSurplusForLockedAmountBetweenDays(dailyRewards, LSK(710), 35, 39, scenario);
+        checkRewardsContractBalance(funds);
+        onDay(50);
+        allStakersClaim(scenario);
+        checkRewardsContractBalance(funds);
+        verifyRewardsSurplusForLockedAmountBetweenDays(dailyRewards, LSK(710), 40, 49, scenario);
     }
 
     function checkConsistencyPendingUnlockDailyUnlocked(
