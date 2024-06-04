@@ -348,12 +348,17 @@ contract L2RewardTest is Test {
     {
         uint256 rewardsCap = totalAmountLocked / 365;
         uint256 expectedSurplus;
+        uint256 lastDay = deploymentDate + endDay;
 
-        for (uint256 d = deploymentDate + startDay; d <= deploymentDate + endDay; d++) {
+        for (uint256 d = deploymentDate + startDay; d <= lastDay; d++) {
             expectedSurplus += dailyRewards - rewardsCap;
         }
 
+        // console2.logUint(expectedSurplus);
         scenario.rewardsSurplus += expectedSurplus;
+        // console2.log(l2Reward.rewardsSurplus());
+        // console2.log(scenario.rewardsSurplus);
+
         assertEq(scenario.rewardsSurplus, l2Reward.rewardsSurplus());
     }
 
@@ -705,12 +710,23 @@ contract L2RewardTest is Test {
         verifyRewardsSurplusForLockedAmountBetweenDays(dailyRewards, LSK(700), 30, 34, scenario);
         onDay(40);
         allStakersClaim(scenario);
-        verifyRewardsSurplusForLockedAmountBetweenDays(dailyRewards, LSK(710), 35, 39, scenario);
         checkRewardsContractBalance(funds);
         onDay(50);
         allStakersClaim(scenario);
         checkRewardsContractBalance(funds);
-        verifyRewardsSurplusForLockedAmountBetweenDays(dailyRewards, LSK(710), 40, 49, scenario);
+        onDay(90);
+        allStakersClaim(scenario);
+        checkRewardsContractBalance(funds);
+        verifyRewardsSurplusForLockedAmountBetweenDays(dailyRewards, LSK(710), 35, 89, scenario);
+        onDay(130);
+        allStakersClaim(scenario);
+        checkRewardsContractBalance(funds);
+        verifyRewardsSurplusForLockedAmountBetweenDays(dailyRewards, LSK(710), 90, 129, scenario);
+        onDay(150);
+        allStakersClaim(scenario);
+        checkRewardsContractBalance(funds);
+        // stake 3's expDate is on 130th day so total amount locked reduces by LSK(50).
+        verifyRewardsSurplusForLockedAmountBetweenDays(dailyRewards, LSK(660), 130, 149, scenario);
     }
 
     function checkConsistencyPendingUnlockDailyUnlocked(
