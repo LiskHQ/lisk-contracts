@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.23;
 
-import { console2 } from "forge-std/Test.sol";
 import { Initializable } from "@openzeppelin-upgradeable/contracts/proxy/utils/Initializable.sol";
 import { Ownable2StepUpgradeable } from "@openzeppelin-upgradeable/contracts/access/Ownable2StepUpgradeable.sol";
 import { UUPSUpgradeable } from "@openzeppelin-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
@@ -142,18 +141,14 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
         if (today <= d) return;
 
         uint256 cappedRewards;
-        // console2.logUint(totalAmountLocked);
 
         for (; d < today; d++) {
             totalWeights[d] = totalWeight;
-
-            // console2.logUint(totalAmountLocked);
 
             cappedRewards = totalAmountLocked / 365;
 
             // capping in rewards
             if (dailyRewards[d] > cappedRewards) {
-                // console2.log(d);
                 rewardsSurplus += dailyRewards[d] - cappedRewards;
                 dailyRewards[d] = cappedRewards;
             }
