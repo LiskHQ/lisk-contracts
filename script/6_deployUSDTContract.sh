@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 
+echo "Instructing the shell to exit immediately if any command returns a non-zero exit status..."
+set -e
+echo "Done."
+
 echo "Navigating to the root directory of the project..."
 cd ../
 echo "Done."
