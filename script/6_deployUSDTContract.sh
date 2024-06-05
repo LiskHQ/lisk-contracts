@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
 
+echo "Navigating to the root directory of the project..."
+cd ../
+echo "Done."
+
 echo "Setting environment variables..."
-source ../.env
+source .env
 echo "Done."
 
 echo "Deploying OptimismMintableERC20 USDT token smart contract..."
