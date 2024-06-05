@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 echo "Setting environment variables..."
-source .env
+source ../.env
 echo "Done."
 
 echo "Deploying OptimismMintableERC20 USDT token smart contract..."
