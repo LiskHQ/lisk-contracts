@@ -42,7 +42,8 @@ contract L2ClaimScript is Script {
         console2.log("L2 Timelock Controller address: %s", l2AddressesConfig.L2TimelockController);
 
         // get MerkleTree details
-        Utils.MerkleRoot memory merkleRoot = utils.readMerkleRootFile();
+        Utils.MerkleRoot memory merkleRoot = utils.readMerkleRootFile("merkle-root.json");
+        assert(merkleRoot.merkleRoot != bytes32(0));
         console2.log("MerkleRoot: %s", vm.toString(merkleRoot.merkleRoot));
 
         // deploy L2Claim Implementation Contract

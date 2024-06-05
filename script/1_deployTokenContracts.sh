@@ -8,10 +8,6 @@ echo "Navigating to the root directory of the project..."
 cd ../
 echo "Done."
 
-echo "Removing files inside deployment directory if they exists..."
-rm -rf deployment/*
-echo "Done."
-
 echo "Setting environment variables..."
 source .env
 echo "Done."
@@ -22,7 +18,14 @@ then
       echo "NETWORK variable inside .env file is not set. Please set NETWORK environment variable."
       exit 1
 else
-      mkdir deployment/$NETWORK      
+      if [ -d "deployment/$NETWORK" ]
+      then
+            echo "Directory deployment/$NETWORK already exists."
+            echo "Removing files inside deployment/$NETWORK directory..."
+            rm -rf deployment/$NETWORK/*
+      else
+            mkdir deployment/$NETWORK
+      fi
 fi
 echo "Done."
 
