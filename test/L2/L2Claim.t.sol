@@ -598,6 +598,42 @@ contract L2ClaimTest is L2ClaimHelper {
         assertEq(lsk.balanceOf(address(l2Claim)), 0);
     }
 
+    function test_RecoverLSK_DifferentTimestamps() public {
+        l2Claim.setDAOAddress(daoAddress);
+        uint256 claimContractBalance = lsk.balanceOf(address(l2Claim));
+        assert(claimContractBalance > 0);
+
+        // try to call recoverLSK right after initialization
+        vm.expectRevert("L2Claim: recover period not reached");
+        l2Claim.recoverLSK();
+
+        // try to call recoverLSK in the middle of the recover period
+        vm.warp(RECOVER_PERIOD / 2);
+        vm.expectRevert("L2Claim: recover period not reached");
+        l2Claim.recoverLSK();
+
+        // try to call recoverLSK just before the end of the recover period
+        vm.warp(RECOVER_PERIOD - 1 seconds);
+        vm.expectRevert("L2Claim: recover period not reached");
+        l2Claim.recoverLSK();
+
+        // try to call recoverLSK exactly at the end of the recover period
+        vm.warp(RECOVER_PERIOD);
+        vm.expectRevert("L2Claim: recover period not reached");
+        l2Claim.recoverLSK();
+
+        // try to call recoverLSK after the end of the recover period
+        vm.warp(RECOVER_PERIOD + 1 seconds);
+
+        // check that the ClaimingEnded event is emitted
+        vm.expectEmit(true, true, true, true);
+        emit L2Claim.ClaimingEnded();
+
+        l2Claim.recoverLSK();
+        assertEq(lsk.balanceOf(daoAddress), claimContractBalance);
+        assertEq(lsk.balanceOf(address(l2Claim)), 0);
+    }
+
     function test_TransferOwnership() public {
         address newOwner = vm.addr(1);
 

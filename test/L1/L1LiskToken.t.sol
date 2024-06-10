@@ -4,6 +4,7 @@ pragma solidity 0.8.23;
 import { Test, console2 } from "forge-std/Test.sol";
 import { IAccessControl } from "@openzeppelin/contracts/access/IAccessControl.sol";
 import { IERC20Errors } from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
+import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import { Ownable2Step } from "@openzeppelin/contracts/access/Ownable2Step.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { L1LiskToken } from "src/L1/L1LiskToken.sol";
@@ -201,5 +202,10 @@ contract L1LiskTokenTest is Test {
 
     function test_DefaultAdminRoleIsRoleAdminForBurnerRole() public view {
         assertEq(l1LiskToken.DEFAULT_ADMIN_ROLE(), l1LiskToken.getRoleAdmin(l1LiskToken.BURNER_ROLE()));
+    }
+
+    function test_SupportsInterface() public {
+        assertTrue(l1LiskToken.supportsInterface(type(IAccessControl).interfaceId)); // AccessControl
+        assertTrue(l1LiskToken.supportsInterface(type(IERC165).interfaceId)); // ERC165
     }
 }
