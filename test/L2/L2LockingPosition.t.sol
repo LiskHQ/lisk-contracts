@@ -4,6 +4,10 @@ pragma solidity 0.8.23;
 import { OwnableUpgradeable } from "@openzeppelin-upgradeable/contracts/access/OwnableUpgradeable.sol";
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import { IERC721Errors } from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
+import { IERC721Enumerable } from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
+import { IERC721Metadata } from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol";
+import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import { Test, console2 } from "forge-std/Test.sol";
 import { L2LockingPosition } from "src/L2/L2LockingPosition.sol";
 import { IL2LockingPosition } from "src/interfaces/L2/IL2LockingPosition.sol";
@@ -896,5 +900,12 @@ contract L2LockingPositionTest is Test {
         // assure cannot re-reinitialize
         vm.expectRevert();
         l2LockingPositionV2.initializeV2(testNumber + 1);
+    }
+
+    function test_SupportsInterface() public {
+        assertTrue(l2LockingPosition.supportsInterface(type(IERC721Enumerable).interfaceId)); // ERC721Enumerable
+        assertTrue(l2LockingPosition.supportsInterface(type(IERC721).interfaceId)); // ERC721
+        assertTrue(l2LockingPosition.supportsInterface(type(IERC721Metadata).interfaceId)); // ERC721Metadata
+        assertTrue(l2LockingPosition.supportsInterface(type(IERC165).interfaceId)); // ERC165
     }
 }
