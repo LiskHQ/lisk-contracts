@@ -30,10 +30,21 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Install Foundry
-        uses: foundry-rs/foundry-toolchain@v1
+      #- name: Install Foundry
+      #  uses: foundry-rs/foundry-toolchain@v1
+      #  with:
+      #    version: nightly
+        
+      - uses: actions/checkout@v4
         with:
-          version: nightly
+         repository: foundry-rs/foundry
+         path: ./foundry
+         submodules: recursive
+         ref: 5ac78a9cd4b94dc53d1fe5e0f42372b28b5a7559
+
+      - name: Install Forge
+        run: |
+         cargo install --path ./foundry/crates/forge --profile local --force --locked      
 
       - name: Check formatting
         if: ${{ contains(matrix.system.os, 'windows') == false }}
