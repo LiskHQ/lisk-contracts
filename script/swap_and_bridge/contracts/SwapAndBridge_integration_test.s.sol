@@ -1,0 +1,85 @@
+// SPDX-License-Identifier: Apache-2.0
+pragma solidity 0.8.23;
+
+import { Script, console2 } from "forge-std/Script.sol";
+import { SwapAndBridge } from "src/L1/SwapAndBridge.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
+/// @title IWrappedETH - Wrapped Ether Token interface
+/// @notice This contract is used to wrap the a LST.
+interface IWrappedETH is IERC20 {
+    receive() external payable;
+}
+
+/// @title TestIntegrationScript
+/// @notice This contract is used to run integration test for the SwapAndBridge contract.
+contract TestIntegrationScript is Script {
+    // SwapAndBridge contract
+    SwapAndBridge swapAndBridge;
+
+    // The L1 LST token
+    IWrappedETH l1LSTToken;
+
+    // Address used for E2E tests
+    address constant testAccount = address(0xc0ffee);
+
+    function setUp() public {
+        vm.deal(testAccount, 500000 ether);
+    }
+
+    function runMinToken() public {
+        console2.log("Testing minL1TokensPerETH...");
+        // The conversion rate is 1 ETH = 1e18 LST.
+        // Any value of minL1TokensPerETH larger than 1e18 will revert the transaction.
+        vm.startPrank(testAccount);
+
+        console2.log("Testing no minimum...");
+        swapAndBridge.swapAndBridgeToWithMinimumAmount{ value: 1 ether }(testAccount, 0);
+        console2.log("Ok");
+
+        console2.log("Testing 'Insufficient L1 tokens minted'...");
+        vm.expectRevert("Insufficient L1 tokens minted.");
+        swapAndBridge.swapAndBridgeToWithMinimumAmount{ value: 1 ether }(testAccount, 1e18 + 1);
+        console2.log("Ok");
+
+        console2.log("Testing 'Overflow'...");
+        vm.expectRevert(); // Panic due to overflow.
+        swapAndBridge.swapAndBridgeToWithMinimumAmount{ value: 10000 ether }(testAccount, 1e75);
+        console2.log("Ok");
+
+        console2.log("Testing 'High enough limit'...");
+        swapAndBridge.swapAndBridgeToWithMinimumAmount{ value: 1 ether }(testAccount, 1e18);
+        console2.log("Ok");
+    }
+
+    function runReceive() public {
+        console2.log("Testing converting ETH to LST token...");
+        vm.recordLogs();
+        vm.startPrank(testAccount);
+        uint256 ethBalanceBefore = testAccount.balance;
+        uint256 lstBalanceBefore = l1LSTToken.balanceOf(testAccount);
+        (bool sent, bytes memory sendData) = address(l1LSTToken).call{ value: 1 ether }("");
+        if (!sent) {
+            assembly {
+                let revertStringLength := mload(sendData)
+                let revertStringPtr := add(sendData, 0x20)
+                revert(revertStringPtr, revertStringLength)
+            }
+        }
+
+        require(sent == true, "Failed to send Ether.");
+        uint256 ethBalanceAfter = testAccount.balance;
+        uint256 divBalanceAfter = l1LSTToken.balanceOf(testAccount);
+        require(ethBalanceBefore - ethBalanceAfter == 1 ether, "Invalid ETH balance update.");
+        require(divBalanceAfter - lstBalanceBefore == 1 ether, "Invalid LST balance update.");
+        vm.stopPrank();
+        console2.log("Ok");
+    }
+
+    function run(address bridgeAddress, address l1Token, address l2Token) public {
+        swapAndBridge = new SwapAndBridge(bridgeAddress, l1Token, l2Token);
+        l1LSTToken = IWrappedETH(payable(l1Token));
+        runMinToken();
+        runReceive();
+    }
+}
