@@ -25,6 +25,8 @@ contract Utils is Script {
         address L2ClaimContract;
         /// @notice The Current implementation of L2 Claim Contract.
         address L2ClaimImplementation;
+        /// @notice L2 ClaimPaused address.
+        address L2ClaimPaused;
         /// @notice L2 Governor contract (in Proxy), which users interact with.
         address L2Governor;
         /// @notice The Current implementation of L2 Governor Contract.
@@ -170,6 +172,10 @@ contract Utils is Script {
             l2AddressesConfig.L2ClaimImplementation = l2ClaimImplementation;
         } catch { }
 
+        try vm.parseJsonAddress(addressJson, ".L2ClaimPaused") returns (address l2ClaimPaused) {
+            l2AddressesConfig.L2ClaimPaused = l2ClaimPaused;
+        } catch { }
+
         try vm.parseJsonAddress(addressJson, ".L2Governor") returns (address l2Governor) {
             l2AddressesConfig.L2Governor = l2Governor;
         } catch { }
@@ -246,6 +252,7 @@ contract Utils is Script {
         vm.serializeAddress(json, "L2Airdrop", cfg.L2Airdrop);
         vm.serializeAddress(json, "L2ClaimContract", cfg.L2ClaimContract);
         vm.serializeAddress(json, "L2ClaimImplementation", cfg.L2ClaimImplementation);
+        vm.serializeAddress(json, "L2ClaimPaused", cfg.L2ClaimPaused);
         vm.serializeAddress(json, "L2Governor", cfg.L2Governor);
         vm.serializeAddress(json, "L2GovernorImplementation", cfg.L2GovernorImplementation);
         vm.serializeAddress(json, "L2GovernorPaused", cfg.L2GovernorPaused);
