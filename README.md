@@ -17,6 +17,7 @@ Additionally, it also includes various deployment scripts that are integral for 
   - [Current Mainnet Deployment](#current-mainnet-deployment)
     - [L1 Smart Contracts](#l1-smart-contracts)
     - [L2 Smart Contracts](#l2-smart-contracts)
+    - [L2 ERC20 Token Smart Contracts](#l2-erc20-token-smart-contracts)
   - [Current Testnet Deployment](#current-testnet-deployment)
 - [Tips \& Tricks](#tips--tricks)
   - [Deployment Directory Folder](#deployment-directory-folder)
@@ -124,6 +125,12 @@ You may find the addresses of the deployed smart contracts (including vesting wa
 | [`L2TimelockController`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/01ef448981be9d20ca85f2faf6ebdf591ce409f3/contracts/governance/TimelockController.sol) | -                                                                                                                            | [0x2294A7f24187B84995A2A28112f82f07BE1BceAD](https://blockscout.lisk.com/address/0x2294A7f24187B84995A2A28112f82f07BE1BceAD) |
 | [`L2VestingWallet`](src/L2/L2VestingWallet.sol)                                                                                                                            | -                                                                                                                            | [0xdF2363BE4644f160EEbFe5AE6F8728e64D8Db211](https://blockscout.lisk.com/address/0xdF2363BE4644f160EEbFe5AE6F8728e64D8Db211) |
 | [`L2VotingPower`](src/L2/L2VotingPower.sol)                                                                                                                                | [0x2eE6Eca46d2406454708a1C80356a6E63b57D404](https://blockscout.lisk.com/address/0x2eE6Eca46d2406454708a1C80356a6E63b57D404) | [0x99137F8880fB38e770EB7eF3d68038bC673D58EF](https://blockscout.lisk.com/address/0x99137F8880fB38e770EB7eF3d68038bC673D58EF) |
+
+#### L2 ERC20 Token Smart Contracts
+
+| Name                | Proxy | Implementation                                                                                                               |
+| ------------------- | ----- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `Tether USD (USDT)` | -     | [0x05D032ac25d322df992303dCa074EE7392C117b9](https://blockscout.lisk.com/address/0x05D032ac25d322df992303dCa074EE7392C117b9) |
 
 ### Current Testnet Deployment
 
