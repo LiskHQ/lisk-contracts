@@ -13,7 +13,7 @@ contract L2VotingPowerPaused is L2VotingPower {
         version = "1.0.0-paused";
     }
 
-    /// @notice Override the modifyLockingPosition function to prevent staking from being processed.
+    /// @notice Override the modifyLockingPosition function to pause VotingPower interactions.
     function adjustVotingPower(
         address,
         IL2LockingPosition.LockingPosition memory,
@@ -26,12 +26,12 @@ contract L2VotingPowerPaused is L2VotingPower {
         revert("L2VotingPowerPaused: VotingPower is paused");
     }
 
-    /// @notice Override the modifyLockingPosition function to prevent staking from being processed.
+    /// @notice Override the modifyLockingPosition function to pause VotingPower interactions.
     function delegate(address) public virtual override {
         revert("L2VotingPowerPaused: VotingPower is paused");
     }
 
-    /// @notice Override the modifyLockingPosition function to prevent staking from being processed.
+    /// @notice Override the modifyLockingPosition function to pause VotingPower interactions.
     function delegateBySig(address, uint256, uint256, uint8, bytes32, bytes32) public virtual override {
         revert("L2VotingPowerPaused: VotingPower is paused");
     }

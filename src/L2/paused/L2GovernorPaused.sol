@@ -12,11 +12,12 @@ contract L2GovernorPaused is L2Governor {
     /// @notice Setting global params.
     function initializePaused() public reinitializer(2) { }
 
+    /// @notice Marking version as paused.
     function version() public pure virtual override returns (string memory) {
         return "1.0.0-paused";
     }
 
-    /// @notice Override the cancel function to prevent staking from being processed.
+    /// @notice Override the cancel function to pause Governor interactions.
     function cancel(
         address[] memory,
         uint256[] memory,
@@ -31,22 +32,22 @@ contract L2GovernorPaused is L2Governor {
         revert("L2GovernorPaused: Governor is paused");
     }
 
-    /// @notice Override the castVote function to prevent staking from being processed.
+    /// @notice Override the castVote function to pause Governor interactions.
     function castVote(uint256, uint8) public virtual override returns (uint256) {
         revert("L2GovernorPaused: Governor is paused");
     }
 
-    /// @notice Override the castVoteBySig function to prevent staking from being processed.
+    /// @notice Override the castVoteBySig function to pause Governor interactions.
     function castVoteBySig(uint256, uint8, address, bytes memory) public virtual override returns (uint256) {
         revert("L2GovernorPaused: Governor is paused");
     }
 
-    /// @notice Override the castVoteWithReason function to prevent staking from being processed.
+    /// @notice Override the castVoteWithReason function to pause Governor interactions.
     function castVoteWithReason(uint256, uint8, string calldata) public virtual override returns (uint256) {
         revert("L2GovernorPaused: Governor is paused");
     }
 
-    /// @notice Override the castVoteWithReasonAndParams function to prevent staking from being processed.
+    /// @notice Override the castVoteWithReasonAndParams function to pause Governor interactions.
     function castVoteWithReasonAndParams(
         uint256,
         uint8,
@@ -61,7 +62,7 @@ contract L2GovernorPaused is L2Governor {
         revert("L2GovernorPaused: Governor is paused");
     }
 
-    /// @notice Override the castVoteWithReasonAndParamsBySig function to prevent staking from being processed.
+    /// @notice Override the castVoteWithReasonAndParamsBySig function to pause Governor interactions.
     function castVoteWithReasonAndParamsBySig(
         uint256,
         uint8,
@@ -78,7 +79,7 @@ contract L2GovernorPaused is L2Governor {
         revert("L2GovernorPaused: Governor is paused");
     }
 
-    /// @notice Override the execute function to prevent staking from being processed.
+    /// @notice Override the execute function to pause Governor interactions.
     function execute(
         address[] memory,
         uint256[] memory,
@@ -94,7 +95,7 @@ contract L2GovernorPaused is L2Governor {
         revert("L2GovernorPaused: Governor is paused");
     }
 
-    /// @notice Override the propose function to prevent staking from being processed.
+    /// @notice Override the propose function to pause Governor interactions.
     function propose(
         address[] memory,
         uint256[] memory,
@@ -109,7 +110,7 @@ contract L2GovernorPaused is L2Governor {
         revert("L2GovernorPaused: Governor is paused");
     }
 
-    /// @notice Override the queue function to prevent staking from being processed.
+    /// @notice Override the queue function to pause Governor interactions.
     function queue(
         address[] memory,
         uint256[] memory,
@@ -124,27 +125,27 @@ contract L2GovernorPaused is L2Governor {
         revert("L2GovernorPaused: Governor is paused");
     }
 
-    /// @notice Override the relay function to prevent staking from being processed.
+    /// @notice Override the relay function to pause Governor interactions.
     function relay(address, uint256, bytes memory) public payable virtual override {
         revert("L2GovernorPaused: Governor is paused");
     }
 
-    /// @notice Override the setProposalThreshold function to prevent staking from being processed.
+    /// @notice Override the setProposalThreshold function to pause Governor interactions.
     function setProposalThreshold(uint256) public virtual override {
         revert("L2GovernorPaused: Governor is paused");
     }
 
-    /// @notice Override the setVotingDelay function to prevent staking from being processed.
+    /// @notice Override the setVotingDelay function to pause Governor interactions.
     function setVotingDelay(uint48) public virtual override {
         revert("L2GovernorPaused: Governor is paused");
     }
 
-    /// @notice Override the setVotingPeriod function to prevent staking from being processed.
+    /// @notice Override the setVotingPeriod function to pause Governor interactions.
     function setVotingPeriod(uint32) public virtual override {
         revert("L2GovernorPaused: Governor is paused");
     }
 
-    /// @notice Override the updateTimelock function to prevent staking from being processed.
+    /// @notice Override the updateTimelock function to pause Governor interactions.
     function updateTimelock(TimelockControllerUpgradeable) public virtual override {
         revert("L2GovernorPaused: Governor is paused");
     }
