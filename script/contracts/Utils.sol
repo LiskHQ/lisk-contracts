@@ -29,6 +29,8 @@ contract Utils is Script {
         address L2Governor;
         /// @notice The Current implementation of L2 Governor Contract.
         address L2GovernorImplementation;
+        /// @notice The Current implementation of L2GovernorPaused Contract.
+        address L2GovernorPaused;
         /// @notice L2 Lisk token address.
         address L2LiskToken;
         /// @notice L2 Locking Position contract (in Proxy), which users interact with.
@@ -51,6 +53,8 @@ contract Utils is Script {
         address L2VotingPower;
         /// @notice The Current implementation of L2 Voting Power Contract.
         address L2VotingPowerImplementation;
+        /// @notice The Current implementation of L2VotingPowerPaused Contract.
+        address L2VotingPowerPaused;
     }
 
     /// @notice This struct is used to read MerkleRoot from JSON file.
