@@ -30,24 +30,24 @@ contract L2ClaimPausedScript is Script {
         opts.unsafeAllow = "constructor,external-library-linking";
         Upgrades.validateUpgrade("L2ClaimPaused.sol", opts);
 
-        console2.log("Deploying L2ClaimPaused contract...");
+        console2.log("Deploying L2 ClaimPaused contract...");
 
         // deploy L2ClaimPaused contract
         vm.startBroadcast(deployerPrivateKey);
-        L2ClaimPaused l2claimPaused = new L2ClaimPaused();
+        L2ClaimPaused l2ClaimPaused = new L2ClaimPaused();
         vm.stopBroadcast();
 
-        assert(address(l2claimPaused) != address(0));
+        assert(address(l2ClaimPaused) != address(0));
 
         // ERC1967Utils: keccak-256 hash of "eip1967.proxy.implementation" subtracted by 1.
-        assert(l2claimPaused.proxiableUUID() == bytes32(uint256(keccak256("eip1967.proxy.implementation")) - 1));
+        assert(l2ClaimPaused.proxiableUUID() == bytes32(uint256(keccak256("eip1967.proxy.implementation")) - 1));
 
-        console2.log("L2 PausedContract contract successfully deployed!");
-        console2.log("L2 PausedContract address: %s", address(l2claimPaused));
+        console2.log("L2 ClaimPaused contract successfully deployed!");
+        console2.log("L2 ClaimPaused address: %s", address(l2ClaimPaused));
 
         // write L2ClaimPaused address to l2addresses.json
         Utils.L2AddressesConfig memory l2AddressesConfig = utils.readL2AddressesFile();
-        l2AddressesConfig.L2ClaimPaused = address(l2claimPaused);
+        l2AddressesConfig.L2ClaimPaused = address(l2ClaimPaused);
         utils.writeL2AddressesFile(l2AddressesConfig);
     }
 }

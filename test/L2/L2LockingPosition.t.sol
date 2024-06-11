@@ -7,13 +7,14 @@ import { IERC721Errors } from "@openzeppelin/contracts/interfaces/draft-IERC6093
 import { Test, console2 } from "forge-std/Test.sol";
 import { L2LockingPosition } from "src/L2/L2LockingPosition.sol";
 import { IL2LockingPosition } from "src/interfaces/L2/IL2LockingPosition.sol";
+import { L2LockingPositionPaused } from "src/L2/paused/L2LockingPositionPaused.sol";
 import { L2Staking } from "src/L2/L2Staking.sol";
 import { L2VotingPower } from "src/L2/L2VotingPower.sol";
 
-contract L2LockingPositionV2 is L2VotingPower {
+contract L2LockingPositionV2 is L2LockingPosition {
     uint256 public testNumber;
 
-    function initializeV2(uint256 _testNumber) public reinitializer(2) {
+    function initializeV2(uint256 _testNumber) public reinitializer(3) {
         testNumber = _testNumber;
     }
 
@@ -885,9 +886,79 @@ contract L2LockingPositionTest is Test {
         );
 
         // wrap L2LockingPositionV2 proxy with new contract
-        L2LockingPositionV2 l2LockingPositionV2 = L2LockingPositionV2(payable(address(l2LockingPosition)));
+        L2LockingPositionV2 l2LockingPositionV2 = L2LockingPositionV2(address(l2LockingPosition));
 
         // new testNumber variable introduced
+        assertEq(l2LockingPositionV2.testNumber(), testNumber);
+
+        // new function introduced
+        assertEq(l2LockingPositionV2.onlyV2(), "Only L2LockingPositionV2 have this function");
+
+        // assure cannot re-reinitialize
+        vm.expectRevert();
+        l2LockingPositionV2.initializeV2(testNumber + 1);
+    }
+
+    function test_UpgradeToAndCall_PausedVersion() public {
+        // deploy L2LockingPositionPaused contract
+        L2LockingPositionPaused l2LockingPositionPaused = new L2LockingPositionPaused();
+
+        // upgrade LockingPosition contract to L2LockingPositionPaused contract
+        l2LockingPosition.upgradeToAndCall(
+            address(l2LockingPositionPaused), abi.encodeWithSelector(l2LockingPositionPaused.initializePaused.selector)
+        );
+
+        // wrap L2LockingPosition Proxy with new contract
+        L2LockingPositionPaused l2LockingPositionPausedProxy = L2LockingPositionPaused(address(l2LockingPosition));
+
+        // Staking and VotingPower contracts addresses unchanged
+        assertEq(address(l2LockingPositionPausedProxy.stakingContract()), address(l2Staking));
+        assertEq(address(l2LockingPositionPausedProxy.votingPowerContract()), address(l2VotingPower));
+
+        // try to call transferFrom
+        vm.expectRevert("L2LockingPositionPaused: Staking is paused");
+        vm.prank(address(l2Staking));
+        l2LockingPositionPausedProxy.transferFrom(address(0), address(0), 0);
+
+        // try to call createLockingPosition
+        vm.expectRevert("L2LockingPositionPaused: Staking is paused");
+        vm.prank(address(l2Staking));
+        l2LockingPositionPausedProxy.createLockingPosition(address(0), address(0), 0, 0);
+
+        // try to call modifyLockingPosition
+        vm.expectRevert("L2LockingPositionPaused: Staking is paused");
+        vm.prank(address(l2Staking));
+        l2LockingPositionPausedProxy.modifyLockingPosition(0, 0, 0, 0);
+
+        // try to call removeLockingPosition
+        vm.expectRevert("L2LockingPositionPaused: Staking is paused");
+        vm.prank(address(l2Staking));
+        l2LockingPositionPausedProxy.removeLockingPosition(0);
+
+        // assure cannot re-reinitialize
+        vm.expectRevert();
+        l2LockingPositionPausedProxy.initializePaused();
+
+        // "hotfix" has been introduced and new version of L2LockingPosition contract exists
+        // deploy L2LockingPositionV2 Implementation contract
+        L2LockingPositionV2 l2LockingPositionV2Implementation = new L2LockingPositionV2();
+
+        uint256 testNumber = 123;
+
+        // upgrade LockingPosition contract to L2LockingPositionV2 contract
+        l2LockingPosition.upgradeToAndCall(
+            address(l2LockingPositionV2Implementation),
+            abi.encodeWithSelector(l2LockingPositionV2Implementation.initializeV2.selector, testNumber)
+        );
+
+        // wrap L2LockingPosition Proxy with new contract
+        L2LockingPositionV2 l2LockingPositionV2 = L2LockingPositionV2(address(l2LockingPosition));
+
+        // Staking and VotingPower contracts addresses unchanged
+        assertEq(address(l2LockingPositionV2.stakingContract()), address(l2Staking));
+        assertEq(address(l2LockingPositionV2.votingPowerContract()), address(l2VotingPower));
+
+        // testNumber variable introduced
         assertEq(l2LockingPositionV2.testNumber(), testNumber);
 
         // new function introduced

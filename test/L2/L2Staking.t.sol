@@ -7,9 +7,24 @@ import { IERC20Errors } from "@openzeppelin/contracts/interfaces/draft-IERC6093.
 import { Test, console2 } from "forge-std/Test.sol";
 import { L2LockingPosition } from "src/L2/L2LockingPosition.sol";
 import { IL2LockingPosition } from "src/interfaces/L2/IL2LockingPosition.sol";
+import { L2LockingPositionPaused } from "src/L2/paused/L2LockingPositionPaused.sol";
 import { L2LiskToken } from "src/L2/L2LiskToken.sol";
 import { L2Staking } from "src/L2/L2Staking.sol";
+import { L2StakingPaused } from "src/L2/paused/L2StakingPaused.sol";
 import { L2VotingPower } from "src/L2/L2VotingPower.sol";
+
+contract L2StakingV2 is L2Staking {
+    uint256 public testNumber;
+
+    function initializeV2(uint256 _testNumber) public reinitializer(3) {
+        testNumber = _testNumber;
+        version = "2.0.0";
+    }
+
+    function onlyV2() public pure returns (string memory) {
+        return "Only L2StakingV2 have this function";
+    }
+}
 
 contract L2StakingHarness is L2Staking {
     function exposedCalculatePenalty(uint256 amount, uint256 expDate) public view returns (uint256) {
@@ -1613,5 +1628,158 @@ contract L2StakingTest is Test {
         vm.prank(nobody);
         vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, nobody));
         l2Staking.acceptOwnership();
+    }
+
+    function test_UpgradeToAndCall_RevertWhenNotOwner() public {
+        // deploy L2StakingV2 implementation contract
+        L2StakingV2 l2StakingV2Implementation = new L2StakingV2();
+        address nobody = vm.addr(1);
+
+        vm.prank(nobody);
+        vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, nobody));
+        l2LockingPosition.upgradeToAndCall(address(l2StakingV2Implementation), "");
+    }
+
+    function test_UpgradeToAndCall_SuccessUpgrade() public {
+        // deploy L2StakingV2 implementation contract
+        L2StakingV2 l2StakingV2Implementation = new L2StakingV2();
+
+        uint256 testNumber = 123;
+
+        // upgrade contract, and also change some variables by reinitialize
+        l2Staking.upgradeToAndCall(
+            address(l2StakingV2Implementation),
+            abi.encodeWithSelector(l2StakingV2Implementation.initializeV2.selector, testNumber)
+        );
+
+        // wrap L2StakingV2 proxy with new contract
+        L2StakingV2 l2StakingV2 = L2StakingV2(address(l2Staking));
+
+        // new testNumber variable introduced
+        assertEq(l2StakingV2.testNumber(), testNumber);
+
+        // version was updated
+        assertEq(l2StakingV2.version(), "2.0.0");
+
+        // new function introduced
+        assertEq(l2StakingV2.onlyV2(), "Only L2StakingV2 have this function");
+
+        // assure cannot re-reinitialize
+        vm.expectRevert();
+        l2StakingV2.initializeV2(testNumber + 1);
+    }
+
+    function upgradeLockingPositionContractToPausedVersion() private {
+        // deploy L2LockingPositionPaused contract
+        L2LockingPositionPaused l2LockingPositionPaused = new L2LockingPositionPaused();
+
+        // upgrade L2LockingPosition contract to L2LockingPositionPaused contract
+        l2LockingPosition.upgradeToAndCall(
+            address(l2LockingPositionPaused), abi.encodeWithSelector(l2LockingPositionPaused.initializePaused.selector)
+        );
+    }
+
+    function test_UpgradeToAndCall_PausedVersion() public {
+        // create a stake to have it for testing different function calls inside Stake contract
+        vm.prank(alice);
+        l2Staking.lockAmount(alice, 50 * 10 ** 18, 365);
+
+        upgradeLockingPositionContractToPausedVersion();
+
+        // deploy L2StakingPaused contract
+        L2StakingPaused l2StakingPaused = new L2StakingPaused();
+
+        // upgrade Staking contract to L2StakingPaused contract
+        l2Staking.upgradeToAndCall(
+            address(l2StakingPaused), abi.encodeWithSelector(l2StakingPaused.initializePaused.selector)
+        );
+
+        // wrap L2Staking Proxy with new contract
+        L2StakingPaused l2StakingPausedProxy = L2StakingPaused(address(l2Staking));
+
+        // MIN_LOCKING_AMOUNT, MIN_LOCKING_DURATION, MAX_LOCKING_DURATION, FAST_UNLOCK_DURATION, PENALTY_DENOMINATOR and
+        // lockingPositionContract are unchanged
+        assertEq(l2StakingPausedProxy.MIN_LOCKING_AMOUNT(), 10 ** 16);
+        assertEq(l2StakingPausedProxy.MIN_LOCKING_DURATION(), 14);
+        assertEq(l2StakingPausedProxy.MAX_LOCKING_DURATION(), 730);
+        assertEq(l2StakingPausedProxy.FAST_UNLOCK_DURATION(), 3);
+        assertEq(l2StakingPausedProxy.PENALTY_DENOMINATOR(), 2);
+        assertEq(address(l2StakingPausedProxy.lockingPositionContract()), address(l2LockingPosition));
+
+        // version was updated
+        assertEq(l2StakingPausedProxy.version(), "1.0.0-paused");
+
+        // try to call lockAmount
+        vm.expectRevert("L2LockingPositionPaused: Staking is paused");
+        vm.prank(alice);
+        l2StakingPausedProxy.lockAmount(alice, 30 * 10 ** 18, 365);
+
+        // try to call unlock
+        vm.warp(365 days);
+        vm.expectRevert("L2LockingPositionPaused: Staking is paused");
+        vm.prank(alice);
+        l2StakingPausedProxy.unlock(1);
+
+        // try to call initiateFastUnlock
+        vm.warp(300 days);
+        vm.expectRevert("L2LockingPositionPaused: Staking is paused");
+        vm.prank(alice);
+        l2StakingPausedProxy.initiateFastUnlock(1);
+
+        // try to call increaseLockingAmount
+        vm.expectRevert("L2LockingPositionPaused: Staking is paused");
+        vm.prank(alice);
+        l2StakingPausedProxy.increaseLockingAmount(1, 20 * 10 ** 18);
+
+        // try to call extendLockingDuration
+        vm.expectRevert("L2LockingPositionPaused: Staking is paused");
+        vm.prank(alice);
+        l2StakingPausedProxy.extendLockingDuration(1, 80);
+
+        // try to call pauseRemainingLockingDuration
+        vm.expectRevert("L2LockingPositionPaused: Staking is paused");
+        vm.prank(alice);
+        l2StakingPausedProxy.pauseRemainingLockingDuration(1);
+
+        // assure cannot re-reinitialize
+        vm.expectRevert();
+        l2StakingPausedProxy.initializePaused();
+
+        // "hotfix" has been introduced and new version of L2Staking contract exists
+        // deploy L2StakingV2 Implementation contract
+        L2StakingV2 l2StakingV2Implementation = new L2StakingV2();
+
+        uint256 testNumber = 123;
+
+        // upgrade Staking contract to L2StakingV2 contract
+        l2Staking.upgradeToAndCall(
+            address(l2StakingV2Implementation),
+            abi.encodeWithSelector(l2StakingV2Implementation.initializeV2.selector, testNumber)
+        );
+
+        // wrap L2Staking Proxy with new contract
+        L2StakingV2 l2StakingV2 = L2StakingV2(address(l2Staking));
+
+        // MIN_LOCKING_AMOUNT, MIN_LOCKING_DURATION, MAX_LOCKING_DURATION, FAST_UNLOCK_DURATION, PENALTY_DENOMINATOR and
+        // lockingPositionContract are unchanged
+        assertEq(l2StakingV2.MIN_LOCKING_AMOUNT(), 10 ** 16);
+        assertEq(l2StakingV2.MIN_LOCKING_DURATION(), 14);
+        assertEq(l2StakingV2.MAX_LOCKING_DURATION(), 730);
+        assertEq(l2StakingV2.FAST_UNLOCK_DURATION(), 3);
+        assertEq(l2StakingV2.PENALTY_DENOMINATOR(), 2);
+        assertEq(address(l2StakingV2.lockingPositionContract()), address(l2LockingPosition));
+
+        // version was updated
+        assertEq(l2StakingV2.version(), "2.0.0");
+
+        // testNumber variable introduced
+        assertEq(l2StakingV2.testNumber(), testNumber);
+
+        // new function introduced
+        assertEq(l2StakingV2.onlyV2(), "Only L2StakingV2 have this function");
+
+        // assure cannot re-reinitialize
+        vm.expectRevert();
+        l2StakingV2.initializeV2(testNumber + 1);
     }
 }
