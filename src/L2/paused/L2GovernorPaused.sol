@@ -13,7 +13,7 @@ contract L2GovernorPaused is L2Governor {
     function initializePaused() public reinitializer(2) { }
 
     function version() public pure virtual override returns (string memory) {
-        return string.concat(super.version(), "-paused");
+        return "1.0.0-paused";
     }
 
     /// @notice Override the cancel function to prevent staking from being processed.
