@@ -10,6 +10,7 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { Test, console } from "forge-std/Test.sol";
 import { L2VotingPower } from "src/L2/L2VotingPower.sol";
 import { L2VotingPowerPaused } from "src/L2/paused/L2VotingPowerPaused.sol";
+import { IL2LockingPosition } from "src/interfaces/L2/IL2LockingPosition.sol";
 import { Utils } from "script/contracts/Utils.sol";
 
 contract MockL2VotingPowerV2 is L2VotingPower {
@@ -76,12 +77,26 @@ contract L2VotingPowerPausedTest is Test {
         assetInitParamsEq();
     }
 
-    function test_delegate_Paused() public {
+    function test_AdjustVotingPower_NotPaused() public {
+        IL2LockingPosition.LockingPosition memory positionBefore =
+            IL2LockingPosition.LockingPosition(address(this), 50, 0, 0);
+        IL2LockingPosition.LockingPosition memory positionAfter =
+            IL2LockingPosition.LockingPosition(address(this), 100, 0, 0);
+
+        // call it as LockingPosition contract
+        vm.prank(lockingPositionContractAddress);
+
+        // Throws the require check on the first line, proving this function is not paused
+        vm.expectRevert("L2VotingPower: owner address cannot be 0");
+        l2VotingPower.adjustVotingPower(address(0), positionBefore, positionAfter);
+    }
+
+    function test_Delegate_Paused() public {
         vm.expectRevert(L2VotingPowerPaused.VotingPowerIsPaused.selector);
         l2VotingPower.delegate(address(0));
     }
 
-    function test_delegateBySig_Paused() public {
+    function test_DelegateBySig_Paused() public {
         vm.expectRevert(L2VotingPowerPaused.VotingPowerIsPaused.selector);
         l2VotingPower.delegateBySig(address(0), 0, 0, 0, "", "");
     }
