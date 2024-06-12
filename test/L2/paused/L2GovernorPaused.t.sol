@@ -7,10 +7,14 @@ import { TimelockController } from "@openzeppelin/contracts/governance/TimelockC
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import { TimelockControllerUpgradeable } from
     "@openzeppelin-upgradeable/contracts/governance/extensions/GovernorTimelockControlUpgradeable.sol";
+import { ERC1155Holder } from "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
+import { ERC721Holder } from "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
 import { Test, console } from "forge-std/Test.sol";
 import { L2Governor } from "src/L2/L2Governor.sol";
 import { L2GovernorPaused } from "src/L2/paused/L2GovernorPaused.sol";
 import { Utils } from "script/contracts/Utils.sol";
+import { MockERC721 } from "test/mock/MockERC721.sol";
+import { MockERC1155 } from "test/mock/MockERC1155.sol";
 
 contract MockL2GovernorV2 is L2Governor {
     function version() public pure virtual override returns (string memory) {
@@ -18,7 +22,7 @@ contract MockL2GovernorV2 is L2Governor {
     }
 }
 
-contract L2GovernorPausedTest is Test {
+contract L2GovernorPausedTest is Test, ERC1155Holder, ERC721Holder {
     Utils public utils;
     L2Governor public l2GovernorImplementation;
     L2Governor public l2Governor;
@@ -116,6 +120,39 @@ contract L2GovernorPausedTest is Test {
     function test_Execute_Paused() public {
         vm.expectRevert(L2GovernorPaused.GovernorIsPaused.selector);
         l2Governor.execute(new address[](1), new uint256[](1), new bytes[](1), 0);
+    }
+
+    function test_OnERC1155BatchReceived_Paused() public {
+        MockERC1155 mockERC1155 = new MockERC1155();
+        mockERC1155.mint(address(this), 0, 10, "");
+        mockERC1155.mint(address(this), 1, 20, "");
+
+        uint256[] memory ids = new uint256[](2);
+        ids[0] = 0;
+        ids[1] = 1;
+
+        uint256[] memory values = new uint256[](2);
+        values[0] = 10;
+        values[1] = 20;
+
+        vm.expectRevert(L2GovernorPaused.GovernorIsPaused.selector);
+        mockERC1155.safeBatchTransferFrom(address(this), address(l2Governor), ids, values, "");
+    }
+
+    function test_OnERC1155Received_Paused() public {
+        MockERC1155 mockERC1155 = new MockERC1155();
+        mockERC1155.mint(address(this), 0, 10, "");
+
+        vm.expectRevert(L2GovernorPaused.GovernorIsPaused.selector);
+        mockERC1155.safeTransferFrom(address(this), address(l2Governor), 0, 10, "");
+    }
+
+    function test_OnERC721Received_Paused() public {
+        MockERC721 mockERC721 = new MockERC721();
+        mockERC721.mint(address(this), 0);
+
+        vm.expectRevert(L2GovernorPaused.GovernorIsPaused.selector);
+        mockERC721.safeTransferFrom(address(this), address(l2Governor), 0);
     }
 
     function test_Propose_Paused() public {

@@ -105,10 +105,10 @@ contract L2GovernorPaused is L2Governor {
         uint256[] memory,
         bytes memory
     )
-    public
-    virtual
-    override
-    returns (bytes4)
+        public
+        virtual
+        override
+        returns (bytes4)
     {
         revert GovernorIsPaused();
     }
@@ -121,10 +121,10 @@ contract L2GovernorPaused is L2Governor {
         uint256,
         bytes memory
     )
-    public
-    virtual
-    override
-    returns (bytes4)
+        public
+        virtual
+        override
+        returns (bytes4)
     {
         revert GovernorIsPaused();
     }
