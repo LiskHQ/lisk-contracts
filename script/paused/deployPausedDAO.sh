@@ -12,10 +12,6 @@ echo "Setting environment variables..."
 source .env
 echo "Done."
 
-echo "Cleaning up the build artifacts to be able to deploy the contract..."
-forge clean
-echo "Done."
-
 echo "Creating $NETWORK directory inside deployment directory..."
 if [ -z "$NETWORK" ]
 then
@@ -29,6 +25,10 @@ else
             mkdir deployment/$NETWORK
       fi
 fi
+echo "Done."
+
+echo "Cleaning up the build artifacts to be able to deploy the contract..."
+forge clean
 echo "Done."
 
 echo "Deploying and if enabled verifying L2GovernorPaused smart contract..."
@@ -45,6 +45,10 @@ else
             forge script --rpc-url="$L2_RPC_URL" --broadcast --verify --verifier etherscan --etherscan-api-key="$L2_ETHERSCAN_API_KEY" -vvvv script/contracts/L2/paused/L2GovernorPaused.s.sol:L2GovernorPausedScript
       fi
 fi
+echo "Done."
+
+echo "Cleaning up the build artifacts to be able to deploy the contract..."
+forge clean
 echo "Done."
 
 echo "Deploying and if enabled verifying L2VotingPowerPaused smart contract..."
