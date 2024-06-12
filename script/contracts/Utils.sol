@@ -51,8 +51,6 @@ contract Utils is Script {
         address L2Staking;
         /// @notice The current implementation of L2 Staking contract.
         address L2StakingImplementation;
-        /// @notice L2 StakingPaused address.
-        address L2StakingPaused;
         /// @notice L2 Timelock Controller address.
         address L2TimelockController;
         /// @notice The Current implementation of L2 Vesting Wallet.
@@ -232,10 +230,6 @@ contract Utils is Script {
             l2AddressesConfig.L2StakingImplementation = l2StakingImplementation;
         } catch { }
 
-        try vm.parseJsonAddress(addressJson, ".L2StakingPaused") returns (address l2StakingPaused) {
-            l2AddressesConfig.L2StakingPaused = l2StakingPaused;
-        } catch { }
-
         try vm.parseJsonAddress(addressJson, ".L2TimelockController") returns (address l2TimelockController) {
             l2AddressesConfig.L2TimelockController = l2TimelockController;
         } catch { }
@@ -283,7 +277,6 @@ contract Utils is Script {
         vm.serializeAddress(json, "L2RewardPaused", cfg.L2RewardPaused);
         vm.serializeAddress(json, "L2Staking", cfg.L2Staking);
         vm.serializeAddress(json, "L2StakingImplementation", cfg.L2StakingImplementation);
-        vm.serializeAddress(json, "L2StakingPaused", cfg.L2StakingPaused);
         vm.serializeAddress(json, "L2TimelockController", cfg.L2TimelockController);
         vm.serializeAddress(json, "L2VestingWalletImplementation", cfg.L2VestingWalletImplementation);
         vm.serializeAddress(json, "L2VotingPower", cfg.L2VotingPower);
