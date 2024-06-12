@@ -32,7 +32,7 @@ contract L2GovernorPausedTest is Test, ERC1155Holder, ERC721Holder {
     TimelockController timelock;
     address initialOwner;
 
-    function assetInitParamsEq() internal {
+    function assertInitParamsEq() internal {
         assertEq(l2Governor.name(), "Lisk Governor");
         assertEq(l2Governor.votingDelay(), 0);
         assertEq(l2Governor.votingPeriod(), 604800);
@@ -69,7 +69,7 @@ contract L2GovernorPausedTest is Test, ERC1155Holder, ERC721Holder {
             )
         );
 
-        assetInitParamsEq();
+        assertInitParamsEq();
         assertEq(l2Governor.version(), "1.0.0");
 
         // assure that address(0) is in executors role
@@ -84,7 +84,7 @@ contract L2GovernorPausedTest is Test, ERC1155Holder, ERC721Holder {
         assertEq(l2Governor.version(), "1.0.0-paused");
 
         // Ensure all other params are unchanged after paused contract update
-        assetInitParamsEq();
+        assertInitParamsEq();
     }
 
     function test_Cancel_Paused() public {
@@ -200,6 +200,6 @@ contract L2GovernorPausedTest is Test, ERC1155Holder, ERC721Holder {
         assertEq(l2Governor.version(), "2.0.0");
 
         // Ensure all other params are unchanged after non-paused contract update
-        assetInitParamsEq();
+        assertInitParamsEq();
     }
 }
