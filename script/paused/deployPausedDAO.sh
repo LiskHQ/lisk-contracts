@@ -12,6 +12,10 @@ echo "Setting environment variables..."
 source .env
 echo "Done."
 
+echo "Cleaning up the build artifacts to be able to deploy the contract..."
+forge clean
+echo "Done."
+
 echo "Creating $NETWORK directory inside deployment directory..."
 if [ -z "$NETWORK" ]
 then
