@@ -10,6 +10,8 @@ import { L2Reward } from "src/L2/L2Reward.sol";
 /// @notice This contract is used to pause the L2Reward contract. In case of any emergency, the owner can upgrade and
 ///         pause the contract to prevent any further staking operations.
 contract L2RewardPaused is L2Reward {
+    error RewardIsPaused();
+
     /// @notice Setting global params.
     function initializePaused() public reinitializer(2) {
         version = "1.0.0-paused";
@@ -17,6 +19,6 @@ contract L2RewardPaused is L2Reward {
 
     /// @notice Override the claimRewards function to prevent staking from being processed.
     function claimRewards(uint256[] memory) public virtual override {
-        revert("L2RewardPaused: Staking is paused");
+        revert RewardIsPaused();
     }
 }

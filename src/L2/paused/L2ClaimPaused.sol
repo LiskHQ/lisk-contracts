@@ -10,6 +10,8 @@ import { L2Claim, MultisigKeys, ED25519Signature } from "src/L2/L2Claim.sol";
 /// @notice This contract is used to pause the L2Claim contract. In case of any emergency, the owner can upgrade and
 ///         pause the contract to prevent any further claims from being processed.
 contract L2ClaimPaused is L2Claim {
+    error ClaimIsPaused();
+
     /// @notice Setting global params.
     function initializePaused() public reinitializer(2) {
         version = "1.0.0-paused";
@@ -27,7 +29,7 @@ contract L2ClaimPaused is L2Claim {
         virtual
         override
     {
-        revert("L2ClaimPaused: Claiming is paused");
+        revert ClaimIsPaused();
     }
 
     /// @notice Override the claimRegularAccount function to prevent any further claims from being processed.
@@ -43,6 +45,6 @@ contract L2ClaimPaused is L2Claim {
         virtual
         override
     {
-        revert("L2ClaimPaused: Claiming is paused");
+        revert ClaimIsPaused();
     }
 }

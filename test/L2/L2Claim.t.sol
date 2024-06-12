@@ -8,7 +8,6 @@ import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { OwnableUpgradeable } from "@openzeppelin-upgradeable/contracts/access/OwnableUpgradeable.sol";
 import { Test, console, stdJson } from "forge-std/Test.sol";
 import { L2Claim, ED25519Signature, MultisigKeys } from "src/L2/L2Claim.sol";
-import { L2ClaimPaused } from "src/L2/paused/L2ClaimPaused.sol";
 import { Utils } from "script/contracts/Utils.sol";
 import { MockERC20 } from "../mock/MockERC20.sol";
 
@@ -42,7 +41,7 @@ struct MerkleLeaves {
 }
 
 contract L2ClaimV2Mock is L2Claim {
-    function initializeV2(uint256 _recoverPeriodTimestamp) public reinitializer(3) {
+    function initializeV2(uint256 _recoverPeriodTimestamp) public reinitializer(2) {
         recoverPeriodTimestamp = _recoverPeriodTimestamp;
         version = "2.0.0";
     }
@@ -715,79 +714,6 @@ contract L2ClaimTest is Test {
         uint256 newRecoverPeriodTimestamp = block.timestamp + 365 days * 20;
 
         // upgrade contract, and also change some variables by reinitialize
-        l2Claim.upgradeToAndCall(
-            address(l2ClaimV2Implementation),
-            abi.encodeWithSelector(l2ClaimV2Implementation.initializeV2.selector, newRecoverPeriodTimestamp)
-        );
-
-        // wrap L2Claim Proxy with new contract
-        L2ClaimV2Mock l2ClaimV2 = L2ClaimV2Mock(address(l2Claim));
-
-        // LSK Token and MerkleRoot unchanged
-        assertEq(address(l2ClaimV2.l2LiskToken()), address(lsk));
-        assertEq(l2ClaimV2.merkleRoot(), merkleRoot.merkleRoot);
-
-        // version of L2Claim changed to 2.0.0
-        assertEq(l2ClaimV2.version(), "2.0.0");
-
-        // new Timestamp changed by reinitializer
-        assertEq(l2ClaimV2.recoverPeriodTimestamp(), newRecoverPeriodTimestamp);
-
-        // new function introduced
-        assertEq(l2ClaimV2.onlyV2(), "Hello from V2");
-
-        // assure cannot re-reinitialize
-        vm.expectRevert();
-        l2ClaimV2.initializeV2(newRecoverPeriodTimestamp + 1);
-    }
-
-    function test_UpgradeToAndCall_PausedVersion() public {
-        // deploy L2ClaimPaused contract
-        L2ClaimPaused l2ClaimPaused = new L2ClaimPaused();
-
-        // upgrade Claim contract to L2ClaimPaused contract
-        l2Claim.upgradeToAndCall(
-            address(l2ClaimPaused), abi.encodeWithSelector(l2ClaimPaused.initializePaused.selector)
-        );
-
-        // wrap L2Claim Proxy with new contract
-        L2ClaimPaused l2ClaimPausedProxy = L2ClaimPaused(address(l2Claim));
-
-        // LSK Token and MerkleRoot unchanged
-        Utils.MerkleRoot memory merkleRoot = getMerkleRoot();
-        assertEq(address(l2ClaimPausedProxy.l2LiskToken()), address(lsk));
-        assertEq(l2ClaimPausedProxy.merkleRoot(), merkleRoot.merkleRoot);
-
-        // version of L2Claim changed to 1.0.0-paused
-        assertEq(l2ClaimPausedProxy.version(), "1.0.0-paused");
-
-        // try to call claimRegularAccount
-        vm.expectRevert("L2ClaimPaused: Claiming is paused");
-        l2ClaimPausedProxy.claimRegularAccount(new bytes32[](0), bytes32(0), 0, address(0), ED25519Signature(0, 0));
-
-        // try to call claimMultisigAccount
-        vm.expectRevert("L2ClaimPaused: Claiming is paused");
-        l2ClaimPausedProxy.claimMultisigAccount(
-            new bytes32[](0),
-            bytes20(0),
-            0,
-            MultisigKeys(new bytes32[](0), new bytes32[](0)),
-            address(0),
-            new ED25519Signature[](0)
-        );
-
-        // assure cannot re-reinitialize
-        vm.expectRevert();
-        l2ClaimPausedProxy.initializePaused();
-
-        // "hotfix" has been introduced and new version of L2Claim contract exists
-        // deploy L2ClaimV2 Implementation contract
-        L2ClaimV2Mock l2ClaimV2Implementation = new L2ClaimV2Mock();
-
-        // change recover period to 20 years
-        uint256 newRecoverPeriodTimestamp = block.timestamp + 365 days * 20;
-
-        // upgrade Claim contract to L2ClaimV2Mock contract
         l2Claim.upgradeToAndCall(
             address(l2ClaimV2Implementation),
             abi.encodeWithSelector(l2ClaimV2Implementation.initializeV2.selector, newRecoverPeriodTimestamp)

@@ -1686,34 +1686,34 @@ contract L2StakingTest is Test {
         upgradeLockingPositionContractToPausedVersion();
 
         // try to call lockAmount
-        vm.expectRevert("L2LockingPositionPaused: Staking is paused");
+        vm.expectRevert(L2LockingPositionPaused.LockingPositionIsPaused.selector);
         vm.prank(alice);
         l2Staking.lockAmount(alice, 30 * 10 ** 18, 365);
 
         // try to call unlock
         vm.warp(365 days);
-        vm.expectRevert("L2LockingPositionPaused: Staking is paused");
+        vm.expectRevert(L2LockingPositionPaused.LockingPositionIsPaused.selector);
         vm.prank(alice);
         l2Staking.unlock(1);
 
         // try to call initiateFastUnlock
         vm.warp(300 days);
-        vm.expectRevert("L2LockingPositionPaused: Staking is paused");
+        vm.expectRevert(L2LockingPositionPaused.LockingPositionIsPaused.selector);
         vm.prank(alice);
         l2Staking.initiateFastUnlock(1);
 
         // try to call increaseLockingAmount
-        vm.expectRevert("L2LockingPositionPaused: Staking is paused");
+        vm.expectRevert(L2LockingPositionPaused.LockingPositionIsPaused.selector);
         vm.prank(alice);
         l2Staking.increaseLockingAmount(1, 20 * 10 ** 18);
 
         // try to call extendLockingDuration
-        vm.expectRevert("L2LockingPositionPaused: Staking is paused");
+        vm.expectRevert(L2LockingPositionPaused.LockingPositionIsPaused.selector);
         vm.prank(alice);
         l2Staking.extendLockingDuration(1, 80);
 
         // try to call pauseRemainingLockingDuration
-        vm.expectRevert("L2LockingPositionPaused: Staking is paused");
+        vm.expectRevert(L2LockingPositionPaused.LockingPositionIsPaused.selector);
         vm.prank(alice);
         l2Staking.pauseRemainingLockingDuration(1);
     }

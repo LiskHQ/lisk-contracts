@@ -9,18 +9,16 @@ import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { IERC20Errors } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 import { IL2LiskToken, IL2Staking, L2Reward } from "src/L2/L2Reward.sol";
-import { L2RewardPaused } from "src/L2/paused/L2RewardPaused.sol";
 import { L2VotingPower } from "src/L2/L2VotingPower.sol";
 import { L2LiskToken } from "src/L2/L2LiskToken.sol";
 import { L2LockingPosition } from "src/L2/L2LockingPosition.sol";
-import { L2LockingPositionPaused } from "src/L2/paused/L2LockingPositionPaused.sol";
 import { L2Staking } from "src/L2/L2Staking.sol";
 import { IL2LockingPosition } from "src/interfaces/L2/IL2LockingPosition.sol";
 
 contract L2RewardV2 is L2Reward {
     uint256 public testNumber;
 
-    function initializeV2(uint256 _testNumber) public reinitializer(3) {
+    function initializeV2(uint256 _testNumber) public reinitializer(2) {
         testNumber = _testNumber;
         version = "2.0.0";
     }
@@ -1852,142 +1850,6 @@ contract L2RewardTest is Test {
 
         // version was updated
         assertEq(l2RewardV2.version(), "2.0.0");
-
-        // new function introduced
-        assertEq(l2RewardV2.onlyV2(), "Only L2RewardV2 have this function");
-
-        // assure cannot re-reinitialize
-        vm.expectRevert();
-        l2RewardV2.initializeV2(testNumber + 1);
-    }
-
-    function upgradeLockingPositionContractToPausedVersion() private {
-        // deploy L2LockingPositionPaused contract
-        L2LockingPositionPaused l2LockingPositionPaused = new L2LockingPositionPaused();
-
-        // upgrade L2LockingPosition contract to L2LockingPositionPaused contract
-        l2LockingPosition.upgradeToAndCall(
-            address(l2LockingPositionPaused), abi.encodeWithSelector(l2LockingPositionPaused.initializePaused.selector)
-        );
-    }
-
-    function test_UpgradeToAndCall_PausedVersion() public {
-        address staker = address(0x1);
-
-        // create a position to have it for testing different function calls inside Reward contract
-        given_accountHasBalance(staker, convertLiskToSmallestDenomination(100));
-        vm.startPrank(staker);
-        l2LiskToken.approve(address(l2Reward), convertLiskToSmallestDenomination(100));
-        uint256 ID = l2Reward.createPosition(convertLiskToSmallestDenomination(100), 150);
-        vm.stopPrank();
-
-        upgradeLockingPositionContractToPausedVersion();
-
-        // deploy L2RewardPaused contract
-        L2RewardPaused l2RewardPaused = new L2RewardPaused();
-
-        // upgrade Reward contract to L2RewardPaused contract
-        l2Reward.upgradeToAndCall(
-            address(l2RewardPaused), abi.encodeWithSelector(l2RewardPaused.initializePaused.selector)
-        );
-
-        // wrap L2Reward Proxy with new contract
-        L2RewardPaused l2RewardPausedProxy = L2RewardPaused(address(l2Reward));
-
-        // OFFSET, REWARD_DURATION and stakingContract are unchanged
-        assertEq(l2RewardPausedProxy.OFFSET(), 150);
-        assertEq(l2RewardPausedProxy.REWARD_DURATION(), 30);
-        assertEq(address(l2RewardPausedProxy.lockingPositionContract()), address(l2LockingPosition));
-        assertEq(address(l2RewardPausedProxy.stakingContract()), address(l2Staking));
-
-        // version was updated
-        assertEq(l2RewardPausedProxy.version(), "1.0.0-paused");
-
-        // try to call claimRewards
-        vm.expectRevert("L2RewardPaused: Staking is paused");
-        vm.prank(address(staker));
-        l2RewardPausedProxy.claimRewards(new uint256[](0));
-
-        // fund staker and approve L2Reward contract to spend funds
-        given_accountHasBalance(staker, convertLiskToSmallestDenomination(100));
-        vm.prank(address(staker));
-        l2LiskToken.approve(address(l2RewardPausedProxy), convertLiskToSmallestDenomination(100));
-
-        // try to call createPosition
-        vm.expectRevert("L2LockingPositionPaused: Staking is paused");
-        vm.prank(address(staker));
-        l2RewardPausedProxy.createPosition(convertLiskToSmallestDenomination(100), 120);
-
-        // try to call initiateFastUnlock
-        skip(100 days);
-        uint256[] memory stakerPositions = new uint256[](1);
-        stakerPositions[0] = ID;
-        vm.expectRevert("L2LockingPositionPaused: Staking is paused");
-        vm.prank(address(staker));
-        l2RewardPausedProxy.initiateFastUnlock(stakerPositions);
-
-        // try to call claimRewards
-        vm.expectRevert("L2RewardPaused: Staking is paused");
-        vm.prank(address(staker));
-        l2RewardPausedProxy.claimRewards(stakerPositions);
-
-        // try to call increaseLockingAmount
-        L2Reward.IncreasedAmount[] memory increasingAmounts = new L2Reward.IncreasedAmount[](1);
-        increasingAmounts[0].lockID = ID;
-        increasingAmounts[0].amountIncrease = convertLiskToSmallestDenomination(10);
-        vm.expectRevert("L2LockingPositionPaused: Staking is paused");
-        vm.prank(address(staker));
-        l2RewardPausedProxy.increaseLockingAmount(increasingAmounts);
-
-        // try to call extendDuration
-        L2Reward.ExtendedDuration[] memory extensions = new L2Reward.ExtendedDuration[](1);
-        extensions[0].lockID = ID;
-        extensions[0].durationExtension = 10;
-        vm.expectRevert("L2LockingPositionPaused: Staking is paused");
-        vm.prank(address(staker));
-        l2RewardPausedProxy.extendDuration(extensions);
-
-        // try to call pauseUnlocking
-        vm.expectRevert("L2LockingPositionPaused: Staking is paused");
-        vm.prank(address(staker));
-        l2RewardPausedProxy.pauseUnlocking(stakerPositions);
-
-        // try to call deletePositions
-        skip(50 days);
-        vm.expectRevert("L2LockingPositionPaused: Staking is paused");
-        vm.prank(address(staker));
-        l2RewardPausedProxy.deletePositions(stakerPositions);
-
-        // assure cannot re-reinitialize
-        vm.expectRevert();
-        l2RewardPausedProxy.initializePaused();
-
-        // "hotfix" has been introduced and new version of L2Reward contract exists
-        // deploy L2RewardV2 Implementation contract
-        L2RewardV2 l2RewardV2Implementation = new L2RewardV2();
-
-        uint256 testNumber = 123;
-
-        // upgrade Reward contract to L2RewardV2 contract
-        l2Reward.upgradeToAndCall(
-            address(l2RewardV2Implementation),
-            abi.encodeWithSelector(l2RewardV2Implementation.initializeV2.selector, testNumber)
-        );
-
-        // wrap L2Reward Proxy with new contract
-        L2RewardV2 l2RewardV2 = L2RewardV2(address(l2Reward));
-
-        // OFFSET, REWARD_DURATION and stakingContract are unchanged
-        assertEq(l2RewardV2.OFFSET(), 150);
-        assertEq(l2RewardV2.REWARD_DURATION(), 30);
-        assertEq(address(l2RewardV2.lockingPositionContract()), address(l2LockingPosition));
-        assertEq(address(l2RewardV2.stakingContract()), address(l2Staking));
-
-        // version was updated
-        assertEq(l2RewardV2.version(), "2.0.0");
-
-        // testNumber variable introduced
-        assertEq(l2RewardV2.testNumber(), testNumber);
 
         // new function introduced
         assertEq(l2RewardV2.onlyV2(), "Only L2RewardV2 have this function");
