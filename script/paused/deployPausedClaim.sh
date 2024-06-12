@@ -5,7 +5,7 @@ set -e
 echo "Done."
 
 echo "Navigating to the root directory of the project..."
-cd ../
+cd ../../
 echo "Done."
 
 echo "Setting environment variables..."
@@ -25,6 +25,10 @@ else
             mkdir deployment/$NETWORK
       fi
 fi
+echo "Done."
+
+echo "Cleaning up the build artifacts to be able to deploy the contract..."
+forge clean
 echo "Done."
 
 echo "Deploying and if enabled verifying L2ClaimPaused smart contract..."

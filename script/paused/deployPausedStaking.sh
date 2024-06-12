@@ -5,7 +5,7 @@ set -e
 echo "Done."
 
 echo "Navigating to the root directory of the project..."
-cd ../
+cd ../../
 echo "Done."
 
 echo "Setting environment variables..."
@@ -27,6 +27,10 @@ else
 fi
 echo "Done."
 
+echo "Cleaning up the build artifacts to be able to deploy the contract..."
+forge clean
+echo "Done."
+
 echo "Deploying and if enabled verifying L2LockingPositionPaused smart contract..."
 if [ -z "$CONTRACT_VERIFIER" ]
 then
@@ -41,6 +45,10 @@ else
             forge script --rpc-url="$L2_RPC_URL" --broadcast --verify --verifier etherscan --etherscan-api-key="$L2_ETHERSCAN_API_KEY" -vvvv script/contracts/L2/paused/L2LockingPositionPaused.s.sol:L2LockingPositionPausedScript
       fi
 fi
+echo "Done."
+
+echo "Cleaning up the build artifacts to be able to deploy the next contract..."
+forge clean
 echo "Done."
 
 echo "Deploying and if enabled verifying L2RewardPaused smart contract..."
