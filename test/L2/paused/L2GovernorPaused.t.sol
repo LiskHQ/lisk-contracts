@@ -28,6 +28,17 @@ contract L2GovernorPausedTest is Test {
     TimelockController timelock;
     address initialOwner;
 
+    function assetInitParamsEq() internal {
+        assertEq(l2Governor.name(), "Lisk Governor");
+        assertEq(l2Governor.votingDelay(), 0);
+        assertEq(l2Governor.votingPeriod(), 604800);
+        assertEq(l2Governor.proposalThreshold(), 300_000 * 10 ** 18);
+        assertEq(l2Governor.timelock(), address(timelock));
+        assertEq(l2Governor.quorum(0), 24_000_000 * 10 ** 18);
+        assertEq(address(l2Governor.token()), address(votingPower));
+        assertEq(l2Governor.owner(), initialOwner);
+    }
+
     function setUp() public {
         utils = new Utils();
 
@@ -54,15 +65,8 @@ contract L2GovernorPausedTest is Test {
             )
         );
 
-        assertEq(l2Governor.name(), "Lisk Governor");
+        assetInitParamsEq();
         assertEq(l2Governor.version(), "1.0.0");
-        assertEq(l2Governor.votingDelay(), 0);
-        assertEq(l2Governor.votingPeriod(), 604800);
-        assertEq(l2Governor.proposalThreshold(), 300_000 * 10 ** 18);
-        assertEq(l2Governor.timelock(), address(timelock));
-        assertEq(l2Governor.quorum(0), 24_000_000 * 10 ** 18);
-        assertEq(address(l2Governor.token()), address(votingPower));
-        assertEq(l2Governor.owner(), initialOwner);
 
         // assure that address(0) is in executors role
         assertEq(timelock.hasRole(timelock.EXECUTOR_ROLE(), address(0)), true);
@@ -74,6 +78,9 @@ contract L2GovernorPausedTest is Test {
             abi.encodeWithSelector(l2GovernorPausedImplementation.initializePaused.selector)
         );
         assertEq(l2Governor.version(), "1.0.0-paused");
+
+        // Ensure all other params are unchanged after paused contract update
+        assetInitParamsEq();
     }
 
     function test_Cancel_Paused() public {
@@ -154,5 +161,8 @@ contract L2GovernorPausedTest is Test {
 
         // new version updated
         assertEq(l2Governor.version(), "2.0.0");
+
+        // Ensure all other params are unchanged after non-paused contract update
+        assetInitParamsEq();
     }
 }

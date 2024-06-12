@@ -32,6 +32,12 @@ contract L2VotingPowerPausedTest is Test {
 
     address lockingPositionContractAddress;
 
+    function assetInitParamsEq() internal {
+        assertEq(l2VotingPower.lockingPositionAddress(), lockingPositionContractAddress);
+        assertEq(l2VotingPower.name(), "Lisk Voting Power");
+        assertEq(l2VotingPower.symbol(), "vpLSK");
+    }
+
     function setUp() public {
         utils = new Utils();
 
@@ -53,10 +59,8 @@ contract L2VotingPowerPausedTest is Test {
             )
         );
 
-        assertEq(l2VotingPower.lockingPositionAddress(), lockingPositionContractAddress);
+        assetInitParamsEq();
         assertEq(l2VotingPower.version(), "1.0.0");
-        assertEq(l2VotingPower.name(), "Lisk Voting Power");
-        assertEq(l2VotingPower.symbol(), "vpLSK");
 
         // Upgrade from L2VotingPower to L2VotingPowerPaused, and call initializePaused
         L2VotingPowerPaused l2VotingPowerPausedImplementation = new L2VotingPowerPaused();
@@ -67,6 +71,9 @@ contract L2VotingPowerPausedTest is Test {
 
         // l2VotingPower pointing to paused contract
         assertEq(l2VotingPower.version(), "1.0.0-paused");
+
+        // Ensure all other params are unchanged after paused contract update
+        assetInitParamsEq();
     }
 
     function test_delegate_Paused() public {

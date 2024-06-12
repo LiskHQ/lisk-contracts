@@ -97,6 +97,43 @@ contract L2GovernorPaused is L2Governor {
         revert GovernorIsPaused();
     }
 
+    /// @notice Override the onERC1155BatchReceived function to pause Governor interactions.
+    function onERC1155BatchReceived(
+        address,
+        address,
+        uint256[] memory,
+        uint256[] memory,
+        bytes memory
+    )
+    public
+    virtual
+    override
+    returns (bytes4)
+    {
+        revert GovernorIsPaused();
+    }
+
+    /// @notice Override the onERC1155Received function to pause Governor interactions.
+    function onERC1155Received(
+        address,
+        address,
+        uint256,
+        uint256,
+        bytes memory
+    )
+    public
+    virtual
+    override
+    returns (bytes4)
+    {
+        revert GovernorIsPaused();
+    }
+
+    /// @notice Override the onERC721Received function to pause Governor interactions.
+    function onERC721Received(address, address, uint256, bytes memory) public virtual override returns (bytes4) {
+        revert GovernorIsPaused();
+    }
+
     /// @notice Override the propose function to pause Governor interactions.
     function propose(
         address[] memory,
@@ -149,40 +186,6 @@ contract L2GovernorPaused is L2Governor {
 
     /// @notice Override the updateTimelock function to pause Governor interactions.
     function updateTimelock(TimelockControllerUpgradeable) public virtual override {
-        revert GovernorIsPaused();
-    }
-
-    function onERC1155BatchReceived(
-        address,
-        address,
-        uint256[] memory,
-        uint256[] memory,
-        bytes memory
-    )
-        public
-        virtual
-        override
-        returns (bytes4)
-    {
-        revert GovernorIsPaused();
-    }
-
-    function onERC1155Received(
-        address,
-        address,
-        uint256,
-        uint256,
-        bytes memory
-    )
-        public
-        virtual
-        override
-        returns (bytes4)
-    {
-        revert GovernorIsPaused();
-    }
-
-    function onERC721Received(address, address, uint256, bytes memory) public virtual override returns (bytes4) {
         revert GovernorIsPaused();
     }
 }
