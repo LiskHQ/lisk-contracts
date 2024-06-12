@@ -15,7 +15,6 @@ import { L2LiskToken } from "src/L2/L2LiskToken.sol";
 import { L2LockingPosition } from "src/L2/L2LockingPosition.sol";
 import { L2LockingPositionPaused } from "src/L2/paused/L2LockingPositionPaused.sol";
 import { L2Staking } from "src/L2/L2Staking.sol";
-import { L2StakingPaused } from "src/L2/paused/L2StakingPaused.sol";
 import { IL2LockingPosition } from "src/interfaces/L2/IL2LockingPosition.sol";
 
 contract L2RewardV2 is L2Reward {
@@ -1862,7 +1861,7 @@ contract L2RewardTest is Test {
         l2RewardV2.initializeV2(testNumber + 1);
     }
 
-    function upgradeLockingPositionAndStakingContractsToPausedVersion() private {
+    function upgradeLockingPositionContractToPausedVersion() private {
         // deploy L2LockingPositionPaused contract
         L2LockingPositionPaused l2LockingPositionPaused = new L2LockingPositionPaused();
 
@@ -1870,20 +1869,6 @@ contract L2RewardTest is Test {
         l2LockingPosition.upgradeToAndCall(
             address(l2LockingPositionPaused), abi.encodeWithSelector(l2LockingPositionPaused.initializePaused.selector)
         );
-
-        // deploy L2StakingPaused contract
-        L2StakingPaused l2StakingPaused = new L2StakingPaused();
-
-        // upgrade Staking contract to L2StakingPaused contract
-        l2Staking.upgradeToAndCall(
-            address(l2StakingPaused), abi.encodeWithSelector(l2StakingPaused.initializePaused.selector)
-        );
-
-        // wrap L2Staking Proxy with new contract
-        L2StakingPaused l2StakingPausedProxy = L2StakingPaused(address(l2Staking));
-
-        // check that version was updated
-        assertEq(l2StakingPausedProxy.version(), "1.0.0-paused");
     }
 
     function test_UpgradeToAndCall_PausedVersion() public {
@@ -1896,7 +1881,7 @@ contract L2RewardTest is Test {
         uint256 ID = l2Reward.createPosition(convertLiskToSmallestDenomination(100), 150);
         vm.stopPrank();
 
-        upgradeLockingPositionAndStakingContractsToPausedVersion();
+        upgradeLockingPositionContractToPausedVersion();
 
         // deploy L2RewardPaused contract
         L2RewardPaused l2RewardPaused = new L2RewardPaused();

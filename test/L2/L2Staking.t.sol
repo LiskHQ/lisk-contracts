@@ -10,7 +10,6 @@ import { IL2LockingPosition } from "src/interfaces/L2/IL2LockingPosition.sol";
 import { L2LockingPositionPaused } from "src/L2/paused/L2LockingPositionPaused.sol";
 import { L2LiskToken } from "src/L2/L2LiskToken.sol";
 import { L2Staking } from "src/L2/L2Staking.sol";
-import { L2StakingPaused } from "src/L2/paused/L2StakingPaused.sol";
 import { L2VotingPower } from "src/L2/L2VotingPower.sol";
 
 contract L2StakingV2 is L2Staking {
@@ -1686,100 +1685,36 @@ contract L2StakingTest is Test {
 
         upgradeLockingPositionContractToPausedVersion();
 
-        // deploy L2StakingPaused contract
-        L2StakingPaused l2StakingPaused = new L2StakingPaused();
-
-        // upgrade Staking contract to L2StakingPaused contract
-        l2Staking.upgradeToAndCall(
-            address(l2StakingPaused), abi.encodeWithSelector(l2StakingPaused.initializePaused.selector)
-        );
-
-        // wrap L2Staking Proxy with new contract
-        L2StakingPaused l2StakingPausedProxy = L2StakingPaused(address(l2Staking));
-
-        // MIN_LOCKING_AMOUNT, MIN_LOCKING_DURATION, MAX_LOCKING_DURATION, FAST_UNLOCK_DURATION, PENALTY_DENOMINATOR and
-        // lockingPositionContract are unchanged
-        assertEq(l2StakingPausedProxy.MIN_LOCKING_AMOUNT(), 10 ** 16);
-        assertEq(l2StakingPausedProxy.MIN_LOCKING_DURATION(), 14);
-        assertEq(l2StakingPausedProxy.MAX_LOCKING_DURATION(), 730);
-        assertEq(l2StakingPausedProxy.FAST_UNLOCK_DURATION(), 3);
-        assertEq(l2StakingPausedProxy.PENALTY_DENOMINATOR(), 2);
-        assertEq(address(l2StakingPausedProxy.lockingPositionContract()), address(l2LockingPosition));
-
-        // version was updated
-        assertEq(l2StakingPausedProxy.version(), "1.0.0-paused");
-
         // try to call lockAmount
         vm.expectRevert("L2LockingPositionPaused: Staking is paused");
         vm.prank(alice);
-        l2StakingPausedProxy.lockAmount(alice, 30 * 10 ** 18, 365);
+        l2Staking.lockAmount(alice, 30 * 10 ** 18, 365);
 
         // try to call unlock
         vm.warp(365 days);
         vm.expectRevert("L2LockingPositionPaused: Staking is paused");
         vm.prank(alice);
-        l2StakingPausedProxy.unlock(1);
+        l2Staking.unlock(1);
 
         // try to call initiateFastUnlock
         vm.warp(300 days);
         vm.expectRevert("L2LockingPositionPaused: Staking is paused");
         vm.prank(alice);
-        l2StakingPausedProxy.initiateFastUnlock(1);
+        l2Staking.initiateFastUnlock(1);
 
         // try to call increaseLockingAmount
         vm.expectRevert("L2LockingPositionPaused: Staking is paused");
         vm.prank(alice);
-        l2StakingPausedProxy.increaseLockingAmount(1, 20 * 10 ** 18);
+        l2Staking.increaseLockingAmount(1, 20 * 10 ** 18);
 
         // try to call extendLockingDuration
         vm.expectRevert("L2LockingPositionPaused: Staking is paused");
         vm.prank(alice);
-        l2StakingPausedProxy.extendLockingDuration(1, 80);
+        l2Staking.extendLockingDuration(1, 80);
 
         // try to call pauseRemainingLockingDuration
         vm.expectRevert("L2LockingPositionPaused: Staking is paused");
         vm.prank(alice);
-        l2StakingPausedProxy.pauseRemainingLockingDuration(1);
-
-        // assure cannot re-reinitialize
-        vm.expectRevert();
-        l2StakingPausedProxy.initializePaused();
-
-        // "hotfix" has been introduced and new version of L2Staking contract exists
-        // deploy L2StakingV2 Implementation contract
-        L2StakingV2 l2StakingV2Implementation = new L2StakingV2();
-
-        uint256 testNumber = 123;
-
-        // upgrade Staking contract to L2StakingV2 contract
-        l2Staking.upgradeToAndCall(
-            address(l2StakingV2Implementation),
-            abi.encodeWithSelector(l2StakingV2Implementation.initializeV2.selector, testNumber)
-        );
-
-        // wrap L2Staking Proxy with new contract
-        L2StakingV2 l2StakingV2 = L2StakingV2(address(l2Staking));
-
-        // MIN_LOCKING_AMOUNT, MIN_LOCKING_DURATION, MAX_LOCKING_DURATION, FAST_UNLOCK_DURATION, PENALTY_DENOMINATOR and
-        // lockingPositionContract are unchanged
-        assertEq(l2StakingV2.MIN_LOCKING_AMOUNT(), 10 ** 16);
-        assertEq(l2StakingV2.MIN_LOCKING_DURATION(), 14);
-        assertEq(l2StakingV2.MAX_LOCKING_DURATION(), 730);
-        assertEq(l2StakingV2.FAST_UNLOCK_DURATION(), 3);
-        assertEq(l2StakingV2.PENALTY_DENOMINATOR(), 2);
-        assertEq(address(l2StakingV2.lockingPositionContract()), address(l2LockingPosition));
-
-        // version was updated
-        assertEq(l2StakingV2.version(), "2.0.0");
-
-        // testNumber variable introduced
-        assertEq(l2StakingV2.testNumber(), testNumber);
-
-        // new function introduced
-        assertEq(l2StakingV2.onlyV2(), "Only L2StakingV2 have this function");
-
-        // assure cannot re-reinitialize
-        vm.expectRevert();
-        l2StakingV2.initializeV2(testNumber + 1);
+        l2Staking.pauseRemainingLockingDuration(1);
     }
 }
