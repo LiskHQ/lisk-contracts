@@ -27,7 +27,7 @@ contract L2VotingPowerPausedScript is Script {
         // implementation for the proxy contract.
         Options memory opts;
         opts.referenceContract = "L2VotingPower.sol";
-        opts.unsafeAllow = "constructor,external-library-linking";
+        opts.unsafeAllow = "constructor";
         Upgrades.validateUpgrade("L2VotingPowerPaused.sol", opts);
 
         console2.log("Deploying L2VotingPowerPaused contract...");

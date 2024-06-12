@@ -27,7 +27,7 @@ contract L2GovernorPausedScript is Script {
         // implementation for the proxy contract.
         Options memory opts;
         opts.referenceContract = "L2Governor.sol";
-        opts.unsafeAllow = "constructor,external-library-linking";
+        opts.unsafeAllow = "constructor";
         Upgrades.validateUpgrade("L2GovernorPaused.sol", opts);
 
         console2.log("Deploying L2GovernorPaused contract...");

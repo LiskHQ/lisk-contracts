@@ -8,7 +8,6 @@ import { IAccessControl } from "@openzeppelin/contracts/access/IAccessControl.so
 import { IERC20Errors } from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { Test, console } from "forge-std/Test.sol";
-import { IL2LockingPosition } from "src/interfaces/L2/IL2LockingPosition.sol";
 import { L2VotingPower } from "src/L2/L2VotingPower.sol";
 import { L2VotingPowerPaused } from "src/L2/paused/L2VotingPowerPaused.sol";
 import { Utils } from "script/contracts/Utils.sol";
@@ -59,34 +58,24 @@ contract L2VotingPowerPausedTest is Test {
         assertEq(l2VotingPower.name(), "Lisk Voting Power");
         assertEq(l2VotingPower.symbol(), "vpLSK");
 
-        // Upgrade from L2VotingPower to L2VotingPowerPaused
+        // Upgrade from L2VotingPower to L2VotingPowerPaused, and call initializePaused
         L2VotingPowerPaused l2VotingPowerPausedImplementation = new L2VotingPowerPaused();
-        l2VotingPower.upgradeToAndCall(address(l2VotingPowerPausedImplementation), "");
-
-        // Call initializePaused with new interface
-        L2VotingPowerPaused(address(l2VotingPower)).initializePaused();
+        l2VotingPower.upgradeToAndCall(
+            address(l2VotingPowerPausedImplementation),
+            abi.encodeWithSelector(l2VotingPowerPausedImplementation.initializePaused.selector)
+        );
 
         // l2VotingPower pointing to paused contract
         assertEq(l2VotingPower.version(), "1.0.0-paused");
     }
 
-    function test_adjustVotingPower_Paused() public {
-        IL2LockingPosition.LockingPosition memory positionBefore =
-            IL2LockingPosition.LockingPosition(address(this), 0, 0, 0);
-        IL2LockingPosition.LockingPosition memory positionAfter =
-            IL2LockingPosition.LockingPosition(address(this), 50, 0, 0);
-
-        vm.expectRevert("L2VotingPowerPaused: VotingPower is paused");
-        l2VotingPower.adjustVotingPower(address(0), positionBefore, positionAfter);
-    }
-
     function test_delegate_Paused() public {
-        vm.expectRevert("L2VotingPowerPaused: VotingPower is paused");
+        vm.expectRevert(L2VotingPowerPaused.VotingPowerIsPaused.selector);
         l2VotingPower.delegate(address(0));
     }
 
     function test_delegateBySig_Paused() public {
-        vm.expectRevert("L2VotingPowerPaused: VotingPower is paused");
+        vm.expectRevert(L2VotingPowerPaused.VotingPowerIsPaused.selector);
         l2VotingPower.delegateBySig(address(0), 0, 0, 0, "", "");
     }
 

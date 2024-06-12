@@ -67,79 +67,82 @@ contract L2GovernorPausedTest is Test {
         // assure that address(0) is in executors role
         assertEq(timelock.hasRole(timelock.EXECUTOR_ROLE(), address(0)), true);
 
-        // Upgrade from L2Governor to L2GovernorPaused
+        // Upgrade from L2Governor to L2GovernorPaused, and call initializePaused
         L2GovernorPaused l2GovernorPausedImplementation = new L2GovernorPaused();
-        l2Governor.upgradeToAndCall(address(l2GovernorPausedImplementation), "");
+        l2Governor.upgradeToAndCall(
+            address(l2GovernorPausedImplementation),
+            abi.encodeWithSelector(l2GovernorPausedImplementation.initializePaused.selector)
+        );
         assertEq(l2Governor.version(), "1.0.0-paused");
     }
 
     function test_Cancel_Paused() public {
-        vm.expectRevert("L2GovernorPaused: Governor is paused");
+        vm.expectRevert(L2GovernorPaused.GovernorIsPaused.selector);
         l2Governor.cancel(new address[](1), new uint256[](1), new bytes[](1), 0);
     }
 
     function test_CastVote_Paused() public {
-        vm.expectRevert("L2GovernorPaused: Governor is paused");
+        vm.expectRevert(L2GovernorPaused.GovernorIsPaused.selector);
         l2Governor.castVote(0, 0);
     }
 
     function test_CastVoteBySig_Paused() public {
-        vm.expectRevert("L2GovernorPaused: Governor is paused");
+        vm.expectRevert(L2GovernorPaused.GovernorIsPaused.selector);
         l2Governor.castVoteBySig(0, 0, address(0), "");
     }
 
     function test_CastVoteWithReason_Paused() public {
-        vm.expectRevert("L2GovernorPaused: Governor is paused");
+        vm.expectRevert(L2GovernorPaused.GovernorIsPaused.selector);
         l2Governor.castVoteWithReason(0, 0, "");
     }
 
     function test_CastVoteWithReasonAndParams_Paused() public {
-        vm.expectRevert("L2GovernorPaused: Governor is paused");
+        vm.expectRevert(L2GovernorPaused.GovernorIsPaused.selector);
         l2Governor.castVoteWithReasonAndParams(0, 0, "", "");
     }
 
     function test_CastVoteWithReasonAndParamsBySig_Paused() public {
-        vm.expectRevert("L2GovernorPaused: Governor is paused");
+        vm.expectRevert(L2GovernorPaused.GovernorIsPaused.selector);
         l2Governor.castVoteWithReasonAndParamsBySig(0, 0, address(0), "", "", "");
     }
 
     function test_Execute_Paused() public {
-        vm.expectRevert("L2GovernorPaused: Governor is paused");
+        vm.expectRevert(L2GovernorPaused.GovernorIsPaused.selector);
         l2Governor.execute(new address[](1), new uint256[](1), new bytes[](1), 0);
     }
 
     function test_Propose_Paused() public {
-        vm.expectRevert("L2GovernorPaused: Governor is paused");
+        vm.expectRevert(L2GovernorPaused.GovernorIsPaused.selector);
         l2Governor.propose(new address[](1), new uint256[](1), new bytes[](1), "");
     }
 
     function test_Queue_Paused() public {
-        vm.expectRevert("L2GovernorPaused: Governor is paused");
+        vm.expectRevert(L2GovernorPaused.GovernorIsPaused.selector);
         l2Governor.queue(new address[](1), new uint256[](1), new bytes[](1), "");
     }
 
     function test_Relay_Paused() public {
-        vm.expectRevert("L2GovernorPaused: Governor is paused");
+        vm.expectRevert(L2GovernorPaused.GovernorIsPaused.selector);
         l2Governor.relay(address(0), 0, "");
     }
 
     function test_SetProposalThreshold_Paused() public {
-        vm.expectRevert("L2GovernorPaused: Governor is paused");
+        vm.expectRevert(L2GovernorPaused.GovernorIsPaused.selector);
         l2Governor.setProposalThreshold(0);
     }
 
     function test_SetVotingDelay_Paused() public {
-        vm.expectRevert("L2GovernorPaused: Governor is paused");
+        vm.expectRevert(L2GovernorPaused.GovernorIsPaused.selector);
         l2Governor.setVotingDelay(0);
     }
 
     function test_SetVotingPeriod_Paused() public {
-        vm.expectRevert("L2GovernorPaused: Governor is paused");
+        vm.expectRevert(L2GovernorPaused.GovernorIsPaused.selector);
         l2Governor.setVotingPeriod(0);
     }
 
     function test_UpdateTimelock_Paused() public {
-        vm.expectRevert("L2GovernorPaused: Governor is paused");
+        vm.expectRevert(L2GovernorPaused.GovernorIsPaused.selector);
         l2Governor.updateTimelock(TimelockControllerUpgradeable(payable(address(0))));
     }
 

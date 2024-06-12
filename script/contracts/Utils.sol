@@ -178,6 +178,10 @@ contract Utils is Script {
             l2AddressesConfig.L2GovernorImplementation = l2GovernorImplementation;
         } catch { }
 
+        try vm.parseJsonAddress(addressJson, ".L2GovernorPaused") returns (address l2GovernorPaused) {
+            l2AddressesConfig.L2GovernorPaused = l2GovernorPaused;
+        } catch { }
+
         try vm.parseJsonAddress(addressJson, ".L2LiskToken") returns (address l2LiskToken) {
             l2AddressesConfig.L2LiskToken = l2LiskToken;
         } catch { }
@@ -227,6 +231,9 @@ contract Utils is Script {
         ) {
             l2AddressesConfig.L2VotingPowerImplementation = l2VotingPowerImplementation;
         } catch { }
+        try vm.parseJsonAddress(addressJson, ".L2VotingPowerPaused") returns (address l2VotingPowerPaused) {
+            l2AddressesConfig.L2VotingPowerPaused = l2VotingPowerPaused;
+        } catch { }
 
         return l2AddressesConfig;
     }
@@ -241,6 +248,7 @@ contract Utils is Script {
         vm.serializeAddress(json, "L2ClaimImplementation", cfg.L2ClaimImplementation);
         vm.serializeAddress(json, "L2Governor", cfg.L2Governor);
         vm.serializeAddress(json, "L2GovernorImplementation", cfg.L2GovernorImplementation);
+        vm.serializeAddress(json, "L2GovernorPaused", cfg.L2GovernorPaused);
         vm.serializeAddress(json, "L2LiskToken", cfg.L2LiskToken);
         vm.serializeAddress(json, "L2LockingPosition", cfg.L2LockingPosition);
         vm.serializeAddress(json, "L2LockingPositionImplementation", cfg.L2LockingPositionImplementation);
@@ -251,8 +259,8 @@ contract Utils is Script {
         vm.serializeAddress(json, "L2TimelockController", cfg.L2TimelockController);
         vm.serializeAddress(json, "L2VestingWalletImplementation", cfg.L2VestingWalletImplementation);
         vm.serializeAddress(json, "L2VotingPower", cfg.L2VotingPower);
-        string memory finalJson =
-            vm.serializeAddress(json, "L2VotingPowerImplementation", cfg.L2VotingPowerImplementation);
+        vm.serializeAddress(json, "L2VotingPowerImplementation", cfg.L2VotingPowerImplementation);
+        string memory finalJson = vm.serializeAddress(json, "L2VotingPowerPaused", cfg.L2VotingPowerPaused);
 
         finalJson.write(string.concat("deployment/", network, "/l2addresses.json"));
     }

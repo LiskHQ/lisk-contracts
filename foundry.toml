@@ -16,12 +16,10 @@ remappings = [
     'openzeppelin-contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/',
     'openzeppelin-contracts/=lib/openzeppelin-contracts/',
     '@openzeppelin/contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/',
-    'ERC4626/=lib/properties/lib/ERC4626/contracts/',
-    'properties/=lib/properties/contracts/',
-    'solmate/=lib/properties/lib/solmate/src/',
     'openzeppelin-foundry-upgrades/=lib/openzeppelin-foundry-upgrades/src/',
     'solidity-stringutils/=lib/openzeppelin-foundry-upgrades/lib/solidity-stringutils/',
 ]
+
 ffi = true
 ast = true
 build_info = true
