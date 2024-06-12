@@ -5,7 +5,7 @@ set -e
 echo "Done."
 
 echo "Navigating to the root directory of the project..."
-cd ../
+cd ../../
 echo "Done."
 
 echo "Setting environment variables..."
