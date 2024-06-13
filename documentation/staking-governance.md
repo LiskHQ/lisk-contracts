@@ -38,12 +38,12 @@ Users receive rewards for their locking tokens as follows:
 
 ## Onchain Governance
 
-The main aspects of our onchain governance system are planned as follows:
+The main aspects of our onchain governance system are as follows:
 
 - We use OpenZeppelin’s Governor contract framework and also manage the Lisk DAO treasury with it. 
 - The following parameters are used:
-  - **Proposal threshold**: For creating a proposal, the voting power of the proposer must be at least 300,000, i.e., the value corresponding to 100,000 LSK locked for 2 years where the countdown is paused.
-  - **Quorum**: For a proposal to pass, the “yes” and “abstain” votes must sum up at least to 24,000,000, i.e., the value that corresponds to 8,000,000 LSK locked for 2 years where the countdown is paused.
+  - **Proposal threshold**: For creating a proposal, the voting power of the proposer must be at least 300,000 vpLSK, i.e., the value corresponding to 100,000 LSK locked for 2 years where the countdown is paused.
+  - **Quorum**: For a proposal to pass, the “yes” and “abstain” votes must sum up at least to 24,000,000 vpLSK, i.e., the value that corresponds to 8,000,000 LSK locked for 2 years where the countdown is paused.
 - A proposal is accepted if the quorum, as defined above, is reached, and if there are strictly more “yes” than “no” votes.
 - The onchain governance allows the following two proposal types:
   - **Funding proposals**: A proposal for receiving a certain amount of funds to an address. If passed, the recipient receives the amount given in the proposal. 
