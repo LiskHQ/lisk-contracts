@@ -55,6 +55,6 @@ Below are the addresses of the deployed smart contracts on the Ethereum and Lisk
 
 ### L2 ERC20 Tokens
 
-| Name                           | Address                                                                                                                              |
-| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `Tether USD (USDT)`          | [0xd26be7331edd458c7afa6d8b7fcb7a9e1bb68909](https://sepolia-blockscout.lisk.com/address/0xd26be7331edd458c7afa6d8b7fcb7a9e1bb68909)
+| Name                | Address                                                                                                                              |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `Tether USD (USDT)` | [0xd26be7331edd458c7afa6d8b7fcb7a9e1bb68909](https://sepolia-blockscout.lisk.com/address/0xd26be7331edd458c7afa6d8b7fcb7a9e1bb68909) |
