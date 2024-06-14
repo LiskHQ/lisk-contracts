@@ -54,11 +54,12 @@ contract L2ClaimV2Mock is L2Claim {
 contract L2ClaimTest is Test {
     using stdJson for string;
 
-    // recover LSK tokens after 2 years
+    /// @notice recover LSK tokens after 2 years
     uint256 public constant RECOVER_PERIOD = 730 days;
 
-    // pre-set destination address for claims
-    address public constant RECIPIENT_ADDRESS = 0x34A1D3fff3958843C43aD80F30b94c510645C316;
+    /// @notice The destination address for claims as `address(uint160(uint256(keccak256("foundry default caller"))))`
+    ///         and `nonce=2`.
+    address public constant RECIPIENT_ADDRESS = address(0x34A1D3fff3958843C43aD80F30b94c510645C316);
 
     ERC20 public lsk;
     L2Claim public l2ClaimImplementation;
@@ -190,7 +191,7 @@ contract L2ClaimTest is Test {
         l2ClaimImplementation.initialize(address(lsk), bytes32(0), block.timestamp + RECOVER_PERIOD);
     }
 
-    function test_Version() public {
+    function test_Version() public view {
         assertEq(l2Claim.version(), "1.0.0");
     }
 
