@@ -49,8 +49,13 @@ contract L2AirdropScript is Script {
         assert(l2AddressesConfig.L2VotingPower != address(0));
         console2.log("L2 Voting Power address: %s", l2AddressesConfig.L2VotingPower);
 
-        // deploy L2Airdrop contract and transfer its ownership; new owner has to accept ownership to become the owner
-        // of the contract
+        // get Merkle root
+        Utils.MerkleRoot memory merkleRoot = utils.readMerkleRootFile("airdrop-merkle-root.json");
+        assert(merkleRoot.merkleRoot != bytes32(0));
+        console2.log("Merkle root: %s", vm.toString(merkleRoot.merkleRoot));
+
+        // deploy L2Airdrop contract, set Merkle root and transfer its ownership; new owner has to accept ownership to
+        // become the owner of the contract
         vm.startBroadcast(deployerPrivateKey);
         L2Airdrop l2Airdrop = new L2Airdrop(
             l2AddressesConfig.L2LiskToken,
@@ -59,6 +64,7 @@ contract L2AirdropScript is Script {
             l2AddressesConfig.L2VotingPower,
             airdropWalletAddress
         );
+        l2Airdrop.setMerkleRoot(merkleRoot.merkleRoot);
         l2Airdrop.transferOwnership(newOwnerAddress);
         vm.stopBroadcast();
 
@@ -68,7 +74,7 @@ contract L2AirdropScript is Script {
         assert(l2Airdrop.l2LockingPositionAddress() == l2AddressesConfig.L2LockingPosition);
         assert(l2Airdrop.l2VotingPowerAddress() == l2AddressesConfig.L2VotingPower);
         assert(l2Airdrop.airdropWalletAddress() == airdropWalletAddress);
-        assert(l2Airdrop.merkleRoot() == bytes32(0));
+        assert(l2Airdrop.merkleRoot() == merkleRoot.merkleRoot);
         assert(l2Airdrop.owner() == vm.addr(deployerPrivateKey));
         assert(l2Airdrop.pendingOwner() == newOwnerAddress);
 
