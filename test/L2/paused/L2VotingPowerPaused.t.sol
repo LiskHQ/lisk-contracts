@@ -33,7 +33,7 @@ contract L2VotingPowerPausedTest is Test {
 
     address lockingPositionContractAddress;
 
-    function assertInitParamsEq() internal {
+    function assertInitParamsEq() internal view {
         assertEq(l2VotingPower.lockingPositionAddress(), lockingPositionContractAddress);
         assertEq(l2VotingPower.name(), "Lisk Voting Power");
         assertEq(l2VotingPower.symbol(), "vpLSK");

@@ -20,3 +20,8 @@ deployment/devnet/
 
 # Slither-mutation files
 mutation_campaign
+
+# Echidna files
+crytic-export/combined_solc.json
+test/fuzzing/coverage/
+test/fuzzing/covered.*

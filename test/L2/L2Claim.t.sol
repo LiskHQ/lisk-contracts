@@ -191,7 +191,7 @@ contract L2ClaimTest is Test {
         l2ClaimImplementation.initialize(address(lsk), bytes32(0), block.timestamp + RECOVER_PERIOD);
     }
 
-    function test_Version() public {
+    function test_Version() public view {
         assertEq(l2Claim.version(), "1.0.0");
     }
 
