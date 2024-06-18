@@ -31,7 +31,8 @@ contract L2ClaimTokensScript is Script {
     /// @notice merkle-leaves.json in string format.
     string public merkleLeavesJson;
 
-    /// @notice The contract address created by default mnemonic in Anvil/Ganache when nonce=0.
+    /// @notice The destination address for claims as `address(uint160(uint256(keccak256("foundry default caller"))))`
+    ///         and `nonce=2`.
     address public constant destination = address(0x34A1D3fff3958843C43aD80F30b94c510645C316);
 
     /// @notice 1 Beddows in LSK Chain = 10 * 10 Beddows in L2 Chain
