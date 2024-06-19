@@ -194,14 +194,14 @@ contract L2RewardPausedTest is Test {
     }
 
     function test_CreatePosition_Paused() public {
-        vm.expectRevert(L2LockingPositionPaused.LockingPositionIsPaused.selector);
+        vm.expectRevert(L2RewardPaused.RewardIsPaused.selector);
         vm.prank(address(staker));
         l2RewardPausedProxy.createPosition(convertLiskToSmallestDenomination(100), 120);
     }
 
     function test_DeletePositions_Paused() public {
         skip(150 days);
-        vm.expectRevert(L2LockingPositionPaused.LockingPositionIsPaused.selector);
+        vm.expectRevert(L2RewardPaused.RewardIsPaused.selector);
         vm.prank(address(staker));
         l2RewardPausedProxy.deletePositions(stakerPositions);
     }
@@ -209,7 +209,7 @@ contract L2RewardPausedTest is Test {
     function test_InitiateFastUnlock_Paused() public {
         skip(100 days);
 
-        vm.expectRevert(L2LockingPositionPaused.LockingPositionIsPaused.selector);
+        vm.expectRevert(L2RewardPaused.RewardIsPaused.selector);
         vm.prank(address(staker));
         l2RewardPausedProxy.initiateFastUnlock(stakerPositions);
     }
@@ -224,7 +224,7 @@ contract L2RewardPausedTest is Test {
         L2Reward.IncreasedAmount[] memory increasingAmounts = new L2Reward.IncreasedAmount[](1);
         increasingAmounts[0].lockID = ID;
         increasingAmounts[0].amountIncrease = convertLiskToSmallestDenomination(10);
-        vm.expectRevert(L2LockingPositionPaused.LockingPositionIsPaused.selector);
+        vm.expectRevert(L2RewardPaused.RewardIsPaused.selector);
         vm.prank(address(staker));
         l2RewardPausedProxy.increaseLockingAmount(increasingAmounts);
     }
@@ -233,15 +233,21 @@ contract L2RewardPausedTest is Test {
         L2Reward.ExtendedDuration[] memory extensions = new L2Reward.ExtendedDuration[](1);
         extensions[0].lockID = ID;
         extensions[0].durationExtension = 10;
-        vm.expectRevert(L2LockingPositionPaused.LockingPositionIsPaused.selector);
+        vm.expectRevert(L2RewardPaused.RewardIsPaused.selector);
         vm.prank(address(staker));
         l2RewardPausedProxy.extendDuration(extensions);
     }
 
     function test_PauseUnlocking_Paused() public {
-        vm.expectRevert(L2LockingPositionPaused.LockingPositionIsPaused.selector);
+        vm.expectRevert(L2RewardPaused.RewardIsPaused.selector);
         vm.prank(address(staker));
         l2RewardPausedProxy.pauseUnlocking(stakerPositions);
+    }
+
+    function test_ResumeUnlockingCountdown_Paused() public {
+        vm.expectRevert(L2RewardPaused.RewardIsPaused.selector);
+        vm.prank(address(staker));
+        l2RewardPausedProxy.resumeUnlockingCountdown(stakerPositions);
     }
 
     function test_UpgradeToAndCall_CanUpgradeFromPausedContractToNewContract() public {
