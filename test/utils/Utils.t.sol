@@ -5,9 +5,15 @@ import { Test, console2 } from "forge-std/Test.sol";
 import { Utils } from "script/contracts/Utils.sol";
 
 contract UtilsTest is Test {
-    function test_readAndWriteL1AddressesFile() public {
-        Utils utils = new Utils();
+    Utils utils;
 
+    function setUp() public {
+        vm.setEnv("NETWORK", "testnet");
+
+        utils = new Utils();
+    }
+
+    function test_readAndWriteL1AddressesFile() public {
         Utils.L1AddressesConfig memory config =
             Utils.L1AddressesConfig({ L1LiskToken: address(0x1), L1VestingWalletImplementation: address(0x2) });
 
@@ -20,8 +26,6 @@ contract UtilsTest is Test {
     }
 
     function test_readAndWriteL2AddressesFile() public {
-        Utils utils = new Utils();
-
         Utils.L2AddressesConfig memory config = Utils.L2AddressesConfig({
             L2ClaimContract: address(0x01),
             L2ClaimImplementation: address(0x02),
@@ -60,10 +64,7 @@ contract UtilsTest is Test {
         assertEq(configReadFromFile.L2VotingPowerImplementation, config.L2VotingPowerImplementation);
     }
 
-    function test_readMerkleRootFile() public {
-        vm.setEnv("NETWORK", "testnet");
-
-        Utils utils = new Utils();
+    function test_readMerkleRootFile() public view {
         assertEq(
             vm.toString(utils.readMerkleRootFile().merkleRoot),
             "0x92ebb53b56a4136bfd1ea09a7e2d64f3dc3165020516f6ee5e17aee9f65a7f3b"
@@ -71,10 +72,6 @@ contract UtilsTest is Test {
     }
 
     function test_readWriteVestingWalletsFile() public {
-        vm.setEnv("NETWORK", "testnet");
-
-        Utils utils = new Utils();
-
         Utils.VestingWallet[] memory vestingWallets = new Utils.VestingWallet[](2);
         vestingWallets[0] = Utils.VestingWallet({ name: "wallet1", vestingWalletAddress: address(0x1) });
         vestingWallets[1] = Utils.VestingWallet({ name: "wallet2", vestingWalletAddress: address(0x2) });
@@ -85,11 +82,7 @@ contract UtilsTest is Test {
         assertEq(utils.readVestingWalletAddress("wallet2", "l1"), address(0x2));
     }
 
-    function test_readVestingAddress() public {
-        vm.setEnv("NETWORK", "testnet");
-
-        Utils utils = new Utils();
-
+    function test_readVestingAddress() public view {
         address team1Address = address(0xE1F2e7E049A8484479f14aF62d831f70476fCDBc);
         address team2Address = address(0x74A898371f058056cD94F5D2D24d5d0BFacD3EB9);
 
@@ -97,16 +90,18 @@ contract UtilsTest is Test {
         assertEq(utils.readVestingAddress("team2Address", "l1"), team2Address);
     }
 
-    function test_readAccountsFile() public {
-        vm.setEnv("NETWORK", "devnet");
+    function test_readAccountsFile() public view {
+        Utils.Accounts memory accountsReadFromFile1 = utils.readAccountsFile("accounts_1.json");
 
-        Utils utils = new Utils();
+        assertEq(accountsReadFromFile1.l1Addresses.length, 6);
+        assertEq(accountsReadFromFile1.l1Addresses[0].addr, address(0x0a5bFdBbF7aDe3042da107EaA726d5A71D2DcbaD));
+        assertEq(accountsReadFromFile1.l1Addresses[0].amount, 2000000000000000000000000);
+        assertEq(accountsReadFromFile1.l2Addresses.length, 0);
 
-        Utils.Accounts memory accountsReadFromFile = utils.readAccountsFile("accounts_1.json");
-
-        assertEq(accountsReadFromFile.l1Addresses[0].addr, address(0xe708A1b91dDC44576731f7fEb4e193F48923Abba));
-        assertEq(accountsReadFromFile.l1Addresses[0].amount, 2000000000000000000000);
-        assertEq(accountsReadFromFile.l2Addresses[0].addr, address(0x396DF972a284bA7F5a8BEc2D9B9eC2377a099215));
-        assertEq(accountsReadFromFile.l2Addresses[0].amount, 3000000000000000000000);
+        Utils.Accounts memory accountsReadFromFile2 = utils.readAccountsFile("accounts_2.json");
+        assertEq(accountsReadFromFile2.l1Addresses.length, 0);
+        assertEq(accountsReadFromFile2.l2Addresses.length, 1);
+        assertEq(accountsReadFromFile2.l2Addresses[0].addr, address(0x473BbFd3097D597d14466EF19519f406D6f9202d));
+        assertEq(accountsReadFromFile2.l2Addresses[0].amount, 51000000000000000000);
     }
 }
