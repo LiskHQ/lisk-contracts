@@ -10,7 +10,7 @@ echo "Done."
 
 if [ -z "$1" ]
 then
-    echo "Please provide the contract name as the first argument."$'\n'"Exaxmple: runEchidna.sh <contract_name>"
+    echo "Please provide the contract name as the first argument."$'\n'"Example: runEchidna.sh <contract_name>"
     exit 1
 fi
 
