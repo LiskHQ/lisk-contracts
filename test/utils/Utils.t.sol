@@ -61,11 +61,52 @@ contract UtilsTest is Test {
     }
 
     function test_readMerkleRootFile() public {
-        Utils utils = new Utils();
+        vm.setEnv("NETWORK", "testnet");
 
+        Utils utils = new Utils();
         assertEq(
             vm.toString(utils.readMerkleRootFile().merkleRoot),
             "0x92ebb53b56a4136bfd1ea09a7e2d64f3dc3165020516f6ee5e17aee9f65a7f3b"
         );
+    }
+
+    function test_readWriteVestingWalletsFile() public {
+        vm.setEnv("NETWORK", "testnet");
+
+        Utils utils = new Utils();
+
+        Utils.VestingWallet[] memory vestingWallets = new Utils.VestingWallet[](2);
+        vestingWallets[0] = Utils.VestingWallet({ name: "wallet1", vestingWalletAddress: address(0x1) });
+        vestingWallets[1] = Utils.VestingWallet({ name: "wallet2", vestingWalletAddress: address(0x2) });
+
+        utils.writeVestingWalletsFile(vestingWallets, "l1");
+
+        assertEq(utils.readVestingWalletAddress("wallet1", "l1"), address(0x1));
+        assertEq(utils.readVestingWalletAddress("wallet2", "l1"), address(0x2));
+    }
+
+    function test_readVestingAddress() public {
+        vm.setEnv("NETWORK", "testnet");
+
+        Utils utils = new Utils();
+
+        address team1Address = address(0xE1F2e7E049A8484479f14aF62d831f70476fCDBc);
+        address team2Address = address(0x74A898371f058056cD94F5D2D24d5d0BFacD3EB9);
+
+        assertEq(utils.readVestingAddress("team1Address", "l1"), team1Address);
+        assertEq(utils.readVestingAddress("team2Address", "l1"), team2Address);
+    }
+
+    function test_readAccountsFile() public {
+        vm.setEnv("NETWORK", "devnet");
+
+        Utils utils = new Utils();
+
+        Utils.Accounts memory accountsReadFromFile = utils.readAccountsFile("accounts_1.json");
+
+        assertEq(accountsReadFromFile.l1Addresses[0].addr, address(0xe708A1b91dDC44576731f7fEb4e193F48923Abba));
+        assertEq(accountsReadFromFile.l1Addresses[0].amount, 2000000000000000000000);
+        assertEq(accountsReadFromFile.l2Addresses[0].addr, address(0x396DF972a284bA7F5a8BEc2D9B9eC2377a099215));
+        assertEq(accountsReadFromFile.l2Addresses[0].amount, 3000000000000000000000);
     }
 }
