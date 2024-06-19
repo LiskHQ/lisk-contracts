@@ -64,7 +64,7 @@ contract UtilsTest is Test {
         assertEq(configReadFromFile.L2VotingPowerImplementation, config.L2VotingPowerImplementation);
     }
 
-    function test_readMerkleRootFile() public view {
+    function test_readMerkleRootFile() public {
         assertEq(
             vm.toString(utils.readMerkleRootFile().merkleRoot),
             "0x92ebb53b56a4136bfd1ea09a7e2d64f3dc3165020516f6ee5e17aee9f65a7f3b"
@@ -82,7 +82,7 @@ contract UtilsTest is Test {
         assertEq(utils.readVestingWalletAddress("wallet2", "l1"), address(0x2));
     }
 
-    function test_readVestingAddress() public view {
+    function test_readVestingAddress() public {
         address team1Address = address(0xE1F2e7E049A8484479f14aF62d831f70476fCDBc);
         address team2Address = address(0x74A898371f058056cD94F5D2D24d5d0BFacD3EB9);
 
@@ -90,7 +90,7 @@ contract UtilsTest is Test {
         assertEq(utils.readVestingAddress("team2Address", "l1"), team2Address);
     }
 
-    function test_readAccountsFile() public view {
+    function test_readAccountsFile() public {
         Utils.Accounts memory accountsReadFromFile1 = utils.readAccountsFile("accounts_1.json");
 
         assertEq(accountsReadFromFile1.l1Addresses.length, 6);
