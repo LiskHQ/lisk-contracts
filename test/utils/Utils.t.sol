@@ -86,8 +86,8 @@ contract UtilsTest is Test {
         address team1Address = address(0xE1F2e7E049A8484479f14aF62d831f70476fCDBc);
         address team2Address = address(0x74A898371f058056cD94F5D2D24d5d0BFacD3EB9);
 
-        assertEq(utils.readVestingAddress("team1Address", "l1"), team1Address);
-        assertEq(utils.readVestingAddress("team2Address", "l1"), team2Address);
+        assertEq(utils.readVestingAddress("team1Address", "L1"), team1Address);
+        assertEq(utils.readVestingAddress("team2Address", "L1"), team2Address);
     }
 
     function test_readAccountsFile() public {
