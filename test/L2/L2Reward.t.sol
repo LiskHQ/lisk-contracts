@@ -891,6 +891,20 @@ contract L2RewardTest is Test {
         l2Reward.fundStakingRewards(convertLiskToSmallestDenomination(3550), 255, 1);
     }
 
+    function test_fundStakingRewards_amountShouldBeGreaterThanZeroWhenFundingStakingRewards() public {
+        vm.expectRevert("L2Reward: Funded amount should be greater than zero");
+
+        vm.prank(address(this));
+        l2Reward.fundStakingRewards(0, 100, 1);
+    }
+
+    function test_fundStakingRewards_durationShouldBeGreaterThanZeroWhenFundingStakingRewards() public {
+        vm.expectRevert("L2Reward: Funding duration should be greater than zero");
+
+        vm.prank(address(this));
+        l2Reward.fundStakingRewards(100, 0, 1);
+    }
+
     function test_fundStakingRewards_delayShouldBeGreaterThanZeroWhenFundingStakingRewards() public {
         vm.expectRevert("L2Reward: Funding should start from next day or later");
 
@@ -2624,6 +2638,18 @@ contract L2RewardTest is Test {
 
         vm.prank(address(0x1));
         l2Reward.addUnusedRewards(100, 100, 1);
+    }
+
+    function test_addUnusedRewards_amountShouldBeGreaterThanZeroWhenAddingRewards() public {
+        vm.expectRevert("L2Reward: Funded amount should be greater than zero");
+
+        l2Reward.addUnusedRewards(0, 100, 1);
+    }
+
+    function test_addUnusedRewards_durationShouldBeGreaterThanZeroWhenAddingRewards() public {
+        vm.expectRevert("L2Reward: Funding duration should be greater than zero");
+
+        l2Reward.addUnusedRewards(100, 0, 1);
     }
 
     function test_addUnusedRewards_delayShouldBeGreaterThanZeroWhenAddingRewards() public {
