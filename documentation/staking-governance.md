@@ -29,6 +29,10 @@ The voting power for a locked amount of tokens is computed as follows:
 - Generally, locked tokens provide a voting power proportional to the amount of locked tokens. Concretely, 1 locked LSK provides one unit of voting power.
 - In case a user pauses their locking period countdown, they receives a boost of the voting power meaning the voting power is set to `lockedAmount * (1 + remainingLockingDurationInDays/365)`. Hence, the voting power can be increased by up to 200%.
 
+### Voting Power for a Concrete Proposal
+
+At the time a proposal is created, a snapshot of the delegated voting power is taken and the voting result is based on this snapshot. Consequently, neither any changes in the voting power nor any delegations made after the proposal creation have any influence on the voting result.
+
 ## Staking Rewards
 
 Users receive rewards for their locking tokens as follows: 
