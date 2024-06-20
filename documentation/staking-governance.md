@@ -74,7 +74,7 @@ The graphic above shows all contracts involved in the staking and governance sys
 
 ### User Interaction
 
-### Locking/Unlocking
+#### Locking/Unlocking
 
 ![Locking/Unlocking/Modifying](diagrams/lock_unlock.png)
 
@@ -82,23 +82,24 @@ There are two ways how the user can lock/unlock/modify a staking position. In th
 
 In the second way, the user calls the Reward contract. The Reward contract will call lock/unlock/modify in the Staking contract, which will trigger the same forwarded calls as in the first way. The difference is that the user will receive rewards for locking positions create this way.
 
-### Delegating
+#### Delegating
 
 ![Delegating](diagrams/delegating.png)
 
 For delegating, the user is interacting with the Voting Power contract directly. The Voting Power contract will emit events which will be used by Tally for indexing.
 
-### Creating Proposals and Voting
+#### Creating Proposals and Voting
 
 ![Creating Proposals](diagrams/create_proposal.png)
 
 For creating a proposal or voting on a proposal, the user is interacting with the Governor contract. The Governor contract will request the voting power of the proposer/voter in order to see if the user has enough voting power to create a proposal or for counting the voting results. Moreover, the Governor contract will emit events which will be used by Tally for indexing.
 
-### Queueing and Executing Proposals
+#### Queueing and Executing Proposals
 
 ![Queueing](diagrams/queue.png)
 
 If a proposal has an attached execution, e.g. a transfer of some treasury funds, and the proposal passed, then the proposal must be queued and then executed. For this, a user (this can be any user) must interact with the Governor contract. This one is forwarding the queue/execute operation to the Timelock Controller contract, and the Governor contract additionally emits events which Tally uses for indexing. The Governor contract is the only account that is allowed to queue proposals at the Timelock Controller. As all executions are eventually executed by the Timelock Controller, contracts owned by the Lisk DAO must be owned by the Timelock Controller, and the DAO treasury must be held by it as well.
 
 ### Implementation of Lisk Staking
-[See Lisk Staking implementation page](./staking-implementation.md)
+
+For details about the implementation of the staking sytem, see the [Lisk Staking implementation page](./staking-implementation.md)
