@@ -210,6 +210,36 @@ contract L2StakingTest is Test {
         assertEq(l2LiskToken.allowance(rewardsContract, address(l2Staking)), 100 * 10 ** 18);
     }
 
+    function test_CanLockingPositionBeModified_LockIdDoesNotExist() public {
+        L2StakingHarness l2StakingHarness = prepareL2StakingHarnessContract();
+
+        vm.prank(alice);
+        l2StakingHarness.lockAmount(alice, 100 * 10 ** 18, 365);
+        assertEq(l2LockingPosition.balanceOf(alice), 1);
+
+        IL2LockingPosition.LockingPosition memory lock = l2LockingPosition.getLockingPosition(1);
+
+        vm.expectRevert("L2Staking: lockId does not match lock");
+        l2StakingHarness.exposedCanLockingPositionBeModified(2, lock); // 2 is not a valid lockId
+    }
+
+    function test_CanLockingPositionBeModified_LockIdDoesNotMatchLock() public {
+        L2StakingHarness l2StakingHarness = prepareL2StakingHarnessContract();
+
+        vm.prank(alice);
+        l2StakingHarness.lockAmount(alice, 100 * 10 ** 18, 365);
+        assertEq(l2LockingPosition.balanceOf(alice), 1);
+
+        vm.prank(alice);
+        l2StakingHarness.lockAmount(alice, 50 * 10 ** 18, 365);
+        assertEq(l2LockingPosition.balanceOf(alice), 2);
+
+        IL2LockingPosition.LockingPosition memory lock = l2LockingPosition.getLockingPosition(2);
+
+        vm.expectRevert("L2Staking: lockId does not match lock");
+        l2StakingHarness.exposedCanLockingPositionBeModified(1, lock);
+    }
+
     function test_CanLockingPositionBeModified_CreatorIsStakingContract() public {
         L2StakingHarness l2StakingHarness = prepareL2StakingHarnessContract();
 
