@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.23;
 
-import { Ownable2StepUpgradeable } from "@openzeppelin-upgradeable/contracts/access/Ownable2StepUpgradeable.sol";
-import { Initializable } from "@openzeppelin-upgradeable/contracts/proxy/utils/Initializable.sol";
-import { UUPSUpgradeable } from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
 import { L2LockingPosition } from "src/L2/L2LockingPosition.sol";
 
 /// @title L2LockingPositionPaused - Paused version of L2LockingPosition contract
