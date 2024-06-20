@@ -34,7 +34,19 @@ The voting power for a locked amount of tokens is computed as follows:
 Users receive rewards for their locking tokens as follows: 
 
 - Rewards are calculated on a daily basis, based on the amount locked and the remaining locking duration. Concretely, the weight for a locked amount is given by `lockedAmount * (remainingLockingDurationInDays + 150)`. The total daily amount of staking rewards is then shared by all users proportional to their weight.
-- Users can claim their rewards (and restake them immediately if they want) at any time.   
+- Users can claim their rewards (and restake them immediately if they want) at any time.
+
+## Pausing a Locking Position
+
+As mentioned in several subsection before, it is possible *to pause* the countdown of a locking position. This can be done at any time. Once paused, the remaining locking duration does not decrease anymore. The owner of the locking position can *resume* the countdown of the locking period an any point in time. Once resumed, the remaining locking duration descreases again daily.
+
+**Example**: A users creates a locking position on day 1 and with a locking duration of 30 days. On day 6, the remaining locking duration is 25 days. On the same day, the user pauses the locking pausition. On day 50, the remaining locking duration is still 25. The users resumes the countdown of the locking position on this day. On day 75, the reamining locking duration is zero and the user can unlock their tokens.
+
+What are the consequences of pausing the countdown:
+
+- The voting power is boosted, i.e. increased from `lockedAmount` to `lockedAmount * (1 + remainingLockingDurationInDays/365)`.
+- The rewards paid out per day for the locking position do not decrease (assuming a constant total weight in the rewards contract).
+- The locking position does not expire.
 
 ## Onchain Governance
 
