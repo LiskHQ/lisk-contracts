@@ -139,7 +139,7 @@ contract Utils is Script {
         vm.serializeAddress(json, "L1LiskToken", cfg.L1LiskToken);
         string memory finalJson =
             vm.serializeAddress(json, "L1VestingWalletImplementation", cfg.L1VestingWalletImplementation);
-        finalJson.write(string.concat("deployment/", network, "/l1addresses.json"));
+        finalJson.write("l1addresses.json");
     }
 
     /// @notice This function reads L2 addresses from JSON file.
