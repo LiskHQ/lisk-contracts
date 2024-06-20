@@ -27,7 +27,7 @@ contract L2LiskTokenScript is Script {
         console2.log("Deploying L2 Lisk token...");
 
         // get L1LiskToken contract address
-        Utils.L1AddressesConfig memory l1AddressesConfig = utils.readL1AddressesFile();
+        Utils.L1AddressesConfig memory l1AddressesConfig = utils.readL1AddressesFile(utils.getL1AddressesFilePath());
         console2.log("L1 Lisk token address: %s", l1AddressesConfig.L1LiskToken);
 
         // get salt for L2LiskToken contract
@@ -60,6 +60,6 @@ contract L2LiskTokenScript is Script {
         // write L2LiskToken address to l2addresses.json
         Utils.L2AddressesConfig memory l2AddressesConfig;
         l2AddressesConfig.L2LiskToken = address(l2LiskToken);
-        utils.writeL2AddressesFile(l2AddressesConfig);
+        utils.writeL2AddressesFile(l2AddressesConfig, utils.getL2AddressesFilePath());
     }
 }

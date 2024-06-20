@@ -24,7 +24,7 @@ contract L2StakingScript is Script {
         console2.log("Deploying L2 Staking...");
 
         // get L2LiskToken contract address
-        Utils.L2AddressesConfig memory l2AddressesConfig = utils.readL2AddressesFile();
+        Utils.L2AddressesConfig memory l2AddressesConfig = utils.readL2AddressesFile(utils.getL2AddressesFilePath());
         assert(l2AddressesConfig.L2LiskToken != address(0));
         console2.log("L2 Lisk Token address: %s", l2AddressesConfig.L2LiskToken);
 
@@ -75,6 +75,6 @@ contract L2StakingScript is Script {
         // write L2 Staking address to l2addresses.json
         l2AddressesConfig.L2StakingImplementation = address(l2StakingImplementation);
         l2AddressesConfig.L2Staking = address(l2Staking);
-        utils.writeL2AddressesFile(l2AddressesConfig);
+        utils.writeL2AddressesFile(l2AddressesConfig, utils.getL2AddressesFilePath());
     }
 }

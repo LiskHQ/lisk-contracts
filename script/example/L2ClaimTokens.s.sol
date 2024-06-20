@@ -49,7 +49,7 @@ contract L2ClaimTokensScript is Script {
     function setUp() public {
         utils = new Utils();
 
-        Utils.L2AddressesConfig memory l2AddressesConfig = utils.readL2AddressesFile();
+        Utils.L2AddressesConfig memory l2AddressesConfig = utils.readL2AddressesFile(utils.getL2AddressesFilePath());
         lsk = IERC20(l2AddressesConfig.L2LiskToken);
         l2Claim = L2Claim(l2AddressesConfig.L2ClaimContract);
 

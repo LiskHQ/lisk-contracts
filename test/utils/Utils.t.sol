@@ -17,12 +17,12 @@ contract UtilsTest is Test {
         Utils.L1AddressesConfig memory config =
             Utils.L1AddressesConfig({ L1LiskToken: address(0x1), L1VestingWalletImplementation: address(0x2) });
 
-        utils.writeL1AddressesFile(config);
+        utils.writeL1AddressesFile(config, "./l1Addresses.json");
 
-        // Utils.L1AddressesConfig memory configReadFromFile = utils.readL1AddressesFile();
+        Utils.L1AddressesConfig memory configReadFromFile = utils.readL1AddressesFile("./l1Addresses.json");
 
-        // assertEq(configReadFromFile.L1LiskToken, config.L1LiskToken);
-        // assertEq(configReadFromFile.L1VestingWalletImplementation, config.L1VestingWalletImplementation);
+        assertEq(configReadFromFile.L1LiskToken, config.L1LiskToken);
+        assertEq(configReadFromFile.L1VestingWalletImplementation, config.L1VestingWalletImplementation);
     }
 
     function test_readAndWriteL2AddressesFile() public {
@@ -44,9 +44,9 @@ contract UtilsTest is Test {
             L2VotingPowerImplementation: address(0x16)
         });
 
-        utils.writeL2AddressesFile(config);
+        utils.writeL2AddressesFile(config, "./l2Addresses.json");
 
-        Utils.L2AddressesConfig memory configReadFromFile = utils.readL2AddressesFile();
+        Utils.L2AddressesConfig memory configReadFromFile = utils.readL2AddressesFile("./l2addresses.json");
 
         assertEq(configReadFromFile.L2ClaimContract, config.L2ClaimContract);
         assertEq(configReadFromFile.L2Governor, config.L2Governor);
@@ -76,10 +76,10 @@ contract UtilsTest is Test {
         vestingWallets[0] = Utils.VestingWallet({ name: "wallet1", vestingWalletAddress: address(0x1) });
         vestingWallets[1] = Utils.VestingWallet({ name: "wallet2", vestingWalletAddress: address(0x2) });
 
-        utils.writeVestingWalletsFile(vestingWallets, "l1");
+        utils.writeVestingWalletsFile(vestingWallets, "./vestingWallets.json");
 
-        assertEq(utils.readVestingWalletAddress("wallet1", "l1"), address(0x1));
-        assertEq(utils.readVestingWalletAddress("wallet2", "l1"), address(0x2));
+        assertEq(utils.readVestingWalletAddress("wallet1", "./vestingWallets.json"), address(0x1));
+        assertEq(utils.readVestingWalletAddress("wallet2", "./vestingWallets.json"), address(0x2));
     }
 
     function test_readVestingAddress() public {

@@ -43,6 +43,6 @@ contract L2DemoTokenScript is Script {
         // write L2LiskToken address to l2addresses.json
         Utils.L2AddressesConfig memory l2AddressesConfig;
         l2AddressesConfig.L2LiskToken = address(lsk);
-        utils.writeL2AddressesFile(l2AddressesConfig);
+        utils.writeL2AddressesFile(l2AddressesConfig, utils.getL2AddressesFilePath());
     }
 }
