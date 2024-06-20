@@ -1683,6 +1683,12 @@ contract L2StakingTest is Test {
         vm.prank(alice);
         l2Staking.lockAmount(alice, 50 * 10 ** 18, 365);
 
+        // create a paused stake to have it for testing resumeCountdown function call inside Stake contract
+        vm.startPrank(alice);
+        l2Staking.lockAmount(alice, 20 * 10 ** 18, 365);
+        l2Staking.pauseRemainingLockingDuration(2);
+        vm.stopPrank();
+
         upgradeLockingPositionContractToPausedVersion();
 
         // try to call lockAmount
@@ -1716,5 +1722,10 @@ contract L2StakingTest is Test {
         vm.expectRevert(L2LockingPositionPaused.LockingPositionIsPaused.selector);
         vm.prank(alice);
         l2Staking.pauseRemainingLockingDuration(1);
+
+        // try to call resumeCountdown
+        vm.expectRevert(L2LockingPositionPaused.LockingPositionIsPaused.selector);
+        vm.prank(alice);
+        l2Staking.resumeCountdown(2);
     }
 }

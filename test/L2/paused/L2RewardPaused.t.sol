@@ -55,16 +55,6 @@ contract L2RewardPausedTest is Test {
         uint256 duration;
     }
 
-    function upgradeLockingPositionContractToPausedVersion() private {
-        // deploy L2LockingPositionPaused contract
-        L2LockingPositionPaused l2LockingPositionPaused = new L2LockingPositionPaused();
-
-        // upgrade L2LockingPosition contract to L2LockingPositionPaused contract
-        l2LockingPosition.upgradeToAndCall(
-            address(l2LockingPositionPaused), abi.encodeWithSelector(l2LockingPositionPaused.initializePaused.selector)
-        );
-    }
-
     function convertLiskToSmallestDenomination(uint256 lisk) internal pure returns (uint256) {
         return lisk * 10 ** 18;
     }
@@ -160,8 +150,6 @@ contract L2RewardPausedTest is Test {
 
         stakerPositions = new uint256[](1);
         stakerPositions[0] = ID;
-
-        upgradeLockingPositionContractToPausedVersion();
 
         // deploy L2RewardPaused contract
         L2RewardPaused l2RewardPaused = new L2RewardPaused();
