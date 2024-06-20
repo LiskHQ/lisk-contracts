@@ -46,7 +46,7 @@ contract UtilsTest is Test {
 
         utils.writeL2AddressesFile(config, "./l2Addresses.json");
 
-        Utils.L2AddressesConfig memory configReadFromFile = utils.readL2AddressesFile("./l2addresses.json");
+        Utils.L2AddressesConfig memory configReadFromFile = utils.readL2AddressesFile("./l2Addresses.json");
 
         assertEq(configReadFromFile.L2ClaimContract, config.L2ClaimContract);
         assertEq(configReadFromFile.L2Governor, config.L2Governor);
@@ -103,5 +103,24 @@ contract UtilsTest is Test {
         assertEq(accountsReadFromFile2.l2Addresses.length, 1);
         assertEq(accountsReadFromFile2.l2Addresses[0].addr, address(0x473BbFd3097D597d14466EF19519f406D6f9202d));
         assertEq(accountsReadFromFile2.l2Addresses[0].amount, 51000000000000000000);
+    }
+
+    function test_getL1AddressesFilePath() public {
+        assertEq(
+            utils.getL1AddressesFilePath(), string.concat(vm.projectRoot(), "/deployment/testnet/l1addresses.json")
+        );
+    }
+
+    function test_getL2AddressesFilePath() public {
+        assertEq(
+            utils.getL2AddressesFilePath(), string.concat(vm.projectRoot(), "/deployment/testnet/l2addresses.json")
+        );
+    }
+
+    function test_getVestingWalletsFilePath() public {
+        assertEq(
+            utils.getVestingWalletsFilePath("l1"),
+            string.concat(vm.projectRoot(), "/deployment/testnet/vestingWallets_l1.json")
+        );
     }
 }
