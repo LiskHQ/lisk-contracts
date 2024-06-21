@@ -49,7 +49,7 @@ As mentioned in several subsection before, it is possible *to pause* the countdo
 What are the consequences of pausing the countdown:
 
 - The voting power is boosted, i.e. increased from `lockedAmount` to `lockedAmount * (1 + remainingLockingDurationInDays/365)`.
-- The rewards paid out per day for the locking position do not decrease (assuming a constant total weight in the rewards contract).
+- The rewards paid out per day for the locking position do not decrease daily (assuming a constant total weight in the rewards contract). In contrast, the rewards paid out per day for an unpaused locking position decrease day by day.
 - The locking position does not expire.
 
 ## Onchain Governance
