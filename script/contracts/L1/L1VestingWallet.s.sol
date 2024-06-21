@@ -21,7 +21,7 @@ contract L1VestingWalletScript is Script {
 
     /// @notice This function deploys L1 Vesting Wallet contract.
     function run() public {
-        Utils.L1AddressesConfig memory l1AddressesConfig = utils.readL1AddressesFile();
+        Utils.L1AddressesConfig memory l1AddressesConfig = utils.readL1AddressesFile(utils.getL1AddressesFilePath());
 
         // Deployer's private key. Owner of the L1 Vesting Wallet. PRIVATE_KEY is set in .env file.
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
@@ -84,6 +84,6 @@ contract L1VestingWalletScript is Script {
 
         // write L1VestingWallet address to l1addresses.json
         l1AddressesConfig.L1VestingWalletImplementation = address(l1VestingWalletImplementation);
-        utils.writeL1AddressesFile(l1AddressesConfig);
+        utils.writeL1AddressesFile(l1AddressesConfig, utils.getL1AddressesFilePath());
     }
 }

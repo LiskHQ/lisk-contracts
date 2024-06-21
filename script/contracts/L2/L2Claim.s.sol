@@ -33,7 +33,7 @@ contract L2ClaimScript is Script {
         console2.log("L2 Claim contract owner address: %s (after ownership will be accepted)", ownerAddress);
 
         // get L2LiskToken contract address
-        Utils.L2AddressesConfig memory l2AddressesConfig = utils.readL2AddressesFile();
+        Utils.L2AddressesConfig memory l2AddressesConfig = utils.readL2AddressesFile(utils.getL2AddressesFilePath());
         assert(l2AddressesConfig.L2LiskToken != address(0));
         console2.log("L2 Lisk token address: %s", l2AddressesConfig.L2LiskToken);
 
@@ -98,6 +98,6 @@ contract L2ClaimScript is Script {
         // write L2ClaimContract address to l2addresses.json
         l2AddressesConfig.L2ClaimImplementation = address(l2ClaimImplementation);
         l2AddressesConfig.L2ClaimContract = address(l2Claim);
-        utils.writeL2AddressesFile(l2AddressesConfig);
+        utils.writeL2AddressesFile(l2AddressesConfig, utils.getL2AddressesFilePath());
     }
 }
