@@ -33,12 +33,14 @@ contract L2LiskTokenInvariants is L2ClaimHelper {
         targetContract(address(l2LiskTokenHandler));
     }
 
-    function invariant_metadataIsUnchanged() public view {
+    function invariant_L2LiskToken_metadataIsUnchanged() public view {
+        assertEq(l2LiskToken.name(), "Lisk");
+        assertEq(l2LiskToken.symbol(), "LSK");
         assertEq(l2LiskToken.bridge(), bridge);
         assertEq(l2LiskToken.remoteToken(), remoteToken);
     }
 
-    function invariant_totalBalancesEqualToTotalSupply() public view {
+    function invariant_L2LiskToken_totalBalancesEqualToTotalSupply() public view {
         assertEq(l2LiskTokenHandler.totalBalances(), l2LiskToken.totalSupply());
     }
 }

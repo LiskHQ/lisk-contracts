@@ -23,12 +23,12 @@ contract L2ClaimInvariants is L2ClaimHelper {
         targetContract(address(l2ClaimHandler));
     }
 
-    function invariant_metadataIsConstant() public view {
+    function invariant_L2Claim_metadataIsUnchanged() public view {
         assertEq(address(l2Claim.l2LiskToken()), address(lsk));
         assertEq(l2Claim.merkleRoot(), merkleRootHex);
     }
 
-    function invariant_outAmountEqualToClaimAmount() public view {
+    function invariant_L2Claim_outAmountEqualToClaimAmount() public view {
         assertEq(INIT_BALANCE - l2ClaimHandler.totalClaimed(), lsk.balanceOf(address(l2Claim)));
     }
 }

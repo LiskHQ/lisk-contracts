@@ -13,10 +13,30 @@ contract L1LiskTokenInvariants is Test {
     L1LiskTokenHandler internal l1LiskTokenHandler;
 
     function setUp() public {
-        // msg.sender and tx.origin needs to be the same for the contract to be able to call initialize()
         l1LiskToken = new L1LiskToken();
+        l1LiskToken.addBurner(burner);
 
         l1LiskTokenHandler = new L1LiskTokenHandler(l1LiskToken);
+
+        // L1 Token has fixed supply and not mintable, distributing tokens to addresses
+        uint256 totalPortions = l1LiskTokenHandler.numOfAddresses() * (l1LiskTokenHandler.numOfAddresses() + 1) / 2;
+        for (uint256 i = 1; i < l1LiskTokenHandler.numOfAddresses() + 1; i++) {
+            address balanceHolder = vm.addr(i);
+
+            // Approve token to be burnt
+            vm.startPrank(balanceHolder);
+            l1LiskToken.approve(burner, type(uint256).max);
+            vm.stopPrank();
+
+            // #1 address gets 1 portion, #2 gets 2 portions etc.
+            l1LiskToken.transfer(balanceHolder, l1LiskToken.totalSupply() * i / totalPortions);
+
+            // Last address gets the rest of the balances, to ensure address(this) has no balance left because of rounding
+            if (i == l1LiskTokenHandler.numOfAddresses()) {
+                l1LiskToken.transfer(balanceHolder, l1LiskToken.balanceOf(address(this)));
+            }
+        }
+
 
         // add the handler selectors to the fuzzing targets
         bytes4[] memory selectors = new bytes4[](1);
@@ -26,7 +46,13 @@ contract L1LiskTokenInvariants is Test {
         targetContract(address(l1LiskTokenHandler));
     }
 
-    function invariant_metadataIsUnchanged() public view {
-        assertEq(l1LiskToken.totalSupply(), 400_000_000 * 10 ** 18);
+    function invariant_L1LiskToken_metadataIsUnchanged() public view {
+        assertEq(l1LiskToken.name(), "Lisk");
+        assertEq(l1LiskToken.symbol(), "LSK");
+        assertEq(l1LiskToken.isBurner(burner), true);
+    }
+
+    function invariant_L1LiskToken_totalBalancesEqualToTotalSupply() public view {
+        assertEq(l1LiskTokenHandler.totalBalances(), l1LiskToken.totalSupply());
     }
 }

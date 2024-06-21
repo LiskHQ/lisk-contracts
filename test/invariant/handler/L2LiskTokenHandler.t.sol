@@ -2,7 +2,7 @@
 pragma solidity 0.8.23;
 
 import { EnumerableSet } from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
-import { Test, console, stdJson } from "forge-std/Test.sol";
+import { Test, stdJson } from "forge-std/Test.sol";
 import { L2LiskToken } from "src/L2/L2LiskToken.sol";
 
 contract L2LiskTokenHandler is Test {
@@ -17,10 +17,9 @@ contract L2LiskTokenHandler is Test {
     }
 
     function mint(uint256 _addressSeed, uint256 _amount) public {
-        _addressSeed = bound(_addressSeed, 1, type(uint160).max);
-        address to = vm.addr(_addressSeed);
-
+        address to = vm.addr(bound(_addressSeed, 1, type(uint160).max));
         _amount = bound(_amount, 0, type(uint96).max);
+
         vm.startPrank(l2LiskToken.bridge());
         l2LiskToken.mint(to, _amount);
         vm.stopPrank();
@@ -29,13 +28,8 @@ contract L2LiskTokenHandler is Test {
     }
 
     function burn(uint256 _addressSeed, uint256 _amount) public {
-        _addressSeed = bound(_addressSeed, 1, type(uint160).max);
-        address from = vm.addr(_addressSeed);
-
-        _amount = bound(_amount, 0, type(uint96).max);
-        if (_amount > l2LiskToken.balanceOf(from)) {
-            return;
-        }
+        address from = vm.addr(bound(_addressSeed, 1, type(uint160).max));
+        _amount = bound(_amount, 0, l2LiskToken.balanceOf(from));
 
         vm.startPrank(l2LiskToken.BRIDGE());
         l2LiskToken.burn(from, _amount);
