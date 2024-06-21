@@ -6,10 +6,14 @@ import { Utils } from "script/contracts/Utils.sol";
 
 contract UtilsTest is Test {
     Utils utils;
+    string network;
+    string salt;
 
-    function setUp() public {
-        vm.setEnv("NETWORK", "testnet");
-
+    function setUp() public virtual {
+        network = "testnet";
+        salt = "salty_the_salt";
+        vm.setEnv("DETERMINISTIC_ADDRESS_SALT", salt);
+        vm.setEnv("NETWORK", network);
         utils = new Utils();
     }
 
@@ -26,22 +30,23 @@ contract UtilsTest is Test {
     }
 
     function test_readAndWriteL2AddressesFile() public {
+        uint160 index = 1;
         Utils.L2AddressesConfig memory config = Utils.L2AddressesConfig({
-            L2ClaimContract: address(0x01),
-            L2ClaimImplementation: address(0x02),
-            L2Governor: address(0x03),
-            L2GovernorImplementation: address(0x04),
-            L2LiskToken: address(0x05),
-            L2LockingPosition: address(0x06),
-            L2LockingPositionImplementation: address(0x07),
-            L2Reward: address(0x09),
-            L2RewardImplementation: address(0x10),
-            L2Staking: address(0x11),
-            L2StakingImplementation: address(0x12),
-            L2TimelockController: address(0x13),
-            L2VestingWalletImplementation: address(0x14),
-            L2VotingPower: address(0x15),
-            L2VotingPowerImplementation: address(0x16)
+            L2ClaimContract: address(index++),
+            L2ClaimImplementation: address(index++),
+            L2Governor: address(index++),
+            L2GovernorImplementation: address(index++),
+            L2LiskToken: address(index++),
+            L2LockingPosition: address(index++),
+            L2LockingPositionImplementation: address(index++),
+            L2Reward: address(index++),
+            L2RewardImplementation: address(index++),
+            L2Staking: address(index++),
+            L2StakingImplementation: address(index++),
+            L2TimelockController: address(index++),
+            L2VestingWalletImplementation: address(index++),
+            L2VotingPower: address(index++),
+            L2VotingPowerImplementation: address(index++)
         });
 
         utils.writeL2AddressesFile(config, "./l2Addresses.json");
@@ -105,22 +110,49 @@ contract UtilsTest is Test {
         assertEq(accountsReadFromFile2.l2Addresses[0].amount, 51000000000000000000);
     }
 
+    function test_readVestingPlansFile() public {
+        Utils.VestingPlan[] memory vestingPlans = utils.readVestingPlansFile("L1");
+
+        assertEq(vestingPlans.length, 5);
+        assertEq(vestingPlans[0].name, "Team I");
+        assertEq(vestingPlans[0].beneficiaryAddressTag, "team1Address");
+        assertEq(vestingPlans[0].startTimestamp, 1735689600);
+        assertEq(vestingPlans[0].durationDays, 1461);
+        assertEq(vestingPlans[0].amount, 5500000000000000000000000);
+    }
+
     function test_getL1AddressesFilePath() public {
         assertEq(
-            utils.getL1AddressesFilePath(), string.concat(vm.projectRoot(), "/deployment/testnet/l1addresses.json")
+            utils.getL1AddressesFilePath(),
+            string.concat(vm.projectRoot(), "/deployment/", network, "/l1addresses.json")
         );
     }
 
     function test_getL2AddressesFilePath() public {
         assertEq(
-            utils.getL2AddressesFilePath(), string.concat(vm.projectRoot(), "/deployment/testnet/l2addresses.json")
+            utils.getL2AddressesFilePath(),
+            string.concat(vm.projectRoot(), "/deployment/", network, "/l2addresses.json")
         );
     }
 
     function test_getVestingWalletsFilePath() public {
         assertEq(
             utils.getVestingWalletsFilePath("l1"),
-            string.concat(vm.projectRoot(), "/deployment/testnet/vestingWallets_l1.json")
+            string.concat(vm.projectRoot(), "/deployment/", network, "/vestingWallets_l1.json")
         );
+    }
+
+    function test_getPreHashSalt() public {
+        string memory contractName = "contract";
+        assertEq(utils.getPreHashedSalt(contractName), string.concat(salt, "_", contractName));
+    }
+
+    function test_getSalt() public {
+        string memory contractName = "contract";
+        assertEq(utils.getSalt(contractName), keccak256(abi.encodePacked(string.concat(salt, "_", contractName))));
+    }
+
+    function test_getNetworkType() public {
+        assertEq(utils.getNetworkType(), network);
     }
 }

@@ -115,6 +115,7 @@ contract Utils is Script {
     }
 
     /// @notice This function returns the path for L2 addresses JSON file.
+    /// @return string containing file path to L2 addresses JSON.
     function getL2AddressesFilePath() external view returns (string memory) {
         return string.concat(vm.projectRoot(), "/deployment/", getNetworkType(), "/l2addresses.json");
     }
@@ -229,8 +230,8 @@ contract Utils is Script {
     }
 
     /// @notice This function writes L2 addresses to JSON file.
-    /// @param filePath L2Addresses file path.
     /// @param cfg L2AddressesConfig struct containing L2 addresses which will be written to JSON file.
+    /// @param filePath L2Addresses file path.
     function writeL2AddressesFile(L2AddressesConfig memory cfg, string memory filePath) external {
         string memory json = "";
         vm.serializeAddress(json, "L2ClaimContract", cfg.L2ClaimContract);
