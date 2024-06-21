@@ -6,39 +6,10 @@ import { IERC20Errors } from "@openzeppelin/contracts/interfaces/draft-IERC6093.
 import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { OwnableUpgradeable } from "@openzeppelin-upgradeable/contracts/access/OwnableUpgradeable.sol";
-import { Test, console, stdJson } from "forge-std/Test.sol";
-import { L2Claim, ED25519Signature, MultisigKeys } from "src/L2/L2Claim.sol";
+import { Test, stdJson } from "forge-std/Test.sol";
 import { Utils } from "script/contracts/Utils.sol";
-import { MockERC20 } from "../mock/MockERC20.sol";
-
-struct SigPair {
-    bytes32 pubKey;
-    bytes32 r;
-    bytes32 s;
-}
-
-struct Signature {
-    bytes message;
-    SigPair[] sigs;
-}
-
-/// @notice This struct stores merkleTree leaf.
-/// @dev Limitation of parseJSON, only bytes32 is supported.
-///      To convert b32Address back to bytes20, shift 96 bits to the left.
-///      i.e. bytes20(leaf.b32Address << 96)
-struct MerkleTreeLeaf {
-    bytes32 b32Address;
-    uint64 balanceBeddows;
-    bytes32[] mandatoryKeys;
-    uint256 numberOfSignatures;
-    bytes32[] optionalKeys;
-    bytes32[] proof;
-}
-
-/// @notice This struct is used to read MerkleLeaves from JSON file.
-struct MerkleLeaves {
-    MerkleTreeLeaf[] leaves;
-}
+import { L2Claim, ED25519Signature, MultisigKeys } from "src/L2/L2Claim.sol";
+import { L2ClaimHelper, Signature, MerkleTreeLeaf } from "test/L2/helper/L2ClaimHelper.sol";
 
 contract L2ClaimV2Mock is L2Claim {
     function initializeV2(uint256 _recoverPeriodTimestamp) public reinitializer(2) {
@@ -51,47 +22,8 @@ contract L2ClaimV2Mock is L2Claim {
     }
 }
 
-contract L2ClaimTest is Test {
+contract L2ClaimTest is L2ClaimHelper {
     using stdJson for string;
-
-    /// @notice recover LSK tokens after 2 years
-    uint256 public constant RECOVER_PERIOD = 730 days;
-
-    /// @notice The destination address for claims as `address(uint160(uint256(keccak256("foundry default caller"))))`
-    ///         and `nonce=2`.
-    address public constant RECIPIENT_ADDRESS = address(0x34A1D3fff3958843C43aD80F30b94c510645C316);
-
-    ERC20 public lsk;
-    L2Claim public l2ClaimImplementation;
-    L2Claim public l2Claim;
-    Utils public utils;
-
-    string public signatureJson;
-    string public MerkleLeavesJson;
-    string public MerkleRootJson;
-
-    address public daoAddress;
-
-    function getSignature(uint256 _index) internal view returns (Signature memory) {
-        return abi.decode(
-            signatureJson.parseRaw(string(abi.encodePacked(".[", Strings.toString(_index), "]"))), (Signature)
-        );
-    }
-
-    // get detailed MerkleTree, which is located in `test/L2/data` and only being used by testing scripts
-    function getMerkleLeaves() internal view returns (MerkleLeaves memory) {
-        return abi.decode(MerkleLeavesJson.parseRaw("."), (MerkleLeaves));
-    }
-
-    // get MerkleRoot struct
-    function getMerkleRoot() internal view returns (Utils.MerkleRoot memory) {
-        return abi.decode(MerkleRootJson.parseRaw("."), (Utils.MerkleRoot));
-    }
-
-    // helper function to "invalidate" a proof or sig. (e.g. 0xabcdef -> 0xabcdf0)
-    function bytes32AddOne(bytes32 _value) internal pure returns (bytes32) {
-        return bytes32(uint256(_value) + 1);
-    }
 
     function claimRegularAccount(uint256 _accountIndex) internal {
         uint256 originalBalance = lsk.balanceOf(RECIPIENT_ADDRESS);
@@ -117,43 +49,7 @@ contract L2ClaimTest is Test {
     }
 
     function setUp() public {
-        utils = new Utils();
-        lsk = new MockERC20(10_000_000 * 10 ** 18);
-        (daoAddress,) = makeAddrAndKey("DAO");
-
-        console.log("L2ClaimTest Address is: %s", address(this));
-
-        // read Pre-signed Signatures, Merkle Leaves and a Merkle Root in a json format from different files
-        string memory rootPath = string.concat(vm.projectRoot(), "/test/L2/data");
-        signatureJson = vm.readFile(string.concat(rootPath, "/signatures.json"));
-        MerkleLeavesJson = vm.readFile(string.concat(rootPath, "/merkle-leaves.json"));
-        MerkleRootJson = vm.readFile(string.concat(rootPath, "/merkle-root.json"));
-
-        // get MerkleRoot struct
-        Utils.MerkleRoot memory merkleRoot = getMerkleRoot();
-
-        // deploy L2Claim Implementation contract
-        l2ClaimImplementation = new L2Claim();
-
-        // deploy L2Claim contract via Proxy and initialize it at the same time
-        l2Claim = L2Claim(
-            address(
-                new ERC1967Proxy(
-                    address(l2ClaimImplementation),
-                    abi.encodeWithSelector(
-                        l2Claim.initialize.selector,
-                        address(lsk),
-                        merkleRoot.merkleRoot,
-                        block.timestamp + RECOVER_PERIOD
-                    )
-                )
-            )
-        );
-        assertEq(address(l2Claim.l2LiskToken()), address(lsk));
-        assertEq(l2Claim.merkleRoot(), merkleRoot.merkleRoot);
-
-        // send bunch of MockLSK to Claim contract
-        lsk.transfer(address(l2Claim), lsk.balanceOf(address(this)));
+        setUpL2Claim();
     }
 
     function test_Initialize_RevertWhenL2LiskTokenIsZero() public {
@@ -591,8 +487,11 @@ contract L2ClaimTest is Test {
         );
     }
 
-    function test_SetDAOAddress_RevertWhenNotCalledByOwner() public {
-        address nobody = vm.addr(1);
+    function testFuzz_SetDAOAddress_RevertWhenNotCalledByOwner(uint256 _addressSeed) public {
+        _addressSeed = bound(_addressSeed, 1, type(uint160).max);
+        address nobody = vm.addr(_addressSeed);
+
+        if (nobody == address(this)) return;
 
         vm.prank(nobody);
         vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, nobody));
@@ -626,9 +525,13 @@ contract L2ClaimTest is Test {
         l2Claim.recoverLSK();
     }
 
-    function test_RecoverLSK_RevertWhenNotCalledByOwner() public {
-        l2Claim.setDAOAddress(daoAddress);
-        address nobody = vm.addr(1);
+    function testFuzz_RecoverLSK_RevertWhenNotCalledByOwner(uint256 _addressSeed) public {
+        _addressSeed = bound(_addressSeed, 1, type(uint160).max);
+        address nobody = vm.addr(_addressSeed);
+
+        if (nobody == address(this)) {
+            return;
+        }
 
         vm.prank(nobody);
         vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, nobody));
@@ -669,9 +572,14 @@ contract L2ClaimTest is Test {
         assertEq(l2Claim.owner(), newOwner);
     }
 
-    function test_TransferOwnership_RevertWhenNotCalledByOwner() public {
+    function testFuzz_TransferOwnership_RevertWhenNotCalledByOwner(uint256 _addressSeed) public {
+        _addressSeed = bound(_addressSeed, 1, type(uint160).max);
+        address nobody = vm.addr(_addressSeed);
         address newOwner = vm.addr(1);
-        address nobody = vm.addr(2);
+
+        if (nobody == address(this)) {
+            return;
+        }
 
         // owner is this contract
         assertEq(l2Claim.owner(), address(this));
@@ -683,22 +591,32 @@ contract L2ClaimTest is Test {
         vm.stopPrank();
     }
 
-    function test_TransferOwnership_RevertWhenNotCalledByPendingOwner() public {
+    function testFuzz_TransferOwnership_RevertWhenNotCalledByPendingOwner(uint256 _addressSeed) public {
         address newOwner = vm.addr(1);
 
         l2Claim.transferOwnership(newOwner);
         assertEq(l2Claim.owner(), address(this));
 
-        address nobody = vm.addr(2);
+        _addressSeed = bound(_addressSeed, 1, type(uint160).max);
+        address nobody = vm.addr(_addressSeed);
+
+        if (nobody == newOwner) {
+            return;
+        }
         vm.prank(nobody);
         vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, nobody));
         l2Claim.acceptOwnership();
     }
 
-    function test_UpgradeToAndCall_RevertWhenNotOwner() public {
+    function test_UpgradeToAndCall_RevertWhenNotOwner(uint256 _addressSeed) public {
         // deploy L2Claim Implementation contract
         L2ClaimV2Mock l2ClaimV2Implementation = new L2ClaimV2Mock();
-        address nobody = vm.addr(1);
+        _addressSeed = bound(_addressSeed, 1, type(uint160).max);
+        address nobody = vm.addr(_addressSeed);
+
+        if (nobody == address(this)) {
+            return;
+        }
 
         vm.prank(nobody);
         vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, nobody));

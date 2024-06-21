@@ -33,3 +33,8 @@ line_length = 120
 multiline_func_header = 'all'
 bracket_spacing = true
 wrap_comments = true
+
+[invariant]
+runs = 50
+depth = 50
+fail_on_revert = false
