@@ -31,12 +31,12 @@ contract L1LiskTokenInvariants is Test {
             // #1 address gets 1 portion, #2 gets 2 portions etc.
             l1LiskToken.transfer(balanceHolder, l1LiskToken.totalSupply() * i / totalPortions);
 
-            // Last address gets the rest of the balances, to ensure address(this) has no balance left because of rounding
+            // Last address gets the rest of the balances, to ensure address(this) has no balance left because of
+            // rounding
             if (i == l1LiskTokenHandler.numOfAddresses()) {
                 l1LiskToken.transfer(balanceHolder, l1LiskToken.balanceOf(address(this)));
             }
         }
-
 
         // add the handler selectors to the fuzzing targets
         bytes4[] memory selectors = new bytes4[](1);

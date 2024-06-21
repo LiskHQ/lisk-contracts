@@ -3,7 +3,7 @@ pragma solidity 0.8.23;
 
 import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
-import { Test,  stdJson } from "forge-std/Test.sol";
+import { Test, stdJson } from "forge-std/Test.sol";
 import { L2Claim, ED25519Signature, MultisigKeys } from "src/L2/L2Claim.sol";
 import { L2ClaimHelper, MerkleTreeLeaf, Signature, MerkleLeaves } from "test/L2/helper/L2ClaimHelper.sol";
 
