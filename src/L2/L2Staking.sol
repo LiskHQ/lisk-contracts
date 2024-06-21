@@ -146,6 +146,16 @@ contract L2Staking is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, I
         virtual
         returns (bool)
     {
+        IL2LockingPosition.LockingPosition memory sameLock =
+            (IL2LockingPosition(lockingPositionContract)).getLockingPosition(lockId);
+
+        // check that lock passed as an argument has really lockId number (it is same lock as sameLock object)
+        require(
+            lock.creator == sameLock.creator && lock.amount == sameLock.amount && lock.expDate == sameLock.expDate
+                && lock.pausedLockingDuration == sameLock.pausedLockingDuration,
+            "L2Staking: lockId does not match lock"
+        );
+
         address ownerOfLock = (IL2LockingPosition(lockingPositionContract)).ownerOf(lockId);
         bool condition1 = allowedCreators[msg.sender] && lock.creator == msg.sender;
         bool condition2 = ownerOfLock == msg.sender && lock.creator == address(this);
