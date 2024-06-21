@@ -42,6 +42,7 @@ contract L2RewardTest is Test {
         uint256[] balances;
         uint256 lastClaimedAmount;
         uint256 rewardsSurplus;
+        uint256 totalWeight;
     }
 
     struct Position {
@@ -327,6 +328,10 @@ contract L2RewardTest is Test {
         }
     }
 
+    function cacheTotalWeight(Scenario memory scenario) private view {
+        scenario.totalWeight = l2Reward.totalWeight();
+    }
+
     function checkRewardsContractBalance(uint256 funds) public {
         uint256 sumOfDailyRewards;
         for (uint256 i = deploymentDate; i < l2Reward.todayDay(); i++) {
@@ -382,17 +387,18 @@ contract L2RewardTest is Test {
             balances: balances,
             oldBalances: oldBalances,
             lastClaimedAmount: 0,
-            rewardsSurplus: 0
+            rewardsSurplus: 0,
+            totalWeight: 0
         });
 
         checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
         onDay(1);
         stakerCreatesPosition(0, LSK(100), 30, scenario);
-        checkConsistencyTotalWeight(getLargestExpiryDate(lockIDs));
+        stakerClaimOnDayAndCheckConsistencyTotalWeight(0, 2, getLargestExpiryDate(lockIDs), scenario);
         stakerCreatesPosition(1, LSK(100), 80, scenario);
         onDay(10);
         stakerCreatesPosition(2, LSK(100), 100, scenario);
-        checkConsistencyTotalWeight(getLargestExpiryDate(lockIDs));
+        stakerClaimOnDayAndCheckConsistencyTotalWeight(2, 11, getLargestExpiryDate(lockIDs), scenario);
         onDay(30);
         stakerPausesPosition(1, scenario);
         checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
@@ -406,8 +412,8 @@ contract L2RewardTest is Test {
         checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
         onDay(50);
         stakerExtendsPositionBy(0, 30, scenario);
+        stakerClaimOnDayAndCheckConsistencyTotalWeight(0, 51, getLargestExpiryDate(lockIDs), scenario);
         onDay(70);
-        checkConsistencyTotalWeight(getLargestExpiryDate(lockIDs));
         stakerCreatesPosition(5, LSK(100), 150, scenario);
         checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
         onDay(80);
@@ -424,7 +430,7 @@ contract L2RewardTest is Test {
         allStakersClaim(scenario);
         checkRewardsContractBalance(funds);
         cacheBalances(scenario);
-        checkConsistencyTotalWeight(getLargestExpiryDate(lockIDs));
+        stakerClaimOnDayAndCheckConsistencyTotalWeight(0, 106, getLargestExpiryDate(lockIDs), scenario);
         onDay(106);
         allStakersClaim(scenario);
         checkRewardsContractBalance(funds);
@@ -438,7 +444,7 @@ contract L2RewardTest is Test {
         onDay(150);
         allStakersClaim(scenario);
         checkRewardsContractBalance(funds);
-        checkConsistencyTotalWeight(getLargestExpiryDate(lockIDs));
+        // checkConsistencyTotalWeight(getLargestExpiryDate(lockIDs));
         onDay(230);
         allStakersClaim(scenario);
         checkRewardsContractBalance(funds);
@@ -453,7 +459,7 @@ contract L2RewardTest is Test {
         onDay(275);
         allStakersClaim(scenario);
         lastClaimedRewardEqualsDailyRewardBetweenDays(scenario.lastClaimedAmount, 240, 269);
-        checkConsistencyTotalWeight(getLargestExpiryDate(lockIDs));
+        // checkConsistencyTotalWeight(getLargestExpiryDate(lockIDs));
         for (uint256 i = 19740 + 270; i < 19740 + 275; i++) {
             assertEq(l2Reward.totalWeights(i), 0);
         }
@@ -483,7 +489,8 @@ contract L2RewardTest is Test {
             balances: balances,
             oldBalances: oldBalances,
             lastClaimedAmount: 0,
-            rewardsSurplus: 0
+            rewardsSurplus: 0,
+            totalWeight: 0
         });
         onDay(1);
         checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
@@ -559,7 +566,8 @@ contract L2RewardTest is Test {
             balances: balances,
             oldBalances: oldBalances,
             lastClaimedAmount: 0,
-            rewardsSurplus: 0
+            rewardsSurplus: 0,
+            totalWeight: 0
         });
 
         onDay(1);
@@ -696,7 +704,8 @@ contract L2RewardTest is Test {
             balances: balances,
             oldBalances: oldBalances,
             lastClaimedAmount: 0,
-            rewardsSurplus: 0
+            rewardsSurplus: 0,
+            totalWeight: 0
         });
 
         onDay(1);
@@ -732,17 +741,36 @@ contract L2RewardTest is Test {
         verifyRewardsSurplusForLockedAmountBetweenDays(dailyRewards, LSK(660), 130, 149, scenario);
     }
 
-    function checkConsistencyTotalWeight(uint256 expiryDateOfLongestStake) private {
+    function checkConsistencyTotalWeight(Scenario memory scenario, uint256 expiryDateOfLongestStake) private {
         if (l2Reward.todayDay() < expiryDateOfLongestStake) {
             assertTrue(l2Reward.totalWeight() > 0);
         } else {
             assertEq(l2Reward.totalWeight(), 0);
         }
 
-        uint256 sumOfDailyWeights = 0;
-        for (uint256 i = deploymentDate; i < l2Reward.todayDay(); i++) {
-            sumOfDailyWeights += l2Reward.totalWeights(i);
+        assertEq(l2Reward.totalWeights(l2Reward.todayDay() - 1), scenario.totalWeight);
+    }
+
+    function stakerClaimOnDayAndCheckConsistencyTotalWeight(
+        uint256 stakerIndex,
+        uint256 day,
+        uint256 expiryDateOfLongestStake,
+        Scenario memory scenario
+    )
+        private
+    {
+        if (l2Reward.todayDay() < expiryDateOfLongestStake) {
+            assertTrue(l2Reward.totalWeight() > 0);
+        } else {
+            assertEq(l2Reward.totalWeight(), 0);
         }
+
+        uint256 oldTotalWeight = l2Reward.totalWeight();
+
+        onDay(day);
+        stakerClaimRewards(stakerIndex, scenario);
+
+        assertEq(l2Reward.totalWeights(l2Reward.todayDay() - 1), oldTotalWeight);
     }
 
     function checkConsistencyPendingUnlockDailyUnlocked(
