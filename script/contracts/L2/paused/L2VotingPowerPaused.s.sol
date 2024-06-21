@@ -49,8 +49,8 @@ contract L2VotingPowerPausedScript is Script {
         console2.log("L2VotingPowerPaused (Implementation) address: %s", address(l2VotingPowerPausedImplementation));
 
         // write L2VotingPowerPaused address to l2addresses.json
-        Utils.L2AddressesConfig memory l2AddressesConfig = utils.readL2AddressesFile();
+        Utils.L2AddressesConfig memory l2AddressesConfig = utils.readL2AddressesFile(utils.getL2AddressesFilePath());
         l2AddressesConfig.L2VotingPowerPaused = address(l2VotingPowerPausedImplementation);
-        utils.writeL2AddressesFile(l2AddressesConfig);
+        utils.writeL2AddressesFile(l2AddressesConfig, utils.getL2AddressesFilePath());
     }
 }

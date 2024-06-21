@@ -521,7 +521,7 @@ contract L2LockingPositionTest is Test {
         l2LockingPosition.removeLockingPosition(positionId);
     }
 
-    function test_GetLockingPosition_PositionDoesNotExist() public {
+    function test_GetLockingPosition_PositionDoesNotExist() public view {
         IL2LockingPosition.LockingPosition memory position = l2LockingPosition.getLockingPosition(1);
         assertEq(position.creator, address(0));
         assertEq(position.amount, 0);
@@ -902,7 +902,7 @@ contract L2LockingPositionTest is Test {
         l2LockingPositionV2.initializeV2(testNumber + 1);
     }
 
-    function test_SupportsInterface() public {
+    function test_SupportsInterface() public view {
         assertTrue(l2LockingPosition.supportsInterface(type(IERC721Enumerable).interfaceId)); // ERC721Enumerable
         assertTrue(l2LockingPosition.supportsInterface(type(IERC721).interfaceId)); // ERC721
         assertTrue(l2LockingPosition.supportsInterface(type(IERC721Metadata).interfaceId)); // ERC721Metadata

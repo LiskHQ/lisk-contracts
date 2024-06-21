@@ -27,15 +27,19 @@ contract UtilsTest is Test {
 
         assertEq(configReadFromFile.L1LiskToken, config.L1LiskToken);
         assertEq(configReadFromFile.L1VestingWalletImplementation, config.L1VestingWalletImplementation);
+
+        vm.removeFile("./l1Addresses.json");
     }
 
     function test_readAndWriteL2AddressesFile() public {
         uint160 index = 1;
         Utils.L2AddressesConfig memory config = Utils.L2AddressesConfig({
+            L2Airdrop: address(index++),
             L2ClaimContract: address(index++),
             L2ClaimImplementation: address(index++),
             L2Governor: address(index++),
             L2GovernorImplementation: address(index++),
+            L2GovernorPaused: address(index++),
             L2LiskToken: address(index++),
             L2LockingPosition: address(index++),
             L2LockingPositionImplementation: address(index++),
@@ -46,7 +50,8 @@ contract UtilsTest is Test {
             L2TimelockController: address(index++),
             L2VestingWalletImplementation: address(index++),
             L2VotingPower: address(index++),
-            L2VotingPowerImplementation: address(index++)
+            L2VotingPowerImplementation: address(index++),
+            L2VotingPowerPaused: address(index++)
         });
 
         utils.writeL2AddressesFile(config, "./l2Addresses.json");
@@ -67,11 +72,13 @@ contract UtilsTest is Test {
         assertEq(configReadFromFile.L2VestingWalletImplementation, config.L2VestingWalletImplementation);
         assertEq(configReadFromFile.L2VotingPower, config.L2VotingPower);
         assertEq(configReadFromFile.L2VotingPowerImplementation, config.L2VotingPowerImplementation);
+
+        vm.removeFile("./l2Addresses.json");
     }
 
-    function test_readMerkleRootFile() public {
+    function test_readMerkleRootFile() public view {
         assertEq(
-            vm.toString(utils.readMerkleRootFile().merkleRoot),
+            vm.toString(utils.readMerkleRootFile("merkle-root.json").merkleRoot),
             "0x92ebb53b56a4136bfd1ea09a7e2d64f3dc3165020516f6ee5e17aee9f65a7f3b"
         );
     }
@@ -85,9 +92,11 @@ contract UtilsTest is Test {
 
         assertEq(utils.readVestingWalletAddress("wallet1", "./vestingWallets.json"), address(0x1));
         assertEq(utils.readVestingWalletAddress("wallet2", "./vestingWallets.json"), address(0x2));
+
+        vm.removeFile("./vestingWallets.json");
     }
 
-    function test_readVestingAddress() public {
+    function test_readVestingAddress() public view {
         address team1Address = address(0xE1F2e7E049A8484479f14aF62d831f70476fCDBc);
         address team2Address = address(0x74A898371f058056cD94F5D2D24d5d0BFacD3EB9);
 
@@ -95,7 +104,7 @@ contract UtilsTest is Test {
         assertEq(utils.readVestingAddress("team2Address", "L1"), team2Address);
     }
 
-    function test_readAccountsFile() public {
+    function test_readAccountsFile() public view {
         Utils.Accounts memory accountsReadFromFile1 = utils.readAccountsFile("accounts_1.json");
 
         assertEq(accountsReadFromFile1.l1Addresses.length, 6);
@@ -110,7 +119,7 @@ contract UtilsTest is Test {
         assertEq(accountsReadFromFile2.l2Addresses[0].amount, 51000000000000000000);
     }
 
-    function test_readVestingPlansFile() public {
+    function test_readVestingPlansFile() public view {
         Utils.VestingPlan[] memory vestingPlans = utils.readVestingPlansFile("L1");
 
         assertEq(vestingPlans.length, 5);
@@ -121,38 +130,38 @@ contract UtilsTest is Test {
         assertEq(vestingPlans[0].amount, 5500000000000000000000000);
     }
 
-    function test_getL1AddressesFilePath() public {
+    function test_getL1AddressesFilePath() public view {
         assertEq(
             utils.getL1AddressesFilePath(),
             string.concat(vm.projectRoot(), "/deployment/", network, "/l1addresses.json")
         );
     }
 
-    function test_getL2AddressesFilePath() public {
+    function test_getL2AddressesFilePath() public view {
         assertEq(
             utils.getL2AddressesFilePath(),
             string.concat(vm.projectRoot(), "/deployment/", network, "/l2addresses.json")
         );
     }
 
-    function test_getVestingWalletsFilePath() public {
+    function test_getVestingWalletsFilePath() public view {
         assertEq(
             utils.getVestingWalletsFilePath("l1"),
             string.concat(vm.projectRoot(), "/deployment/", network, "/vestingWallets_l1.json")
         );
     }
 
-    function test_getPreHashSalt() public {
+    function test_getPreHashSalt() public view {
         string memory contractName = "contract";
         assertEq(utils.getPreHashedSalt(contractName), string.concat(salt, "_", contractName));
     }
 
-    function test_getSalt() public {
+    function test_getSalt() public view {
         string memory contractName = "contract";
         assertEq(utils.getSalt(contractName), keccak256(abi.encodePacked(string.concat(salt, "_", contractName))));
     }
 
-    function test_getNetworkType() public {
+    function test_getNetworkType() public view {
         assertEq(utils.getNetworkType(), network);
     }
 }

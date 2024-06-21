@@ -27,7 +27,7 @@ contract L1LiskTokenTest is Test {
         l1LiskToken = new L1LiskToken();
     }
 
-    function test_Initialize() public {
+    function test_Initialize() public view {
         assertEq(l1LiskToken.name(), NAME);
         assertEq(l1LiskToken.symbol(), SYMBOL);
         assertEq(l1LiskToken.totalSupply(), TOTAL_SUPPLY);
@@ -200,11 +200,11 @@ contract L1LiskTokenTest is Test {
         assertEq(l1LiskToken.pendingOwner(), alice);
     }
 
-    function test_DefaultAdminRoleIsRoleAdminForBurnerRole() public {
+    function test_DefaultAdminRoleIsRoleAdminForBurnerRole() public view {
         assertEq(l1LiskToken.DEFAULT_ADMIN_ROLE(), l1LiskToken.getRoleAdmin(l1LiskToken.BURNER_ROLE()));
     }
 
-    function test_SupportsInterface() public {
+    function test_SupportsInterface() public view {
         assertTrue(l1LiskToken.supportsInterface(type(IAccessControl).interfaceId)); // AccessControl
         assertTrue(l1LiskToken.supportsInterface(type(IERC165).interfaceId)); // ERC165
     }

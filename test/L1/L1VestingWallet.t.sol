@@ -77,7 +77,7 @@ contract L1VestingWalletTest is Test {
         mockToken.transfer(address(l1VestingWallet), vestAmount);
     }
 
-    function test_Initialize() public {
+    function test_Initialize() public view {
         assertEq(l1VestingWallet.name(), name);
         assertEq(l1VestingWallet.start(), startTimestamp);
         assertEq(l1VestingWallet.duration(), durationSeconds);

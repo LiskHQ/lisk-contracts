@@ -113,7 +113,7 @@ contract L2RewardTest is Test {
         l2Staking.addCreator(address(l2Reward));
     }
 
-    function test_initialize() public {
+    function test_initialize() public view {
         assertEq(l2Reward.lastTrsDate(), deploymentDate);
         assertEq(l2Reward.OFFSET(), 150);
         assertEq(l2Reward.REWARD_DURATION(), 30);
@@ -891,6 +891,7 @@ contract L2RewardTest is Test {
         uint256 expiryDateOfLongestStake
     )
         private
+        view
     {
         uint256 sumOfDailyUnlockedAmount;
         for (uint256 i = l2Reward.lastTrsDate() + 1; i <= expiryDateOfLongestStake; i++) {
