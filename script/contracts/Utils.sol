@@ -297,7 +297,7 @@ contract Utils is Script {
     /// @notice This function returns the path for the vesting wallets JSON file for the provided network layer.
     /// @param _layer Network layer of the runnins script, either be "L1" or "L2".
     /// @return string containing file path to vesting wallets.
-    function getVestingWalletsFilePath(string memory _layer) external returns (string memory) {
+    function getVestingWalletsFilePath(string memory _layer) external view returns (string memory) {
         return string.concat(vm.projectRoot(), "/deployment/", getNetworkType(), "/vestingWallets_", _layer, ".json");
     }
 

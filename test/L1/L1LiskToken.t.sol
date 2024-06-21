@@ -204,7 +204,7 @@ contract L1LiskTokenTest is Test {
         assertEq(l1LiskToken.DEFAULT_ADMIN_ROLE(), l1LiskToken.getRoleAdmin(l1LiskToken.BURNER_ROLE()));
     }
 
-    function test_SupportsInterface() public {
+    function test_SupportsInterface() public view {
         assertTrue(l1LiskToken.supportsInterface(type(IAccessControl).interfaceId)); // AccessControl
         assertTrue(l1LiskToken.supportsInterface(type(IERC165).interfaceId)); // ERC165
     }

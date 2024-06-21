@@ -196,7 +196,7 @@ contract L2GovernorTest is Test {
         l2GovernorV2.initializeV2(testNumber + 1);
     }
 
-    function test_SupportsInterface() public {
+    function test_SupportsInterface() public view {
         assertTrue(l2Governor.supportsInterface(type(IGovernor).interfaceId)); // Governor
         assertTrue(l2Governor.supportsInterface(type(IERC1155Receiver).interfaceId)); // ERC1155Receiver
         assertTrue(l2Governor.supportsInterface(type(IERC165).interfaceId)); // ERC165

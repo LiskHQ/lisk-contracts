@@ -905,6 +905,7 @@ contract L2RewardTest is Test {
         uint256 expiryDateOfLongestStake
     )
         private
+        view
     {
         uint256 sumOfDailyUnlockedAmount;
         for (uint256 i = l2Reward.lastTrsDate() + 1; i <= expiryDateOfLongestStake; i++) {

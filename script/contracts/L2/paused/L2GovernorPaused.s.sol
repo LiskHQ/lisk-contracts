@@ -46,8 +46,8 @@ contract L2GovernorPausedScript is Script {
         console2.log("L2GovernorPaused (Implementation) address: %s", address(l2GovernorPaused));
 
         // write L2GovernorPaused address to l2addresses.json
-        Utils.L2AddressesConfig memory l2AddressesConfig = utils.readL2AddressesFile();
+        Utils.L2AddressesConfig memory l2AddressesConfig = utils.readL2AddressesFile(utils.getL2AddressesFilePath());
         l2AddressesConfig.L2GovernorPaused = address(l2GovernorPaused);
-        utils.writeL2AddressesFile(l2AddressesConfig);
+        utils.writeL2AddressesFile(l2AddressesConfig, utils.getL2AddressesFilePath());
     }
 }

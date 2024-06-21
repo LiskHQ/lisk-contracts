@@ -101,7 +101,7 @@ contract L2ClaimTest is L2ClaimHelper {
             new bytes32[](0),
             bytes32(signature.sigs[0].pubKey),
             leaf.balanceBeddows,
-            address(this),
+            RECIPIENT_ADDRESS,
             ED25519Signature(signature.sigs[0].r, signature.sigs[0].s)
         );
     }
@@ -187,7 +187,7 @@ contract L2ClaimTest is L2ClaimHelper {
             bytes20(leaf.b32Address << 96),
             leaf.balanceBeddows,
             MultisigKeys(leaf.mandatoryKeys, leaf.optionalKeys),
-            address(this),
+            RECIPIENT_ADDRESS,
             ed25519Signatures
         );
     }
