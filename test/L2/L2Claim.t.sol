@@ -608,7 +608,7 @@ contract L2ClaimTest is L2ClaimHelper {
         l2Claim.acceptOwnership();
     }
 
-    function test_UpgradeToAndCall_RevertWhenNotOwner(uint256 _addressSeed) public {
+    function testFuzz_UpgradeToAndCall_RevertWhenNotOwner(uint256 _addressSeed) public {
         // deploy L2Claim Implementation contract
         L2ClaimV2Mock l2ClaimV2Implementation = new L2ClaimV2Mock();
         _addressSeed = bound(_addressSeed, 1, type(uint160).max);
