@@ -44,7 +44,7 @@ contract L2LiskTokenTest is Test {
         new L2LiskToken(address(0));
     }
 
-    function test_Initialize() public {
+    function test_Initialize() public view {
         assertEq(l2LiskToken.name(), "Lisk");
         assertEq(l2LiskToken.symbol(), "LSK");
         assertEq(l2LiskToken.decimals(), 18);
@@ -176,12 +176,12 @@ contract L2LiskTokenTest is Test {
         assertNotEq(address(l2LiskTokenSalted), l2LiskTokenAddressCalculated);
     }
 
-    function test_GetBridge() public {
+    function test_GetBridge() public view {
         assertEq(l2LiskToken.bridge(), bridge);
         assertEq(l2LiskToken.BRIDGE(), bridge);
     }
 
-    function test_GetRemoteToken() public {
+    function test_GetRemoteToken() public view {
         assertEq(l2LiskToken.remoteToken(), remoteToken);
         assertEq(l2LiskToken.REMOTE_TOKEN(), remoteToken);
     }
