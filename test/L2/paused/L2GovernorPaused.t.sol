@@ -32,7 +32,7 @@ contract L2GovernorPausedTest is Test, ERC1155Holder, ERC721Holder {
     TimelockController timelock;
     address initialOwner;
 
-    function assertInitParamsEq() internal {
+    function assertInitParamsEq() internal view {
         assertEq(l2Governor.name(), "Lisk Governor");
         assertEq(l2Governor.votingDelay(), 0);
         assertEq(l2Governor.votingPeriod(), 604800);
