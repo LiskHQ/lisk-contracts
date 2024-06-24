@@ -99,7 +99,7 @@ contract L2VotingPowerTest is Test {
         );
     }
 
-    function test_Version() public {
+    function test_Version() public view {
         assertEq(l2VotingPower.version(), "1.0.0");
     }
 
@@ -329,7 +329,7 @@ contract L2VotingPowerTest is Test {
         assertEq(l2VotingPower.clock(), blockTimestamp + 1);
     }
 
-    function test_ClockMode() public {
+    function test_ClockMode() public view {
         assertEq(l2VotingPower.CLOCK_MODE(), "mode=timestamp");
     }
 

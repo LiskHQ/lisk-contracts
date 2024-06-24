@@ -517,7 +517,7 @@ contract L2LockingPositionTest is Test {
         l2LockingPosition.removeLockingPosition(positionId);
     }
 
-    function test_GetLockingPosition_PositionDoesNotExist() public {
+    function test_GetLockingPosition_PositionDoesNotExist() public view {
         IL2LockingPosition.LockingPosition memory position = l2LockingPosition.getLockingPosition(1);
         assertEq(position.creator, address(0));
         assertEq(position.amount, 0);

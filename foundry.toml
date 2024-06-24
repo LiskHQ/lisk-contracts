@@ -20,7 +20,6 @@ remappings = [
     'solidity-stringutils/=lib/openzeppelin-foundry-upgrades/lib/solidity-stringutils/',
 ]
 deny_warnings = true
-
 ffi = true
 ast = true
 build_info = true
