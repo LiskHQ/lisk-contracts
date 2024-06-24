@@ -2,10 +2,11 @@ name: PR CI
 
 on:
   pull_request:
-    branches: [ main ]
+    branches: [ main, development ]
 
 permissions:
   contents: read
+  security-events: write
 
 env:
   FOUNDRY_PROFILE: ci
@@ -32,7 +33,7 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
-          version: nightly
+          version: nightly    
 
       - name: Check formatting
         if: ${{ contains(matrix.system.os, 'windows') == false }}
@@ -50,3 +51,19 @@ jobs:
         run: |
           forge test -vvv
         id: test
+
+      - name: Run Slither
+        if: ${{ contains(matrix.system.os, 'ubuntu') == true }}
+        uses: crytic/slither-action@v0.4.0
+        with:
+          solc-version: 0.8.23
+          sarif: results.sarif
+          fail-on: none
+          slither-args: --exclude-dependencies --exclude-low --exclude-informational --filter-paths "Ed25519.sol"
+        id: slither
+
+      - name: Upload SARIF file
+        if: ${{ contains(matrix.system.os, 'ubuntu') == true }}
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: ${{ steps.slither.outputs.sarif }}

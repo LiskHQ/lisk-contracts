@@ -13,8 +13,18 @@ remappings = [
     'ds-test/=lib/forge-std/lib/ds-test/src/',
     'erc4626-tests/=lib/openzeppelin-contracts/lib/erc4626-tests/',
     'forge-std/=lib/forge-std/src/',
+    '@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/',
+    'openzeppelin-contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/',
+    'openzeppelin-contracts/=lib/openzeppelin-contracts/',
+    '@openzeppelin/contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/',
+    'openzeppelin-foundry-upgrades/=lib/openzeppelin-foundry-upgrades/src/',
+    'solidity-stringutils/=lib/openzeppelin-foundry-upgrades/lib/solidity-stringutils/',
 ]
 deny_warnings = true
+ffi = true
+ast = true
+build_info = true
+extra_output = ["storageLayout"]
 
 [fmt]
 line_length = 120
