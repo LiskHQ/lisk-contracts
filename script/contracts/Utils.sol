@@ -25,6 +25,8 @@ contract Utils is Script {
         address L2ClaimContract;
         /// @notice The Current implementation of L2 Claim Contract.
         address L2ClaimImplementation;
+        /// @notice L2 ClaimPaused address.
+        address L2ClaimPaused;
         /// @notice L2 Governor contract (in Proxy), which users interact with.
         address L2Governor;
         /// @notice The Current implementation of L2 Governor Contract.
@@ -37,10 +39,14 @@ contract Utils is Script {
         address L2LockingPosition;
         /// @notice The Current implementation of L2 Locking Position Contract.
         address L2LockingPositionImplementation;
+        /// @notice L2 LockingPositionPaused address.
+        address L2LockingPositionPaused;
         /// @notice L2 Reward contract (in Proxy), which users interact with.
         address L2Reward;
         /// @notice The current implementation of L2 Reward contract.
         address L2RewardImplementation;
+        /// @notice L2 RewardPaused address.
+        address L2RewardPaused;
         /// @notice L2 Staking contract (in Proxy), which users interact with.
         address L2Staking;
         /// @notice The current implementation of L2 Staking contract.
@@ -170,6 +176,10 @@ contract Utils is Script {
             l2AddressesConfig.L2ClaimImplementation = l2ClaimImplementation;
         } catch { }
 
+        try vm.parseJsonAddress(addressJson, ".L2ClaimPaused") returns (address l2ClaimPaused) {
+            l2AddressesConfig.L2ClaimPaused = l2ClaimPaused;
+        } catch { }
+
         try vm.parseJsonAddress(addressJson, ".L2Governor") returns (address l2Governor) {
             l2AddressesConfig.L2Governor = l2Governor;
         } catch { }
@@ -196,12 +206,20 @@ contract Utils is Script {
             l2AddressesConfig.L2LockingPositionImplementation = l2LockingPositionImplementation;
         } catch { }
 
+        try vm.parseJsonAddress(addressJson, ".L2LockingPositionPaused") returns (address l2LockingPositionPaused) {
+            l2AddressesConfig.L2LockingPositionPaused = l2LockingPositionPaused;
+        } catch { }
+
         try vm.parseJsonAddress(addressJson, ".L2RewardImplementation") returns (address l2RewardImplementation) {
             l2AddressesConfig.L2RewardImplementation = l2RewardImplementation;
         } catch { }
 
         try vm.parseJsonAddress(addressJson, ".L2Reward") returns (address l2Reward) {
             l2AddressesConfig.L2Reward = l2Reward;
+        } catch { }
+
+        try vm.parseJsonAddress(addressJson, ".L2RewardPaused") returns (address l2RewardPaused) {
+            l2AddressesConfig.L2RewardPaused = l2RewardPaused;
         } catch { }
 
         try vm.parseJsonAddress(addressJson, ".L2Staking") returns (address l2Staking) {
@@ -246,14 +264,17 @@ contract Utils is Script {
         vm.serializeAddress(json, "L2Airdrop", cfg.L2Airdrop);
         vm.serializeAddress(json, "L2ClaimContract", cfg.L2ClaimContract);
         vm.serializeAddress(json, "L2ClaimImplementation", cfg.L2ClaimImplementation);
+        vm.serializeAddress(json, "L2ClaimPaused", cfg.L2ClaimPaused);
         vm.serializeAddress(json, "L2Governor", cfg.L2Governor);
         vm.serializeAddress(json, "L2GovernorImplementation", cfg.L2GovernorImplementation);
         vm.serializeAddress(json, "L2GovernorPaused", cfg.L2GovernorPaused);
         vm.serializeAddress(json, "L2LiskToken", cfg.L2LiskToken);
         vm.serializeAddress(json, "L2LockingPosition", cfg.L2LockingPosition);
         vm.serializeAddress(json, "L2LockingPositionImplementation", cfg.L2LockingPositionImplementation);
+        vm.serializeAddress(json, "L2LockingPositionPaused", cfg.L2LockingPositionPaused);
         vm.serializeAddress(json, "L2Reward", cfg.L2Reward);
         vm.serializeAddress(json, "L2RewardImplementation", cfg.L2RewardImplementation);
+        vm.serializeAddress(json, "L2RewardPaused", cfg.L2RewardPaused);
         vm.serializeAddress(json, "L2Staking", cfg.L2Staking);
         vm.serializeAddress(json, "L2StakingImplementation", cfg.L2StakingImplementation);
         vm.serializeAddress(json, "L2TimelockController", cfg.L2TimelockController);

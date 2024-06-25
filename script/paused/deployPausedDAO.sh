@@ -47,7 +47,7 @@ else
 fi
 echo "Done."
 
-echo "Cleaning up the build artifacts to be able to deploy the contract..."
+echo "Cleaning up the build artifacts to be able to deploy the next contract..."
 forge clean
 echo "Done."
 
