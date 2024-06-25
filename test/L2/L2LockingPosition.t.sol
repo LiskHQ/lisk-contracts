@@ -10,7 +10,7 @@ import { IL2LockingPosition } from "src/interfaces/L2/IL2LockingPosition.sol";
 import { L2Staking } from "src/L2/L2Staking.sol";
 import { L2VotingPower } from "src/L2/L2VotingPower.sol";
 
-contract L2LockingPositionV2 is L2VotingPower {
+contract L2LockingPositionV2 is L2LockingPosition {
     uint256 public testNumber;
 
     function initializeV2(uint256 _testNumber) public reinitializer(2) {
@@ -885,7 +885,7 @@ contract L2LockingPositionTest is Test {
         );
 
         // wrap L2LockingPositionV2 proxy with new contract
-        L2LockingPositionV2 l2LockingPositionV2 = L2LockingPositionV2(payable(address(l2LockingPosition)));
+        L2LockingPositionV2 l2LockingPositionV2 = L2LockingPositionV2(address(l2LockingPosition));
 
         // new testNumber variable introduced
         assertEq(l2LockingPositionV2.testNumber(), testNumber);

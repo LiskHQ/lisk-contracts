@@ -7,9 +7,23 @@ import { IERC20Errors } from "@openzeppelin/contracts/interfaces/draft-IERC6093.
 import { Test, console2 } from "forge-std/Test.sol";
 import { L2LockingPosition } from "src/L2/L2LockingPosition.sol";
 import { IL2LockingPosition } from "src/interfaces/L2/IL2LockingPosition.sol";
+import { L2LockingPositionPaused } from "src/L2/paused/L2LockingPositionPaused.sol";
 import { L2LiskToken } from "src/L2/L2LiskToken.sol";
 import { L2Staking } from "src/L2/L2Staking.sol";
 import { L2VotingPower } from "src/L2/L2VotingPower.sol";
+
+contract L2StakingV2 is L2Staking {
+    uint256 public testNumber;
+
+    function initializeV2(uint256 _testNumber) public reinitializer(3) {
+        testNumber = _testNumber;
+        version = "2.0.0";
+    }
+
+    function onlyV2() public pure returns (string memory) {
+        return "Only L2StakingV2 have this function";
+    }
+}
 
 contract L2StakingHarness is L2Staking {
     function exposedCalculatePenalty(uint256 amount, uint256 expDate) public view returns (uint256) {
@@ -1613,5 +1627,105 @@ contract L2StakingTest is Test {
         vm.prank(nobody);
         vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, nobody));
         l2Staking.acceptOwnership();
+    }
+
+    function test_UpgradeToAndCall_RevertWhenNotOwner() public {
+        // deploy L2StakingV2 implementation contract
+        L2StakingV2 l2StakingV2Implementation = new L2StakingV2();
+        address nobody = vm.addr(1);
+
+        vm.prank(nobody);
+        vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, nobody));
+        l2LockingPosition.upgradeToAndCall(address(l2StakingV2Implementation), "");
+    }
+
+    function test_UpgradeToAndCall_SuccessUpgrade() public {
+        // deploy L2StakingV2 implementation contract
+        L2StakingV2 l2StakingV2Implementation = new L2StakingV2();
+
+        uint256 testNumber = 123;
+
+        // upgrade contract, and also change some variables by reinitialize
+        l2Staking.upgradeToAndCall(
+            address(l2StakingV2Implementation),
+            abi.encodeWithSelector(l2StakingV2Implementation.initializeV2.selector, testNumber)
+        );
+
+        // wrap L2StakingV2 proxy with new contract
+        L2StakingV2 l2StakingV2 = L2StakingV2(address(l2Staking));
+
+        // new testNumber variable introduced
+        assertEq(l2StakingV2.testNumber(), testNumber);
+
+        // version was updated
+        assertEq(l2StakingV2.version(), "2.0.0");
+
+        // new function introduced
+        assertEq(l2StakingV2.onlyV2(), "Only L2StakingV2 have this function");
+
+        // assure cannot re-reinitialize
+        vm.expectRevert();
+        l2StakingV2.initializeV2(testNumber + 1);
+    }
+
+    function upgradeLockingPositionContractToPausedVersion() private {
+        // deploy L2LockingPositionPaused contract
+        L2LockingPositionPaused l2LockingPositionPaused = new L2LockingPositionPaused();
+
+        // upgrade L2LockingPosition contract to L2LockingPositionPaused contract
+        l2LockingPosition.upgradeToAndCall(
+            address(l2LockingPositionPaused), abi.encodeWithSelector(l2LockingPositionPaused.initializePaused.selector)
+        );
+    }
+
+    function test_UpgradeToAndCall_PausedVersion() public {
+        // create a stake to have it for testing different function calls inside Stake contract
+        vm.prank(alice);
+        l2Staking.lockAmount(alice, 50 * 10 ** 18, 365);
+
+        // create a paused stake to have it for testing resumeCountdown function call inside Stake contract
+        vm.startPrank(alice);
+        l2Staking.lockAmount(alice, 20 * 10 ** 18, 365);
+        l2Staking.pauseRemainingLockingDuration(2);
+        vm.stopPrank();
+
+        upgradeLockingPositionContractToPausedVersion();
+
+        // try to call lockAmount
+        vm.expectRevert(L2LockingPositionPaused.LockingPositionIsPaused.selector);
+        vm.prank(alice);
+        l2Staking.lockAmount(alice, 30 * 10 ** 18, 365);
+
+        // try to call unlock
+        vm.warp(365 days);
+        vm.expectRevert(L2LockingPositionPaused.LockingPositionIsPaused.selector);
+        vm.prank(alice);
+        l2Staking.unlock(1);
+
+        // try to call initiateFastUnlock
+        vm.warp(300 days);
+        vm.expectRevert(L2LockingPositionPaused.LockingPositionIsPaused.selector);
+        vm.prank(alice);
+        l2Staking.initiateFastUnlock(1);
+
+        // try to call increaseLockingAmount
+        vm.expectRevert(L2LockingPositionPaused.LockingPositionIsPaused.selector);
+        vm.prank(alice);
+        l2Staking.increaseLockingAmount(1, 20 * 10 ** 18);
+
+        // try to call extendLockingDuration
+        vm.expectRevert(L2LockingPositionPaused.LockingPositionIsPaused.selector);
+        vm.prank(alice);
+        l2Staking.extendLockingDuration(1, 80);
+
+        // try to call pauseRemainingLockingDuration
+        vm.expectRevert(L2LockingPositionPaused.LockingPositionIsPaused.selector);
+        vm.prank(alice);
+        l2Staking.pauseRemainingLockingDuration(1);
+
+        // try to call resumeCountdown
+        vm.expectRevert(L2LockingPositionPaused.LockingPositionIsPaused.selector);
+        vm.prank(alice);
+        l2Staking.resumeCountdown(2);
     }
 }
