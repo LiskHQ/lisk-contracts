@@ -20,12 +20,12 @@ then
     exit
 fi
 
-echo "Removing files inside deployment directory if they exists..."
-rm -rf deployment/devnet
+echo "Removing files inside deployment/artifacts/contracts directory if they exists..."
+rm -rf deployment/artifacts/contracts/devnet
 echo "Done."
 
-echo "Creating devnet directory inside deployment directory..."
-mkdir deployment/devnet
+echo "Creating devnet directory inside deployment/artifacts/contracts directory..."
+mkdir deployment/artifacts/contracts/devnet
 echo "Done."
 
 echo "Deploying Demo L2LiskToken smart contract..."
