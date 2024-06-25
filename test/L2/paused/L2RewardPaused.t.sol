@@ -117,7 +117,7 @@ contract L2RewardPausedTest is Test {
         l2RewardImplementation = new L2Reward();
 
         vm.expectEmit(true, true, true, true);
-        emit L2Staking.LiskTokenContractAddressChanged(address(0x0), address(l2LiskToken));
+        emit L2Reward.LiskTokenContractAddressChanged(address(0x0), address(l2LiskToken));
 
         l2Reward = L2Reward(
             address(
