@@ -2,6 +2,7 @@
 pragma solidity 0.8.23;
 
 import { Test, console2 } from "forge-std/Test.sol";
+import { Vm } from "forge-std/Vm.sol";
 import { IL2LiskToken, IL2Staking, L2Reward } from "src/L2/L2Reward.sol";
 import { ERC721Upgradeable } from "@openzeppelin-upgradeable/contracts/token/ERC721/ERC721Upgradeable.sol";
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
@@ -43,6 +44,7 @@ contract L2RewardTest is Test {
         uint256 lastClaimedAmount;
         uint256 rewardsSurplus;
         uint256 totalWeight;
+        uint256 penalty;
     }
 
     struct Position {
@@ -249,7 +251,14 @@ contract L2RewardTest is Test {
         uint256[] memory positionsToBeModified = new uint256[](1);
         positionsToBeModified[0] = scenario.lockIDs[stakerIndex];
         vm.prank(scenario.stakers[stakerIndex]);
+        vm.recordLogs();
         l2Reward.initiateFastUnlock(positionsToBeModified);
+
+        Vm.Log[] memory entries = vm.getRecordedLogs();
+        assertEq(entries[entries.length - 2].topics[0], keccak256("FastUnlockInitiated(uint256,uint256)"));
+        uint256 penalty = abi.decode(entries[entries.length - 2].data, (uint256));
+
+        scenario.penalty += penalty;
     }
 
     function stakerReumesPosition(uint256 stakerIndex, Scenario memory scenario) private {
@@ -388,7 +397,8 @@ contract L2RewardTest is Test {
             oldBalances: oldBalances,
             lastClaimedAmount: 0,
             rewardsSurplus: 0,
-            totalWeight: 0
+            totalWeight: 0,
+            penalty: 0
         });
 
         checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
@@ -495,7 +505,8 @@ contract L2RewardTest is Test {
             oldBalances: oldBalances,
             lastClaimedAmount: 0,
             rewardsSurplus: 0,
-            totalWeight: 0
+            totalWeight: 0,
+            penalty: 0
         });
         onDay(1);
         checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
@@ -547,14 +558,17 @@ contract L2RewardTest is Test {
         checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
         onDay(105);
         allStakersClaim(scenario);
+        checkRewardsContractBalance(funds + scenario.penalty);
         cacheBalances(scenario);
         onDay(106);
         allStakersClaim(scenario);
+        checkRewardsContractBalance(funds + scenario.penalty);
         lastClaimedRewardEqualsDailyRewardBetweenDays(scenario.lastClaimedAmount, 105, 105);
         cacheTotalWeight(scenario);
         onDay(115);
         cacheBalances(scenario);
         allStakersClaim(scenario);
+        checkRewardsContractBalance(funds + scenario.penalty);
         checkConsistencyTotalWeight(106, getLargestExpiryDate(lockIDs), scenario);
         lastClaimedRewardEqualsDailyRewardBetweenDays(scenario.lastClaimedAmount, 106, 114);
     }
@@ -586,7 +600,8 @@ contract L2RewardTest is Test {
             oldBalances: oldBalances,
             lastClaimedAmount: 0,
             rewardsSurplus: 0,
-            totalWeight: 0
+            totalWeight: 0,
+            penalty: 0
         });
 
         onDay(1);
@@ -707,14 +722,16 @@ contract L2RewardTest is Test {
         cacheTotalWeight(scenario);
         onDay(200);
         allStakersClaim(scenario);
-        // checkConsistencyTotalWeight(110, getLargestExpiryDate(lockIDs), scenario);
+        checkRewardsContractBalance(funds + scenario.penalty);
         cacheBalances(scenario);
         onDay(201);
         allStakersClaim(scenario);
+        checkRewardsContractBalance(funds + scenario.penalty);
         lastClaimedRewardEqualsDailyRewardBetweenDays(scenario.lastClaimedAmount, 200, 200);
         cacheBalances(scenario);
         onDay(250);
         allStakersClaim(scenario);
+        checkRewardsContractBalance(funds + scenario.penalty);
         lastClaimedRewardEqualsDailyRewardBetweenDays(scenario.lastClaimedAmount, 201, 249);
     }
 
@@ -743,7 +760,8 @@ contract L2RewardTest is Test {
             oldBalances: oldBalances,
             lastClaimedAmount: 0,
             rewardsSurplus: 0,
-            totalWeight: 0
+            totalWeight: 0,
+            penalty: 0
         });
 
         onDay(1);
