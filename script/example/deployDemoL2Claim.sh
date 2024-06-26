@@ -56,8 +56,4 @@ echo "Transferring funds to L2Claim smart contract..."
 forge script --rpc-url="$L2_RPC_URL" --broadcast -vvvv script/example/DemoTransferFunds.s.sol:DemoTransferFundsScript
 echo "Done."
 
-echo "Submitting Claim..."
-forge script --rpc-url="$L2_RPC_URL" --broadcast -vvvv script/example/L2ClaimTokens.s.sol:L2ClaimTokensScript
-echo "Done."
-
 echo "Completed."
