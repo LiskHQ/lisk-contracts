@@ -27,7 +27,7 @@ The mechanism for locking tokens works as follows:
 The voting power for a locked amount of tokens is computed as follows:
 
 - Generally, locked tokens provide a voting power proportional to the amount of locked tokens. Concretely, 1 locked LSK provides one unit of voting power.
-- In case a user pauses their locking period countdown, they receives a boost of the voting power meaning the voting power is set to `lockedAmount * (1 + remainingLockingDurationInDays/365)`. Hence, the voting power can be increased by up to 200%.
+- In case a user pauses their locking period countdown, they receives a boost of the voting power meaning the voting power is set to `lockedAmount * (1 + remainingLockingDurationInDays/365)`. Hence, the voting power can be increased by up to 200%, by pausing a maximum locking period of 2 years.
 
 ### Voting Power for a Concrete Proposal
 
