@@ -2,7 +2,7 @@ name: PR CI
 
 on:
   pull_request:
-    branches: [ main, development ]
+    branches: [main, development]
 
 permissions:
   contents: read
@@ -23,7 +23,7 @@ jobs:
             target: x86_64-unknown-linux-gnu
           - os: windows-latest
             target: x86_64-pc-windows-msvc
-      
+
     runs-on: ${{ matrix.system.os }}
     steps:
       - uses: actions/checkout@v3
@@ -33,7 +33,7 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
-          version: nightly    
+          version: nightly
 
       - name: Check formatting
         if: ${{ contains(matrix.system.os, 'windows') == false }}
