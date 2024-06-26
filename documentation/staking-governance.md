@@ -13,12 +13,12 @@ This design with selectable locking duration helps to align token holders with t
 
 The mechanism for locking tokens works as follows: 
 
-- Users can lock tokens for a specific locking duration (between 2 weeks and 2 years). After the locking duration ends, the users can redeem their tokens.
-- Users can modify their locking positions (increase amount, extend locking duration) at any time.
-- Users have the option to pause their locking period countdown. That means, the remaining locking duration remains fixed until the user decides to resume it. Note that this results in higher voting power and staking rewards as described below. 
+- Users can **lock** tokens for a specific locking duration (between 2 weeks and 2 years). After the locking duration ends, the users can redeem their tokens.
+- Users can **modify** their locking positions (increase amount, extend locking duration) at any time.
+- Users have the option to **pause** their locking period countdown. That means, the remaining locking duration remains fixed until the user decides to resume it. Note that this results in higher voting power and staking rewards as described below. 
 - Each user may have multiple locking positions. 
-- Locking positions are represented using NFTs for composability into DeFi and potential future uses. 
-- In case a user wants to unlock earlier than the end of the locking duration, there is a fast unlock option. The fast unlock implies a penalty, i.e., an amount that is deducted from the locked LSK tokens. The penalty is set to `0.5 * lockedAmount *  (remainingLockingDurationInDays / maximumLockingDuration)`, where `maximumLockingDuration` is set to 2 years. Users can then redeem their tokens after a 3-day emergency locking period.
+- Locking positions are represented using **NFTs** for composability into DeFi and potential future uses. 
+- In case a user wants to unlock earlier than the end of the locking duration, there is a **fast unlock** option. The fast unlock implies a penalty, i.e., an amount that is deducted from the locked LSK tokens. The penalty is set to `0.5 * lockedAmount *  (remainingLockingDurationInDays / maximumLockingDuration)`, where `maximumLockingDuration` is set to 2 years. Users can then redeem their tokens after a 3-day emergency locking period.
   - Confiscated tokens are immediately redirected to the staking rewards pool to be distributed over the next 14 days period on top of the guaranteed rewards.
   - Users do not have the option to cancel the fast un-stake during this 3 day window.
 
