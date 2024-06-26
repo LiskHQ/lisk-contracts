@@ -6,7 +6,7 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { Script, console2 } from "forge-std/Script.sol";
 import { stdJson } from "forge-std/StdJson.sol";
 import { L2Claim, ED25519Signature, MultisigKeys } from "src/L2/L2Claim.sol";
-import { Signature, MerkleTreeLeaf, MerkleLeaves } from "test/L2/L2Claim.t.sol";
+import { Signature, MerkleTreeLeaf, MerkleLeaves } from "test/L2/helper/L2ClaimHelper.sol";
 import "script/contracts/Utils.sol";
 
 /// @title L2ClaimTokensScript - L2 Claim Lisk tokens script
