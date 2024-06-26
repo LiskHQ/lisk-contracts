@@ -343,7 +343,7 @@ contract L2RewardTest is Test {
 
     /// @notice Checks the balance of reward contract.
     /// @dev only valid when all stakes are valid and all of them claims.
-    function checkRewardsContractBalance(uint256 funds) public {
+    function checkRewardsContractBalance(uint256 funds) private view {
         uint256 sumOfDailyRewards;
         for (uint256 i = deploymentDate; i < l2Reward.todayDay(); i++) {
             sumOfDailyRewards += l2Reward.dailyRewards(i);
@@ -360,7 +360,8 @@ contract L2RewardTest is Test {
         uint256 endDay,
         Scenario memory scenario
     )
-        public
+        private
+        view
     {
         uint256 rewardsCap = totalAmountLocked / 365;
         uint256 expectedSurplus;
@@ -807,6 +808,7 @@ contract L2RewardTest is Test {
         Scenario memory scenario
     )
         private
+        view
     {
         if (l2Reward.todayDay() < expiryDateOfLongestStake) {
             assertTrue(l2Reward.totalWeight() > 0);
@@ -877,7 +879,14 @@ contract L2RewardTest is Test {
         return expiryDate;
     }
 
-    function lastClaimedRewardEqualsDailyRewardBetweenDays(uint256 reward, uint256 startDay, uint256 endDay) private {
+    function lastClaimedRewardEqualsDailyRewardBetweenDays(
+        uint256 reward,
+        uint256 startDay,
+        uint256 endDay
+    )
+        private
+        view
+    {
         uint256 sumOfDailyRewards;
         for (uint256 i = deploymentDate + startDay; i <= deploymentDate + endDay; i++) {
             sumOfDailyRewards += l2Reward.dailyRewards(i);
