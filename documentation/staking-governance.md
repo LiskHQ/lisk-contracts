@@ -13,12 +13,12 @@ This design with selectable locking duration helps to align token holders with t
 
 The mechanism for locking tokens works as follows: 
 
-- Users can **lock** tokens for a specific locking duration (between 2 weeks and 2 years). After the locking duration ends, the users can redeem their tokens.
+- Users can **lock** tokens for a specific locking duration (between 2 weeks and 2 years). After the locking duration ends, the users can unlock their tokens.
 - Users can **modify** their locking positions (increase amount, extend locking duration) at any time.
-- Users have the option to **pause** their locking period countdown. That means, the remaining locking duration remains fixed until the user decides to resume it. Note that this results in higher voting power and staking rewards as described below. 
+- Users have the option to **pause** their locking period countdown. That means, the remaining locking duration remains fixed until the user decides to resume it. Note that this results in higher voting power and staking rewards as [described below](#pausing-a-locking-position). 
 - Each user may have multiple locking positions. 
 - Locking positions are represented using **NFTs** for composability into DeFi and potential future uses. 
-- In case a user wants to unlock earlier than the end of the locking duration, there is a **fast unlock** option. The fast unlock implies a penalty, i.e., an amount that is deducted from the locked LSK tokens. The penalty is set to `0.5 * lockedAmount *  (remainingLockingDurationInDays / maximumLockingDuration)`, where `maximumLockingDuration` is set to 2 years. Users can then redeem their tokens after a 3-day emergency locking period.
+- In case a user wants to unlock earlier than the end of the locking duration, there is a **fast unlock** option. The fast unlock implies a penalty, i.e., an amount that is deducted from the locked LSK tokens. The penalty is set to `0.5 * lockedAmount *  (remainingLockingDurationInDays / maximumLockingDuration)`, where `maximumLockingDuration` is set to 2 years. Users can then unlock their tokens after a 3-day emergency locking period.
   - Confiscated tokens are immediately redirected to the staking rewards pool to be distributed over the next 14 days period on top of the guaranteed rewards.
   - Users do not have the option to cancel the fast un-stake during this 3 day window.
 
@@ -35,14 +35,14 @@ At the time a proposal is created, a snapshot of the delegated voting power is t
 
 ## Staking Rewards
 
-Users receive rewards for their locking tokens as follows: 
+Users receive rewards for locking their tokens as follows: 
 
-- Rewards are calculated on a daily basis, based on the amount locked and the remaining locking duration. Concretely, the weight for a locked amount is given by `lockedAmount * (remainingLockingDurationInDays + 150)`. The total daily amount of staking rewards is then shared by all users proportional to their weight.
+- Rewards are calculated on a daily basis, based on the amount locked and the remaining locking duration. Concretely, the weight for a locked amount is given by `lockedAmount * (remainingLockingDurationInDays + 150)`. The total daily amount of staking rewards is then shared by all users proportional to their weight. That means, a position with weight `w` receives `totalDailyRewards * w / totalWeight`.
 - Users can claim their rewards (and restake them immediately if they want) at any time.
 
 ## Pausing a Locking Position
 
-As mentioned in several subsection before, it is possible *to pause* the countdown of a locking position. This can be done at any time. Once paused, the remaining locking duration does not decrease anymore. The owner of the locking position can *resume* the countdown of the locking period an any point in time. Once resumed, the remaining locking duration descreases again daily.
+As mentioned in several places above, it is possible *to pause* the countdown of a locking position. This can be done at any time. Once paused, the remaining locking duration does not decrease anymore. The owner of the locking position can *resume* the countdown of the locking period an any point in time. Once resumed, the remaining locking duration descreases again daily.
 
 **Example**: A users creates a locking position on day 1 and with a locking duration of 30 days. On day 6, the remaining locking duration is 25 days. On the same day, the user pauses the locking pausition. On day 50, the remaining locking duration is still 25. The users resumes the countdown of the locking position on this day. On day 75, the reamining locking duration is zero and the user can unlock their tokens.
 
