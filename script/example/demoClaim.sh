@@ -32,8 +32,24 @@ echo "Deploying Demo L2LiskToken smart contract..."
 forge script --rpc-url="$L2_RPC_URL" --broadcast -vvvv script/example/L2DemoToken.s.sol:L2DemoTokenScript
 echo "Done."
 
+echo "Deploying Demo L2Staking smart contract..."
+forge script --rpc-url="$L2_RPC_URL" --broadcast -vvvv script/contracts/L2/L2Staking.s.sol:L2StakingScript
+echo "Done."
+
+echo "Deploying Demo L2LockingPosition smart contract..."
+forge script --rpc-url="$L2_RPC_URL" --broadcast -vvvv script/contracts/L2/L2LockingPosition.s.sol:L2LockingPositionScript
+echo "Done."
+
+echo "Deploying Demo L2VotingPowerScript smart contract..."
+forge script --rpc-url="$L2_RPC_URL" --broadcast -vvvv script/contracts/L2/L2VotingPower.s.sol:L2VotingPowerScript
+echo "Done."
+
+echo "Deploying Demo L2Governor smart contract..."
+forge script --rpc-url="$L2_RPC_URL" --broadcast -vvvv script/contracts/L2/L2Governor.s.sol:L2GovernorScript
+echo "Done."
+
 echo "Deploying L2Claim smart contract..."
-forge script --rpc-url="$L2_RPC_URL" --broadcast -vvvv script/L2Claim.s.sol:L2ClaimScript
+forge script --rpc-url="$L2_RPC_URL" --broadcast -vvvv script/contracts/L2/L2Claim.s.sol:L2ClaimScript
 echo "Done."
 
 echo "Transferring funds to L2Claim smart contract..."
