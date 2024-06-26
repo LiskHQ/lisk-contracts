@@ -1,8 +1,4 @@
-# L2 Lisk Staking
-
-Staking L2 tokens creates additional utility of L2 Lisk token by allowing user to stake (Locking Position) an amount of token for a certain period of time allowing them to earn daily rewards and contribute to Governance.
-
-## Implementation
+# Staking Implementation
 
 Implementation of L2 staking functionality is separated into,
 
@@ -15,7 +11,7 @@ Implementation of L2 staking functionality is separated into,
 - `L2VotingPower` contract is an implementation of `ERC20Votes` token standard that maintains the voting power of an account.
 
 
-### Structure of a Locking position
+## Structure of a Locking position
 A locking position (or a stake) is represented as a custom data structure containing:
 
 ![Structure of a Locking position](diagrams/locking_position.png)
@@ -27,11 +23,11 @@ A locking position (or a stake) is represented as a custom data structure contai
 | expDate               | `uint256` | The expiration date, i.e., the day when the locked amount becomes claimable for the user.                                                                                                                                                                                                                                                                                     |
 | pausedLockingDuration | `uint256` | Remaining duration in days till the expiry once a paused locking position is resumed. It is set to zero if the locking position is not paused.                                                                                                                                                                                                                                |
 
-### Identifying a Locking Position
+## Identifying a Locking Position
 `L2LockingPosition` contract maintains a collection of locking positions against each user and uniquely identifies them with an identifier of type `uint256`.
 
-### L2Reward Contract
-#### Events emitted on interactions
+## L2Reward Contract
+### Events emitted on interactions
 `L2Reward` communicates changes to state made by the contract or other contracts it consumes through events:
 
 | Contract            | Event                     | Description                                                                                                                                                                                   |
@@ -44,12 +40,12 @@ A locking position (or a stake) is represented as a custom data structure contai
 | `L2LockingPosition` | `Transfer`                | Emitted when a locking position is transferred to another account.                                                                                                                            |
 | `L2VotingPower`     | `Transfer`                | Emitted when external account creates or modifies a locking position, as the parameters of a locking position impact its owner's voting power by minting or burning some voting power tokens. |
 
-#### API accessible to external user and Events
+### API accessible to external user and Events
 The diagram highlights the public API accessible to external accounts and how creation and manipulations of locking positions consumes other smart contracts and the relevant events that are emitted.
 
 ![API accessible to external user and Events](diagrams/l2reward_external_account_api_and_events.png)
 
-#### API accessible to the owner of L2Reward contract and Events
+### API accessible to the owner of L2Reward contract and Events
 L2Reward contract is ownable and allows the contract owner to add funds for rewarding locking positions. Its owner can allocate new funds and unused rewards accumulated due to reward capping for a certain duration.
 
 ![API accessible to the owner of L2Reward contract and Events](diagrams/l2reward_owner_api_and_events.png)
@@ -60,7 +56,7 @@ This contract exposes the public API to retrieve information about locking posit
 
 ![API L2LockingPosition](diagrams/l2lockingposition_api.png)
 
-# Representing Time
+## Representing Time
 
 Contracts involved in L2 Lisk staking maintains (UNIX epoch) time at the granularity of a day, instead of seconds.
 The day 19740, will be 19740 x 60 x 60 x 24 i.e. 1705536000 epoch seconds, any interactions at other higher-level environment must convert days to epoch time.
