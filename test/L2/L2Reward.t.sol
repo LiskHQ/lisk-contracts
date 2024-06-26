@@ -2,17 +2,31 @@
 pragma solidity 0.8.23;
 
 import { Test, console2 } from "forge-std/Test.sol";
-import { IL2LiskToken, IL2Staking, L2Reward } from "src/L2/L2Reward.sol";
+import { OwnableUpgradeable } from "@openzeppelin-upgradeable/contracts/access/OwnableUpgradeable.sol";
 import { ERC721Upgradeable } from "@openzeppelin-upgradeable/contracts/token/ERC721/ERC721Upgradeable.sol";
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { IERC20Errors } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
+import { IL2LiskToken, IL2Staking, L2Reward } from "src/L2/L2Reward.sol";
 import { L2VotingPower } from "src/L2/L2VotingPower.sol";
 import { L2LiskToken } from "src/L2/L2LiskToken.sol";
 import { L2LockingPosition } from "src/L2/L2LockingPosition.sol";
 import { L2Staking } from "src/L2/L2Staking.sol";
-import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-import { IERC20Errors } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 import { IL2LockingPosition } from "src/interfaces/L2/IL2LockingPosition.sol";
+
+contract L2RewardV2 is L2Reward {
+    uint256 public testNumber;
+
+    function initializeV2(uint256 _testNumber) public reinitializer(2) {
+        testNumber = _testNumber;
+        version = "2.0.0";
+    }
+
+    function onlyV2() public pure returns (string memory) {
+        return "Only L2RewardV2 have this function";
+    }
+}
 
 contract L2RewardTest is Test {
     L2LiskToken public l2LiskToken;
@@ -1804,5 +1818,44 @@ contract L2RewardTest is Test {
 
     function convertLiskToSmallestDenomination(uint256 lisk) internal pure returns (uint256) {
         return lisk * 10 ** 18;
+    }
+
+    function test_UpgradeToAndCall_RevertWhenNotOwner() public {
+        // deploy L2RewardV2 implementation contract
+        L2RewardV2 l2RewardV2Implementation = new L2RewardV2();
+        address nobody = vm.addr(1);
+
+        vm.prank(nobody);
+        vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, nobody));
+        l2LockingPosition.upgradeToAndCall(address(l2RewardV2Implementation), "");
+    }
+
+    function test_UpgradeToAndCall_SuccessUpgrade() public {
+        // deploy L2RewardV2 implementation contract
+        L2RewardV2 l2RewardV2Implementation = new L2RewardV2();
+
+        uint256 testNumber = 123;
+
+        // upgrade contract, and also change some variables by reinitialize
+        l2Reward.upgradeToAndCall(
+            address(l2RewardV2Implementation),
+            abi.encodeWithSelector(l2RewardV2Implementation.initializeV2.selector, testNumber)
+        );
+
+        // wrap L2RewardV2 proxy with new contract
+        L2RewardV2 l2RewardV2 = L2RewardV2(address(l2Reward));
+
+        // new testNumber variable introduced
+        assertEq(l2RewardV2.testNumber(), testNumber);
+
+        // version was updated
+        assertEq(l2RewardV2.version(), "2.0.0");
+
+        // new function introduced
+        assertEq(l2RewardV2.onlyV2(), "Only L2RewardV2 have this function");
+
+        // assure cannot re-reinitialize
+        vm.expectRevert();
+        l2RewardV2.initializeV2(testNumber + 1);
     }
 }
