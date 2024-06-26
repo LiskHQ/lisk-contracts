@@ -20,7 +20,7 @@ The mechanism for locking tokens works as follows:
 - Locking positions are represented using **NFTs** for composability into DeFi and potential future uses. 
 - In case a user wants to unlock earlier than the end of the locking duration, there is a **fast unlock** option. The fast unlock implies a penalty, i.e., an amount that is deducted from the locked LSK tokens. The penalty is set to `0.5 * lockedAmount *  (remainingLockingDurationInDays / maximumLockingDuration)`, where `maximumLockingDuration` is set to 2 years. Users can then unlock their tokens after a 3-day emergency locking period.
   - Confiscated tokens are immediately redirected to the staking rewards pool to be distributed over the next 14 days period on top of the guaranteed rewards.
-  - Users do not have the option to cancel the fast un-stake during this 3 day window.
+  - Users do not have the option to cancel the fast unlock during this 3 day window.
 
 ## Voting Power
 
@@ -49,7 +49,7 @@ As mentioned in several places above, it is possible *to pause* the countdown of
 What are the consequences of pausing the countdown:
 
 - The voting power is boosted, i.e. increased from `lockedAmount` to `lockedAmount * (1 + remainingLockingDurationInDays/365)`.
-- The rewards paid out per day for the locking position do not decrease daily (assuming a constant total weight in the rewards contract). In contrast, the rewards paid out per day for an unpaused locking position decrease day by day.
+- The weight on the rewards calculation (`lockedAmount * (remainingLockingDurationInDays + 150)`) does not decrease daily (in contrast to unpaused locking positions) but remains fixed for the duration that the position remains paused. This results in higher staking rewards.
 - The locking position does not expire.
 
 ## Onchain Governance
