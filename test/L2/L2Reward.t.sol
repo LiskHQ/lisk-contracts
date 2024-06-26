@@ -341,6 +341,8 @@ contract L2RewardTest is Test {
         scenario.totalWeight = l2Reward.totalWeight();
     }
 
+    /// @notice Checks the balance of reward contract.
+    /// @dev only valid when all stakes are valid and all of them claims.
     function checkRewardsContractBalance(uint256 funds) public {
         uint256 sumOfDailyRewards;
         for (uint256 i = deploymentDate; i < l2Reward.todayDay(); i++) {
@@ -800,7 +802,7 @@ contract L2RewardTest is Test {
     }
 
     function checkConsistencyTotalWeight(
-        uint256 lastTrsDate,
+        uint256 dayOfLastTrs,
         uint256 expiryDateOfLongestStake,
         Scenario memory scenario
     )
@@ -812,7 +814,7 @@ contract L2RewardTest is Test {
             assertEq(l2Reward.totalWeight(), 0);
         }
 
-        assertEq(l2Reward.totalWeights(deploymentDate + lastTrsDate), scenario.totalWeight);
+        assertEq(l2Reward.totalWeights(deploymentDate + dayOfLastTrs), scenario.totalWeight);
     }
 
     function stakerClaimOnDayAndCheckConsistencyTotalWeight(
