@@ -33,7 +33,7 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
-          version: nightly    
+          version: nightly
 
       - name: Check formatting
         if: ${{ contains(matrix.system.os, 'windows') == false }}
