@@ -11,3 +11,5 @@ This folder contains the following documents essential for understanding the dep
 4. [Vesting Documentation](./vesting.md): This page explains the technical details concerning implementation, deployment and maintenance of vesting smart contracts that hold LSK tokens and release them according to predefined schedules.
 
 5. [Migration Airdrop Documentation](./airdrop.md): This page explains the technical details concerning design and lifecycle of the migration airdrop smart contract that distributes LSK tokens as a reward to the users that migrated from the Lisk L1 network.
+
+6. [Staking and Lisk DAO Documentation](./staking-governance.md): This page explains the technical details concerning Staking and Lisk DAO. The two topics are combined in one document as they are strongly linked to each other.
