@@ -31,14 +31,14 @@ interface IL1StandardBridge {
 ///         It is designed to be used as a part of the Lisk L2 ecosystem.
 contract SwapAndBridge {
     /// @notice Minimum amount of gas to be used for the deposit message on L2.
-    uint32 public MIN_DEPOSIT_GAS = 0;
+    uint32 public constant MIN_DEPOSIT_GAS = 0;
 
     /// @notice The L1 bridge contract. This is configurable since not all tokens are bridged
     /// using the standard bridge.
-    IL1StandardBridge public L1_BRIDGE;
+    IL1StandardBridge public immutable L1_BRIDGE;
 
     /// @notice The wrapped LST contract on L1.
-    IERC20 public L1_TOKEN;
+    IERC20 public immutable L1_TOKEN;
 
     /// @notice Address of the wrapped LST on L2.
     address public immutable L2_TOKEN_ADDRESS;
@@ -89,7 +89,8 @@ contract SwapAndBridge {
         }
 
         // Approve the L1 bridge to transfer the wrapped tokens to the L2.
-        L1_TOKEN.approve(address(L1_BRIDGE), balance);
+        bool approved = L1_TOKEN.approve(address(L1_BRIDGE), balance);
+        require(approved, "Failed to approve L1 token spender.");
 
         // Bridge wrapped tokens to L2.
         // We use depositERC20To rather than depositERC20 because the latter can only be called by EOA.
