@@ -1,6 +1,6 @@
 Tests in this folder are run as script as they require to be run in a Sepolia forked environment, since they depend on the contracts owned and deployed by Lido and Diva teams.
 
-Before running them, start an L1 and L2 fork node using the shell scripts `runL1TestNetwork.sh` and `runL2TestNetwork.sh` respectively.
+Before running them, start an L1 and L2 fork node using the shell scripts `runL1TestNetwork.sh` and `runL2TestNetwork.sh` inside [script](../..) folder respectively.
 
 ## E2E Tests
 
