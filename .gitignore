@@ -15,4 +15,4 @@ broadcast/
 slither-results.json
 
 # Devnet deployment files
-deployment/devnet/
+deployment/artifacts/contracts/devnet/
