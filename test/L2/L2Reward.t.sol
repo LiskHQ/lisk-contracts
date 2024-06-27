@@ -342,7 +342,7 @@ contract L2RewardTest is Test {
     }
 
     /// @notice Checks the balance of reward contract.
-    /// @dev only valid when all stakes are valid and all of them claims.
+    /// @dev Only valid when all stakes are valid and all of them claims.
     function checkRewardsContractBalance(uint256 funds) private view {
         uint256 sumOfDailyRewards;
         for (uint256 i = deploymentDate; i < l2Reward.todayDay(); i++) {
@@ -353,6 +353,9 @@ contract L2RewardTest is Test {
         assertEq(l2LiskToken.balanceOf(address(l2Reward)) / 10 ** 4, (funds - sumOfDailyRewards) / 10 ** 4);
     }
 
+    /// @notice Checks aggregation to rewards surplus for locked amounts.
+    /// @dev There must be no transaction causing the change to the locked amount or daily rewards in the intended
+    /// duration.
     function verifyRewardsSurplusForLockedAmountBetweenDays(
         uint256 dailyRewards,
         uint256 totalAmountLocked,
@@ -817,28 +820,6 @@ contract L2RewardTest is Test {
         }
 
         assertEq(l2Reward.totalWeights(deploymentDate + dayOfLastTrs), scenario.totalWeight);
-    }
-
-    function stakerClaimOnDayAndCheckConsistencyTotalWeight(
-        uint256 stakerIndex,
-        uint256 day,
-        uint256 expiryDateOfLongestStake,
-        Scenario memory scenario
-    )
-        private
-    {
-        if (l2Reward.todayDay() < expiryDateOfLongestStake) {
-            assertTrue(l2Reward.totalWeight() > 0);
-        } else {
-            assertEq(l2Reward.totalWeight(), 0);
-        }
-
-        uint256 oldTotalWeight = l2Reward.totalWeight();
-
-        onDay(day);
-        stakerClaimRewards(stakerIndex, scenario);
-
-        assertEq(l2Reward.totalWeights(l2Reward.todayDay() - 1), oldTotalWeight);
     }
 
     function checkConsistencyPendingUnlockDailyUnlocked(
