@@ -63,8 +63,12 @@ contract TestE2EL1Script is Script {
     }
 
     // Lido and Diva l1 LST tokens emit events differently, hence we need two different test suites
-    function runLido(address l1BridgeAddress, address l1Token, address l2BridgeAddress, address l2Token) public {
-        swapAndBridge = new SwapAndBridge(l1BridgeAddress, l1Token, l2Token);
+    function runLido(address _l1Bridge, address _l1Token, address _l2Bridge, address _l2Token) public {
+        assert(_l1Bridge != address(0));
+        assert(_l1Token != address(0));
+        assert(_l2Bridge != address(0));
+        assert(_l2Token != address(0));
+        swapAndBridge = new SwapAndBridge(_l1Bridge, _l1Token, _l2Token);
         console2.log("Token holder address: %s", testAccount);
         console2.log("Transferring ETH tokens from L1 to LST on L2 network...");
 
@@ -102,12 +106,9 @@ contract TestE2EL1Script is Script {
             entries[4].topics[1] == bytes32(uint256(uint160(address(swapAndBridge)))),
             "Approval: Invalid owner address topic"
         );
-        require(
-            entries[4].topics[2] == bytes32(uint256(uint160(l1BridgeAddress))),
-            "Approval: Invalid spender address topic"
-        );
+        require(entries[4].topics[2] == bytes32(uint256(uint160(_l1Bridge))), "Approval: Invalid spender address topic");
 
-        // entries[5] is the transfer event from swapAndBridge to l1BridgeAddress
+        // entries[5] is the transfer event from swapAndBridge to _l1Bridge
         // Transfer(address indexed from, address indexed to, uint256 value)
         require(entries[5].topics.length == 3, "Transfer: Invalid number of topics");
         require(
@@ -117,9 +118,7 @@ contract TestE2EL1Script is Script {
             entries[5].topics[1] == bytes32(uint256(uint160(address(swapAndBridge)))),
             "Transfer: Invalid from address topic"
         );
-        require(
-            entries[5].topics[2] == bytes32(uint256(uint160(l1BridgeAddress))), "Transfer: Invalid to address topic"
-        );
+        require(entries[5].topics[2] == bytes32(uint256(uint160(_l1Bridge))), "Transfer: Invalid to address topic");
 
         // entries[8] is the SentMessage event
         // SentMessage(address indexed target, address sender, bytes message, uint256 messageNonce, uint256 gasLimit)
@@ -130,13 +129,12 @@ contract TestE2EL1Script is Script {
         );
 
         require(
-            entries[8].topics[1] == bytes32(uint256(uint160(l2BridgeAddress))),
-            "SentMessage: Invalid target address topic"
+            entries[8].topics[1] == bytes32(uint256(uint160(_l2Bridge))), "SentMessage: Invalid target address topic"
         );
 
         (address sender, bytes memory message, uint256 messageNonce, uint256 gasLimit) =
             abi.decode(entries[8].data, (address, bytes, uint256, uint256));
-        require(sender == l1BridgeAddress, "SentMessage: Invalid sender address");
+        require(sender == _l1Bridge, "SentMessage: Invalid sender address");
         require(
             gasLimit == swapAndBridge.MIN_DEPOSIT_GAS(),
             "SentMessage: Invalid gas limit, not matching contract MIN_DEPOSIT_GAS"
@@ -153,27 +151,31 @@ contract TestE2EL1Script is Script {
         (address remoteToken, address localToken, address from, address to, uint256 amount, bytes memory extraData) =
             abi.decode(getSlice(5, message.length, message), (address, address, address, address, uint256, bytes));
 
-        require(remoteToken == l1Token, "SentMessage: Invalid L1 token address");
-        require(localToken == l2Token, "SentMessage: Invalid L2 token address");
+        require(remoteToken == _l1Token, "SentMessage: Invalid L1 token address");
+        require(localToken == _l2Token, "SentMessage: Invalid L2 token address");
         require(from == address(swapAndBridge), "SentMessage: Invalid sender address");
         require(to == testAccount, "SentMessage: Invalid recipient address");
         require(amount == TEST_AMOUNT, "SentMessage: Invalid amount");
         require(extraData.length == 2, "SentMessage: Invalid extra data");
 
         vm.serializeAddress("", "sender", sender);
-        vm.serializeAddress("", "target", l2BridgeAddress);
+        vm.serializeAddress("", "target", _l2Bridge);
         vm.serializeBytes("", "message", message);
         vm.serializeUint("", "messageNonce", messageNonce);
 
-        bytes memory data = abi.encode(sender, l2BridgeAddress, message, messageNonce, gasLimit);
+        bytes memory data = abi.encode(sender, _l2Bridge, message, messageNonce, gasLimit);
 
         string memory dataPath = string.concat(vm.projectRoot(), "/script/swap_and_bridge/example/message.data");
         vm.writeFileBinary(dataPath, data);
         console2.log("Transfer completed. Data saved to", dataPath);
     }
 
-    function runDiva(address l1BridgeAddress, address l1Token, address l2BridgeAddress, address l2Token) public {
-        swapAndBridge = new SwapAndBridge(l1BridgeAddress, l1Token, l2Token);
+    function runDiva(address _l1Bridge, address _l1Token, address _l2Bridge, address _l2Token) public {
+        assert(_l1Bridge != address(0));
+        assert(_l1Token != address(0));
+        assert(_l2Bridge != address(0));
+        assert(_l2Token != address(0));
+        swapAndBridge = new SwapAndBridge(_l1Bridge, _l1Token, _l2Token);
         console2.log("Token holder address: %s", testAccount);
         console2.log("Transferring ETH tokens from L1 to LST on L2 network...");
 
@@ -187,14 +189,14 @@ contract TestE2EL1Script is Script {
         Vm.Log[] memory entries = vm.getRecordedLogs();
         require(entries.length == 9, "Invalid number of logs");
 
-        // entries[0] is the mint event, transferring from 0 to l1Token contract
+        // entries[0] is the mint event, transferring from 0 to _l1Token contract
         // Transfer(address indexed from, address indexed to, uint256 value)
         require(entries[0].topics.length == 3, "Transfer: Invalid number of topics");
         require(
             entries[0].topics[0] == keccak256("Transfer(address,address,uint256)"), "Transfer: Invalid default topic"
         );
         require(entries[0].topics[1] == bytes32(0), "Transfer: Invalid from address topic");
-        require(entries[0].topics[2] == bytes32(uint256(uint160(l1Token))), "Transfer: Invalid to address topic");
+        require(entries[0].topics[2] == bytes32(uint256(uint160(_l1Token))), "Transfer: Invalid to address topic");
         //  check minted amount
         require(uint256(bytes32(entries[0].data)) == TEST_AMOUNT, "Transfer: Invalid amount");
 
@@ -208,12 +210,9 @@ contract TestE2EL1Script is Script {
             entries[2].topics[1] == bytes32(uint256(uint160(address(swapAndBridge)))),
             "Approval: Invalid owner address topic"
         );
-        require(
-            entries[2].topics[2] == bytes32(uint256(uint160(l1BridgeAddress))),
-            "Approval: Invalid spender address topic"
-        );
+        require(entries[2].topics[2] == bytes32(uint256(uint160(_l1Bridge))), "Approval: Invalid spender address topic");
 
-        // entries[3] is the transfer event from swapAndBridge to l1BridgeAddress
+        // entries[3] is the transfer event from swapAndBridge to _l1Bridge
         // Transfer(address indexed from, address indexed to, uint256 value)
         require(entries[3].topics.length == 3, "Transfer: Invalid number of topics");
         require(
@@ -223,9 +222,7 @@ contract TestE2EL1Script is Script {
             entries[3].topics[1] == bytes32(uint256(uint160(address(swapAndBridge)))),
             "Transfer: Invalid from address topic"
         );
-        require(
-            entries[3].topics[2] == bytes32(uint256(uint160(l1BridgeAddress))), "Transfer: Invalid to address topic"
-        );
+        require(entries[3].topics[2] == bytes32(uint256(uint160(_l1Bridge))), "Transfer: Invalid to address topic");
 
         // entries[7] is the SentMessage event
         // SentMessage(address indexed target, address sender, bytes message, uint256 messageNonce, uint256 gasLimit)
@@ -236,14 +233,13 @@ contract TestE2EL1Script is Script {
         );
 
         require(
-            entries[7].topics[1] == bytes32(uint256(uint160(l2BridgeAddress))),
-            "SentMessage: Invalid target address topic"
+            entries[7].topics[1] == bytes32(uint256(uint160(_l2Bridge))), "SentMessage: Invalid target address topic"
         );
 
         (address sender, bytes memory message, uint256 messageNonce, uint256 gasLimit) =
             abi.decode(entries[7].data, (address, bytes, uint256, uint256));
 
-        require(sender == l1BridgeAddress, "SentMessage: Invalid sender address");
+        require(sender == _l1Bridge, "SentMessage: Invalid sender address");
         require(
             gasLimit == swapAndBridge.MIN_DEPOSIT_GAS(),
             "SentMessage: Invalid gas limit, not matching contract MIN_DEPOSIT_GAS"
@@ -260,19 +256,19 @@ contract TestE2EL1Script is Script {
         (address localToken, address remoteToken, address from, address to, uint256 amount, bytes memory extraData) =
             abi.decode(getSlice(5, message.length, message), (address, address, address, address, uint256, bytes));
 
-        require(remoteToken == l1Token, "SentMessage: Invalid L1 token address");
-        require(localToken == l2Token, "SentMessage: Invalid L2 token address");
+        require(remoteToken == _l1Token, "SentMessage: Invalid L1 token address");
+        require(localToken == _l2Token, "SentMessage: Invalid L2 token address");
         require(from == address(swapAndBridge), "SentMessage: Invalid sender address");
         require(to == testAccount, "SentMessage: Invalid recipient address");
         require(amount == TEST_AMOUNT, "SentMessage: Invalid amount");
         require(extraData.length == 2, "SentMessage: Invalid extra data");
 
         vm.serializeAddress("", "sender", sender);
-        vm.serializeAddress("", "target", l2BridgeAddress);
+        vm.serializeAddress("", "target", _l2Bridge);
         vm.serializeBytes("", "message", message);
         vm.serializeUint("", "messageNonce", messageNonce);
 
-        bytes memory data = abi.encode(sender, l2BridgeAddress, message, messageNonce, gasLimit);
+        bytes memory data = abi.encode(sender, _l2Bridge, message, messageNonce, gasLimit);
 
         string memory dataPath = string.concat(vm.projectRoot(), "/script/swap_and_bridge/example/message.data");
         vm.writeFileBinary(dataPath, data);
@@ -304,8 +300,9 @@ contract TestE2EL2Script is Script {
         testAccount = address(0xc0ffee);
     }
 
-    function run(address l2Token) public {
-        IWrappedETH l2LSTToken = IWrappedETH(payable(l2Token));
+    function run(address _l2Token) public {
+        assert(_l2Token != address(0));
+        IWrappedETH l2LSTToken = IWrappedETH(payable(_l2Token));
         string memory dataPath = string.concat(vm.projectRoot(), "/script/swap_and_bridge/example/message.data");
         bytes memory data = vm.readFileBinary(dataPath);
         (address payable sender, address payable target, bytes memory message, uint256 messageNonce, uint256 gasLimit) =
