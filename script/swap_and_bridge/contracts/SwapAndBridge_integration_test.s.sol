@@ -76,9 +76,12 @@ contract TestIntegrationScript is Script {
         console2.log("Ok");
     }
 
-    function run(address bridgeAddress, address l1Token, address l2Token) public {
-        swapAndBridge = new SwapAndBridge(bridgeAddress, l1Token, l2Token);
-        l1LSTToken = IWrappedETH(payable(l1Token));
+    function run(address _l1Bridge, address _l1Token, address _l2Token) public {
+        assert(_l1Bridge != address(0));
+        assert(_l1Token != address(0));
+        assert(_l2Token != address(0));
+        swapAndBridge = new SwapAndBridge(_l1Bridge, _l1Token, _l2Token);
+        l1LSTToken = IWrappedETH(payable(_l1Token));
         runMinToken();
         runReceive();
     }

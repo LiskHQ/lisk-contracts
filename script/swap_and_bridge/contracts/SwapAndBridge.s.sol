@@ -9,9 +9,9 @@ import { SwapAndBridge } from "src/L1/SwapAndBridge.sol";
 contract SwapAndBridgeScript is Script {
     /// @notice This function deploys the SwapAndBridge contract.
     function run(address _l1Bridge, address _l1Token, address _l2Token) public {
-        require(_l1Bridge != address(0), "Invalid L1 bridge address.");
-        require(_l1Token != address(0), "Invalid L1 token address.");
-        require(_l2Token != address(0), "Invalid L2 token address.");
+        assert(_l1Bridge != address(0));
+        assert(_l1Token != address(0));
+        assert(_l2Token != address(0));
         // Deployer's private key. L1_SWAP_AND_BRIDGE_DEPLOYER_PRIVATE_KEY is set in .env file.
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
 
