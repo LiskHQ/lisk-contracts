@@ -4,6 +4,7 @@ pragma solidity 0.8.23;
 import { Test, console2 } from "forge-std/Test.sol";
 import { Vm } from "forge-std/Vm.sol";
 import { IL2LiskToken, IL2Staking, L2Reward } from "src/L2/L2Reward.sol";
+import { OwnableUpgradeable } from "@openzeppelin-upgradeable/contracts/access/OwnableUpgradeable.sol";
 import { ERC721Upgradeable } from "@openzeppelin-upgradeable/contracts/token/ERC721/ERC721Upgradeable.sol";
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
