@@ -23,7 +23,7 @@ contract L1FundVestingScript is Script {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
 
         // get L1LiskToken contract address
-        Utils.L1AddressesConfig memory l1AddressesConfig = utils.readL1AddressesFile();
+        Utils.L1AddressesConfig memory l1AddressesConfig = utils.readL1AddressesFile(utils.getL1AddressesFilePath());
         assert(l1AddressesConfig.L1LiskToken != address(0));
         console2.log("L1 Lisk token address: %s", l1AddressesConfig.L1LiskToken);
 

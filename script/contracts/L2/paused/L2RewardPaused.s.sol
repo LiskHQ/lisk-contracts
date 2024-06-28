@@ -46,8 +46,8 @@ contract L2RewardPausedScript is Script {
         console2.log("L2 RewardPaused address: %s", address(l2RewardPaused));
 
         // write L2RewardPaused address to l2addresses.json
-        Utils.L2AddressesConfig memory l2AddressesConfig = utils.readL2AddressesFile();
+        Utils.L2AddressesConfig memory l2AddressesConfig = utils.readL2AddressesFile(utils.getL2AddressesFilePath());
         l2AddressesConfig.L2RewardPaused = address(l2RewardPaused);
-        utils.writeL2AddressesFile(l2AddressesConfig);
+        utils.writeL2AddressesFile(l2AddressesConfig, utils.getL2AddressesFilePath());
     }
 }

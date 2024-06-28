@@ -91,6 +91,21 @@ contract L2ClaimTest is L2ClaimHelper {
         assertEq(l2Claim.version(), "1.0.0");
     }
 
+    function test_ClaimRegularAccount_RevertWhenZeroLengthProof() public {
+        uint256 accountIndex = 0;
+        MerkleTreeLeaf memory leaf = getMerkleLeaves().leaves[accountIndex];
+        Signature memory signature = getSignature(accountIndex);
+
+        vm.expectRevert("L2Claim: proof array is empty");
+        l2Claim.claimRegularAccount(
+            new bytes32[](0),
+            bytes32(signature.sigs[0].pubKey),
+            leaf.balanceBeddows,
+            RECIPIENT_ADDRESS,
+            ED25519Signature(signature.sigs[0].r, signature.sigs[0].s)
+        );
+    }
+
     function test_ClaimRegularAccount_RevertWhenInvalidProof() public {
         uint256 accountIndex = 0;
         MerkleTreeLeaf memory leaf = getMerkleLeaves().leaves[accountIndex];
@@ -152,6 +167,28 @@ contract L2ClaimTest is L2ClaimHelper {
             leaf.balanceBeddows,
             RECIPIENT_ADDRESS,
             ED25519Signature(signature.sigs[0].r, signature.sigs[0].s)
+        );
+    }
+
+    function test_ClaimMultisigAccount_RevertWhenZeroLengthProof() public {
+        uint256 accountIndex = 50;
+        MerkleTreeLeaf memory leaf = getMerkleLeaves().leaves[accountIndex];
+        Signature memory signature = getSignature(accountIndex);
+
+        ED25519Signature[] memory ed25519Signatures = new ED25519Signature[](leaf.numberOfSignatures);
+
+        for (uint256 i; i < leaf.numberOfSignatures; i++) {
+            ed25519Signatures[i] = ED25519Signature(signature.sigs[i].r, signature.sigs[i].s);
+        }
+
+        vm.expectRevert("L2Claim: proof array is empty");
+        l2Claim.claimMultisigAccount(
+            new bytes32[](0),
+            bytes20(leaf.b32Address << 96),
+            leaf.balanceBeddows,
+            MultisigKeys(leaf.mandatoryKeys, leaf.optionalKeys),
+            RECIPIENT_ADDRESS,
+            ed25519Signatures
         );
     }
 
@@ -550,6 +587,42 @@ contract L2ClaimTest is L2ClaimHelper {
         uint256 claimContractBalance = lsk.balanceOf(address(l2Claim));
         assert(claimContractBalance > 0);
 
+        vm.warp(RECOVER_PERIOD + 1 seconds);
+
+        // check that the ClaimingEnded event is emitted
+        vm.expectEmit(true, true, true, true);
+        emit L2Claim.ClaimingEnded();
+
+        l2Claim.recoverLSK();
+        assertEq(lsk.balanceOf(daoAddress), claimContractBalance);
+        assertEq(lsk.balanceOf(address(l2Claim)), 0);
+    }
+
+    function test_RecoverLSK_DifferentTimestamps() public {
+        l2Claim.setDAOAddress(daoAddress);
+        uint256 claimContractBalance = lsk.balanceOf(address(l2Claim));
+        assert(claimContractBalance > 0);
+
+        // try to call recoverLSK right after initialization
+        vm.expectRevert("L2Claim: recover period not reached");
+        l2Claim.recoverLSK();
+
+        // try to call recoverLSK in the middle of the recover period
+        vm.warp(RECOVER_PERIOD / 2);
+        vm.expectRevert("L2Claim: recover period not reached");
+        l2Claim.recoverLSK();
+
+        // try to call recoverLSK just before the end of the recover period
+        vm.warp(RECOVER_PERIOD - 1 seconds);
+        vm.expectRevert("L2Claim: recover period not reached");
+        l2Claim.recoverLSK();
+
+        // try to call recoverLSK exactly at the end of the recover period
+        vm.warp(RECOVER_PERIOD);
+        vm.expectRevert("L2Claim: recover period not reached");
+        l2Claim.recoverLSK();
+
+        // try to call recoverLSK after the end of the recover period
         vm.warp(RECOVER_PERIOD + 1 seconds);
 
         // check that the ClaimingEnded event is emitted

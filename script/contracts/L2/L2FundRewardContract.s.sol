@@ -29,7 +29,7 @@ contract FundRewardContractScript is Script {
         console2.log("Transferring deployer's L2 Lisk tokens to the L2Reward contract...");
 
         // get L2LiskToken and L2Reward contracts instances
-        Utils.L2AddressesConfig memory l2AddressesConfig = utils.readL2AddressesFile();
+        Utils.L2AddressesConfig memory l2AddressesConfig = utils.readL2AddressesFile(utils.getL2AddressesFilePath());
         assert(l2AddressesConfig.L2LiskToken != address(0));
         assert(l2AddressesConfig.L2Reward != address(0));
         IL2LiskToken l2LiskToken = IL2LiskToken(l2AddressesConfig.L2LiskToken);
