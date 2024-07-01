@@ -123,13 +123,15 @@ contract Utils is Script {
     /// @notice This function returns the path for L1 addresses JSON file.
     /// @return string containing file path to L1 addresses JSON.
     function getL1AddressesFilePath() external view returns (string memory) {
-        return string.concat(vm.projectRoot(), "/deployment/", getNetworkType(), "/l1addresses.json");
+        return
+            string.concat(vm.projectRoot(), "/deployment/artifacts/contracts/", getNetworkType(), "/l1addresses.json");
     }
 
     /// @notice This function returns the path for L2 addresses JSON file.
     /// @return string containing file path to L2 addresses JSON.
     function getL2AddressesFilePath() external view returns (string memory) {
-        return string.concat(vm.projectRoot(), "/deployment/", getNetworkType(), "/l2addresses.json");
+        return
+            string.concat(vm.projectRoot(), "/deployment/artifacts/contracts/", getNetworkType(), "/l2addresses.json");
     }
 
     /// @notice This function reads L1 addresses from JSON file.
@@ -295,10 +297,12 @@ contract Utils is Script {
     }
 
     /// @notice This function returns the path for the vesting wallets JSON file for the provided network layer.
-    /// @param _layer Network layer of the runnins script, either be "L1" or "L2".
+    /// @param _layer Network layer of the running script, either be "L1" or "L2".
     /// @return string containing file path to vesting wallets.
     function getVestingWalletsFilePath(string memory _layer) external view returns (string memory) {
-        return string.concat(vm.projectRoot(), "/deployment/", getNetworkType(), "/vestingWallets_", _layer, ".json");
+        return string.concat(
+            vm.projectRoot(), "/deployment/artifacts/contracts/", getNetworkType(), "/vestingWallets_", _layer, ".json"
+        );
     }
 
     /// @notice This function writes Vesting Wallets to JSON file.

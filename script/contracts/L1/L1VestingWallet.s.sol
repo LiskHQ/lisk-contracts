@@ -80,7 +80,7 @@ contract L1VestingWalletScript is Script {
         }
 
         // Write all Vesting Contract addresses to vestingWallets_L1.json
-        utils.writeVestingWalletsFile(vestingWallets, layer);
+        utils.writeVestingWalletsFile(vestingWallets, utils.getVestingWalletsFilePath(layer));
 
         // write L1VestingWallet address to l1addresses.json
         l1AddressesConfig.L1VestingWalletImplementation = address(l1VestingWalletImplementation);
