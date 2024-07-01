@@ -26,7 +26,7 @@ contract L2RewardScript is Script {
         console2.log("Deploying L2 Reward...");
 
         // get L2LiskToken contract address
-        Utils.L2AddressesConfig memory l2AddressesConfig = utils.readL2AddressesFile();
+        Utils.L2AddressesConfig memory l2AddressesConfig = utils.readL2AddressesFile(utils.getL2AddressesFilePath());
         assert(l2AddressesConfig.L2LiskToken != address(0));
         console2.log("L2 Lisk Token address: %s", l2AddressesConfig.L2LiskToken);
 
@@ -90,6 +90,6 @@ contract L2RewardScript is Script {
         // write L2 Reward address to l2addresses.json
         l2AddressesConfig.L2RewardImplementation = address(l2RewardImplementation);
         l2AddressesConfig.L2Reward = address(l2Reward);
-        utils.writeL2AddressesFile(l2AddressesConfig);
+        utils.writeL2AddressesFile(l2AddressesConfig, utils.getL2AddressesFilePath());
     }
 }

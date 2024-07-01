@@ -2,6 +2,8 @@
 pragma solidity 0.8.23;
 
 import { Test, console2 } from "forge-std/Test.sol";
+import { Vm } from "forge-std/Vm.sol";
+import { IL2LiskToken, IL2Staking, L2Reward } from "src/L2/L2Reward.sol";
 import { OwnableUpgradeable } from "@openzeppelin-upgradeable/contracts/access/OwnableUpgradeable.sol";
 import { ERC721Upgradeable } from "@openzeppelin-upgradeable/contracts/token/ERC721/ERC721Upgradeable.sol";
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
@@ -47,6 +49,17 @@ contract L2RewardTest is Test {
         uint256 amount;
         uint16 duration;
         uint16 delay;
+    }
+
+    struct Scenario {
+        address[] stakers;
+        uint256[] lockIDs;
+        uint256[] oldBalances;
+        uint256[] balances;
+        uint256 lastClaimedAmount;
+        uint256 rewardsSurplus;
+        uint256 totalWeight;
+        uint256 penalty;
     }
 
     struct Position {
@@ -133,6 +146,9 @@ contract L2RewardTest is Test {
         assertEq(l2Reward.REWARD_DURATION(), 30);
         assertEq(l2Reward.REWARD_DURATION_DELAY(), 1);
         assertEq(l2Reward.version(), "1.0.0");
+        assertEq(l2Reward.totalWeight(), 0);
+        assertEq(l2Reward.totalAmountLocked(), 0);
+        assertEq(l2Reward.pendingUnlockAmount(), 0);
     }
 
     function given_accountHasBalance(address account, uint256 balance) private {
@@ -219,6 +235,661 @@ contract L2RewardTest is Test {
         vm.startPrank(staker);
         l2Reward.claimRewards(lockIDs);
         vm.stopPrank();
+    }
+
+    function onDay(uint256 day) private {
+        vm.warp((deploymentDate + day) * 86400);
+    }
+
+    function stakerCreatesPosition(
+        uint256 stakerIndex,
+        uint256 amount,
+        uint256 duration,
+        Scenario memory scenario
+    )
+        private
+    {
+        vm.startPrank(scenario.stakers[stakerIndex]);
+        l2LiskToken.approve(address(l2Reward), amount);
+        scenario.lockIDs[stakerIndex] = l2Reward.createPosition(amount, duration);
+        vm.stopPrank();
+    }
+
+    function stakerPausesPosition(uint256 stakerIndex, Scenario memory scenario) private {
+        uint256[] memory positionsToBeModified = new uint256[](1);
+        positionsToBeModified[0] = scenario.lockIDs[stakerIndex];
+        vm.prank(scenario.stakers[stakerIndex]);
+        l2Reward.pauseUnlocking(positionsToBeModified);
+    }
+
+    function stakerInitiatesFastUnlock(uint256 stakerIndex, Scenario memory scenario) private {
+        uint256[] memory positionsToBeModified = new uint256[](1);
+        positionsToBeModified[0] = scenario.lockIDs[stakerIndex];
+        vm.prank(scenario.stakers[stakerIndex]);
+        vm.recordLogs();
+        l2Reward.initiateFastUnlock(positionsToBeModified);
+
+        Vm.Log[] memory entries = vm.getRecordedLogs();
+        assertEq(entries[entries.length - 2].topics[0], keccak256("FastUnlockInitiated(uint256,uint256)"));
+        uint256 penalty = abi.decode(entries[entries.length - 2].data, (uint256));
+
+        scenario.penalty += penalty;
+    }
+
+    function stakerReumesPosition(uint256 stakerIndex, Scenario memory scenario) private {
+        uint256[] memory positionsToBeModified = new uint256[](1);
+        positionsToBeModified[0] = scenario.lockIDs[stakerIndex];
+        vm.prank(scenario.stakers[stakerIndex]);
+        l2Reward.resumeUnlockingCountdown(positionsToBeModified);
+    }
+
+    function stakerUnlocksPosition(uint256 stakerIndex, Scenario memory scenario) private {
+        uint256[] memory positionsToBeModified = new uint256[](1);
+        positionsToBeModified[0] = scenario.lockIDs[stakerIndex];
+        vm.prank(scenario.stakers[stakerIndex]);
+        l2Reward.deletePositions(positionsToBeModified);
+        delete scenario.lockIDs[stakerIndex];
+    }
+
+    function stakerExtendsPositionBy(
+        uint256 stakerIndex,
+        uint256 durationExtension,
+        Scenario memory scenario
+    )
+        private
+    {
+        L2Reward.ExtendedDuration[] memory durationExtensions = new L2Reward.ExtendedDuration[](1);
+        durationExtensions[0].lockID = scenario.lockIDs[stakerIndex];
+        durationExtensions[0].durationExtension = durationExtension;
+        vm.prank(scenario.stakers[stakerIndex]);
+        l2Reward.extendDuration(durationExtensions);
+    }
+
+    function stakerIncreasesAmountOfThePositionBy(
+        uint256 stakerIndex,
+        uint256 amountIncrease,
+        Scenario memory scenario
+    )
+        private
+    {
+        L2Reward.IncreasedAmount[] memory increasingAmounts = new L2Reward.IncreasedAmount[](1);
+        increasingAmounts[0].lockID = scenario.lockIDs[stakerIndex];
+        increasingAmounts[0].amountIncrease = amountIncrease;
+        vm.startPrank(scenario.stakers[stakerIndex]);
+        l2LiskToken.approve(address(l2Reward), amountIncrease);
+        l2Reward.increaseLockingAmount(increasingAmounts);
+        vm.stopPrank();
+    }
+
+    function stakerClaimRewards(uint256 stakerIndex, Scenario memory scenario) private {
+        uint256[] memory positionsToBeModified = new uint256[](1);
+        positionsToBeModified[0] = scenario.lockIDs[stakerIndex];
+        vm.prank(scenario.stakers[stakerIndex]);
+        l2Reward.claimRewards(positionsToBeModified);
+    }
+
+    function allStakersClaim(Scenario memory scenario) private {
+        uint256[] memory positionsToBeModified = new uint256[](1);
+        scenario.lastClaimedAmount = 0;
+        for (uint8 i = 0; i < scenario.stakers.length; i++) {
+            if (scenario.lockIDs[i] == 0) {
+                continue;
+            }
+
+            positionsToBeModified[0] = scenario.lockIDs[i];
+            vm.prank(scenario.stakers[i]);
+            l2Reward.claimRewards(positionsToBeModified);
+
+            scenario.balances[i] = l2LiskToken.balanceOf(scenario.stakers[i]);
+
+            scenario.lastClaimedAmount += scenario.balances[i] - scenario.oldBalances[i];
+        }
+    }
+
+    function cacheBalances(Scenario memory scenario) private view {
+        for (uint8 i = 0; i < scenario.stakers.length; i++) {
+            scenario.oldBalances[i] = l2LiskToken.balanceOf(scenario.stakers[i]);
+        }
+    }
+
+    function cacheTotalWeight(Scenario memory scenario) private view {
+        scenario.totalWeight = l2Reward.totalWeight();
+    }
+
+    /// @notice Checks the balance of reward contract.
+    /// @dev Only valid when all stakes are valid and all of them claims.
+    function checkRewardsContractBalance(uint256 funds) private view {
+        uint256 sumOfDailyRewards;
+        for (uint256 i = deploymentDate; i < l2Reward.todayDay(); i++) {
+            sumOfDailyRewards += l2Reward.dailyRewards(i);
+        }
+
+        assertTrue(l2LiskToken.balanceOf(address(l2Reward)) > funds - sumOfDailyRewards);
+        assertEq(l2LiskToken.balanceOf(address(l2Reward)) / 10 ** 4, (funds - sumOfDailyRewards) / 10 ** 4);
+    }
+
+    /// @notice Checks aggregation to rewards surplus for locked amounts.
+    /// @dev There must be no transaction causing the change to the locked amount or daily rewards in the intended
+    /// duration.
+    function verifyRewardsSurplusForLockedAmountBetweenDays(
+        uint256 dailyRewards,
+        uint256 totalAmountLocked,
+        uint256 startDay,
+        uint256 endDay,
+        Scenario memory scenario
+    )
+        private
+        view
+    {
+        uint256 rewardsCap = totalAmountLocked / 365;
+        uint256 expectedSurplus;
+        uint256 lastDay = deploymentDate + endDay;
+
+        for (uint256 d = deploymentDate + startDay; d <= lastDay; d++) {
+            expectedSurplus += dailyRewards - rewardsCap;
+        }
+
+        scenario.rewardsSurplus += expectedSurplus;
+
+        assertEq(scenario.rewardsSurplus, l2Reward.rewardsSurplus());
+    }
+
+    function test_scenario1() public {
+        address[] memory stakers = given_anArrayOfStakersOfLength(7);
+        uint256[] memory lockIDs = new uint256[](7);
+        uint256[] memory balances = new uint256[](7);
+        uint256[] memory oldBalances = new uint256[](7);
+        uint256 funds = convertLiskToSmallestDenomination(5000);
+        uint256 balance = convertLiskToSmallestDenomination(500);
+
+        // owner gets balance
+        given_accountHasBalance(address(this), funds);
+        // fund the reward contract, 10 Lisk per day for 500
+        given_ownerHasFundedStaking(Funds({ amount: funds, duration: 500, delay: 1 }));
+
+        // all the stakers gets balance
+        for (uint8 i = 0; i < stakers.length; i++) {
+            given_accountHasBalance(stakers[i], balance);
+        }
+        Scenario memory scenario = Scenario({
+            stakers: stakers,
+            lockIDs: lockIDs,
+            balances: balances,
+            oldBalances: oldBalances,
+            lastClaimedAmount: 0,
+            rewardsSurplus: 0,
+            totalWeight: 0,
+            penalty: 0
+        });
+
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
+        onDay(1);
+        stakerCreatesPosition(0, LSK(100), 30, scenario);
+        stakerCreatesPosition(1, LSK(100), 80, scenario);
+        cacheTotalWeight(scenario);
+        onDay(10);
+        stakerCreatesPosition(2, LSK(100), 100, scenario);
+        checkConsistencyTotalWeight(1, getLargestExpiryDate(lockIDs), scenario);
+        cacheTotalWeight(scenario);
+        onDay(30);
+        stakerPausesPosition(1, scenario);
+        checkConsistencyTotalWeight(10, getLargestExpiryDate(lockIDs), scenario);
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
+        onDay(35);
+        stakerCreatesPosition(3, LSK(50), 14, scenario);
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
+        onDay(49);
+        stakerUnlocksPosition(3, scenario);
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
+        stakerCreatesPosition(4, LSK(80), 80, scenario);
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
+        onDay(50);
+        stakerExtendsPositionBy(0, 30, scenario);
+        cacheTotalWeight(scenario);
+        onDay(70);
+        stakerCreatesPosition(5, LSK(100), 150, scenario);
+        checkConsistencyTotalWeight(50, getLargestExpiryDate(lockIDs), scenario);
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
+        onDay(80);
+        stakerReumesPosition(1, scenario);
+        onDay(89);
+        stakerPausesPosition(4, scenario);
+        onDay(95);
+        stakerCreatesPosition(6, LSK(200), 200, scenario);
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
+        cacheTotalWeight(scenario);
+        onDay(100);
+        stakerIncreasesAmountOfThePositionBy(6, LSK(50), scenario);
+        checkConsistencyTotalWeight(95, getLargestExpiryDate(lockIDs), scenario);
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
+        onDay(105);
+        allStakersClaim(scenario);
+        checkRewardsContractBalance(funds);
+        cacheBalances(scenario);
+        onDay(106);
+        allStakersClaim(scenario);
+        checkRewardsContractBalance(funds);
+        lastClaimedRewardEqualsDailyRewardBetweenDays(scenario.lastClaimedAmount, 105, 105);
+        onDay(115);
+        cacheBalances(scenario);
+        allStakersClaim(scenario);
+        checkRewardsContractBalance(funds);
+        lastClaimedRewardEqualsDailyRewardBetweenDays(scenario.lastClaimedAmount, 106, 114);
+        cacheBalances(scenario);
+        onDay(150);
+        allStakersClaim(scenario);
+        checkRewardsContractBalance(funds);
+        cacheTotalWeight(scenario);
+        onDay(230);
+        allStakersClaim(scenario);
+        checkConsistencyTotalWeight(150, getLargestExpiryDate(lockIDs), scenario);
+        checkRewardsContractBalance(funds);
+        lastClaimedRewardEqualsDailyRewardBetweenDays(scenario.lastClaimedAmount, 115, 229);
+        stakerReumesPosition(4, scenario);
+        assertEq(l2LockingPosition.getLockingPosition(scenario.lockIDs[4]).expDate, deploymentDate + 270);
+        onDay(240);
+        stakerInitiatesFastUnlock(6, scenario);
+        stakerClaimRewards(4, scenario);
+        cacheBalances(scenario);
+        cacheTotalWeight(scenario);
+        onDay(275);
+        allStakersClaim(scenario);
+        checkConsistencyTotalWeight(240, getLargestExpiryDate(lockIDs), scenario);
+        lastClaimedRewardEqualsDailyRewardBetweenDays(scenario.lastClaimedAmount, 240, 269);
+        for (uint256 i = 19740 + 270; i < 19740 + 275; i++) {
+            assertEq(l2Reward.totalWeights(i), 0);
+        }
+    }
+
+    function test_scenario2() public {
+        address[] memory stakers = given_anArrayOfStakersOfLength(7);
+        uint256[] memory lockIDs = new uint256[](7);
+        uint256 funds = convertLiskToSmallestDenomination(5000);
+        uint256 balance = convertLiskToSmallestDenomination(500);
+        uint256[] memory balances = new uint256[](7);
+        uint256[] memory oldBalances = new uint256[](7);
+
+        // owner gets balance
+        given_accountHasBalance(address(this), funds);
+        // fund the reward contract, 10 Lisk per day for 500
+        given_ownerHasFundedStaking(Funds({ amount: funds, duration: 500, delay: 1 }));
+
+        // all the stakers gets balance
+        for (uint8 i = 0; i < stakers.length; i++) {
+            given_accountHasBalance(stakers[i], balance);
+        }
+
+        Scenario memory scenario = Scenario({
+            stakers: stakers,
+            lockIDs: lockIDs,
+            balances: balances,
+            oldBalances: oldBalances,
+            lastClaimedAmount: 0,
+            rewardsSurplus: 0,
+            totalWeight: 0,
+            penalty: 0
+        });
+        onDay(1);
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
+        stakerCreatesPosition(0, LSK(100), 730, scenario);
+        stakerCreatesPosition(1, LSK(100), 730, scenario);
+        cacheTotalWeight(scenario);
+        onDay(2);
+        stakerPausesPosition(1, scenario);
+        checkConsistencyTotalWeight(1, getLargestExpiryDate(lockIDs), scenario);
+        cacheTotalWeight(scenario);
+        onDay(5);
+        stakerCreatesPosition(2, LSK(200), 30, scenario);
+        checkConsistencyTotalWeight(2, getLargestExpiryDate(lockIDs), scenario);
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
+        onDay(10);
+        stakerCreatesPosition(3, LSK(50), 100, scenario);
+        stakerPausesPosition(3, scenario);
+        cacheTotalWeight(scenario);
+        onDay(20);
+        stakerIncreasesAmountOfThePositionBy(3, LSK(30), scenario);
+        checkConsistencyTotalWeight(10, getLargestExpiryDate(lockIDs), scenario);
+        stakerCreatesPosition(4, LSK(100), 200, scenario);
+        onDay(25);
+        stakerCreatesPosition(5, LSK(150), 100, scenario);
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
+        cacheTotalWeight(scenario);
+        onDay(30);
+        stakerPausesPosition(4, scenario);
+        checkConsistencyTotalWeight(25, getLargestExpiryDate(lockIDs), scenario);
+        onDay(40);
+        stakerInitiatesFastUnlock(4, scenario);
+        onDay(50);
+        stakerPausesPosition(5, scenario);
+        onDay(55);
+        stakerCreatesPosition(6, LSK(30), 14, scenario);
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
+        cacheTotalWeight(scenario);
+        onDay(80);
+        stakerReumesPosition(5, scenario);
+        checkConsistencyTotalWeight(55, getLargestExpiryDate(lockIDs), scenario);
+        onDay(85);
+        stakerExtendsPositionBy(6, 25, scenario);
+        onDay(90);
+        stakerExtendsPositionBy(3, 65, scenario);
+        cacheTotalWeight(scenario);
+        onDay(93);
+        stakerIncreasesAmountOfThePositionBy(5, LSK(30), scenario);
+        checkConsistencyTotalWeight(90, getLargestExpiryDate(lockIDs), scenario);
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
+        onDay(105);
+        allStakersClaim(scenario);
+        checkRewardsContractBalance(funds + scenario.penalty);
+        cacheBalances(scenario);
+        onDay(106);
+        allStakersClaim(scenario);
+        checkRewardsContractBalance(funds + scenario.penalty);
+        lastClaimedRewardEqualsDailyRewardBetweenDays(scenario.lastClaimedAmount, 105, 105);
+        cacheTotalWeight(scenario);
+        onDay(115);
+        cacheBalances(scenario);
+        allStakersClaim(scenario);
+        checkRewardsContractBalance(funds + scenario.penalty);
+        checkConsistencyTotalWeight(106, getLargestExpiryDate(lockIDs), scenario);
+        lastClaimedRewardEqualsDailyRewardBetweenDays(scenario.lastClaimedAmount, 106, 114);
+    }
+
+    function test_scenario3() public {
+        address[] memory stakers = given_anArrayOfStakersOfLength(14);
+        uint256[] memory lockIDs = new uint256[](14);
+        uint256[] memory balances = new uint256[](14);
+        uint256[] memory oldBalances = new uint256[](14);
+        uint256 funds = convertLiskToSmallestDenomination(5000);
+        uint256 balance = convertLiskToSmallestDenomination(5000);
+
+        // owner gets balance
+        given_accountHasBalance(address(this), funds);
+        // fund the reward contract, 10 Lisk per day for 500 days
+        given_ownerHasFundedStaking(Funds({ amount: funds, duration: 500, delay: 1 }));
+
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
+
+        // all the stakers gets balance
+        for (uint8 i = 0; i < stakers.length; i++) {
+            given_accountHasBalance(stakers[i], balance);
+        }
+
+        Scenario memory scenario = Scenario({
+            stakers: stakers,
+            lockIDs: lockIDs,
+            balances: balances,
+            oldBalances: oldBalances,
+            lastClaimedAmount: 0,
+            rewardsSurplus: 0,
+            totalWeight: 0,
+            penalty: 0
+        });
+
+        onDay(1);
+        stakerCreatesPosition(0, LSK(100), 730, scenario);
+        stakerCreatesPosition(1, LSK(30), 50, scenario);
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
+        stakerCreatesPosition(2, LSK(400), 730, scenario);
+        onDay(15);
+        stakerCreatesPosition(3, LSK(5), 300, scenario);
+        cacheTotalWeight(scenario);
+        onDay(20);
+        stakerCreatesPosition(4, LSK(500), 50, scenario);
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
+        checkConsistencyTotalWeight(15, getLargestExpiryDate(lockIDs), scenario);
+        stakerCreatesPosition(5, LSK(1250), 80, scenario);
+        onDay(30);
+        stakerIncreasesAmountOfThePositionBy(0, LSK(90), scenario);
+        stakerIncreasesAmountOfThePositionBy(3, LSK(1), scenario);
+        stakerInitiatesFastUnlock(4, scenario);
+        onDay(31);
+        stakerExtendsPositionBy(4, 21, scenario);
+        onDay(35);
+        stakerInitiatesFastUnlock(5, scenario);
+        cacheTotalWeight(scenario);
+        onDay(36);
+        stakerPausesPosition(5, scenario);
+        stakerCreatesPosition(6, LSK(125), 80, scenario);
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
+        onDay(40);
+        stakerIncreasesAmountOfThePositionBy(4, LSK(30), scenario);
+        stakerPausesPosition(4, scenario);
+        onDay(45);
+        stakerCreatesPosition(7, LSK(2000), 70, scenario);
+        stakerCreatesPosition(8, LSK(220), 600, scenario);
+        stakerCreatesPosition(9, LSK(300), 534, scenario);
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
+        stakerCreatesPosition(10, LSK(80), 53, scenario);
+        stakerCreatesPosition(11, LSK(110), 23, scenario);
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
+        stakerCreatesPosition(12, LSK(1000), 68, scenario);
+        cacheTotalWeight(scenario);
+        onDay(50);
+        stakerPausesPosition(8, scenario);
+        checkConsistencyTotalWeight(45, getLargestExpiryDate(lockIDs), scenario);
+        onDay(51);
+        stakerPausesPosition(9, scenario);
+        onDay(52);
+        stakerExtendsPositionBy(9, 116, scenario);
+        onDay(55);
+        stakerIncreasesAmountOfThePositionBy(8, LSK(300), scenario);
+        onDay(58);
+        stakerInitiatesFastUnlock(8, scenario);
+        cacheTotalWeight(scenario);
+        onDay(59);
+        stakerPausesPosition(8, scenario);
+        checkConsistencyTotalWeight(58, getLargestExpiryDate(lockIDs), scenario);
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
+        onDay(60);
+        stakerInitiatesFastUnlock(6, scenario);
+        cacheTotalWeight(scenario);
+        onDay(61);
+        stakerExtendsPositionBy(6, 8, scenario);
+        stakerPausesPosition(6, scenario);
+        checkConsistencyTotalWeight(60, getLargestExpiryDate(lockIDs), scenario);
+        onDay(65);
+        stakerExtendsPositionBy(6, 4, scenario);
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
+        stakerIncreasesAmountOfThePositionBy(6, LSK(50), scenario);
+        onDay(66);
+        stakerExtendsPositionBy(10, 10, scenario);
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
+        cacheTotalWeight(scenario);
+        onDay(68);
+        stakerInitiatesFastUnlock(7, scenario);
+        stakerPausesPosition(10, scenario);
+        checkConsistencyTotalWeight(66, getLargestExpiryDate(lockIDs), scenario);
+        cacheTotalWeight(scenario);
+        onDay(69);
+        stakerExtendsPositionBy(7, 150, scenario);
+        checkConsistencyTotalWeight(68, getLargestExpiryDate(lockIDs), scenario);
+        cacheTotalWeight(scenario);
+        onDay(70);
+        stakerPausesPosition(0, scenario);
+        checkConsistencyTotalWeight(69, getLargestExpiryDate(lockIDs), scenario);
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
+        onDay(75);
+        stakerExtendsPositionBy(5, 20, scenario);
+        onDay(76);
+        stakerExtendsPositionBy(11, 50, scenario);
+        onDay(100);
+        stakerReumesPosition(0, scenario);
+        stakerReumesPosition(5, scenario);
+        stakerCreatesPosition(13, LSK(500), 14, scenario);
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
+        stakerPausesPosition(13, scenario);
+        stakerExtendsPositionBy(12, 100, scenario);
+        onDay(101);
+        stakerExtendsPositionBy(10, 10, scenario);
+        onDay(102);
+        stakerIncreasesAmountOfThePositionBy(12, LSK(500), scenario);
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
+        cacheTotalWeight(scenario);
+        onDay(104);
+        stakerPausesPosition(12, scenario);
+        checkConsistencyTotalWeight(102, getLargestExpiryDate(lockIDs), scenario);
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
+        onDay(107);
+        stakerReumesPosition(6, scenario);
+        stakerInitiatesFastUnlock(7, scenario);
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
+        stakerIncreasesAmountOfThePositionBy(12, 500, scenario);
+        onDay(108);
+        stakerReumesPosition(4, scenario);
+        onDay(110);
+        stakerExtendsPositionBy(0, 30, scenario);
+        stakerReumesPosition(12, scenario);
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
+        cacheTotalWeight(scenario);
+        onDay(200);
+        allStakersClaim(scenario);
+        checkRewardsContractBalance(funds + scenario.penalty);
+        cacheBalances(scenario);
+        onDay(201);
+        allStakersClaim(scenario);
+        checkRewardsContractBalance(funds + scenario.penalty);
+        lastClaimedRewardEqualsDailyRewardBetweenDays(scenario.lastClaimedAmount, 200, 200);
+        cacheBalances(scenario);
+        onDay(250);
+        allStakersClaim(scenario);
+        checkRewardsContractBalance(funds + scenario.penalty);
+        lastClaimedRewardEqualsDailyRewardBetweenDays(scenario.lastClaimedAmount, 201, 249);
+    }
+
+    function test_scenario4() public {
+        address[] memory stakers = given_anArrayOfStakersOfLength(5);
+        uint256[] memory lockIDs = new uint256[](5);
+        uint256[] memory balances = new uint256[](5);
+        uint256[] memory oldBalances = new uint256[](5);
+        uint256 funds = LSK(5000);
+        uint256 balance = LSK(500);
+
+        // owner gets balance
+        given_accountHasBalance(address(this), funds);
+        // fund the reward contact, 1 LSK per day for 500 days
+        uint256 dailyRewards = given_ownerHasFundedStaking(Funds({ amount: funds, duration: 500, delay: 1 }));
+
+        // all the stakers gets balance
+        for (uint8 i = 0; i < stakers.length; i++) {
+            given_accountHasBalance(stakers[i], balance);
+        }
+
+        Scenario memory scenario = Scenario({
+            stakers: stakers,
+            lockIDs: lockIDs,
+            balances: balances,
+            oldBalances: oldBalances,
+            lastClaimedAmount: 0,
+            rewardsSurplus: 0,
+            totalWeight: 0,
+            penalty: 0
+        });
+
+        onDay(1);
+        stakerCreatesPosition(0, LSK(150), 150, scenario);
+        stakerCreatesPosition(1, LSK(250), 250, scenario);
+        cacheTotalWeight(scenario);
+        onDay(10);
+        stakerCreatesPosition(2, LSK(250), 150, scenario);
+        checkConsistencyTotalWeight(1, getLargestExpiryDate(lockIDs), scenario);
+        verifyRewardsSurplusForLockedAmountBetweenDays(dailyRewards, LSK(400), 1, 9, scenario);
+        onDay(30);
+        stakerCreatesPosition(3, LSK(50), 100, scenario);
+        verifyRewardsSurplusForLockedAmountBetweenDays(dailyRewards, LSK(650), 10, 29, scenario);
+        onDay(35);
+        stakerCreatesPosition(4, LSK(10), 120, scenario);
+        verifyRewardsSurplusForLockedAmountBetweenDays(dailyRewards, LSK(700), 30, 34, scenario);
+        onDay(40);
+        allStakersClaim(scenario);
+        checkRewardsContractBalance(funds);
+        onDay(50);
+        allStakersClaim(scenario);
+        checkRewardsContractBalance(funds);
+        onDay(90);
+        allStakersClaim(scenario);
+        checkRewardsContractBalance(funds);
+        verifyRewardsSurplusForLockedAmountBetweenDays(dailyRewards, LSK(710), 35, 89, scenario);
+        onDay(130);
+        allStakersClaim(scenario);
+        checkRewardsContractBalance(funds);
+        verifyRewardsSurplusForLockedAmountBetweenDays(dailyRewards, LSK(710), 90, 129, scenario);
+        onDay(150);
+        allStakersClaim(scenario);
+        checkRewardsContractBalance(funds);
+        // stake 3's expDate is on 130th day so total amount locked reduces by LSK(50).
+        verifyRewardsSurplusForLockedAmountBetweenDays(dailyRewards, LSK(660), 130, 149, scenario);
+    }
+
+    function checkConsistencyTotalWeight(
+        uint256 dayOfLastTrs,
+        uint256 expiryDateOfLongestStake,
+        Scenario memory scenario
+    )
+        private
+        view
+    {
+        if (l2Reward.todayDay() < expiryDateOfLongestStake) {
+            assertTrue(l2Reward.totalWeight() > 0);
+        } else {
+            assertEq(l2Reward.totalWeight(), 0);
+        }
+
+        assertEq(l2Reward.totalWeights(deploymentDate + dayOfLastTrs), scenario.totalWeight);
+    }
+
+    function checkConsistencyPendingUnlockDailyUnlocked(
+        uint256[] memory lockIDs,
+        uint256 expiryDateOfLongestStake
+    )
+        private
+        view
+    {
+        uint256 sumOfDailyUnlockedAmount;
+        for (uint256 i = l2Reward.lastTrsDate() + 1; i <= expiryDateOfLongestStake; i++) {
+            sumOfDailyUnlockedAmount += l2Reward.dailyUnlockedAmounts(i);
+        }
+
+        assertEq(l2Reward.pendingUnlockAmount(), sumOfDailyUnlockedAmount);
+
+        uint256 sumOfAmountOfPausedStakes;
+        for (uint8 i = 0; i < lockIDs.length; i++) {
+            if (l2LockingPosition.getLockingPosition(lockIDs[i]).pausedLockingDuration != 0) {
+                sumOfAmountOfPausedStakes += l2LockingPosition.getLockingPosition(lockIDs[i]).amount;
+            }
+        }
+
+        assertEq(sumOfDailyUnlockedAmount + sumOfAmountOfPausedStakes, l2Reward.totalAmountLocked());
+    }
+
+    function getLargestExpiryDate(uint256[] memory lockIDs) private view returns (uint256) {
+        uint256 expiryDate;
+        IL2LockingPosition.LockingPosition memory lockingPosition;
+
+        for (uint256 i = 0; i < lockIDs.length; i++) {
+            lockingPosition = l2LockingPosition.getLockingPosition(lockIDs[i]);
+            if (lockingPosition.expDate > expiryDate) {
+                expiryDate = lockingPosition.expDate;
+            }
+        }
+
+        return expiryDate;
+    }
+
+    function lastClaimedRewardEqualsDailyRewardBetweenDays(
+        uint256 reward,
+        uint256 startDay,
+        uint256 endDay
+    )
+        private
+        view
+    {
+        uint256 sumOfDailyRewards;
+        for (uint256 i = deploymentDate + startDay; i <= deploymentDate + endDay; i++) {
+            sumOfDailyRewards += l2Reward.dailyRewards(i);
+        }
+
+        assertTrue(sumOfDailyRewards > reward);
+        assertEq(sumOfDailyRewards / 10 ** 4, reward / 10 ** 4);
     }
 
     function test_createPosition_l2RewardContractShouldBeApprovedToTransferFromStakerAccount() public {
@@ -317,6 +988,20 @@ contract L2RewardTest is Test {
 
         vm.startPrank(address(0x1));
         l2Reward.fundStakingRewards(convertLiskToSmallestDenomination(3550), 255, 1);
+    }
+
+    function test_fundStakingRewards_amountShouldBeGreaterThanZeroWhenFundingStakingRewards() public {
+        vm.expectRevert("L2Reward: Funded amount should be greater than zero");
+
+        vm.prank(address(this));
+        l2Reward.fundStakingRewards(0, 100, 1);
+    }
+
+    function test_fundStakingRewards_durationShouldBeGreaterThanZeroWhenFundingStakingRewards() public {
+        vm.expectRevert("L2Reward: Funding duration should be greater than zero");
+
+        vm.prank(address(this));
+        l2Reward.fundStakingRewards(100, 0, 1);
     }
 
     function test_fundStakingRewards_delayShouldBeGreaterThanZeroWhenFundingStakingRewards() public {
@@ -455,6 +1140,8 @@ contract L2RewardTest is Test {
             staker, Position({ amount: convertLiskToSmallestDenomination(100), duration: 120 })
         );
 
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
+
         // rewards are claimed from lastClaimDate for the lock (19740) till expiry day
         uint256 today = deploymentDate + 150;
         skip(150 days);
@@ -465,6 +1152,8 @@ contract L2RewardTest is Test {
         then_eventRewardsClaimedIsEmitted(lockIDs[0], expectedRewards);
         vm.prank(staker);
         l2Reward.claimRewards(lockIDs);
+
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
 
         assertEq(l2Reward.lastClaimDate(lockIDs[0]), today);
         assertEq(l2LiskToken.balanceOf(staker), expectedBalance);
@@ -488,6 +1177,8 @@ contract L2RewardTest is Test {
             staker, Position({ amount: convertLiskToSmallestDenomination(1), duration: 100 })
         );
 
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
+
         // rewards are claimed from lastClaimDate for the lock (19740) till today
 
         // today is 19830
@@ -501,6 +1192,8 @@ contract L2RewardTest is Test {
         then_eventRewardsClaimedIsEmitted(lockIDs[1], 80252925540556258);
         vm.prank(staker);
         l2Reward.claimRewards(lockIDs);
+
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
 
         balance = l2LiskToken.balanceOf(staker);
 
@@ -527,9 +1220,13 @@ contract L2RewardTest is Test {
             staker, Position({ amount: convertLiskToSmallestDenomination(10), duration: 300 })
         );
 
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
+
         vm.startPrank(staker);
         l2Reward.pauseUnlocking(lockIDs);
         vm.stopPrank();
+
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
 
         uint256 expectedRewards = 6575342465753424600 + 9863013698630136900;
         uint256 expectedBalance = l2LiskToken.balanceOf(staker) + expectedRewards;
@@ -583,6 +1280,8 @@ contract L2RewardTest is Test {
             }
         }
 
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
+
         for (uint8 i = 0; i < 5; i++) {
             assertEq(l2LiskToken.balanceOf(stakers[i]), expectedRewardsFor100Days * 3);
         }
@@ -606,6 +1305,8 @@ contract L2RewardTest is Test {
         for (uint8 i = 0; i < stakers.length; i++) {
             lockIDs[i] = when_stakerCreatesPosition(stakers[i], Position(amount, duration));
         }
+
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
 
         uint256[] memory locksToClaim = new uint256[](1);
 
@@ -800,7 +1501,7 @@ contract L2RewardTest is Test {
         l2Reward.deletePositions(lockIDs);
     }
 
-    function test_deletePosition_onlyExistingLockingPositionCanBeDeletedByAnOwner() public {
+    function test_deletePositions_onlyExistingLockingPositionCanBeDeletedByAnOwner() public {
         address staker = address(0x1);
         uint256[] memory lockIDs = new uint256[](1);
         lockIDs[0] = 1;
@@ -816,7 +1517,7 @@ contract L2RewardTest is Test {
         l2Reward.deletePositions(lockIDs);
     }
 
-    function test_deletePosition_onlyExpiredLockingPositionsCanBeDeleted() public {
+    function test_deletePositions_onlyExpiredLockingPositionsCanBeDeleted() public {
         address staker = address(0x1);
         uint256 balance = convertLiskToSmallestDenomination(1000);
 
@@ -838,37 +1539,45 @@ contract L2RewardTest is Test {
         l2Reward.deletePositions(lockIDs);
     }
 
-    function test_deletePosition_issuesRewardAndUnlocksPosition() public {
+    function test_deletePositions_forMultipleStakesIssuesRewardAndUnlocksPositions() public {
         address staker = address(0x1);
         uint256 balance = convertLiskToSmallestDenomination(1000);
 
-        uint256[] memory lockIDs = new uint256[](1);
+        uint256[] memory lockIDs = new uint256[](2);
 
         given_accountHasBalance(address(this), balance);
         given_accountHasBalance(staker, balance);
         given_ownerHasFundedStaking(Funds({ amount: convertLiskToSmallestDenomination(35), duration: 350, delay: 1 }));
 
-        // staker creates a position on deploymentDate, 19740
-        lockIDs[0] = when_stakerCreatesPosition(
-            staker, Position({ amount: convertLiskToSmallestDenomination(100), duration: 120 })
-        );
+        skip(1 days);
+
+        // staker creates two positions on deploymentDate + 1, 19741
+        for (uint8 i = 0; i < 2; i++) {
+            lockIDs[i] = when_stakerCreatesPosition(
+                staker, Position({ amount: convertLiskToSmallestDenomination(100), duration: 120 })
+            );
+        }
 
         skip(150 days);
 
-        uint256 expectedRewards = 11.9 * 10 ** 18;
+        uint256 expectedRewardsPerStake = 6 * 10 ** 18;
+
         // locked amount gets unlocked
         uint256 expectedBalance =
-            l2LiskToken.balanceOf(staker) + expectedRewards + convertLiskToSmallestDenomination(100);
+            l2LiskToken.balanceOf(staker) + expectedRewardsPerStake * 2 + convertLiskToSmallestDenomination(100) * 2;
 
         // staker deletes position
-        then_eventRewardsClaimedIsEmitted(lockIDs[0], expectedRewards);
+        then_eventRewardsClaimedIsEmitted(lockIDs[0], expectedRewardsPerStake);
         then_eventLockingPositionDeletedIsEmitted(lockIDs[0]);
+        then_eventRewardsClaimedIsEmitted(lockIDs[1], expectedRewardsPerStake);
+        then_eventLockingPositionDeletedIsEmitted(lockIDs[1]);
         vm.prank(staker);
         l2Reward.deletePositions(lockIDs);
 
         balance = l2LiskToken.balanceOf(staker);
 
         assertEq(l2Reward.lastClaimDate(lockIDs[0]), 0);
+        assertEq(l2Reward.lastClaimDate(lockIDs[1]), 0);
         assertEq(balance, expectedBalance);
     }
 
@@ -966,6 +1675,55 @@ contract L2RewardTest is Test {
         assertEq(lockingPosition.pausedLockingDuration, expectedPausedLockingDuration);
     }
 
+    function test_pauseUnlocking_forMultipleStakesIssuesRewardsAndUpdatesLockingPosition() public {
+        address staker = address(0x1);
+        uint256 balance = convertLiskToSmallestDenomination(1000);
+
+        uint256[] memory lockIDs = new uint256[](2);
+
+        given_accountHasBalance(address(this), balance);
+        given_accountHasBalance(staker, balance);
+        given_ownerHasFundedStaking(Funds({ amount: convertLiskToSmallestDenomination(35), duration: 350, delay: 1 }));
+
+        skip(1 days);
+
+        // staker creates two positions on deploymentDate + 1, 19741
+        for (uint8 i = 0; i < 2; i++) {
+            lockIDs[i] = when_stakerCreatesPosition(
+                staker, Position({ amount: convertLiskToSmallestDenomination(100), duration: 120 })
+            );
+        }
+
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
+
+        skip(75 days);
+        uint256 today = deploymentDate + 1 + 75;
+
+        uint256 expectedRewardsPerStake = 3.75 * 10 ** 18;
+        uint256 expectedBalance = l2LiskToken.balanceOf(staker) + expectedRewardsPerStake * 2;
+        uint256 expectedPausedLockingDuration = 45;
+
+        // staker pauses positions
+        then_eventRewardsClaimedIsEmitted(lockIDs[0], expectedRewardsPerStake);
+        then_eventLockingPositionPausedIsEmitted(lockIDs[0]);
+        then_eventRewardsClaimedIsEmitted(lockIDs[1], expectedRewardsPerStake);
+        then_eventLockingPositionPausedIsEmitted(lockIDs[1]);
+        vm.prank(staker);
+        l2Reward.pauseUnlocking(lockIDs);
+
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
+
+        balance = l2LiskToken.balanceOf(staker);
+
+        assertEq(balance, expectedBalance);
+        assertEq(l2Reward.pendingUnlockAmount(), 0);
+        assertEq(l2Reward.dailyUnlockedAmounts(deploymentDate + 120), 0);
+        assertEq(l2Reward.lastClaimDate(lockIDs[0]), today);
+        assertEq(l2Reward.lastClaimDate(lockIDs[1]), today);
+        assertEq(l2LockingPosition.getLockingPosition(lockIDs[0]).pausedLockingDuration, expectedPausedLockingDuration);
+        assertEq(l2LockingPosition.getLockingPosition(lockIDs[1]).pausedLockingDuration, expectedPausedLockingDuration);
+    }
+
     function test_resumeUnlockingCountdown_onlyOwnerCanResumeUnlockingForALockingPosition() public {
         address staker = address(0x1);
         uint256[] memory lockIDs = new uint256[](1);
@@ -1032,6 +1790,8 @@ contract L2RewardTest is Test {
             staker, Position({ amount: convertLiskToSmallestDenomination(100), duration: 120 })
         );
 
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
+
         skip(50 days);
         uint256 today = deploymentDate + 50;
 
@@ -1042,6 +1802,8 @@ contract L2RewardTest is Test {
         // staker pauses the position
         vm.prank(staker);
         l2Reward.pauseUnlocking(lockIDs);
+
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
 
         uint256 expectedPausedLockingDuration = 70;
         uint256 expectedRewardsWhenResuming = convertLiskToSmallestDenomination(5);
@@ -1056,6 +1818,8 @@ contract L2RewardTest is Test {
         vm.prank(staker);
         l2Reward.resumeUnlockingCountdown(lockIDs);
 
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
+
         uint256 expectedBalance = balance + expectedRewardsWhenResuming;
 
         IL2LockingPosition.LockingPosition memory lockingPosition = l2LockingPosition.getLockingPosition(lockIDs[0]);
@@ -1067,6 +1831,68 @@ contract L2RewardTest is Test {
         );
         assertEq(l2Reward.lastClaimDate(lockIDs[0]), today);
         assertEq(l2LiskToken.balanceOf(staker), expectedBalance);
+    }
+
+    function test_resumeUnlockingCountdown_forMultipleStakesIssuesRewardsAndUpdatesLockingPosition() public {
+        address staker = address(0x1);
+        uint256 balance = convertLiskToSmallestDenomination(1000);
+        uint256 duration = 120;
+        uint256[] memory lockIDs = new uint256[](2);
+        uint256 amount = convertLiskToSmallestDenomination(100);
+
+        given_accountHasBalance(address(this), balance);
+        given_accountHasBalance(staker, balance);
+        given_ownerHasFundedStaking(Funds({ amount: convertLiskToSmallestDenomination(35), duration: 350, delay: 1 }));
+
+        skip(1 days);
+
+        // staker creates two positions on deploymentDate + 1, 19741
+        for (uint8 i = 0; i < 2; i++) {
+            lockIDs[i] = when_stakerCreatesPosition(staker, Position({ amount: amount, duration: duration }));
+        }
+
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
+
+        // staker pauses the position on 19741, rewards when pausing is zero
+        then_eventRewardsClaimedIsEmitted(lockIDs[0], 0);
+        then_eventRewardsClaimedIsEmitted(lockIDs[1], 0);
+        vm.prank(staker);
+        l2Reward.pauseUnlocking(lockIDs);
+
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
+
+        assertEq(l2Reward.pendingUnlockAmount(), 0);
+        assertEq(l2Reward.dailyUnlockedAmounts(19741), 0);
+        assertEq(l2Reward.totalAmountLocked(), amount * lockIDs.length);
+
+        balance = l2LiskToken.balanceOf(staker);
+
+        skip(100 days);
+
+        uint256 expectedRewardsPerStake = 5 * 10 ** 18;
+        uint256 today = deploymentDate + 101;
+        uint256 expectedBalance = expectedRewardsPerStake * lockIDs.length + balance;
+
+        // staker resumes the positions
+        then_eventRewardsClaimedIsEmitted(lockIDs[0], expectedRewardsPerStake);
+        then_eventUnlockingCountdownResumedIsEmitted(lockIDs[0]);
+        then_eventRewardsClaimedIsEmitted(lockIDs[1], expectedRewardsPerStake);
+        then_eventUnlockingCountdownResumedIsEmitted(lockIDs[1]);
+        vm.prank(staker);
+        l2Reward.resumeUnlockingCountdown(lockIDs);
+
+        balance = l2LiskToken.balanceOf(staker);
+
+        assertEq(l2Reward.lastClaimDate(lockIDs[0]), today);
+        assertEq(l2Reward.lastClaimDate(lockIDs[1]), today);
+        assertEq(balance, expectedBalance);
+        assertEq(l2LockingPosition.getLockingPosition(lockIDs[0]).expDate, today + duration);
+        assertEq(l2LockingPosition.getLockingPosition(lockIDs[1]).expDate, today + duration);
+
+        assertEq(l2Reward.pendingUnlockAmount(), amount * lockIDs.length);
+        assertEq(l2Reward.dailyUnlockedAmounts(today + duration), amount * lockIDs.length);
+        assertEq(l2Reward.totalAmountLocked(), amount * lockIDs.length);
+        assertEq(l2Reward.pendingUnlockAmount(), l2Reward.totalAmountLocked());
     }
 
     function test_increaseLockingAmount_onlyOwnerCanIncreaseAmountForALockingPosition() public {
@@ -1153,6 +1979,11 @@ contract L2RewardTest is Test {
         l2Reward.increaseLockingAmount(increasingAmounts);
         vm.stopPrank();
 
+        assertEq(
+            l2LockingPosition.getLockingPosition(increasingAmounts[0].lockID).amount,
+            amount + increasingAmounts[0].amountIncrease
+        );
+
         assertEq(l2Reward.totalAmountLocked(), amount + increasingAmounts[0].amountIncrease);
         assertEq(l2Reward.totalWeight(), expectedTotalWeight);
         assertEq(l2LiskToken.balanceOf(staker), balance + expectedReward - increasingAmounts[0].amountIncrease);
@@ -1176,10 +2007,12 @@ contract L2RewardTest is Test {
         increasingAmounts[0].lockID = when_stakerCreatesPosition(staker, Position({ amount: amount, duration: 120 }));
 
         lockIDs[0] = increasingAmounts[0].lockID;
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
 
         // pausedLockingDuration set to 120
         vm.prank(staker);
         l2Reward.pauseUnlocking(lockIDs);
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
 
         skip(50 days);
 
@@ -1199,6 +2032,10 @@ contract L2RewardTest is Test {
         then_eventLockingAmountIncreasedIsEmitted(increasingAmounts[0].lockID, increasingAmounts[0].amountIncrease);
         l2Reward.increaseLockingAmount(increasingAmounts);
         vm.stopPrank();
+
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
+
+        assertEq(l2LockingPosition.getLockingPosition(lockIDs[0]).amount, amount + increasingAmounts[0].amountIncrease);
 
         assertEq(l2Reward.totalAmountLocked(), amount + increasingAmounts[0].amountIncrease);
         assertEq(l2LiskToken.balanceOf(staker), balance + expectedReward - increasingAmounts[0].amountIncrease);
@@ -1244,6 +2081,11 @@ contract L2RewardTest is Test {
         l2Reward.increaseLockingAmount(increasingAmounts);
         vm.stopPrank();
 
+        assertEq(
+            l2LockingPosition.getLockingPosition(increasingAmounts[0].lockID).amount,
+            amount + increasingAmounts[0].amountIncrease
+        );
+
         // daily rewards are capped
         for (uint256 i = 19750; i < 19760; i++) {
             assertEq(l2Reward.dailyRewards(i), cappedRewards);
@@ -1287,6 +2129,8 @@ contract L2RewardTest is Test {
             increasingAmounts[i].amountIncrease = amountIncrease;
         }
 
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
+
         skip(50 days);
 
         uint256 expectedRewardPerStakeFor50Days = 2.5 * 10 ** 18;
@@ -1301,6 +2145,9 @@ contract L2RewardTest is Test {
         l2Reward.increaseLockingAmount(increasingAmounts);
         vm.stopPrank();
 
+        assertEq(l2LockingPosition.getLockingPosition(lockIDs[0]).amount, amount + amountIncrease);
+        assertEq(l2LockingPosition.getLockingPosition(lockIDs[1]).amount, amount + amountIncrease);
+
         assertEq(l2Reward.totalAmountLocked(), (amount + amountIncrease) * 2);
         assertEq(
             l2LiskToken.balanceOf(address(l2Reward)),
@@ -1309,6 +2156,8 @@ contract L2RewardTest is Test {
 
         skip(50 days);
 
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
+
         then_eventRewardsClaimedIsEmitted(lockIDs[0], expectedRewardPerStakeFor50Days);
         then_eventRewardsClaimedIsEmitted(lockIDs[1], expectedRewardPerStakeFor50Days);
         vm.prank(staker);
@@ -1316,13 +2165,13 @@ contract L2RewardTest is Test {
 
         skip(30 days);
 
-        uint256 expectedRewardsPerStakeFor20Days = 1 * 10 ** 18;
-        then_eventRewardsClaimedIsEmitted(lockIDs[0], expectedRewardsPerStakeFor20Days);
-        then_eventRewardsClaimedIsEmitted(lockIDs[1], expectedRewardsPerStakeFor20Days);
+        uint256 expectedRewardsPerStakeFor30Days = 1 * 10 ** 18;
+        then_eventRewardsClaimedIsEmitted(lockIDs[0], expectedRewardsPerStakeFor30Days);
+        then_eventRewardsClaimedIsEmitted(lockIDs[1], expectedRewardsPerStakeFor30Days);
         vm.prank(staker);
         l2Reward.claimRewards(lockIDs);
 
-        uint256 totalRewardsClaimedByStaker = expectedRewardPerStakeFor50Days * 4 + expectedRewardsPerStakeFor20Days * 2;
+        uint256 totalRewardsClaimedByStaker = expectedRewardPerStakeFor50Days * 4 + expectedRewardsPerStakeFor30Days * 2;
 
         assertEq(l2LiskToken.balanceOf(address(l2Reward)), funds - totalRewardsClaimedByStaker);
     }
@@ -1408,6 +2257,10 @@ contract L2RewardTest is Test {
         l2Reward.extendDuration(extensions);
         vm.stopPrank();
 
+        uint256 expectedExpiryDate = deploymentDate + duration + extensions[0].durationExtension;
+
+        assertEq(l2LockingPosition.getLockingPosition(extensions[0].lockID).expDate, expectedExpiryDate);
+
         assertEq(l2Reward.totalWeight(), (27000 * 10 ** 18) - (5000 * 10 ** 18) + weightIncrease);
         assertEq(l2LiskToken.balanceOf(staker), balance + expectedReward);
         assertEq(l2Reward.dailyUnlockedAmounts(deploymentDate + duration), 0);
@@ -1427,7 +2280,7 @@ contract L2RewardTest is Test {
 
         extensions[0].lockID = when_stakerCreatesPosition(staker, Position(amount, duration));
 
-        skip(121 days);
+        skip(150 days);
 
         extensions[0].durationExtension = 50;
         // For expired positions, amount is effectively re-locked for the extended duration.
@@ -1448,6 +2301,10 @@ contract L2RewardTest is Test {
 
         // today is assumed to be the expiry date
         assertEq(l2Reward.dailyUnlockedAmounts(l2Reward.todayDay() + extensions[0].durationExtension), amount);
+        assertEq(
+            l2LockingPosition.getLockingPosition(extensions[0].lockID).expDate,
+            l2Reward.todayDay() + extensions[0].durationExtension
+        );
 
         skip(60 days);
 
@@ -1459,6 +2316,8 @@ contract L2RewardTest is Test {
         then_eventRewardsClaimedIsEmitted(lockIDs[0], expectedRewardAfterExtension);
         vm.prank(staker);
         l2Reward.claimRewards(lockIDs);
+
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
 
         // staker unlocks rewards
         then_eventRewardsClaimedIsEmitted(lockIDs[0], 0);
@@ -1487,6 +2346,8 @@ contract L2RewardTest is Test {
         l2Reward.pauseUnlocking(lockIDs);
         vm.stopPrank();
 
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
+
         skip(120 days);
 
         extensions[0].durationExtension = 50;
@@ -1503,8 +2364,71 @@ contract L2RewardTest is Test {
         l2Reward.extendDuration(extensions);
         vm.stopPrank();
 
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
+
+        // expDate does not change for paused position
+        assertEq(l2LockingPosition.getLockingPosition(extensions[0].lockID).expDate, deploymentDate + duration);
+        // pausedLockingDuration is extended by 50 days
+        assertEq(
+            l2LockingPosition.getLockingPosition(extensions[0].lockID).pausedLockingDuration,
+            duration + extensions[0].durationExtension
+        );
+
         assertEq(l2LiskToken.balanceOf(staker), balance + expectedReward);
         assertEq(l2Reward.totalWeight(), expectedTotalWeight);
+    }
+
+    function test_extendDuration_forMultipleStakesUpdatesTotalWeightAndClaimRewards() public {
+        address staker = address(0x1);
+        uint256 balance = convertLiskToSmallestDenomination(1000);
+        uint256 duration = 120;
+        uint256 amount = convertLiskToSmallestDenomination(100);
+        uint256 durationExtension = 50;
+        L2Reward.ExtendedDuration[] memory extensions = new L2Reward.ExtendedDuration[](2);
+        uint256[] memory lockIDs = new uint256[](2);
+
+        given_accountHasBalance(address(this), balance);
+        given_accountHasBalance(staker, balance);
+        given_ownerHasFundedStaking(Funds({ amount: convertLiskToSmallestDenomination(35), duration: 350, delay: 1 }));
+
+        skip(1 days);
+
+        for (uint8 i = 0; i < extensions.length; i++) {
+            lockIDs[i] = when_stakerCreatesPosition(staker, Position(amount, duration));
+
+            //sets the extension in duration
+            extensions[i].lockID = lockIDs[i];
+            extensions[i].durationExtension = durationExtension;
+        }
+
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
+
+        uint256 totalWeightBeforeExtension = l2Reward.totalWeight();
+        uint256 expectedReward = 2.5 * 10 ** 18;
+
+        skip(50 days);
+
+        // after 50 days extend duration for 50 days, given the locked amount stays same total weight remains same
+        vm.startPrank(staker);
+        then_eventRewardsClaimedIsEmitted(lockIDs[0], expectedReward);
+        then_eventRewardsClaimedIsEmitted(lockIDs[1], expectedReward);
+        l2Reward.extendDuration(extensions);
+        vm.stopPrank();
+
+        assertEq(l2Reward.totalWeight(), totalWeightBeforeExtension);
+        assertEq(
+            l2LockingPosition.getLockingPosition(lockIDs[0]).expDate, deploymentDate + 1 + duration + durationExtension
+        );
+
+        uint256 expectedRewardsFor20Days = 1 * 10 ** 18;
+
+        skip(20 days);
+        then_eventRewardsClaimedIsEmitted(lockIDs[0], expectedRewardsFor20Days);
+        then_eventRewardsClaimedIsEmitted(lockIDs[1], expectedRewardsFor20Days);
+        vm.prank(staker);
+        l2Reward.claimRewards(lockIDs);
+
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
     }
 
     function test_initiateFastUnlock_onlyOwnerCanUnlockAPosition() public {
@@ -1539,7 +2463,10 @@ contract L2RewardTest is Test {
         l2Reward.initiateFastUnlock(lockIDs);
     }
 
-    function test_initiateFastUnlock_forActivePositionAddsPenaltyAsRewardAlsoUpdatesGlobalsAndClaimRewards() public {
+    function test_initiateFastUnlock_forActivePositionAddsPenaltyAsRewardAlsoUpdatesGlobalsAndClaimRewardsAlsoReducesStakedAmountByPenalty(
+    )
+        public
+    {
         address staker = address(0x1);
         uint256 balance = convertLiskToSmallestDenomination(1000);
         uint256 amount = convertLiskToSmallestDenomination(100);
@@ -1558,11 +2485,15 @@ contract L2RewardTest is Test {
         uint256 reward = 4.9e18;
         uint256 penalty = 4589041095890410958;
 
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
+
         vm.startPrank(staker);
         then_eventRewardsClaimedIsEmitted(lockIDs[0], reward);
         then_eventFastUnlockInitiatedIsEmitted(lockIDs[0]);
         l2Reward.initiateFastUnlock(lockIDs);
         vm.stopPrank();
+
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
 
         uint256 expectedTotalWeight = (l2Staking.FAST_UNLOCK_DURATION() + l2Reward.OFFSET()) * (amount - penalty);
 
@@ -1584,9 +2515,13 @@ contract L2RewardTest is Test {
 
         assertEq(l2LiskToken.balanceOf(staker), convertLiskToSmallestDenomination(1000) - amount + reward);
         assertEq(l2Reward.dailyRewards(19821), dailyFundedReward);
+        assertEq(l2LockingPosition.getLockingPosition(lockIDs[0]).amount, amount - penalty);
     }
 
-    function test_initiateFastUnlock_forPausedPositionAddsPenaltyAsRewardAlsoUpdatesGlobalsAndClaimRewards() public {
+    function test_initiateFastUnlock_forPausedPositionAddsPenaltyAsRewardAlsoUpdatesGlobalsAndClaimRewardsAlsoReducesStakedAmountByPenalty(
+    )
+        public
+    {
         address staker = address(0x1);
         uint256 balance = convertLiskToSmallestDenomination(1000);
         uint256 amount = convertLiskToSmallestDenomination(100);
@@ -1601,12 +2536,16 @@ contract L2RewardTest is Test {
 
         lockIDs[0] = when_stakerCreatesPosition(staker, Position(amount, duration));
 
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
+
         skip(20 days);
 
         vm.startPrank(staker);
         then_eventLockingPositionPausedIsEmitted(lockIDs[0]);
         l2Reward.pauseUnlocking(lockIDs);
         vm.stopPrank();
+
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
 
         uint256 rewardFor20Days = convertLiskToSmallestDenomination(2);
         uint256 penalty = 6643835616438356164;
@@ -1619,6 +2558,8 @@ contract L2RewardTest is Test {
         l2Reward.initiateFastUnlock(lockIDs);
         vm.stopPrank();
 
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
+
         uint256 expectedTotalWeight = (l2Staking.FAST_UNLOCK_DURATION() + l2Reward.OFFSET()) * (amount - penalty);
 
         assertEq(l2LiskToken.balanceOf(staker), balance - amount + rewardFor20Days * 2);
@@ -1628,6 +2569,80 @@ contract L2RewardTest is Test {
         assertEq(
             l2Reward.dailyUnlockedAmounts(deploymentDate + 1 + 40 + l2Staking.FAST_UNLOCK_DURATION()), amount - penalty
         );
+        assertEq(l2LockingPosition.getLockingPosition(lockIDs[0]).amount, amount - penalty);
+    }
+
+    function test_initiateFastUnlock_forMultipleStakesUpdatesGlobalsAndClaimsRewards() public {
+        address staker = address(0x1);
+        uint256 balance = convertLiskToSmallestDenomination(1000);
+        uint256 amount = convertLiskToSmallestDenomination(100);
+        uint256[] memory lockIDs = new uint256[](2);
+
+        uint256 duration = 120;
+
+        given_accountHasBalance(address(this), balance);
+        given_accountHasBalance(staker, balance);
+        given_ownerHasFundedStaking(Funds({ amount: convertLiskToSmallestDenomination(35), duration: 350, delay: 1 }));
+
+        skip(1 days);
+
+        // staker creates two positions on expiry date + 1, 19741
+        for (uint8 i = 0; i < lockIDs.length; i++) {
+            lockIDs[i] = when_stakerCreatesPosition(staker, Position(amount, duration));
+        }
+
+        uint256 votingPowerAtLocking = l2VotingPower.balanceOf(staker);
+
+        skip(30 days);
+
+        uint256 expectedRewardsPerStakeAfter30Days = 1.5 * 10 ** 18;
+        uint256 expectedPenaltyPerStakeAfter30Days = 5958904109589041095;
+
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
+
+        // staker initates fast unlock after 30 days
+        then_eventRewardsClaimedIsEmitted(lockIDs[0], expectedRewardsPerStakeAfter30Days);
+        then_eventRewardsClaimedIsEmitted(lockIDs[1], expectedRewardsPerStakeAfter30Days);
+        vm.startPrank(staker);
+        l2Reward.initiateFastUnlock(lockIDs);
+        vm.stopPrank();
+
+        uint256 expectedTotalWeight =
+            2 * (l2Staking.FAST_UNLOCK_DURATION() + l2Reward.OFFSET()) * (amount - expectedPenaltyPerStakeAfter30Days);
+
+        assertEq(l2Reward.totalAmountLocked(), 2 * (amount - expectedPenaltyPerStakeAfter30Days));
+        assertEq(l2Reward.totalWeight(), expectedTotalWeight);
+
+        // penalty is burned from voting power
+        assertEq(l2VotingPower.balanceOf(staker), votingPowerAtLocking - expectedPenaltyPerStakeAfter30Days * 2);
+
+        uint256 expectedRewardsForFAST_UNLOCK_DURATION = 547260273972602738;
+
+        skip(5 days);
+
+        then_eventRewardsClaimedIsEmitted(lockIDs[0], expectedRewardsForFAST_UNLOCK_DURATION);
+        then_eventRewardsClaimedIsEmitted(lockIDs[1], expectedRewardsForFAST_UNLOCK_DURATION);
+        vm.startPrank(staker);
+        l2Reward.claimRewards(lockIDs);
+        vm.stopPrank();
+
+        uint256 balanceAfterClaimingAllRewards = balance - (amount * 2) + (expectedRewardsPerStakeAfter30Days * 2)
+            + (expectedRewardsForFAST_UNLOCK_DURATION * 2);
+
+        assertEq(l2LiskToken.balanceOf(staker), balanceAfterClaimingAllRewards);
+
+        then_eventRewardsClaimedIsEmitted(lockIDs[0], 0);
+        then_eventRewardsClaimedIsEmitted(lockIDs[1], 0);
+        vm.startPrank(staker);
+        l2Reward.deletePositions(lockIDs);
+        vm.stopPrank();
+
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
+
+        uint256 expectedBalanceAfterUnlocking =
+            balanceAfterClaimingAllRewards + amount * 2 - expectedPenaltyPerStakeAfter30Days * 2;
+
+        assertEq(l2LiskToken.balanceOf(staker), expectedBalanceAfterUnlocking);
     }
 
     function test_initializeLockingPosition_onlyOwnerCanInitializeLockingPosition() public {
@@ -1724,6 +2739,18 @@ contract L2RewardTest is Test {
         l2Reward.addUnusedRewards(100, 100, 1);
     }
 
+    function test_addUnusedRewards_amountShouldBeGreaterThanZeroWhenAddingRewards() public {
+        vm.expectRevert("L2Reward: Funded amount should be greater than zero");
+
+        l2Reward.addUnusedRewards(0, 100, 1);
+    }
+
+    function test_addUnusedRewards_durationShouldBeGreaterThanZeroWhenAddingRewards() public {
+        vm.expectRevert("L2Reward: Funding duration should be greater than zero");
+
+        l2Reward.addUnusedRewards(100, 0, 1);
+    }
+
     function test_addUnusedRewards_delayShouldBeGreaterThanZeroWhenAddingRewards() public {
         vm.expectRevert("L2Reward: Rewards can only be added from next day or later");
 
@@ -1754,6 +2781,8 @@ contract L2RewardTest is Test {
         vm.expectEmit(true, true, true, true);
         emit L2Reward.RewardsAdded(l2Reward.rewardsSurplus(), 10, 1);
         l2Reward.addUnusedRewards(l2Reward.rewardsSurplus(), 10, 1);
+
+        assertEq(l2Reward.rewardsSurplus(), 0);
     }
 
     function test_addUnusedRewards_updatesDailyRewardsAndEmitsRewardsAddedEvent() public {
@@ -1778,45 +2807,101 @@ contract L2RewardTest is Test {
             staker, Position({ amount: convertLiskToSmallestDenomination(1), duration: 100 })
         );
 
-        uint256 additionalReward = l2Reward.rewardsSurplus() / 10;
+        uint256 additionalReward = convertLiskToSmallestDenomination(1);
+        uint256 additionalRewardPerDay = additionalReward / 10;
         uint256 cappedRewards = convertLiskToSmallestDenomination(100) / 365;
 
         assertEq(l2Reward.dailyRewards(19741), cappedRewards);
 
+        uint256 rewardsSurplusBeforeAdditionalRewards = l2Reward.rewardsSurplus();
+
         // days 19743 to 19752 are funded
         vm.expectEmit(true, true, true, true);
-        emit L2Reward.RewardsAdded(l2Reward.rewardsSurplus(), 10, 1);
-        l2Reward.addUnusedRewards(l2Reward.rewardsSurplus(), 10, 1);
+        emit L2Reward.RewardsAdded(additionalReward, 10, 1);
+        l2Reward.addUnusedRewards(additionalReward, 10, 1);
         vm.stopPrank();
 
         for (uint16 i = 19743; i < 19753; i++) {
-            assertEq(l2Reward.dailyRewards(i), dailyReward + additionalReward);
+            assertEq(l2Reward.dailyRewards(i), dailyReward + additionalRewardPerDay);
         }
 
-        assertEq(l2Reward.rewardsSurplus(), 0);
+        assertEq(l2Reward.rewardsSurplus(), rewardsSurplusBeforeAdditionalRewards - additionalReward);
         assertEq(l2Reward.lastTrsDate(), 19742);
 
         skip(10 days);
 
+        uint256 rewardSurplusAfterAdditionalRewards = l2Reward.rewardsSurplus();
+
         // staker cerates another position on deploymentDate + 2 + 10, 19752
         // This will trigger updateGlobalState() from 19742 to 19751
         when_stakerCreatesPosition(staker, Position({ amount: convertLiskToSmallestDenomination(100), duration: 100 }));
-
         cappedRewards = convertLiskToSmallestDenomination(101) / 365;
-
-        // For day 19742 additional rewards are not assigned but for the
-        // remaining days from 19743 onwards additional rewards are assigned
-        uint256 expectedRewardSurplus =
-            (dailyReward - cappedRewards) + (9 * (dailyReward + additionalReward - cappedRewards));
-
         for (uint16 i = 19742; i < 19752; i++) {
             assertEq(l2Reward.dailyRewards(i), cappedRewards);
         }
 
+        // For day 19742 additional rewards are not assigned but for the
+        // remaining days from 19743 onwards additional rewards are assigned
+        uint256 expectedRewardSurplus = rewardSurplusAfterAdditionalRewards + (dailyReward - cappedRewards)
+            + (9 * (dailyReward + additionalRewardPerDay - cappedRewards));
+
         assertEq(l2Reward.rewardsSurplus(), expectedRewardSurplus);
     }
 
+    function test_rewardContractBalanceNearsZeroAndHasFundsForRewards() public {
+        address[] memory stakers = given_anArrayOfStakersOfLength(5);
+        uint256 balance = convertLiskToSmallestDenomination(1000);
+        uint256 funds = convertLiskToSmallestDenomination(35);
+        uint256[] memory locksToClaim = new uint256[](1);
+        uint256[] memory lockIDs = new uint256[](5);
+
+        given_accountHasBalance(address(this), balance);
+        given_ownerHasFundedStaking(Funds({ amount: funds, duration: 150, delay: 1 }));
+
+        skip(1 days);
+        for (uint8 i = 0; i < stakers.length; i++) {
+            given_accountHasBalance(stakers[i], balance);
+            lockIDs[i] = when_stakerCreatesPosition(
+                stakers[i], Position({ amount: convertLiskToSmallestDenomination(37) * (i + 1), duration: 150 })
+            );
+        }
+
+        skip(150 days);
+        for (uint8 i = 0; i < stakers.length; i++) {
+            locksToClaim[0] = lockIDs[i];
+            when_rewardsAreClaimedByStaker(stakers[i], locksToClaim);
+        }
+
+        checkConsistencyPendingUnlockDailyUnlocked(lockIDs, getLargestExpiryDate(lockIDs));
+
+        uint256 sumOfDailyRewards;
+        for (uint256 i = 19740; i < l2Reward.todayDay(); i++) {
+            sumOfDailyRewards += l2Reward.dailyRewards(i);
+        }
+
+        uint256 sumOfRewards;
+        for (uint8 i = 0; i < stakers.length; i++) {
+            // expected reward is current balance + amount staked - initial balance
+            sumOfRewards +=
+                (l2LiskToken.balanceOf(stakers[i]) + (convertLiskToSmallestDenomination(37) * (i + 1))) - balance;
+        }
+
+        // balance of the l2Reward is almost zero
+        assertEq(l2LiskToken.balanceOf(address(l2Reward)) / 10 ** 3, 0);
+
+        assertTrue(sumOfDailyRewards <= funds);
+        assertTrue(sumOfRewards <= funds);
+        assertTrue(sumOfDailyRewards > sumOfRewards);
+
+        // daily rewards and rewards assigned are almost equal
+        assertEq(sumOfDailyRewards / 10 ** 3, sumOfRewards / 10 ** 3);
+    }
+
     function convertLiskToSmallestDenomination(uint256 lisk) internal pure returns (uint256) {
+        return lisk * 10 ** 18;
+    }
+
+    function LSK(uint256 lisk) internal pure returns (uint256) {
         return lisk * 10 ** 18;
     }
 

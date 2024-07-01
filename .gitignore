@@ -16,7 +16,7 @@ slither-results.json
 slitherResults.md
 
 # Devnet deployment files
-deployment/devnet/
+deployment/artifacts/contracts/devnet/
 
 # Slither-mutation files
 mutation_campaign

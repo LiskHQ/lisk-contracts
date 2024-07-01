@@ -25,7 +25,7 @@ contract L2VotingPowerScript is Script {
         console2.log("Deploying L2 Voting Power...");
 
         // get L2LockingPosition contract address
-        Utils.L2AddressesConfig memory l2AddressesConfig = utils.readL2AddressesFile();
+        Utils.L2AddressesConfig memory l2AddressesConfig = utils.readL2AddressesFile(utils.getL2AddressesFilePath());
         assert(l2AddressesConfig.L2LockingPosition != address(0));
         console2.log("L2 Locking Position address: %s", l2AddressesConfig.L2LockingPosition);
         IL2LockingPosition lockingPositionContract = IL2LockingPosition(l2AddressesConfig.L2LockingPosition);
@@ -84,6 +84,6 @@ contract L2VotingPowerScript is Script {
         // write L2 Voting Power address to l2addresses.json
         l2AddressesConfig.L2VotingPowerImplementation = address(l2VotingPowerImplementation);
         l2AddressesConfig.L2VotingPower = address(l2VotingPower);
-        utils.writeL2AddressesFile(l2AddressesConfig);
+        utils.writeL2AddressesFile(l2AddressesConfig, utils.getL2AddressesFilePath());
     }
 }

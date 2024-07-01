@@ -120,13 +120,25 @@ contract Utils is Script {
         return network;
     }
 
+    /// @notice This function returns the path for L1 addresses JSON file.
+    /// @return string containing file path to L1 addresses JSON.
+    function getL1AddressesFilePath() external view returns (string memory) {
+        return
+            string.concat(vm.projectRoot(), "/deployment/artifacts/contracts/", getNetworkType(), "/l1addresses.json");
+    }
+
+    /// @notice This function returns the path for L2 addresses JSON file.
+    /// @return string containing file path to L2 addresses JSON.
+    function getL2AddressesFilePath() external view returns (string memory) {
+        return
+            string.concat(vm.projectRoot(), "/deployment/artifacts/contracts/", getNetworkType(), "/l2addresses.json");
+    }
+
     /// @notice This function reads L1 addresses from JSON file.
+    /// @param filePath L1Addresses file path.
     /// @return L1AddressesConfig struct containing L1 addresses.
-    function readL1AddressesFile() external view returns (L1AddressesConfig memory) {
-        string memory network = getNetworkType();
-        string memory root = vm.projectRoot();
-        string memory addressPath = string.concat(root, "/deployment/", network, "/l1addresses.json");
-        string memory addressJson = vm.readFile(addressPath);
+    function readL1AddressesFile(string memory filePath) external view returns (L1AddressesConfig memory) {
+        string memory addressJson = vm.readFile(filePath);
 
         L1AddressesConfig memory l1AddressesConfig;
 
@@ -145,22 +157,20 @@ contract Utils is Script {
 
     /// @notice This function writes L1 addresses to JSON file.
     /// @param cfg L1AddressesConfig struct containing L1 addresses which will be written to JSON file.
-    function writeL1AddressesFile(L1AddressesConfig memory cfg) external {
-        string memory network = getNetworkType();
+    /// @param filePath L1Addresses file path.
+    function writeL1AddressesFile(L1AddressesConfig memory cfg, string memory filePath) external {
         string memory json = "";
         vm.serializeAddress(json, "L1LiskToken", cfg.L1LiskToken);
         string memory finalJson =
             vm.serializeAddress(json, "L1VestingWalletImplementation", cfg.L1VestingWalletImplementation);
-        finalJson.write(string.concat("deployment/", network, "/l1addresses.json"));
+        finalJson.write(filePath);
     }
 
     /// @notice This function reads L2 addresses from JSON file.
+    /// @param filePath L2Addresses file path.
     /// @return L2AddressesConfig struct containing L2 addresses.
-    function readL2AddressesFile() external view returns (L2AddressesConfig memory) {
-        string memory network = getNetworkType();
-        string memory root = vm.projectRoot();
-        string memory addressPath = string.concat(root, "/deployment/", network, "/l2addresses.json");
-        string memory addressJson = vm.readFile(addressPath);
+    function readL2AddressesFile(string memory filePath) external view returns (L2AddressesConfig memory) {
+        string memory addressJson = vm.readFile(filePath);
 
         L2AddressesConfig memory l2AddressesConfig;
 
@@ -258,8 +268,8 @@ contract Utils is Script {
 
     /// @notice This function writes L2 addresses to JSON file.
     /// @param cfg L2AddressesConfig struct containing L2 addresses which will be written to JSON file.
-    function writeL2AddressesFile(L2AddressesConfig memory cfg) external {
-        string memory network = getNetworkType();
+    /// @param filePath L2Addresses file path.
+    function writeL2AddressesFile(L2AddressesConfig memory cfg, string memory filePath) external {
         string memory json = "";
         vm.serializeAddress(json, "L2Airdrop", cfg.L2Airdrop);
         vm.serializeAddress(json, "L2ClaimContract", cfg.L2ClaimContract);
@@ -283,22 +293,29 @@ contract Utils is Script {
         vm.serializeAddress(json, "L2VotingPowerImplementation", cfg.L2VotingPowerImplementation);
         string memory finalJson = vm.serializeAddress(json, "L2VotingPowerPaused", cfg.L2VotingPowerPaused);
 
-        finalJson.write(string.concat("deployment/", network, "/l2addresses.json"));
+        finalJson.write(filePath);
+    }
+
+    /// @notice This function returns the path for the vesting wallets JSON file for the provided network layer.
+    /// @param _layer Network layer of the running script, either be "L1" or "L2".
+    /// @return string containing file path to vesting wallets.
+    function getVestingWalletsFilePath(string memory _layer) public view returns (string memory) {
+        return string.concat(
+            vm.projectRoot(), "/deployment/artifacts/contracts/", getNetworkType(), "/vestingWallets_", _layer, ".json"
+        );
     }
 
     /// @notice This function writes Vesting Wallets to JSON file.
     /// @param _vestingWallets Array of Vesting Wallets which will be written to JSON file.
-    /// @param _layer Network layer of the running script, either be "L1" or "L2"
+    /// @param _layer Network layer of the running script, either be "L1" or "L2".
     function writeVestingWalletsFile(VestingWallet[] memory _vestingWallets, string memory _layer) external {
-        string memory network = getNetworkType();
-
         string memory json = "vestingWallets";
         string memory finalJson;
         for (uint256 i = 0; i < _vestingWallets.length; i++) {
             VestingWallet memory vestingWallet = _vestingWallets[i];
             finalJson = vm.serializeAddress(json, vestingWallet.name, vestingWallet.vestingWalletAddress);
         }
-        finalJson.write(string.concat("deployment/", network, string.concat("/vestingWallets_", _layer, ".json")));
+        finalJson.write(getVestingWalletsFilePath(_layer));
     }
 
     /// @notice This function reads MerkleRoot from JSON file.
@@ -372,11 +389,7 @@ contract Utils is Script {
         view
         returns (address)
     {
-        string memory network = getNetworkType();
-        string memory root = vm.projectRoot();
-        string memory vestingWalletsPath =
-            string.concat(root, "/deployment/", network, string.concat("/vestingWallets_", _layer, ".json"));
-        string memory vestingWalletsJson = vm.readFile(vestingWalletsPath);
+        string memory vestingWalletsJson = vm.readFile(getVestingWalletsFilePath(_layer));
         return vm.parseJsonAddress(vestingWalletsJson, string.concat(".['", _vestingWalletName, "']"));
     }
 

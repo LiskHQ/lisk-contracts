@@ -25,7 +25,7 @@ contract L2LockingPositionScript is Script {
         console2.log("Deploying L2 Locking Position...");
 
         // get L2Staking contract address
-        Utils.L2AddressesConfig memory l2AddressesConfig = utils.readL2AddressesFile();
+        Utils.L2AddressesConfig memory l2AddressesConfig = utils.readL2AddressesFile(utils.getL2AddressesFilePath());
         assert(l2AddressesConfig.L2Staking != address(0));
         console2.log("L2 Staking address: %s", l2AddressesConfig.L2Staking);
         IL2Staking stakingContract = IL2Staking(l2AddressesConfig.L2Staking);
@@ -82,6 +82,6 @@ contract L2LockingPositionScript is Script {
         // write L2 Locking Position address to l2addresses.json
         l2AddressesConfig.L2LockingPositionImplementation = address(l2LockingPositionImplementation);
         l2AddressesConfig.L2LockingPosition = address(l2LockingPosition);
-        utils.writeL2AddressesFile(l2AddressesConfig);
+        utils.writeL2AddressesFile(l2AddressesConfig, utils.getL2AddressesFilePath());
     }
 }

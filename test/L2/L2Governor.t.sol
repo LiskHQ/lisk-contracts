@@ -2,6 +2,9 @@
 pragma solidity 0.8.23;
 
 import { IVotes } from "@openzeppelin-upgradeable/contracts/governance/extensions/GovernorVotesUpgradeable.sol";
+import { IERC1155Receiver } from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
+import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import { IGovernor } from "@openzeppelin/contracts/governance/IGovernor.sol";
 import { OwnableUpgradeable } from "@openzeppelin-upgradeable/contracts/access/OwnableUpgradeable.sol";
 import { TimelockController } from "@openzeppelin/contracts/governance/TimelockController.sol";
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
@@ -191,5 +194,11 @@ contract L2GovernorTest is Test {
         // assure cannot re-reinitialize
         vm.expectRevert();
         l2GovernorV2.initializeV2(testNumber + 1);
+    }
+
+    function test_SupportsInterface() public view {
+        assertTrue(l2Governor.supportsInterface(type(IGovernor).interfaceId)); // Governor
+        assertTrue(l2Governor.supportsInterface(type(IERC1155Receiver).interfaceId)); // ERC1155Receiver
+        assertTrue(l2Governor.supportsInterface(type(IERC165).interfaceId)); // ERC165
     }
 }
