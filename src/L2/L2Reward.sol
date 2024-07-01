@@ -173,7 +173,9 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
         updateGlobalState();
 
         // create a new position
+        // slither-disable-next-line unchecked-transfer
         IL2LiskToken(l2TokenContract).transferFrom(msg.sender, address(this), amount);
+        // slither-disable-next-line unused-return
         IL2LiskToken(l2TokenContract).approve(stakingContract, amount);
         uint256 id = IL2Staking(stakingContract).lockAmount(msg.sender, amount, duration);
         uint256 today = todayDay();
@@ -285,6 +287,7 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
         if (lockingPosition.pausedLockingDuration == 0) {
             // If rewards are claimed against an expired position that was already claimed after expiry period,
             // rewardableDuration is zero
+            // slither-disable-next-line unused-return
             (, rewardableDuration) = Math.trySub(lockingPosition.expDate, lastClaimDate[lockID]);
 
             lastRewardDay = Math.min(lockingPosition.expDate, today);
@@ -293,7 +296,7 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
             lastRewardDay = today;
         }
 
-        uint256 reward;
+        uint256 reward = 0;
 
         if (rewardableDuration > 0) {
             weight = lockingPosition.amount * (rewardableDuration + OFFSET);
@@ -348,6 +351,7 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
         lastClaimDate[lockID] = today;
 
         if (reward != 0) {
+            // slither-disable-next-line unchecked-transfer
             IL2LiskToken(l2TokenContract).transfer(msg.sender, reward);
         }
     }
@@ -375,7 +379,9 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
     function _increaseLockingAmount(uint256 lockID, uint256 amountIncrease) internal virtual {
         // claim rewards and update staking contract
         _claimReward(lockID);
+        // slither-disable-next-line unchecked-transfer
         IL2LiskToken(l2TokenContract).transferFrom(msg.sender, address(this), amountIncrease);
+        // slither-disable-next-line unused-return
         IL2LiskToken(l2TokenContract).approve(stakingContract, amountIncrease);
         IL2Staking(stakingContract).increaseLockingAmount(lockID, amountIncrease);
 
@@ -556,6 +562,7 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
         require(duration > 0, "L2Reward: Funding duration should be greater than zero");
         require(delay > 0, "L2Reward: Funding should start from next day or later");
 
+        // slither-disable-next-line unchecked-transfer
         IL2LiskToken(l2TokenContract).transferFrom(msg.sender, address(this), amount);
 
         _addRewards(amount, duration, delay);
