@@ -59,6 +59,7 @@ jobs:
           solc-version: 0.8.23
           sarif: results.sarif
           fail-on: medium
+          slither-version: 0.10.3
           slither-args: --exclude-dependencies --exclude-low --exclude-informational --filter-paths "Ed25519.sol"
         id: slither
 
