@@ -34,27 +34,37 @@ contract TestIntegrationScript is Script {
         vm.startPrank(testAccount);
 
         console2.log("Testing no minimum...");
-        swapAndBridge.swapAndBridgeToWithMinimumAmount{ value: 1 ether }(testAccount, 0);
+        uint256 senderBalance = testAccount.balance;
+        uint256 value = 1 ether;
+        swapAndBridge.swapAndBridgeToWithMinimumAmount{ value: value }(testAccount, 0);
+        require(senderBalance == testAccount.balance + value, "Invalid sender balance update.");
         console2.log("Ok");
 
         console2.log("Testing 'Insufficient L1 tokens minted'...");
+        senderBalance = testAccount.balance;
         vm.expectRevert("Insufficient L1 tokens minted.");
         swapAndBridge.swapAndBridgeToWithMinimumAmount{ value: 1 ether }(testAccount, 1e18 + 1);
+        require(senderBalance == testAccount.balance, "Sender balance should not have changed.");
         console2.log("Ok");
 
-        console2.log("Testing 'Overflow'...");
-        vm.expectRevert(); // Panic due to overflow.
-        swapAndBridge.swapAndBridgeToWithMinimumAmount{ value: 10000 ether }(testAccount, 1e75);
+        console2.log("Testing 'EvmError: OutOfFunds'...");
+        senderBalance = testAccount.balance;
+        uint256 MAX_INT = 2 ** 256 - 1;
+        vm.expectRevert(); // Panic due to EvmError: OutOfFunds.
+        swapAndBridge.swapAndBridgeToWithMinimumAmount{ value: MAX_INT }(testAccount, 0);
+        require(senderBalance == testAccount.balance, "Sender balance should not have changed.");
         console2.log("Ok");
 
         console2.log("Testing 'High enough limit'...");
-        swapAndBridge.swapAndBridgeToWithMinimumAmount{ value: 1 ether }(testAccount, 1e18);
+        senderBalance = testAccount.balance;
+        value = 1 ether;
+        swapAndBridge.swapAndBridgeToWithMinimumAmount{ value: value }(testAccount, 1e18);
+        require(senderBalance == testAccount.balance + value, "Invalid sender balance update.");
         console2.log("Ok");
     }
 
     function runReceive() public {
         console2.log("Testing converting ETH to LST token...");
-        vm.recordLogs();
         vm.startPrank(testAccount);
         uint256 ethBalanceBefore = testAccount.balance;
         uint256 lstBalanceBefore = l1LSTToken.balanceOf(testAccount);

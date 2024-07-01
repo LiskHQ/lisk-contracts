@@ -12,7 +12,7 @@ contract SwapAndBridgeScript is Script {
         assert(_l1Bridge != address(0));
         assert(_l1Token != address(0));
         assert(_l2Token != address(0));
-        // Deployer's private key. L1_SWAP_AND_BRIDGE_DEPLOYER_PRIVATE_KEY is set in .env file.
+        // Deployer's private key. PRIVATE_KEY is set in .env file.
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
 
         console2.log("Deploying SwapAndBridge contract...");

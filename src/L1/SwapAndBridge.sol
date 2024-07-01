@@ -31,10 +31,11 @@ interface IL1StandardBridge {
 ///         It is designed to be used as a part of the Lisk L2 ecosystem.
 contract SwapAndBridge {
     /// @notice Minimum amount of gas to be used for the deposit message on L2.
+    ///         This value is added to the base gas calculated by the CrossDomainMessenger contract.
     uint32 public constant MIN_DEPOSIT_GAS = 0;
 
     /// @notice The L1 bridge contract. This is configurable since not all tokens are bridged
-    /// using the standard bridge.
+    ///         using the standard bridge.
     IL1StandardBridge public immutable L1_BRIDGE;
 
     /// @notice The wrapped LST contract on L1.
@@ -62,7 +63,7 @@ contract SwapAndBridge {
     }
 
     /// @notice Swap ETH to wrapped LST and bridge it to the recipient address on the L2.
-    /// If the amount of l1 token obtained is less than minL1Tokens, the transaction will revert.
+    ///         If the amount of l1 token obtained is less than minL1Tokens, the transaction will revert.
     /// @param recipient The address to bridge the wrapped LST to.
     /// @param minL1Tokens The minimum amount of L1 tokens to be obtained.
     function swapAndBridgeToWithMinimumAmount(address recipient, uint256 minL1Tokens) public payable {

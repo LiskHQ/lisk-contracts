@@ -13,5 +13,5 @@ source .env
 echo "Done."
 
 echo "Deploying OptimismMintableERC20 wdivETH token smart contract..."
-cast send --rpc-url $L2_RPC_URL "0x4200000000000000000000000000000000000012" "createOptimismMintableERC20WithDecimals(address,string,string,uint8)" $L1_TOKEN_ADDR_DIVA "Wrapped Diva Ether Token" wdivETH 18 -i
+cast send --rpc-url $L2_RPC_URL "0x4200000000000000000000000000000000000012" "createOptimismMintableERC20WithDecimals(address,string,string,uint8)" $L1_TOKEN_ADDR_DIVA "Wrapped Diva Ether Token" wdivETH 18 --private-key $PRIVATE_KEY
 echo "Done."
