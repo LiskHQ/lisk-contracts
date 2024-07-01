@@ -136,21 +136,21 @@ contract UtilsTest is Test {
     function test_getL1AddressesFilePath() public view {
         assertEq(
             utils.getL1AddressesFilePath(),
-            string.concat(vm.projectRoot(), "/deployment/", network, "/l1addresses.json")
+            string.concat(vm.projectRoot(), "/deployment/artifacts/contracts/", network, "/l1addresses.json")
         );
     }
 
     function test_getL2AddressesFilePath() public view {
         assertEq(
             utils.getL2AddressesFilePath(),
-            string.concat(vm.projectRoot(), "/deployment/", network, "/l2addresses.json")
+            string.concat(vm.projectRoot(), "/deployment/artifacts/contracts/", network, "/l2addresses.json")
         );
     }
 
     function test_getVestingWalletsFilePath() public view {
         assertEq(
             utils.getVestingWalletsFilePath("l1"),
-            string.concat(vm.projectRoot(), "/deployment/", network, "/vestingWallets_l1.json")
+            string.concat(vm.projectRoot(), "/deployment/artifacts/contracts/", network, "/vestingWallets_l1.json")
         );
     }
 
