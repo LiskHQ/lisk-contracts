@@ -45,7 +45,6 @@ then
     DeploymentJSON=$(cast send --rpc-url "http://localhost:8546" "0x4200000000000000000000000000000000000012" "createOptimismMintableERC20WithDecimals(address,string,string,uint8)" $L1_TOKEN_ADDR_DIVA "Wrapped Diva Local Token" wdivETH 18 --private-key $PRIVATE_KEY)
     L2_TOKEN_ADDR_DIVA="0x$(echo $DeploymentJSON  | awk 'BEGIN{FS="topics:*"}{print $2}' | awk -F, '{print $3}' | awk 'BEGIN{FS="\]*"}{print $1}' | cut -d "\"" -f 2 | tail -c 41)"
     echo "L2_TOKEN_ADDR_DIVA deployed to" $L2_TOKEN_ADDR_DIVA
-    sed -i '' -e "s/L2_TOKEN_ADDR_DIVA=/L2_TOKEN_ADDR_DIVA=$L2_TOKEN_ADDR_DIVA/g" .env
 fi
 
 echo "Running E2E tests for Diva contract..."
