@@ -297,9 +297,9 @@ contract Utils is Script {
     }
 
     /// @notice This function returns the path for the vesting wallets JSON file for the provided network layer.
-    /// @param _layer Network layer of the runnins script, either be "L1" or "L2".
+    /// @param _layer Network layer of the running script, either be "L1" or "L2".
     /// @return string containing file path to vesting wallets.
-    function getVestingWalletsFilePath(string memory _layer) external view returns (string memory) {
+    function getVestingWalletsFilePath(string memory _layer) public view returns (string memory) {
         return string.concat(
             vm.projectRoot(), "/deployment/artifacts/contracts/", getNetworkType(), "/vestingWallets_", _layer, ".json"
         );
@@ -307,15 +307,15 @@ contract Utils is Script {
 
     /// @notice This function writes Vesting Wallets to JSON file.
     /// @param _vestingWallets Array of Vesting Wallets which will be written to JSON file.
-    /// @param _filePath VestingWallets file path.
-    function writeVestingWalletsFile(VestingWallet[] memory _vestingWallets, string memory _filePath) external {
+    /// @param _layer Network layer of the running script, either be "L1" or "L2".
+    function writeVestingWalletsFile(VestingWallet[] memory _vestingWallets, string memory _layer) external {
         string memory json = "vestingWallets";
         string memory finalJson;
         for (uint256 i = 0; i < _vestingWallets.length; i++) {
             VestingWallet memory vestingWallet = _vestingWallets[i];
             finalJson = vm.serializeAddress(json, vestingWallet.name, vestingWallet.vestingWalletAddress);
         }
-        finalJson.write(_filePath);
+        finalJson.write(getVestingWalletsFilePath(_layer));
     }
 
     /// @notice This function reads MerkleRoot from JSON file.
@@ -379,17 +379,17 @@ contract Utils is Script {
 
     /// @notice This function reads Vesting Wallet Address from JSON file.
     /// @param _vestingWalletName Name of the Vesting Wallet.
-    /// @param _filePath VestingWallets file path.
+    /// @param _layer Network layer of the running script, either be "L1" or "L2"
     /// @return Vesting Wallet Address.
     function readVestingWalletAddress(
         string memory _vestingWalletName,
-        string memory _filePath
+        string memory _layer
     )
         external
         view
         returns (address)
     {
-        string memory vestingWalletsJson = vm.readFile(_filePath);
+        string memory vestingWalletsJson = vm.readFile(getVestingWalletsFilePath(_layer));
         return vm.parseJsonAddress(vestingWalletsJson, string.concat(".['", _vestingWalletName, "']"));
     }
 
