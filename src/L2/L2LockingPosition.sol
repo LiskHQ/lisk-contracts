@@ -20,7 +20,7 @@ contract L2LockingPosition is Initializable, Ownable2StepUpgradeable, UUPSUpgrad
     /// @notice Next id for the locking position to be created.
     uint256 private nextId;
 
-    // slither-disable-next-line uinitialized-state-variables
+    // slither-disable-next-line uninitialized-state-variables
     /// @notice Mapping of locking position ID to LockingPosition entity.
     mapping(uint256 => IL2LockingPosition.LockingPosition) public lockingPositions;
 
