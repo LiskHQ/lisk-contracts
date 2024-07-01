@@ -23,7 +23,7 @@ contract DemoTransferFundsScript is Script {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
 
         // read L2LiskToken address from l2addresses.json
-        Utils.L2AddressesConfig memory l2AddressesConfig = utils.readL2AddressesFile();
+        Utils.L2AddressesConfig memory l2AddressesConfig = utils.readL2AddressesFile(utils.getL2AddressesFilePath());
         IERC20 lsk = IERC20(l2AddressesConfig.L2LiskToken);
 
         vm.startBroadcast(deployerPrivateKey);

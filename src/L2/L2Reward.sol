@@ -518,7 +518,9 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
     /// @param duration Duration in days for which the daily rewards is to be added.
     /// @param delay Determines the start day from today till duration for whom rewards should be added.
     function _addRewards(uint256 amount, uint16 duration, uint16 delay) internal virtual {
-        require(delay > 0, "Funding should start from next day or later");
+        require(amount > 0, "L2Reward: Funded amount should be greater than zero");
+        require(duration > 0, "L2Reward: Funding duration should be greater than zero");
+        require(delay > 0, "L2Reward: Funding should start from next day or later");
 
         uint256 dailyReward = amount / duration;
         uint256 today = todayDay();
@@ -533,6 +535,8 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
     /// @param duration Duration in days for which the daily rewards is to be added.
     /// @param delay Determines the start day from today till duration from which rewards should be added.
     function addUnusedRewards(uint256 amount, uint16 duration, uint16 delay) public virtual onlyOwner {
+        require(amount > 0, "L2Reward: Funded amount should be greater than zero");
+        require(duration > 0, "L2Reward: Funding duration should be greater than zero");
         require(delay > 0, "L2Reward: Rewards can only be added from next day or later");
         require(amount <= rewardsSurplus, "L2Reward: Reward amount should not exceed available surplus funds");
 
@@ -548,6 +552,8 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
     /// @param duration Duration in days for which the daily rewards is to be added.
     /// @param delay Determines the start day from today till duration for which rewards should be added.
     function fundStakingRewards(uint256 amount, uint16 duration, uint16 delay) public virtual onlyOwner {
+        require(amount > 0, "L2Reward: Funded amount should be greater than zero");
+        require(duration > 0, "L2Reward: Funding duration should be greater than zero");
         require(delay > 0, "L2Reward: Funding should start from next day or later");
 
         IL2LiskToken(l2TokenContract).transferFrom(msg.sender, address(this), amount);

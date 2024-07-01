@@ -48,8 +48,8 @@ contract L2LockingPositionPausedScript is Script {
         console2.log("L2 LockingPositionPaused address: %s", address(l2LockingPositionPaused));
 
         // write L2LockingPositionPaused address to l2addresses.json
-        Utils.L2AddressesConfig memory l2AddressesConfig = utils.readL2AddressesFile();
+        Utils.L2AddressesConfig memory l2AddressesConfig = utils.readL2AddressesFile(utils.getL2AddressesFilePath());
         l2AddressesConfig.L2LockingPositionPaused = address(l2LockingPositionPaused);
-        utils.writeL2AddressesFile(l2AddressesConfig);
+        utils.writeL2AddressesFile(l2AddressesConfig, utils.getL2AddressesFilePath());
     }
 }

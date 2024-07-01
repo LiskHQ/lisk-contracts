@@ -33,7 +33,7 @@ contract L2AirdropScript is Script {
         console2.log("L2 Airdrop wallet address: %s", airdropWalletAddress);
 
         // get L2LiskToken contract address
-        Utils.L2AddressesConfig memory l2AddressesConfig = utils.readL2AddressesFile();
+        Utils.L2AddressesConfig memory l2AddressesConfig = utils.readL2AddressesFile(utils.getL2AddressesFilePath());
         assert(l2AddressesConfig.L2LiskToken != address(0));
         console2.log("L2 Lisk token address: %s", l2AddressesConfig.L2LiskToken);
 
@@ -83,6 +83,6 @@ contract L2AirdropScript is Script {
 
         // write L2Airdrop address to l2addresses.json
         l2AddressesConfig.L2Airdrop = address(l2Airdrop);
-        utils.writeL2AddressesFile(l2AddressesConfig);
+        utils.writeL2AddressesFile(l2AddressesConfig, utils.getL2AddressesFilePath());
     }
 }

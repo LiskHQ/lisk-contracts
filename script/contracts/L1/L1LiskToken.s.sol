@@ -55,6 +55,6 @@ contract L1LiskTokenScript is Script {
         // write L1LiskToken address to l1addresses.json
         Utils.L1AddressesConfig memory l1AddressesConfig;
         l1AddressesConfig.L1LiskToken = address(l1LiskToken);
-        utils.writeL1AddressesFile(l1AddressesConfig);
+        utils.writeL1AddressesFile(l1AddressesConfig, utils.getL1AddressesFilePath());
     }
 }
