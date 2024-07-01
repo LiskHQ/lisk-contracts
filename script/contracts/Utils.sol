@@ -307,8 +307,8 @@ contract Utils is Script {
 
     /// @notice This function writes Vesting Wallets to JSON file.
     /// @param _vestingWallets Array of Vesting Wallets which will be written to JSON file.
-    /// @param _layer Network layer of the running script, either be "L1" or "L2".
-    function writeVestingWalletsFile(VestingWallet[] memory _vestingWallets, string memory _layer) external {
+    /// @param _filePath VestingWallets file path.
+    function writeVestingWalletsFile(VestingWallet[] memory _vestingWallets, string memory _filePath) external {
         string memory json = "vestingWallets";
         string memory finalJson;
         for (uint256 i = 0; i < _vestingWallets.length; i++) {
@@ -379,17 +379,17 @@ contract Utils is Script {
 
     /// @notice This function reads Vesting Wallet Address from JSON file.
     /// @param _vestingWalletName Name of the Vesting Wallet.
-    /// @param _layer Network layer of the running script, either be "L1" or "L2"
+    /// @param _filePath VestingWallets file path.
     /// @return Vesting Wallet Address.
     function readVestingWalletAddress(
         string memory _vestingWalletName,
-        string memory _layer
+        string memory _filePath
     )
         external
         view
         returns (address)
     {
-        string memory vestingWalletsJson = vm.readFile(getVestingWalletsFilePath(_layer));
+        string memory vestingWalletsJson = vm.readFile(_filePath);
         return vm.parseJsonAddress(vestingWalletsJson, string.concat(".['", _vestingWalletName, "']"));
     }
 
