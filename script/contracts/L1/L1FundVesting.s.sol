@@ -33,7 +33,8 @@ contract L1FundVestingScript is Script {
         Utils.VestingPlan[] memory plans = utils.readVestingPlansFile(layer);
         for (uint256 i; i < plans.length; i++) {
             Utils.VestingPlan memory vestingPlan = plans[i];
-            address vestingWalletAddress = utils.readVestingWalletAddress(vestingPlan.name, layer);
+            address vestingWalletAddress =
+                utils.readVestingWalletAddress(vestingPlan.name, utils.getVestingWalletsFilePath(layer));
 
             console2.log(
                 "Transferring %s Lisk tokens to the vesting wallet %s ... on L1",

@@ -299,7 +299,7 @@ contract Utils is Script {
     /// @notice This function returns the path for the vesting wallets JSON file for the provided network layer.
     /// @param _layer Network layer of the running script, either be "L1" or "L2".
     /// @return string containing file path to vesting wallets.
-    function getVestingWalletsFilePath(string memory _layer) public view returns (string memory) {
+    function getVestingWalletsFilePath(string memory _layer) external view returns (string memory) {
         return string.concat(
             vm.projectRoot(), "/deployment/artifacts/contracts/", getNetworkType(), "/vestingWallets_", _layer, ".json"
         );
@@ -315,7 +315,7 @@ contract Utils is Script {
             VestingWallet memory vestingWallet = _vestingWallets[i];
             finalJson = vm.serializeAddress(json, vestingWallet.name, vestingWallet.vestingWalletAddress);
         }
-        finalJson.write(getVestingWalletsFilePath(_layer));
+        finalJson.write(_filePath);
     }
 
     /// @notice This function reads MerkleRoot from JSON file.
