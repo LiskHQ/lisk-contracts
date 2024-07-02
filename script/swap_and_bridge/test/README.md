@@ -1,4 +1,4 @@
-# Tst Scripts for SwapAndBridge
+# Test Scripts for SwapAndBridge
 
 Tests in this folder are run as script as they require to be run in a Sepolia forked environment, since they depend on the contracts owned and deployed by Lido and Diva teams.
 
