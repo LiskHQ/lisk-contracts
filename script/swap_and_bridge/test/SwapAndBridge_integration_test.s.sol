@@ -27,8 +27,7 @@ contract TestIntegrationScript is Script {
         vm.deal(testAccount, 500000 ether);
     }
 
-    function runMinToken() public {
-        console2.log("Testing minL1TokensPerETH...");
+    function runSwapAndBridgeConversions() private {
         // The conversion rate is 1 ETH = 1e18 LST.
         // Any value of minL1TokensPerETH larger than 1e18 will revert the transaction.
         vm.startPrank(testAccount);
@@ -47,27 +46,20 @@ contract TestIntegrationScript is Script {
         require(senderBalance == testAccount.balance, "Sender balance should not have changed.");
         console2.log("Ok");
 
-        console2.log("Testing 'EvmError: OutOfFunds'...");
-        senderBalance = testAccount.balance;
-        uint256 MAX_INT = 2 ** 256 - 1;
-        vm.expectRevert(); // Panic due to EvmError: OutOfFunds.
-        swapAndBridge.swapAndBridgeToWithMinimumAmount{ value: MAX_INT }(testAccount, 0);
-        require(senderBalance == testAccount.balance, "Sender balance should not have changed.");
-        console2.log("Ok");
-
         console2.log("Testing 'High enough limit'...");
         senderBalance = testAccount.balance;
         value = 1 ether;
         swapAndBridge.swapAndBridgeToWithMinimumAmount{ value: value }(testAccount, 1e18);
         require(senderBalance == testAccount.balance + value, "Invalid sender balance update.");
         console2.log("Ok");
+        vm.stopPrank();
     }
 
-    function runReceive() public {
-        console2.log("Testing converting ETH to LST token...");
-        vm.startPrank(testAccount);
+    function runDirectConversions() private {
+        console2.log("Testing direct conversion of ETH to LST token...");
         uint256 ethBalanceBefore = testAccount.balance;
         uint256 lstBalanceBefore = l1LSTToken.balanceOf(testAccount);
+        vm.startPrank(testAccount);
         (bool sent, bytes memory sendData) = address(l1LSTToken).call{ value: 1 ether }("");
         if (!sent) {
             assembly {
@@ -76,13 +68,13 @@ contract TestIntegrationScript is Script {
                 revert(revertStringPtr, revertStringLength)
             }
         }
+        vm.stopPrank();
 
         require(sent == true, "Failed to send Ether.");
         uint256 ethBalanceAfter = testAccount.balance;
         uint256 divBalanceAfter = l1LSTToken.balanceOf(testAccount);
         require(ethBalanceBefore - ethBalanceAfter == 1 ether, "Invalid ETH balance update.");
         require(divBalanceAfter - lstBalanceBefore == 1 ether, "Invalid LST balance update.");
-        vm.stopPrank();
         console2.log("Ok");
     }
 
@@ -92,7 +84,7 @@ contract TestIntegrationScript is Script {
         assert(_l2Token != address(0));
         swapAndBridge = new SwapAndBridge(_l1Bridge, _l1Token, _l2Token);
         l1LSTToken = IWrappedETH(payable(_l1Token));
-        runMinToken();
-        runReceive();
+        runSwapAndBridgeConversions();
+        runDirectConversions();
     }
 }

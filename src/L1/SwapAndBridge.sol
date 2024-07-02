@@ -78,8 +78,8 @@ contract SwapAndBridge {
         require(sent, "Failed to send Ether.");
 
         // Get current balance of wrapped LST for this contract.
-        // We ensure at the end of the function that the contract balance is 0,
-        // hence this is the amount of wrapped LST minted.
+        // This value is at least the amount of wrapped LST minted,
+        // but it could be larger if someone sent the LST to this contract.
         uint256 balance = L1_TOKEN.balanceOf(address(this));
         require(balance > 0, "No wrapped tokens minted.");
 
