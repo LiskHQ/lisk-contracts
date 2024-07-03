@@ -13,9 +13,33 @@ source .env
 echo "Done."
 
 echo "Deploying and if enabled verifying SwapAndBridge smart contract for DIVA protocol..."
-forge script --rpc-url="$L1_RPC_URL" --broadcast --verify --verifier blockscout --verifier-url $L1_VERIFIER_URL -vvvv script/swap_and_bridge/contracts/SwapAndBridge.s.sol:SwapAndBridgeScript $L1_STANDARD_BRIDGE_ADDR $L1_TOKEN_ADDR_DIVA $L2_TOKEN_ADDR_DIVA --sig 'run(address,address,address)' 
+if [ -z "$CONTRACT_VERIFIER" ]
+then
+    forge script --rpc-url="$L1_RPC_URL" --broadcast -vvvv script/contracts/L1/SwapAndBridge.s.sol:SwapAndBridgeScript $L1_STANDARD_BRIDGE_ADDR $L1_TOKEN_ADDR_DIVA $L2_TOKEN_ADDR_DIVA --sig 'run(address,address,address)' 
+else
+      if [ $CONTRACT_VERIFIER = "blockscout" ]
+      then
+            forge script --rpc-url="$L1_RPC_URL" --broadcast --verify --verifier blockscout --verifier-url $L1_VERIFIER_URL -vvvv script/contracts/L1/SwapAndBridge.s.sol:SwapAndBridgeScript $L1_STANDARD_BRIDGE_ADDR $L1_TOKEN_ADDR_DIVA $L2_TOKEN_ADDR_DIVA --sig 'run(address,address,address)' 
+      fi
+      if [ $CONTRACT_VERIFIER = "etherscan" ]
+      then        
+            forge script --rpc-url="$L1_RPC_URL" --broadcast --verify --verifier etherscan --etherscan-api-key="$L1_ETHERSCAN_API_KEY" --verifier-url $L1_VERIFIER_URL -vvvv script/contracts/L1/SwapAndBridge.s.sol:SwapAndBridgeScript $L1_STANDARD_BRIDGE_ADDR $L1_TOKEN_ADDR_DIVA $L2_TOKEN_ADDR_DIVA --sig 'run(address,address,address)' 
+      fi
+fi
 echo "Done."
 
 echo "Deploying and if enabled verifying SwapAndBridge smart contract for LIDO protocol..."
-forge script --rpc-url="$L1_RPC_URL" --broadcast --verify --verifier blockscout --verifier-url $L1_VERIFIER_URL -vvvv script/swap_and_bridge/contracts/SwapAndBridge.s.sol:SwapAndBridgeScript  $L1_LIDO_BRIDGE_ADDR $L1_TOKEN_ADDR_LIDO $L2_TOKEN_ADDR_LIDO --sig 'run(address,address,address)'
+if [ -z "$CONTRACT_VERIFIER" ]
+then
+    forge script --rpc-url="$L1_RPC_URL" --broadcast -vvvv script/contracts/L1/SwapAndBridge.s.sol:SwapAndBridgeScript $L1_LIDO_BRIDGE_ADDR $L1_TOKEN_ADDR_LIDO $L2_TOKEN_ADDR_LIDO --sig 'run(address,address,address)' 
+else
+      if [ $CONTRACT_VERIFIER = "blockscout" ]
+      then
+            forge script --rpc-url="$L1_RPC_URL" --broadcast --verify --verifier blockscout --verifier-url $L1_VERIFIER_URL -vvvv script/contracts/L1/SwapAndBridge.s.sol:SwapAndBridgeScript $L1_LIDO_BRIDGE_ADDR $L1_TOKEN_ADDR_LIDO $L2_TOKEN_ADDR_LIDO --sig 'run(address,address,address)' 
+      fi
+      if [ $CONTRACT_VERIFIER = "etherscan" ]
+      then        
+            forge script --rpc-url="$L1_RPC_URL" --broadcast --verify --verifier etherscan --etherscan-api-key="$L1_ETHERSCAN_API_KEY" --verifier-url $L1_VERIFIER_URL -vvvv script/contracts/L1/SwapAndBridge.s.sol:SwapAndBridgeScript $L1_LIDO_BRIDGE_ADDR $L1_TOKEN_ADDR_LIDO $L2_TOKEN_ADDR_LIDO --sig 'run(address,address,address)' 
+      fi
+fi
 echo "Done."

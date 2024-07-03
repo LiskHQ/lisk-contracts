@@ -165,7 +165,7 @@ contract TestE2EL1Script is Script {
 
         bytes memory data = abi.encode(sender, _l2Bridge, message, messageNonce, gasLimit);
 
-        string memory dataPath = string.concat(vm.projectRoot(), "/script/swap_and_bridge/test/message.data");
+        string memory dataPath = string.concat(vm.projectRoot(), "/script/swap_and_bridge/message.data");
         vm.writeFileBinary(dataPath, data);
         console2.log("Transfer completed. Data saved to", dataPath);
     }
@@ -270,7 +270,7 @@ contract TestE2EL1Script is Script {
 
         bytes memory data = abi.encode(sender, _l2Bridge, message, messageNonce, gasLimit);
 
-        string memory dataPath = string.concat(vm.projectRoot(), "/script/swap_and_bridge/test/message.data");
+        string memory dataPath = string.concat(vm.projectRoot(), "/script/swap_and_bridge/message.data");
         vm.writeFileBinary(dataPath, data);
         console2.log("Transfer completed. Data saved to", dataPath);
     }
@@ -303,7 +303,7 @@ contract TestE2EL2Script is Script {
     function run(address _l2Token) public {
         assert(_l2Token != address(0));
         IWrappedETH l2LSTToken = IWrappedETH(payable(_l2Token));
-        string memory dataPath = string.concat(vm.projectRoot(), "/script/swap_and_bridge/test/message.data");
+        string memory dataPath = string.concat(vm.projectRoot(), "/script/swap_and_bridge/message.data");
         bytes memory data = vm.readFileBinary(dataPath);
         (address payable sender, address payable target, bytes memory message, uint256 messageNonce, uint256 gasLimit) =
             abi.decode(data, (address, address, bytes, uint256, uint256));
