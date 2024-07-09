@@ -22,7 +22,7 @@ contract L2VestingWalletPausedTest is Test {
 
     L2VestingWallet public l2VestingWallet;
     L2VestingWallet public l2VestingWalletImplementation;
-    L2VestingWallet public l2VestingWalletPausedImplementation;
+    L2VestingWalletPaused public l2VestingWalletPausedImplementation;
 
     MockERC20 public mockToken;
 
@@ -34,43 +34,31 @@ contract L2VestingWalletPausedTest is Test {
 
     uint256 public vestAmount = 1_000_000;
 
-    function _deployVestingWallet(
-        address _beneficiary,
-        uint64 _startTimestamp,
-        uint64 _durationSeconds,
-        string memory _name,
-        address _contractAdmin
-    )
-        public
-        returns (L2VestingWallet l2VestingWalletProxy)
-    {
-        l2VestingWalletProxy = L2VestingWallet(
+    function setUp() public {
+        // deploy L2VestingWallet implementation contract
+        l2VestingWalletImplementation = new L2VestingWallet();
+
+        // deploy L2VestingWallet contract via proxy and initialize it at the same time
+        l2VestingWallet = L2VestingWallet(
             payable(
                 address(
                     new ERC1967Proxy(
                         address(l2VestingWalletImplementation),
                         abi.encodeWithSelector(
                             l2VestingWalletImplementation.initialize.selector,
-                            _beneficiary,
-                            _startTimestamp,
-                            _durationSeconds,
-                            _name,
-                            _contractAdmin
+                            beneficiary,
+                            startTimestamp,
+                            durationSeconds,
+                            name,
+                            contractAdmin
                         )
                     )
                 )
             )
         );
-        assert(address(l2VestingWalletProxy) != address(0x0));
-    }
+        assert(address(l2VestingWallet) != address(0x0));
 
-    function setUp() public virtual {
-        // deploy L2VestingWallet implementation contract
-        l2VestingWalletImplementation = new L2VestingWallet();
-
-        // deploy L2VestingWallet contract via proxy and initialize it at the same time
-        l2VestingWallet = _deployVestingWallet(beneficiary, startTimestamp, durationSeconds, name, contractAdmin);
-
+        // transfer token to vesting contract
         mockToken = new MockERC20(vestAmount);
         mockToken.transfer(address(l2VestingWallet), vestAmount);
 
@@ -81,7 +69,7 @@ contract L2VestingWalletPausedTest is Test {
         vm.startPrank(contractAdmin);
         l2VestingWallet.upgradeToAndCall(
             address(l2VestingWalletPausedImplementation),
-            abi.encodeWithSelector(L2VestingWalletPaused.initializePaused.selector)
+            abi.encodeWithSelector(l2VestingWalletPausedImplementation.initializePaused.selector)
         );
         vm.stopPrank();
     }

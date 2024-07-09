@@ -15,6 +15,8 @@ contract Utils is Script {
         address L1LiskToken;
         /// @notice The Current implementation of L1 Vesting Wallet.
         address L1VestingWalletImplementation;
+        /// @notice L1 VestingWalletPaused address.
+        address L1VestingWalletPaused;
     }
 
     /// @notice This struct is used to read and write L2 addresses to JSON file.
@@ -55,6 +57,8 @@ contract Utils is Script {
         address L2TimelockController;
         /// @notice The Current implementation of L2 Vesting Wallet.
         address L2VestingWalletImplementation;
+        /// @notice L2 VestingWalletPaused address.
+        address L2VestingWalletPaused;
         /// @notice L2 Voting Power contract (in Proxy), which users interact with.
         address L2VotingPower;
         /// @notice The Current implementation of L2 Voting Power Contract.

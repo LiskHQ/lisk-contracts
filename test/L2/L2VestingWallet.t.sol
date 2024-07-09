@@ -63,7 +63,7 @@ contract L2VestingWalletTest is Test {
         assert(address(l2VestingWalletProxy) != address(0x0));
     }
 
-    function setUp() public virtual {
+    function setUp() public {
         console.log("L2VestingWalletTest Address is: %s", address(this));
 
         // deploy L2VestingWallet implementation contract
