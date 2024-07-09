@@ -14,9 +14,6 @@ contract L2VestingWalletPausedScript is Script {
     /// @notice Utils contract which provides functions to read and write JSON files containing L1 and L2 addresses.
     Utils utils;
 
-    /// @notice Stating the network layer of this script
-    string public constant layer = "L2";
-
     function setUp() public {
         utils = new Utils();
     }
