@@ -98,6 +98,7 @@ contract SwapAndBridge {
         L1_BRIDGE.depositERC20To(address(L1_TOKEN), L2_TOKEN_ADDRESS, recipient, balance, MIN_DEPOSIT_GAS, "0x");
 
         // Check that this contract has no tokens left in its balance.
+        // slither-disable-next-line incorrect-equality
         require(L1_TOKEN.balanceOf(address(this)) == 0, "Contract still has tokens.");
     }
 
