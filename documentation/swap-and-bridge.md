@@ -4,7 +4,7 @@ The swap-and-bridge feature allows users to swap ETH for an ERC20 Liquid Staking
 
 ## Motivation
 
-Liquid staking pools allow users to participate in ETH staking without managing their own validator node or owning the full 32 ETH deposit amount. ETH from several users is pooled together and used to register a validator which then shares the rewards with the users. A Liquid Staking Token is an ERC20 token representing one of this staking position. As such, it can be converted back to ETH, while at the same time being freely tradable as an independent token. Furthermore, this token provide the extra yield from the validators reward either by rebasing, i.e. changing the user balance to account for the extra tokens acquired, or, in their wrapped version, by changing the underlying conversion rate to ETH.
+Liquid staking pools allow users to participate in ETH staking without managing their own validator node or owning the full 32 ETH deposit amount. ETH from several users is pooled together and used to register a validator which then shares the rewards with the users. A Liquid Staking Token is an ERC20 token representing one of these staking positions. As such, it can be converted back to ETH, while at the same time being freely tradable as an independent token. Furthermore, this token provides the extra yield from the validators reward either by rebasing, i.e. changing the user balance to account for the extra tokens acquired, or, in their wrapped version, by changing the underlying conversion rate to ETH.
 
 The swap-and-bridge feature prefers to interact with the wrapped version of a LST, as this tends to be better supported on the UX of several DeFi protocols (see the discussion for Lido's [wstETH](https://docs.lido.fi/contracts/wsteth/#why-use-wsteth)) and since the Optimism standard bridge [does not support rebasing tokens correctly](https://docs.optimism.io/builders/app-developers/bridging/standard-bridge).
 
@@ -12,7 +12,7 @@ A similar result for the end-user (swapping L1 ETH for L2 wrapped LST with a sin
 
 ## Rationale
 
-Each `SwapAndBridge` contract supports a single wrapped LST. We specified it to be as compatible as possible with a wide range of protocols. The minimum requirements are that the LST contract exposes the `receive` fallback to perform the staking and conversion of ETH to LST.
+Each `SwapAndBridge` contract supports a single wrapped LST, hence for each wrapped LST one wishes to support, a different `SwapAndBridge` contract needs to be deployed. We specified the contract to be as compatible as possible with a wide range of protocols. The minimum requirements are that the LST contract exposes the `receive` fallback to perform the staking and conversion of ETH to LST.
 
 The `SwapAndBridge` contract itself uses the `receive` fallback as a shortcut to the the swap-and-bridge flow, so that users can send ETH to the contract and receive L2 LST directly.
 
