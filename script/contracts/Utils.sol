@@ -15,6 +15,8 @@ contract Utils is Script {
         address L1LiskToken;
         /// @notice The Current implementation of L1 Vesting Wallet.
         address L1VestingWalletImplementation;
+        /// @notice L1 VestingWalletPaused address.
+        address L1VestingWalletPaused;
     }
 
     /// @notice This struct is used to read and write L2 addresses to JSON file.
@@ -55,6 +57,8 @@ contract Utils is Script {
         address L2TimelockController;
         /// @notice The Current implementation of L2 Vesting Wallet.
         address L2VestingWalletImplementation;
+        /// @notice L2 VestingWalletPaused address.
+        address L2VestingWalletPaused;
         /// @notice L2 Voting Power contract (in Proxy), which users interact with.
         address L2VotingPower;
         /// @notice The Current implementation of L2 Voting Power Contract.
@@ -152,6 +156,10 @@ contract Utils is Script {
             l1AddressesConfig.L1VestingWalletImplementation = l1VestingWalletImplementation;
         } catch { }
 
+        try vm.parseJsonAddress(addressJson, ".L1VestingWalletPaused") returns (address l1VestingWalletPaused) {
+            l1AddressesConfig.L1VestingWalletPaused = l1VestingWalletPaused;
+        } catch { }
+
         return l1AddressesConfig;
     }
 
@@ -161,8 +169,8 @@ contract Utils is Script {
     function writeL1AddressesFile(L1AddressesConfig memory cfg, string memory filePath) external {
         string memory json = "";
         vm.serializeAddress(json, "L1LiskToken", cfg.L1LiskToken);
-        string memory finalJson =
-            vm.serializeAddress(json, "L1VestingWalletImplementation", cfg.L1VestingWalletImplementation);
+        vm.serializeAddress(json, "L1VestingWalletImplementation", cfg.L1VestingWalletImplementation);
+        string memory finalJson = vm.serializeAddress(json, "L1VestingWalletPaused", cfg.L1VestingWalletPaused);
         finalJson.write(filePath);
     }
 
@@ -250,6 +258,10 @@ contract Utils is Script {
             l2AddressesConfig.L2VestingWalletImplementation = l2VestingWalletImplementation;
         } catch { }
 
+        try vm.parseJsonAddress(addressJson, ".L2VestingWalletPaused") returns (address l2VestingWalletPaused) {
+            l2AddressesConfig.L2VestingWalletPaused = l2VestingWalletPaused;
+        } catch { }
+
         try vm.parseJsonAddress(addressJson, ".L2VotingPower") returns (address l2VotingPower) {
             l2AddressesConfig.L2VotingPower = l2VotingPower;
         } catch { }
@@ -289,6 +301,7 @@ contract Utils is Script {
         vm.serializeAddress(json, "L2StakingImplementation", cfg.L2StakingImplementation);
         vm.serializeAddress(json, "L2TimelockController", cfg.L2TimelockController);
         vm.serializeAddress(json, "L2VestingWalletImplementation", cfg.L2VestingWalletImplementation);
+        vm.serializeAddress(json, "L2VestingWalletPaused", cfg.L2VestingWalletPaused);
         vm.serializeAddress(json, "L2VotingPower", cfg.L2VotingPower);
         vm.serializeAddress(json, "L2VotingPowerImplementation", cfg.L2VotingPowerImplementation);
         string memory finalJson = vm.serializeAddress(json, "L2VotingPowerPaused", cfg.L2VotingPowerPaused);
