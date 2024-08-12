@@ -41,7 +41,9 @@ contract L2StakingHarness is L2Staking {
         return canLockingPositionBeModified(lockId, lock);
     }
 
-    function exposedRemainingLockingDuration(IL2LockingPosition.LockingPosition memory lock)
+    function exposedRemainingLockingDuration(
+        IL2LockingPosition.LockingPosition memory lock
+    )
         public
         view
         returns (uint256)

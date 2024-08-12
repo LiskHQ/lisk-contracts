@@ -65,7 +65,9 @@ contract L2VestingWallet is
 
     /// @notice Since `Ownable2StepUpgradeable` is enforced on top of `OwnableUpgradeable`. Overriding is required.
     /// @param  _newOwner        New proposed owner.
-    function transferOwnership(address _newOwner)
+    function transferOwnership(
+        address _newOwner
+    )
         public
         virtual
         override(Ownable2StepUpgradeable, OwnableUpgradeable)
@@ -76,7 +78,9 @@ contract L2VestingWallet is
 
     // Overriding _transferOwnership and solely uses `Ownable2StepUpgradeable`.
     /// @param  _newOwner        New proposed owner.
-    function _transferOwnership(address _newOwner)
+    function _transferOwnership(
+        address _newOwner
+    )
         internal
         virtual
         override(Ownable2StepUpgradeable, OwnableUpgradeable)

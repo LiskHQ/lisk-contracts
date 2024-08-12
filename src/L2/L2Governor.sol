@@ -89,7 +89,9 @@ contract L2Governor is
 
     // The below functions are overrides required by Solidity.
 
-    function state(uint256 proposalId)
+    function state(
+        uint256 proposalId
+    )
         public
         view
         virtual
@@ -99,7 +101,9 @@ contract L2Governor is
         return super.state(proposalId);
     }
 
-    function proposalNeedsQueuing(uint256 proposalId)
+    function proposalNeedsQueuing(
+        uint256 proposalId
+    )
         public
         view
         virtual
