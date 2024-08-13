@@ -174,7 +174,9 @@ interface IL2Governor {
     function proposalProposer(uint256 proposalId) external view returns (address);
     function proposalSnapshot(uint256 proposalId) external view returns (uint256);
     function proposalThreshold() external view returns (uint256);
-    function proposalVotes(uint256 proposalId)
+    function proposalVotes(
+        uint256 proposalId
+    )
         external
         view
         returns (uint256 againstVotes, uint256 forVotes, uint256 abstainVotes);

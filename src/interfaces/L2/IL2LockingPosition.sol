@@ -67,7 +67,9 @@ interface IL2LockingPosition {
     function initialize(address _stakingContract) external;
     function initializeVotingPower(address _votingPowerContract) external;
     function isApprovedForAll(address owner, address operator) external view returns (bool);
-    function lockingPositions(uint256)
+    function lockingPositions(
+        uint256
+    )
         external
         view
         returns (address creator, uint256 amount, uint256 expDate, uint256 pausedLockingDuration);
