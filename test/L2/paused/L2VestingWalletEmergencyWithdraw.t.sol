@@ -2,9 +2,10 @@
 pragma solidity 0.8.23;
 
 import { Test, console, stdJson } from "forge-std/Test.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import { L2VestingWallet } from "src/L2/L2VestingWallet.sol";
-import { L2VestingWalletPaused } from "src/L2/paused/L2VestingWalletPaused.sol";
+import { L2VestingWalletEmergencyWithdraw } from "src/L2/paused/L2VestingWalletEmergencyWithdraw.sol";
 import { MockERC20 } from "test/mock/MockERC20.sol";
 
 contract L2VestingWalletV2UnpausedMock is L2VestingWallet {
@@ -17,12 +18,12 @@ contract L2VestingWalletV2UnpausedMock is L2VestingWallet {
     }
 }
 
-contract L2VestingWalletPausedTest is Test {
+contract L2VestingWalletEmergencyWithdrawTest is Test {
     using stdJson for string;
 
     L2VestingWallet public l2VestingWallet;
     L2VestingWallet public l2VestingWalletImplementation;
-    L2VestingWalletPaused public l2VestingWalletPausedImplementation;
+    L2VestingWalletEmergencyWithdraw public l2VestingWalletEmergencyWithdrawImplementation;
 
     MockERC20 public mockToken;
 
@@ -62,44 +63,33 @@ contract L2VestingWalletPausedTest is Test {
         mockToken = new MockERC20(vestAmount);
         mockToken.transfer(address(l2VestingWallet), vestAmount);
 
-        // deploy L2VestingWalletPaused implementation contract
-        l2VestingWalletPausedImplementation = new L2VestingWalletPaused();
+        // deploy L2VestingWalletEmergencyWithdraw implementation contract
+        l2VestingWalletEmergencyWithdrawImplementation = new L2VestingWalletEmergencyWithdraw();
+    }
 
-        // upgrade L2VestingWallet contract to L2VestingWalletPaused contract
+    function test_TokenWithdrewAfterInitialize() public {
+        // upgrade L2VestingWallet contract to L2VestingWalletEmergencyWithdraw contract
+
+        IERC20[] memory tokens = new IERC20[](1);
+        tokens[0] = IERC20(address(mockToken));
+
+        uint256 contractAdminBalanceBefore = mockToken.balanceOf(contractAdmin);
+        uint256 vestingWalletBalanceBefore = mockToken.balanceOf(address(l2VestingWallet));
+
         vm.startPrank(contractAdmin);
         l2VestingWallet.upgradeToAndCall(
-            address(l2VestingWalletPausedImplementation),
-            abi.encodeWithSelector(l2VestingWalletPausedImplementation.initializePaused.selector)
+            address(l2VestingWalletEmergencyWithdrawImplementation),
+            abi.encodeWithSelector(
+                l2VestingWalletEmergencyWithdrawImplementation.initializeWithEmergencyWithdraw.selector, tokens
+            )
         );
         vm.stopPrank();
+
+        assertEq(mockToken.balanceOf(address(l2VestingWallet)), 0);
+        assertEq(mockToken.balanceOf(contractAdmin), contractAdminBalanceBefore + vestingWalletBalanceBefore);
     }
 
-    function test_ReleaseWithAddress_Paused() public {
-        vm.expectRevert(L2VestingWalletPaused.VestingWalletIsPaused.selector);
-        l2VestingWallet.release(address(0));
-    }
-
-    function test_Release_Paused() public {
-        vm.expectRevert(L2VestingWalletPaused.VestingWalletIsPaused.selector);
-        l2VestingWallet.release();
-    }
-
-    function test_AcceptOwnership_Paused() public {
-        vm.expectRevert(L2VestingWalletPaused.VestingWalletIsPaused.selector);
-        l2VestingWallet.acceptOwnership();
-    }
-
-    function test_TransferOwnership_Paused() public {
-        vm.expectRevert(L2VestingWalletPaused.VestingWalletIsPaused.selector);
-        l2VestingWallet.transferOwnership(address(0));
-    }
-
-    function test_RenounceOwnership_Paused() public {
-        vm.expectRevert(L2VestingWalletPaused.VestingWalletIsPaused.selector);
-        l2VestingWallet.renounceOwnership();
-    }
-
-    function test_UpgradeToAndCall_CanUpgradeFromPausedContractToNewContract() public {
+    function test_UpgradeToAndCall_CanUpgradeFromEmergencyWithdrawContractToNewContract() public {
         L2VestingWalletV2UnpausedMock l2VestingWalletV2MockImplementation = new L2VestingWalletV2UnpausedMock();
 
         // upgrade L2VestingWallet contract to L2VestingWalletV2 contract

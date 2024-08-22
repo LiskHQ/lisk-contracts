@@ -21,7 +21,7 @@ contract UtilsTest is Test {
         Utils.L1AddressesConfig memory config = Utils.L1AddressesConfig({
             L1LiskToken: address(0x1),
             L1VestingWalletImplementation: address(0x2),
-            L1VestingWalletPaused: address(0x3)
+            L1VestingWalletEmergencyWithdraw: address(0x3)
         });
 
         utils.writeL1AddressesFile(config, "./l1Addresses.json");
@@ -55,7 +55,7 @@ contract UtilsTest is Test {
             L2StakingImplementation: address(index++),
             L2TimelockController: address(index++),
             L2VestingWalletImplementation: address(index++),
-            L2VestingWalletPaused: address(index++),
+            L2VestingWalletEmergencyWithdraw: address(index++),
             L2VotingPower: address(index++),
             L2VotingPowerImplementation: address(index++),
             L2VotingPowerPaused: address(index++)
@@ -77,7 +77,7 @@ contract UtilsTest is Test {
         assertEq(configReadFromFile.L2StakingImplementation, config.L2StakingImplementation);
         assertEq(configReadFromFile.L2TimelockController, config.L2TimelockController);
         assertEq(configReadFromFile.L2VestingWalletImplementation, config.L2VestingWalletImplementation);
-        assertEq(configReadFromFile.L2VestingWalletPaused, config.L2VestingWalletPaused);
+        assertEq(configReadFromFile.L2VestingWalletEmergencyWithdraw, config.L2VestingWalletEmergencyWithdraw);
         assertEq(configReadFromFile.L2VotingPower, config.L2VotingPower);
         assertEq(configReadFromFile.L2VotingPowerImplementation, config.L2VotingPowerImplementation);
 
