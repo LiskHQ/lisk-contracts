@@ -6,8 +6,10 @@ import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.s
 import { L2VestingWallet } from "src/L2/L2VestingWallet.sol";
 
 /// @title L2VestingWalletPaused - Paused version of L2VestingWallet contract
-/// @notice This contract is used to pause the L2VestingWallet contract. In case of any emergency, the owner can upgrade
+/// @notice This contract is used to pause the L2VestingWallet contract. In case of any emergency, the contract admin
+/// can upgrade
 ///         and pause the contract to prevent any further vesting operations.
+///         Contract admin can also withdraw all tokens to the Security Council wallet.
 contract L2VestingWalletPaused is L2VestingWallet {
     using SafeERC20 for IERC20;
 
@@ -20,6 +22,7 @@ contract L2VestingWalletPaused is L2VestingWallet {
 
     /// @notice Hard-coded address to recover tokens.
     function custodianAddress() public pure virtual returns (address) {
+        // Address of Security Council on L2
         return 0x394Ae9d48eeca1C69a989B5A8C787081595c55A7;
     }
 
