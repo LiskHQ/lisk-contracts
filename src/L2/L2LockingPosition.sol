@@ -93,9 +93,7 @@ contract L2LockingPosition is Initializable, Ownable2StepUpgradeable, UUPSUpgrad
     ///         initialized to 0 or address(0).
     /// @param position Locking position to be checked.
     /// @return Whether the given locking position is null.
-    function isLockingPositionNull(
-        IL2LockingPosition.LockingPosition memory position
-    )
+    function isLockingPositionNull(IL2LockingPosition.LockingPosition memory position)
         internal
         view
         virtual
@@ -266,9 +264,7 @@ contract L2LockingPosition is Initializable, Ownable2StepUpgradeable, UUPSUpgrad
     /// @notice Returns the locking position for the given position ID.
     /// @param positionId ID of the locking position.
     /// @return Locking position for the given position ID.
-    function getLockingPosition(
-        uint256 positionId
-    )
+    function getLockingPosition(uint256 positionId)
         public
         view
         virtual
@@ -280,9 +276,7 @@ contract L2LockingPosition is Initializable, Ownable2StepUpgradeable, UUPSUpgrad
     /// @notice Returns all locking positions for the given owner.
     /// @param lockOwner Owner address.
     /// @return All locking positions for the given owner.
-    function getAllLockingPositionsByOwner(
-        address lockOwner
-    )
+    function getAllLockingPositionsByOwner(address lockOwner)
         public
         view
         virtual

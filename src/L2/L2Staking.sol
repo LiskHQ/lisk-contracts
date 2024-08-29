@@ -119,9 +119,7 @@ contract L2Staking is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, I
     ///         initialized to 0 or address(0).
     /// @param position Locking position to be checked.
     /// @return Whether the given locking position is null.
-    function isLockingPositionNull(
-        IL2LockingPosition.LockingPosition memory position
-    )
+    function isLockingPositionNull(IL2LockingPosition.LockingPosition memory position)
         internal
         view
         virtual
@@ -187,9 +185,7 @@ contract L2Staking is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, I
     /// @notice Returns the remaining locking duration for the given locking position.
     /// @param lock The locking position for which the remaining locking duration is returned.
     /// @return The remaining locking duration for the given locking position.
-    function remainingLockingDuration(
-        IL2LockingPosition.LockingPosition memory lock
-    )
+    function remainingLockingDuration(IL2LockingPosition.LockingPosition memory lock)
         internal
         view
         virtual

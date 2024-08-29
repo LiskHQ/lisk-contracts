@@ -27,9 +27,7 @@ contract L2LockingPositionV2 is L2LockingPosition {
 }
 
 contract L2LockingPositionHarness is L2LockingPosition {
-    function exposedIsLockingPositionNull(
-        IL2LockingPosition.LockingPosition memory position
-    )
+    function exposedIsLockingPositionNull(IL2LockingPosition.LockingPosition memory position)
         public
         view
         returns (bool)
