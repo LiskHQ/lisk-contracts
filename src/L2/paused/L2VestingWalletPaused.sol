@@ -2,13 +2,15 @@
 pragma solidity 0.8.23;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { L2VestingWallet } from "src/L2/L2VestingWallet.sol";
 
 /// @title L2VestingWalletPaused - Paused version of L2VestingWallet contract
 /// @notice This contract is used to pause the L2VestingWallet contract. In case of any emergency, the owner can upgrade
-/// and
-///         pause the contract to prevent any further vesting operations.
+///         and pause the contract to prevent any further vesting operations.
 contract L2VestingWalletPaused is L2VestingWallet {
+    using SafeERC20 for IERC20;
+
     error VestingWalletIsPaused();
 
     /// @notice Setting global params.
@@ -23,7 +25,7 @@ contract L2VestingWalletPaused is L2VestingWallet {
 
     /// @notice Withdraw all balances of token to recoveryAddress.
     function sendToCustodian(IERC20 _token) public virtual onlyRole(CONTRACT_ADMIN_ROLE) {
-        _token.transfer(custodianAddress(), _token.balanceOf(address(this)));
+        _token.safeTransfer(custodianAddress(), _token.balanceOf(address(this)));
     }
 
     /// @notice Override the release function to prevent release of token from being processed.
