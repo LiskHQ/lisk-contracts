@@ -81,6 +81,11 @@ contract L2VestingWalletPausedTest is Test {
         l2VestingWalletPaused = L2VestingWalletPaused(payable(address(l2VestingWallet)));
     }
 
+    function test_CustodianAddress() public view {
+        // Address of Security Council on L2
+        assertEq(l2VestingWalletPaused.custodianAddress(), 0x394Ae9d48eeca1C69a989B5A8C787081595c55A7);
+    }
+
     function test_SendToCustodian_RevertWhenNotContractAdmin() public {
         address nobody = vm.addr(1);
 
