@@ -2,6 +2,8 @@
 pragma solidity 0.8.23;
 
 import { Test, console, stdJson } from "forge-std/Test.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { IAccessControl } from "@openzeppelin/contracts/access/IAccessControl.sol";
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import { L2VestingWallet } from "src/L2/L2VestingWallet.sol";
 import { L2VestingWalletPaused } from "src/L2/paused/L2VestingWalletPaused.sol";
@@ -22,6 +24,8 @@ contract L2VestingWalletPausedTest is Test {
 
     L2VestingWallet public l2VestingWallet;
     L2VestingWallet public l2VestingWalletImplementation;
+
+    L2VestingWalletPaused public l2VestingWalletPaused;
     L2VestingWalletPaused public l2VestingWalletPausedImplementation;
 
     MockERC20 public mockToken;
@@ -72,6 +76,36 @@ contract L2VestingWalletPausedTest is Test {
             abi.encodeWithSelector(l2VestingWalletPausedImplementation.initializePaused.selector)
         );
         vm.stopPrank();
+
+        // Wrapping with L2VestingWalletPaused
+        l2VestingWalletPaused = L2VestingWalletPaused(payable(address(l2VestingWallet)));
+    }
+
+    function test_SendToCustodian_RevertWhenNotContractAdmin() public {
+        address nobody = vm.addr(1);
+
+        vm.startPrank(nobody);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IAccessControl.AccessControlUnauthorizedAccount.selector, nobody, l2VestingWallet.CONTRACT_ADMIN_ROLE()
+            )
+        );
+        l2VestingWalletPaused.sendToCustodian(IERC20(address(mockToken)));
+        vm.stopPrank();
+    }
+
+    function test_SendToCustodian() public {
+        uint256 contractBalanceBefore = mockToken.balanceOf(address(l2VestingWalletPaused));
+        uint256 recoveryAddressBalanceBefore = mockToken.balanceOf(l2VestingWalletPaused.custodianAddress());
+
+        vm.startPrank(contractAdmin);
+        l2VestingWalletPaused.sendToCustodian(IERC20(address(mockToken)));
+        vm.stopPrank();
+
+        assertEq(
+            mockToken.balanceOf(l2VestingWalletPaused.custodianAddress()),
+            contractBalanceBefore + recoveryAddressBalanceBefore
+        );
     }
 
     function test_ReleaseWithAddress_Paused() public {

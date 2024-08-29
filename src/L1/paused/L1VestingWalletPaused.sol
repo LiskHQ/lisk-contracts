@@ -8,4 +8,8 @@ import { L2VestingWalletPaused } from "src/L2/paused/L2VestingWalletPaused.sol";
 /// and
 ///         pause the contract to prevent any further vesting operations.
 ///         L1VestingWalletPaused shares the same functionality of L1VestingWalletPaused.
-contract L1VestingWalletPaused is L2VestingWalletPaused { }
+contract L1VestingWalletPaused is L2VestingWalletPaused {
+    function custodianAddress() public pure virtual override returns (address) {
+        return 0xD2D7535e099F26EbfbA26d96bD1a661d3531d0e9;
+    }
+}
