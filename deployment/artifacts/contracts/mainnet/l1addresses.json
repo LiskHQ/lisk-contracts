@@ -1,4 +1,5 @@
 {
   "L1LiskToken": "0x6033F7f88332B8db6ad452B7C6D5bB643990aE3f",
-  "L1VestingWalletImplementation": "0xd590c2e71739c551ebA7AEBE00E7855dF4cF5fB7"
+  "L1VestingWalletImplementation": "0xd590c2e71739c551ebA7AEBE00E7855dF4cF5fB7",
+  "L1VestingWalletPaused": "0xE2B0CfeF892c017D84d8220b8d2ac249624cd087"
 }
