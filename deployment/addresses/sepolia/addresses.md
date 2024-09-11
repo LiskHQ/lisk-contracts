@@ -53,9 +53,3 @@ Below are the addresses of the deployed smart contracts on the Ethereum and Lisk
 | `Guaranteed DAO 2025 - 2026`   | [0x633A2A8EB25de9A0257AFA57184CDD67BDc16390](https://sepolia-blockscout.lisk.com/address/0x633A2A8EB25de9A0257AFA57184CDD67BDc16390) |
 | `Vested DAO Funds 2027 - 2032` | [0x3bb66cD3bA4dEA8b0c8Ec24D12b82Cd14806E24C](https://sepolia-blockscout.lisk.com/address/0x3bb66cD3bA4dEA8b0c8Ec24D12b82Cd14806E24C) |
 | `Vested DAO Funds 2033`        | [0x800038cff0134107895eE81A7aF424daB73ee83f](https://sepolia-blockscout.lisk.com/address/0x800038cff0134107895eE81A7aF424daB73ee83f) |
-
-### L2 ERC20 Tokens
-
-| Name                | Address                                                                                                                              |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `Tether USD (USDT)` | [0xd26be7331edd458c7afa6d8b7fcb7a9e1bb68909](https://sepolia-blockscout.lisk.com/address/0xd26be7331edd458c7afa6d8b7fcb7a9e1bb68909) |
