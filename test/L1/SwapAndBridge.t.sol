@@ -84,9 +84,9 @@ contract TestSwapAndBridge is Test {
         vm.startPrank(testAccount);
         if (recipient != address(0)) {
             swapAndBridge.swapAndBridgeTo{ value: value }(recipient);
+            require(senderBalance == testAccount.balance + value, "Invalid sender balance update.");
         }
         vm.stopPrank();
-        require(senderBalance == testAccount.balance + value, "Invalid sender balance update.");
     }
 
     function testFuzz_SwapAndBridgeToWithMinimumAmount(uint256 tokensPerETH, uint256 value) public {
