@@ -80,12 +80,13 @@ git submodule update --init --recursive
 
 Private L1 and L2 test networks are established using the `anvil` tool, and the smart contracts are deployed using the `forge script` tool. To run private networks and deploy the smart contracts, follow these steps:
 
-1. Create `.env` file and set the vars `PRIVATE_KEY`, `NETWORK`, `L1_TOKEN_OWNER_ADDRESS`, `L2_CLAIM_OWNER_ADDRESS`, `L2_STAKING_OWNER_ADDRESS`, `L2_LOCKING_POSITION_OWNER_ADDRESS`, `L2_REWARD_OWNER_ADDRESS`, `L2_GOVERNOR_OWNER_ADDRESS`, `L2_VOTING_POWER_OWNER_ADDRESS`, `L2_AIRDROP_OWNER_ADDRESS`, `L2_AIRDROP_WALLET_ADDRESS`, `DETERMINISTIC_ADDRESS_SALT`, `L1_STANDARD_BRIDGE_ADDR`, `L1_RPC_URL`, `L2_RPC_URL`, `L1_FORK_RPC_URL`, `L2_FORK_RPC_URL` and `TEST_NETWORK_MNEMONIC`. You can copy and rename the `.env.example` file if the default values provided in `.env.example` are satisfactory. `L1_RPC_URL` should be set to `http://127.0.0.1:8545` and `L2_RPC_URL` should be set to `http://127.0.0.1:8546` if no changes are made in the `./runL1TestNetwork.sh` or `./runL2TestNetwork.sh` script files.
-2. Navigate to the `script` directory.
-3. Place the `accounts.json` and `merkle-root.json` files in the correct folder (`data/devnet`, `data/testnet`, or `data/mainnet`) corresponding to the previously set `NETWORK` environment variable. Example files for `accounts.json` and `merkle-root.json` may be found inside `data/devnet` directory.
+1. Copy the devnet .env file with `cp .env.devnet .env`. 
+2. The `.env` file provides defaults for several parameters. The deployer private key should be set in the `PRIVATE_KEY` env variable, other variables can be set depending on the intended deployments.
+3. Navigate to the `script` directory.
 4. To create and launch a private test L1 network, execute the script: `./runL1TestNetwork.sh`
 5. To create and launch a private test L2 network, execute the script: `./runL2TestNetwork.sh`
-6. To deploy all smart contracts, execute the scripts: `./1_deployTokenContracts.sh`, `./2_deployStakingAndGovernance.sh`, `./3_deployVestingWallets.sh`, `./4_deployClaimContract` and `./5_deployAirdropContract.sh`.
+6. Place the `accounts.json` and `merkle-root.json` files in the `data/devnet` folder. Example files for `accounts.json` and `merkle-root.json` may be found inside `data/devnet` directory.
+7. To deploy all smart contracts, execute the scripts: `./1_deployTokenContracts.sh`, `./2_deployStakingAndGovernance.sh`, `./3_deployVestingWallets.sh`, `./4_deployClaimContract` and `./5_deployAirdropContract.sh`.
 
 ## Deploying on Public Test Network
 
@@ -93,11 +94,12 @@ Private L1 and L2 test networks are established using the `anvil` tool, and the 
 
 To deploy smart contracts on both L1 and L2 public networks, you will need to provide for each network an URL for a public node from a RPC provider, such as Alchemy or Infura. Additionally, in order to verify smart contracts on Blockscout or Etherscan Block Explorers during the deployment process, it is necessary to provide verifier name along with additional information (URL and API key). Follow these steps to deploy the smart contracts:
 
-1. Create `.env` file and set the vars `PRIVATE_KEY`, `NETWORK`, `L1_TOKEN_OWNER_ADDRESS`, `L2_CLAIM_OWNER_ADDRESS`, `L2_STAKING_OWNER_ADDRESS`, `L2_LOCKING_POSITION_OWNER_ADDRESS`, `L2_REWARD_OWNER_ADDRESS`, `L2_GOVERNOR_OWNER_ADDRESS`, `L2_VOTING_POWER_OWNER_ADDRESS`, `L2_AIRDROP_OWNER_ADDRESS`, `L2_AIRDROP_WALLET_ADDRESS`, `DETERMINISTIC_ADDRESS_SALT`, `L1_STANDARD_BRIDGE_ADDR`, `L1_RPC_URL`, `L2_RPC_URL` and `CONTRACT_VERIFIER`. You can copy and rename the `.env.example` file if the default values provided in `.env.example` are satisfactory. `CONTRACT_VERIFIER` may be empty to skip smart contracts verification process on Blockscout or Etherscan Block Explorers.
-2. When `CONTRACT_VERIFIER` is configured as either `blockscout` or `etherscan`, there are specific additional variables that must be defined. For `blockscout`, it is necessary to set `L1_VERIFIER_URL` and `L2_VERIFIER_URL`. Conversely, for `etherscan`, it is necessary to set `L1_ETHERSCAN_API_KEY` and `L2_ETHERSCAN_API_KEY`.
-3. Navigate to the `script` directory.
-4. Place the `accounts.json` and `merkle-root.json` files in the correct folder (`data/devnet`, `data/testnet`, or `data/mainnet`) corresponding to the previously set `NETWORK` environment variable. Example files for `accounts.json` and `merkle-root.json` may be found inside `data/devnet` directory.
-5. To deploy all smart contracts, execute the scripts: `./1_deployTokenContracts.sh`, `./2_deployStakingAndGovernance.sh`, `./3_deployVestingWallets.sh`, `./4_deployClaimContract` and `./5_deployAirdropContract.sh`.
+1. Copy the testnet .env file with `cp .env.testnet .env`. 
+2. The `.env` file provides defaults for several parameters. The deployer private key should be set in the `PRIVATE_KEY` env variable, other variables can be set depending on the intended deployments.
+3. `CONTRACT_VERIFIER` may be empty to skip smart contracts verification process on Blockscout or Etherscan block explorers. When `CONTRACT_VERIFIER` is configured as either `blockscout` or `etherscan`, there are specific additional variables that must be defined. For `blockscout`, it is necessary to set `L1_VERIFIER_URL` and `L2_VERIFIER_URL`. Conversely, for `etherscan`, it is necessary to set `L1_ETHERSCAN_API_KEY` and `L2_ETHERSCAN_API_KEY`.
+4. Navigate to the `script` directory.
+5. Place the `accounts.json` and `merkle-root.json` files in the `data/testnet` folder. Example files for `accounts.json` and `merkle-root.json` may be found inside `data/devnet` directory.
+6. To deploy all smart contracts, execute the scripts: `./1_deployTokenContracts.sh`, `./2_deployStakingAndGovernance.sh`, `./3_deployVestingWallets.sh`, `./4_deployClaimContract` and `./5_deployAirdropContract.sh`.
 
 ## Deployments
 
