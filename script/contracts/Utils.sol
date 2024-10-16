@@ -43,6 +43,14 @@ contract Utils is Script {
         address L2LockingPositionImplementation;
         /// @notice L2 LockingPositionPaused address.
         address L2LockingPositionPaused;
+        /// @notice L2 MultiFeedAdapterWithoutRoundsPrimaryProd address.
+        address L2MultiFeedAdapterWithoutRoundsPrimaryProd;
+        /// @notice The current implementation of L2 MultiFeedAdapterWithoutRoundsPrimaryProd Contract.
+        address L2MultiFeedAdapterWithoutRoundsPrimaryProdImplementation;
+        /// @notice L2 PriceFeedUsdtWithoutRounds address.
+        address L2PriceFeedUsdtWithoutRounds;
+        /// @notice The current implementation of L2 PriceFeedUsdtWithoutRounds Contract.
+        address L2PriceFeedUsdtWithoutRoundsImplementation;
         /// @notice L2 Reward contract (in Proxy), which users interact with.
         address L2Reward;
         /// @notice The current implementation of L2 Reward contract.
@@ -228,6 +236,31 @@ contract Utils is Script {
             l2AddressesConfig.L2LockingPositionPaused = l2LockingPositionPaused;
         } catch { }
 
+        try vm.parseJsonAddress(addressJson, ".L2MultiFeedAdapterWithoutRoundsPrimaryProd") returns (
+            address l2MultiFeedAdapterWithoutRoundsPrimaryProd
+        ) {
+            l2AddressesConfig.L2MultiFeedAdapterWithoutRoundsPrimaryProd = l2MultiFeedAdapterWithoutRoundsPrimaryProd;
+        } catch { }
+
+        try vm.parseJsonAddress(addressJson, ".L2MultiFeedAdapterWithoutRoundsPrimaryProdImplementation") returns (
+            address l2MultiFeedAdapterWithoutRoundsPrimaryProdImplementation
+        ) {
+            l2AddressesConfig.L2MultiFeedAdapterWithoutRoundsPrimaryProdImplementation =
+                l2MultiFeedAdapterWithoutRoundsPrimaryProdImplementation;
+        } catch { }
+
+        try vm.parseJsonAddress(addressJson, ".L2PriceFeedUsdtWithoutRounds") returns (
+            address l2PriceFeedUsdtWithoutRounds
+        ) {
+            l2AddressesConfig.L2PriceFeedUsdtWithoutRounds = l2PriceFeedUsdtWithoutRounds;
+        } catch { }
+
+        try vm.parseJsonAddress(addressJson, ".L2PriceFeedUsdtWithoutRoundsImplementation") returns (
+            address l2PriceFeedUsdtWithoutRoundsImplementation
+        ) {
+            l2AddressesConfig.L2PriceFeedUsdtWithoutRoundsImplementation = l2PriceFeedUsdtWithoutRoundsImplementation;
+        } catch { }
+
         try vm.parseJsonAddress(addressJson, ".L2RewardImplementation") returns (address l2RewardImplementation) {
             l2AddressesConfig.L2RewardImplementation = l2RewardImplementation;
         } catch { }
@@ -294,6 +327,18 @@ contract Utils is Script {
         vm.serializeAddress(json, "L2LockingPosition", cfg.L2LockingPosition);
         vm.serializeAddress(json, "L2LockingPositionImplementation", cfg.L2LockingPositionImplementation);
         vm.serializeAddress(json, "L2LockingPositionPaused", cfg.L2LockingPositionPaused);
+        vm.serializeAddress(
+            json, "L2MultiFeedAdapterWithoutRoundsPrimaryProd", cfg.L2MultiFeedAdapterWithoutRoundsPrimaryProd
+        );
+        vm.serializeAddress(
+            json,
+            "L2MultiFeedAdapterWithoutRoundsPrimaryProdImplementation",
+            cfg.L2MultiFeedAdapterWithoutRoundsPrimaryProdImplementation
+        );
+        vm.serializeAddress(json, "L2PriceFeedUsdtWithoutRounds", cfg.L2PriceFeedUsdtWithoutRounds);
+        vm.serializeAddress(
+            json, "L2PriceFeedUsdtWithoutRoundsImplementation", cfg.L2PriceFeedUsdtWithoutRoundsImplementation
+        );
         vm.serializeAddress(json, "L2Reward", cfg.L2Reward);
         vm.serializeAddress(json, "L2RewardImplementation", cfg.L2RewardImplementation);
         vm.serializeAddress(json, "L2RewardPaused", cfg.L2RewardPaused);
