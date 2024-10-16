@@ -43,10 +43,18 @@ contract Utils is Script {
         address L2LockingPositionImplementation;
         /// @notice L2 LockingPositionPaused address.
         address L2LockingPositionPaused;
+        /// @notice L2 MultiFeedAdapterWithoutRoundsMainDemo address.
+        address L2MultiFeedAdapterWithoutRoundsMainDemo;
+        /// @notice The current implementation of L2 MultiFeedAdapterWithoutRoundsMainDemo Contract.
+        address L2MultiFeedAdapterWithoutRoundsMainDemoImplementation;
         /// @notice L2 MultiFeedAdapterWithoutRoundsPrimaryProd address.
         address L2MultiFeedAdapterWithoutRoundsPrimaryProd;
         /// @notice The current implementation of L2 MultiFeedAdapterWithoutRoundsPrimaryProd Contract.
         address L2MultiFeedAdapterWithoutRoundsPrimaryProdImplementation;
+        /// @notice L2 PriceFeedLskWithoutRounds address.
+        address L2PriceFeedLskWithoutRounds;
+        /// @notice The current implementation of L2 PriceFeedLskWithoutRounds Contract.
+        address L2PriceFeedLskWithoutRoundsImplementation;
         /// @notice L2 PriceFeedUsdtWithoutRounds address.
         address L2PriceFeedUsdtWithoutRounds;
         /// @notice The current implementation of L2 PriceFeedUsdtWithoutRounds Contract.
@@ -236,6 +244,19 @@ contract Utils is Script {
             l2AddressesConfig.L2LockingPositionPaused = l2LockingPositionPaused;
         } catch { }
 
+        try vm.parseJsonAddress(addressJson, ".L2MultiFeedAdapterWithoutRoundsMainDemo") returns (
+            address l2MultiFeedAdapterWithoutRoundsMainDemo
+        ) {
+            l2AddressesConfig.L2MultiFeedAdapterWithoutRoundsMainDemo = l2MultiFeedAdapterWithoutRoundsMainDemo;
+        } catch { }
+
+        try vm.parseJsonAddress(addressJson, ".L2MultiFeedAdapterWithoutRoundsMainDemoImplementation") returns (
+            address l2MultiFeedAdapterWithoutRoundsMainDemoImplementation
+        ) {
+            l2AddressesConfig.L2MultiFeedAdapterWithoutRoundsMainDemoImplementation =
+                l2MultiFeedAdapterWithoutRoundsMainDemoImplementation;
+        } catch { }
+
         try vm.parseJsonAddress(addressJson, ".L2MultiFeedAdapterWithoutRoundsPrimaryProd") returns (
             address l2MultiFeedAdapterWithoutRoundsPrimaryProd
         ) {
@@ -247,6 +268,18 @@ contract Utils is Script {
         ) {
             l2AddressesConfig.L2MultiFeedAdapterWithoutRoundsPrimaryProdImplementation =
                 l2MultiFeedAdapterWithoutRoundsPrimaryProdImplementation;
+        } catch { }
+
+        try vm.parseJsonAddress(addressJson, ".L2PriceFeedLskWithoutRounds") returns (
+            address l2PriceFeedLskWithoutRounds
+        ) {
+            l2AddressesConfig.L2PriceFeedLskWithoutRounds = l2PriceFeedLskWithoutRounds;
+        } catch { }
+
+        try vm.parseJsonAddress(addressJson, ".L2PriceFeedLskWithoutRoundsImplementation") returns (
+            address l2PriceFeedLskWithoutRoundsImplementation
+        ) {
+            l2AddressesConfig.L2PriceFeedLskWithoutRoundsImplementation = l2PriceFeedLskWithoutRoundsImplementation;
         } catch { }
 
         try vm.parseJsonAddress(addressJson, ".L2PriceFeedUsdtWithoutRounds") returns (
@@ -328,12 +361,24 @@ contract Utils is Script {
         vm.serializeAddress(json, "L2LockingPositionImplementation", cfg.L2LockingPositionImplementation);
         vm.serializeAddress(json, "L2LockingPositionPaused", cfg.L2LockingPositionPaused);
         vm.serializeAddress(
+            json, "L2MultiFeedAdapterWithoutRoundsMainDemo", cfg.L2MultiFeedAdapterWithoutRoundsMainDemo
+        );
+        vm.serializeAddress(
+            json,
+            "L2MultiFeedAdapterWithoutRoundsMainDemoImplementation",
+            cfg.L2MultiFeedAdapterWithoutRoundsMainDemoImplementation
+        );
+        vm.serializeAddress(
             json, "L2MultiFeedAdapterWithoutRoundsPrimaryProd", cfg.L2MultiFeedAdapterWithoutRoundsPrimaryProd
         );
         vm.serializeAddress(
             json,
             "L2MultiFeedAdapterWithoutRoundsPrimaryProdImplementation",
             cfg.L2MultiFeedAdapterWithoutRoundsPrimaryProdImplementation
+        );
+        vm.serializeAddress(json, "L2PriceFeedLskWithoutRounds", cfg.L2PriceFeedLskWithoutRounds);
+        vm.serializeAddress(
+            json, "L2PriceFeedLskWithoutRoundsImplementation", cfg.L2PriceFeedLskWithoutRoundsImplementation
         );
         vm.serializeAddress(json, "L2PriceFeedUsdtWithoutRounds", cfg.L2PriceFeedUsdtWithoutRounds);
         vm.serializeAddress(

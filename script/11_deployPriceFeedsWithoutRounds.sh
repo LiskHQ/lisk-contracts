@@ -42,3 +42,19 @@ else
       fi
 fi
 echo "Done."
+
+echo "Deploying and if enabled verifying L2PriceFeedLskWithoutRounds smart contract..."
+if [ -z "$CONTRACT_VERIFIER" ]
+then
+      forge script --rpc-url="$L2_RPC_URL" --broadcast -vvvv script/contracts/L2/L2PriceFeedLskWithoutRounds.s.sol:L2PriceFeedLskWithoutRoundsScript
+else
+      if [ $CONTRACT_VERIFIER = "blockscout" ]
+      then
+            forge script --rpc-url="$L2_RPC_URL" --broadcast --verify --verifier blockscout --verifier-url $L2_VERIFIER_URL -vvvv script/contracts/L2/L2PriceFeedLskWithoutRounds.s.sol:L2PriceFeedLskWithoutRoundsScript
+      fi
+      if [ $CONTRACT_VERIFIER = "etherscan" ]
+      then        
+            forge script --rpc-url="$L2_RPC_URL" --broadcast --verify --verifier etherscan --etherscan-api-key="$L2_ETHERSCAN_API_KEY" -vvvv script/contracts/L2/L2PriceFeedLskWithoutRounds.s.sol:L2PriceFeedLskWithoutRoundsScript
+      fi
+fi
+echo "Done."
