@@ -16,6 +16,9 @@ contract L2PriceFeedUsdtWithoutRounds is
     UUPSUpgradeable,
     PriceFeedWithoutRoundsForMultiFeedAdapter
 {
+    /// @notice The address of the MultiFeedAdapter contract.
+    address internal priceFeedAdapter;
+
     /// @notice Disabling initializers on implementation contract to prevent misuse.
     constructor() {
         _disableInitializers();
@@ -42,6 +45,15 @@ contract L2PriceFeedUsdtWithoutRounds is
     /// @notice This function returns the price feed adapter.
     /// @return The price feed adapter.
     function getPriceFeedAdapter() public view virtual override returns (IRedstoneAdapter) {
-        return IRedstoneAdapter(0x1038999DCf0A302Cc8Eed72fAeCbf0eEBfC476b0);
+        return IRedstoneAdapter(priceFeedAdapter);
+    }
+
+    /// @notice This function sets the address of the MultiFeedAdapter contract.
+    /// @param _adapter The address of the MultiFeedAdapter contract.
+    function setPriceFeedAdapter(address _adapter) public virtual onlyOwner {
+        require(priceFeedAdapter == address(0), "L2PriceFeedLskWithoutRounds: priceFeedAdapter is already initialized");
+        require(_adapter != address(0), "L2PriceFeedLskWithoutRounds: priceFeedAdapter address can not be zero");
+
+        priceFeedAdapter = _adapter;
     }
 }

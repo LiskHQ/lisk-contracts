@@ -22,6 +22,8 @@ contract L2PriceFeedUsdtWithoutRoundsTest is Test {
     L2PriceFeedUsdtWithoutRounds public l2PriceFeed;
     L2PriceFeedUsdtWithoutRounds public l2PriceFeedImplementation;
 
+    address public priceFeedAdapter = 0x1038999DCf0A302Cc8Eed72fAeCbf0eEBfC476b0;
+
     function setUp() public {
         // deploy L2PriceFeedUsdtWithoutRounds Implementation contract
         l2PriceFeedImplementation = new L2PriceFeedUsdtWithoutRounds();
@@ -37,7 +39,27 @@ contract L2PriceFeedUsdtWithoutRoundsTest is Test {
         assertEq(l2PriceFeed.decimals(), 8);
         assertEq(keccak256(bytes(l2PriceFeed.description())), keccak256(bytes("Redstone Price Feed")));
         assertEq(l2PriceFeed.getDataFeedId(), bytes32("USDT"));
-        assertEq(address(l2PriceFeed.getPriceFeedAdapter()), address(0x1038999DCf0A302Cc8Eed72fAeCbf0eEBfC476b0));
+        assertEq(address(l2PriceFeed.getPriceFeedAdapter()), address(0));
+
+        // set PriceFeedAdapter contract address
+        l2PriceFeed.setPriceFeedAdapter(priceFeedAdapter);
+        assertEq(address(l2PriceFeed.getPriceFeedAdapter()), priceFeedAdapter);
+    }
+
+    function test_SetPriceFeedAdapter_OnlyOwner() public {
+        address newPriceFeedAdapter = vm.addr(uint256(bytes32("newPriceFeedAdapter")));
+        address alice = address(0x1);
+
+        vm.prank(alice);
+        vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, alice));
+        l2PriceFeed.setPriceFeedAdapter(newPriceFeedAdapter);
+    }
+
+    function test_SetPriceFeedAdapter_TryToSetItTwice() public {
+        address newPriceFeedAdapter = vm.addr(uint256(bytes32("newPriceFeedAdapter")));
+
+        vm.expectRevert("L2PriceFeedLskWithoutRounds: priceFeedAdapter is already initialized");
+        l2PriceFeed.setPriceFeedAdapter(newPriceFeedAdapter);
     }
 
     function test_TransferOwnership() public {
@@ -119,7 +141,7 @@ contract L2PriceFeedUsdtWithoutRoundsTest is Test {
         assertEq(l2PriceFeedV2.decimals(), 8);
         assertEq(keccak256(bytes(l2PriceFeedV2.description())), keccak256(bytes("Redstone Price Feed")));
         assertEq(l2PriceFeedV2.getDataFeedId(), bytes32("USDT"));
-        assertEq(address(l2PriceFeedV2.getPriceFeedAdapter()), address(0x1038999DCf0A302Cc8Eed72fAeCbf0eEBfC476b0));
+        assertEq(address(l2PriceFeedV2.getPriceFeedAdapter()), priceFeedAdapter);
 
         // version of L2PriceFeedUsdtWithoutRounds set to v2.0.0
         assertEq(l2PriceFeedV2.testVersion(), "v2.0.0");

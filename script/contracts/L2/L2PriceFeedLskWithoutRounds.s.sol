@@ -34,6 +34,14 @@ contract L2PriceFeedLskWithoutRoundsScript is Script {
             ownerAddress
         );
 
+        // get L2MultiFeedAdapterWithoutRoundsMainDemo contract address
+        Utils.L2AddressesConfig memory l2AddressesConfig = utils.readL2AddressesFile(utils.getL2AddressesFilePath());
+        assert(l2AddressesConfig.L2MultiFeedAdapterWithoutRoundsMainDemo != address(0));
+        console2.log(
+            "L2 MultiFeed Adapter Without Rounds MainDemo address: %s",
+            l2AddressesConfig.L2MultiFeedAdapterWithoutRoundsMainDemo
+        );
+
         // deploy L2PriceFeedLskWithoutRounds implementation contract
         vm.startBroadcast(deployerPrivateKey);
         L2PriceFeedLskWithoutRounds l2PriceFeedImplementation = new L2PriceFeedLskWithoutRounds();
@@ -60,7 +68,12 @@ contract L2PriceFeedLskWithoutRoundsScript is Script {
         assert(l2PriceFeed.decimals() == 8);
         assert(keccak256(bytes(l2PriceFeed.description())) == keccak256(bytes("Redstone Price Feed")));
         assert(l2PriceFeed.getDataFeedId() == bytes32("LSK"));
-        assert(address(l2PriceFeed.getPriceFeedAdapter()) == address(0x19664179Ad4823C6A51035a63C9032ed27ccA441));
+
+        // set L2MultiFeedAdapterWithoutRoundsMainDemo contract address as a PriceFeedAdapter
+        vm.startBroadcast(deployerPrivateKey);
+        l2PriceFeed.setPriceFeedAdapter(l2AddressesConfig.L2MultiFeedAdapterWithoutRoundsMainDemo);
+        vm.stopBroadcast();
+        assert(address(l2PriceFeed.getPriceFeedAdapter()) == l2AddressesConfig.L2MultiFeedAdapterWithoutRoundsMainDemo);
 
         // transfer ownership of L2PriceFeedLskWithoutRounds proxy; because of using
         // Ownable2StepUpgradeable contract, new owner has to accept ownership
@@ -78,7 +91,6 @@ contract L2PriceFeedLskWithoutRoundsScript is Script {
         );
 
         // write L2PriceFeedLskWithoutRounds address to l2addresses.json
-        Utils.L2AddressesConfig memory l2AddressesConfig = utils.readL2AddressesFile(utils.getL2AddressesFilePath());
         l2AddressesConfig.L2PriceFeedLskWithoutRoundsImplementation = address(l2PriceFeedImplementation);
         l2AddressesConfig.L2PriceFeedLskWithoutRounds = address(l2PriceFeed);
         utils.writeL2AddressesFile(l2AddressesConfig, utils.getL2AddressesFilePath());
