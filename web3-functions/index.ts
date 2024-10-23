@@ -44,8 +44,8 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
   const deviationPrct = (deviation.toNumber() / 10 ** decimals) * 100;
   console.log(`Deviation: ${deviationPrct.toFixed(2)}%`);
 
-  // Only update price if deviation is above 0.2%
-  const minDeviation = 0.2;
+  // Only update price if deviation is above 0.5%
+  const minDeviation = 0.5;
   if (deviationPrct < minDeviation) {
     return {
       canExec: false,
