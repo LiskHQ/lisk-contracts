@@ -22,11 +22,9 @@ remappings = [
     'solidity-stringutils/=lib/openzeppelin-foundry-upgrades/lib/solidity-stringutils/',
     'ERC4626/=lib/properties/lib/ERC4626/contracts/',
     'properties/=lib/properties/contracts/',
-    'redstone-oracles-monorepo/=lib/redstone-oracles-monorepo/',
     '@redstone-finance/=lib/redstone-oracles-monorepo/packages/',
     'solmate/=lib/properties/lib/solmate/src/',
     '@chainlink=lib/chainlink/',
-    'chainlink/=lib/chainlink/',
 ]
 deny_warnings = true
 ignored_warnings_from = [
