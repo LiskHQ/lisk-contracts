@@ -66,4 +66,12 @@ contract L2MultiFeedAdapterWithoutRoundsPrimaryProd is
             return block.timestamp > lastBlockTimestamp + 40 seconds;
         }
     }
+
+    /// @notice This function returns numeric oracle values for a given array of data feed ids.
+    /// @param dataFeedIds An array of unique data feed identifiers.
+    /// @return An array of the extracted and verified oracle values in the same order as they are requested in the
+    ///         dataFeedIds array and data packages timestamp.
+    function getLivePrice(bytes32[] memory dataFeedIds) public view virtual returns (uint256[] memory, uint256) {
+        return getOracleNumericValuesAndTimestampFromTxMsg(dataFeedIds);
+    }
 }
