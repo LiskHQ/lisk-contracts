@@ -51,14 +51,10 @@ contract Utils is Script {
         address L2MultiFeedAdapterWithoutRoundsPrimaryProd;
         /// @notice The current implementation of L2 MultiFeedAdapterWithoutRoundsPrimaryProd Contract.
         address L2MultiFeedAdapterWithoutRoundsPrimaryProdImplementation;
-        /// @notice L2 PriceFeedLskWithoutRounds address.
-        address L2PriceFeedLskWithoutRounds;
-        /// @notice The current implementation of L2 PriceFeedLskWithoutRounds Contract.
-        address L2PriceFeedLskWithoutRoundsImplementation;
-        /// @notice L2 PriceFeedUsdtWithoutRounds address.
-        address L2PriceFeedUsdtWithoutRounds;
-        /// @notice The current implementation of L2 PriceFeedUsdtWithoutRounds Contract.
-        address L2PriceFeedUsdtWithoutRoundsImplementation;
+        /// @notice L2 PriceFeedWithoutRoundsFactory address.
+        address L2PriceFeedWithoutRoundsFactory;
+        /// @notice The current implementation of L2 PriceFeedWithoutRoundsFactory Contract.
+        address L2PriceFeedWithoutRoundsFactoryImplementation;
         /// @notice L2 Reward contract (in Proxy), which users interact with.
         address L2Reward;
         /// @notice The current implementation of L2 Reward contract.
@@ -270,28 +266,17 @@ contract Utils is Script {
                 l2MultiFeedAdapterWithoutRoundsPrimaryProdImplementation;
         } catch { }
 
-        try vm.parseJsonAddress(addressJson, ".L2PriceFeedLskWithoutRounds") returns (
-            address l2PriceFeedLskWithoutRounds
+        try vm.parseJsonAddress(addressJson, ".L2PriceFeedWithoutRoundsFactory") returns (
+            address l2PriceFeedWithoutRoundsFactory
         ) {
-            l2AddressesConfig.L2PriceFeedLskWithoutRounds = l2PriceFeedLskWithoutRounds;
+            l2AddressesConfig.L2PriceFeedWithoutRoundsFactory = l2PriceFeedWithoutRoundsFactory;
         } catch { }
 
-        try vm.parseJsonAddress(addressJson, ".L2PriceFeedLskWithoutRoundsImplementation") returns (
-            address l2PriceFeedLskWithoutRoundsImplementation
+        try vm.parseJsonAddress(addressJson, ".L2PriceFeedWithoutRoundsFactoryImplementation") returns (
+            address l2PriceFeedWithoutRoundsFactoryImplementation
         ) {
-            l2AddressesConfig.L2PriceFeedLskWithoutRoundsImplementation = l2PriceFeedLskWithoutRoundsImplementation;
-        } catch { }
-
-        try vm.parseJsonAddress(addressJson, ".L2PriceFeedUsdtWithoutRounds") returns (
-            address l2PriceFeedUsdtWithoutRounds
-        ) {
-            l2AddressesConfig.L2PriceFeedUsdtWithoutRounds = l2PriceFeedUsdtWithoutRounds;
-        } catch { }
-
-        try vm.parseJsonAddress(addressJson, ".L2PriceFeedUsdtWithoutRoundsImplementation") returns (
-            address l2PriceFeedUsdtWithoutRoundsImplementation
-        ) {
-            l2AddressesConfig.L2PriceFeedUsdtWithoutRoundsImplementation = l2PriceFeedUsdtWithoutRoundsImplementation;
+            l2AddressesConfig.L2PriceFeedWithoutRoundsFactoryImplementation =
+                l2PriceFeedWithoutRoundsFactoryImplementation;
         } catch { }
 
         try vm.parseJsonAddress(addressJson, ".L2RewardImplementation") returns (address l2RewardImplementation) {
@@ -376,13 +361,9 @@ contract Utils is Script {
             "L2MultiFeedAdapterWithoutRoundsPrimaryProdImplementation",
             cfg.L2MultiFeedAdapterWithoutRoundsPrimaryProdImplementation
         );
-        vm.serializeAddress(json, "L2PriceFeedLskWithoutRounds", cfg.L2PriceFeedLskWithoutRounds);
+        vm.serializeAddress(json, "L2PriceFeedWithoutRoundsFactory", cfg.L2PriceFeedWithoutRoundsFactory);
         vm.serializeAddress(
-            json, "L2PriceFeedLskWithoutRoundsImplementation", cfg.L2PriceFeedLskWithoutRoundsImplementation
-        );
-        vm.serializeAddress(json, "L2PriceFeedUsdtWithoutRounds", cfg.L2PriceFeedUsdtWithoutRounds);
-        vm.serializeAddress(
-            json, "L2PriceFeedUsdtWithoutRoundsImplementation", cfg.L2PriceFeedUsdtWithoutRoundsImplementation
+            json, "L2PriceFeedWithoutRoundsFactoryImplementation", cfg.L2PriceFeedWithoutRoundsFactoryImplementation
         );
         vm.serializeAddress(json, "L2Reward", cfg.L2Reward);
         vm.serializeAddress(json, "L2RewardImplementation", cfg.L2RewardImplementation);

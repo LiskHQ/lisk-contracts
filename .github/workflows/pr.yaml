@@ -17,7 +17,7 @@ jobs:
       fail-fast: true
       matrix:
         system:
-          - os: macos-12
+          - os: macos-latest
             target: x86_64-apple-darwin
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu

@@ -4,9 +4,10 @@ pragma solidity 0.8.23;
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import { OwnableUpgradeable } from "@openzeppelin-upgradeable/contracts/access/OwnableUpgradeable.sol";
 import { Test } from "forge-std/Test.sol";
-import { L2PriceFeedUsdtWithoutRounds } from "src/L2/L2PriceFeedUsdtWithoutRounds.sol";
+import { L2PriceFeedWithoutRoundsFactory } from "src/L2/L2PriceFeedWithoutRoundsFactory.sol";
+import { L2PriceFeedWithoutRounds } from "src/L2/L2PriceFeedWithoutRounds.sol";
 
-contract L2PriceFeedUsdtWithoutRoundsV2Mock is L2PriceFeedUsdtWithoutRounds {
+contract L2PriceFeedWithoutRoundsV2Mock is L2PriceFeedWithoutRounds {
     string public testVersion;
 
     function initializeV2(string memory _version) public reinitializer(2) {
@@ -18,48 +19,42 @@ contract L2PriceFeedUsdtWithoutRoundsV2Mock is L2PriceFeedUsdtWithoutRounds {
     }
 }
 
-contract L2PriceFeedUsdtWithoutRoundsTest is Test {
-    L2PriceFeedUsdtWithoutRounds public l2PriceFeed;
-    L2PriceFeedUsdtWithoutRounds public l2PriceFeedImplementation;
+contract L2PriceFeedWithoutRoundsTest is Test {
+    L2PriceFeedWithoutRounds public l2PriceFeed;
+    L2PriceFeedWithoutRounds public l2PriceFeedImplementation;
 
     address public priceFeedAdapter = 0x1038999DCf0A302Cc8Eed72fAeCbf0eEBfC476b0;
 
     function setUp() public {
-        // deploy L2PriceFeedUsdtWithoutRounds Implementation contract
-        l2PriceFeedImplementation = new L2PriceFeedUsdtWithoutRounds();
+        // deploy L2PriceFeedWithoutRoundsFactory Implementation contract
+        L2PriceFeedWithoutRoundsFactory l2PriceFeedFactoryImplementation = new L2PriceFeedWithoutRoundsFactory();
 
-        // deploy L2PriceFeedUsdtWithoutRounds contract via Proxy and initialize it at the same time
-        l2PriceFeed = L2PriceFeedUsdtWithoutRounds(
+        // deploy L2PriceFeedWithoutRoundsFactory contract via Proxy and initialize it at the same time
+        L2PriceFeedWithoutRoundsFactory l2PriceFeedFactory;
+        l2PriceFeedFactory = L2PriceFeedWithoutRoundsFactory(
             address(
                 new ERC1967Proxy(
-                    address(l2PriceFeedImplementation), abi.encodeWithSelector(l2PriceFeed.initialize.selector)
+                    address(l2PriceFeedFactoryImplementation),
+                    abi.encodeWithSelector(l2PriceFeedFactory.initialize.selector)
                 )
             )
         );
+
+        // create L2PriceFeedWithoutRounds contract
+        l2PriceFeed =
+            L2PriceFeedWithoutRounds(l2PriceFeedFactory.createL2PriceFeedWithoutRounds("USDT", priceFeedAdapter));
+        assert(address(l2PriceFeed) != address(0));
         assertEq(l2PriceFeed.decimals(), 8);
         assertEq(keccak256(bytes(l2PriceFeed.description())), keccak256(bytes("Redstone Price Feed")));
         assertEq(l2PriceFeed.getDataFeedId(), bytes32("USDT"));
-        assertEq(address(l2PriceFeed.getPriceFeedAdapter()), address(0));
-
-        // set PriceFeedAdapter contract address
-        l2PriceFeed.setPriceFeedAdapter(priceFeedAdapter);
         assertEq(address(l2PriceFeed.getPriceFeedAdapter()), priceFeedAdapter);
-    }
 
-    function test_SetPriceFeedAdapter_OnlyOwner() public {
-        address newPriceFeedAdapter = vm.addr(uint256(bytes32("newPriceFeedAdapter")));
-        address alice = address(0x1);
+        // accept ownership
+        l2PriceFeed.acceptOwnership();
 
-        vm.prank(alice);
-        vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, alice));
-        l2PriceFeed.setPriceFeedAdapter(newPriceFeedAdapter);
-    }
-
-    function test_SetPriceFeedAdapter_TryToSetItTwice() public {
-        address newPriceFeedAdapter = vm.addr(uint256(bytes32("newPriceFeedAdapter")));
-
-        vm.expectRevert("L2PriceFeedLskWithoutRounds: priceFeedAdapter is already initialized");
-        l2PriceFeed.setPriceFeedAdapter(newPriceFeedAdapter);
+        // check L2PriceFeedWithoutRoundsFactory variables
+        assertEq(l2PriceFeedFactory.l2PriceFeedWithoutRoundsContracts(0), address(l2PriceFeed));
+        assertEq(l2PriceFeedFactory.l2PriceFeedWithoutRoundsDataFeedIds(address(l2PriceFeed), 0), "USDT");
     }
 
     function test_TransferOwnership() public {
@@ -110,8 +105,8 @@ contract L2PriceFeedUsdtWithoutRoundsTest is Test {
     }
 
     function testFuzz_UpgradeToAndCall_RevertWhenNotOwner(uint256 _addressSeed) public {
-        // deploy L2PriceFeedUsdtWithoutRoundsV2Mock implementation contract
-        L2PriceFeedUsdtWithoutRoundsV2Mock l2PriceFeedV2Implementation = new L2PriceFeedUsdtWithoutRoundsV2Mock();
+        // deploy L2PriceFeedWithoutRoundsV2Mock implementation contract
+        L2PriceFeedWithoutRoundsV2Mock l2PriceFeedV2Implementation = new L2PriceFeedWithoutRoundsV2Mock();
         _addressSeed = bound(_addressSeed, 1, type(uint160).max);
         address nobody = vm.addr(_addressSeed);
 
@@ -125,8 +120,8 @@ contract L2PriceFeedUsdtWithoutRoundsTest is Test {
     }
 
     function test_UpgradeToAndCall_SuccessUpgrade() public {
-        // deploy L2PriceFeedUsdtWithoutRoundsV2Mock implementation contract
-        L2PriceFeedUsdtWithoutRoundsV2Mock l2PriceFeedV2Implementation = new L2PriceFeedUsdtWithoutRoundsV2Mock();
+        // deploy L2PriceFeedWithoutRoundsV2Mock implementation contract
+        L2PriceFeedWithoutRoundsV2Mock l2PriceFeedV2Implementation = new L2PriceFeedWithoutRoundsV2Mock();
 
         // upgrade contract, and also change some variables by reinitialize
         l2PriceFeed.upgradeToAndCall(
@@ -134,8 +129,8 @@ contract L2PriceFeedUsdtWithoutRoundsTest is Test {
             abi.encodeWithSelector(l2PriceFeedV2Implementation.initializeV2.selector, "v2.0.0")
         );
 
-        // wrap L2PriceFeedUsdtWithoutRounds proxy with new contract
-        L2PriceFeedUsdtWithoutRoundsV2Mock l2PriceFeedV2 = L2PriceFeedUsdtWithoutRoundsV2Mock(address(l2PriceFeed));
+        // wrap L2PriceFeedWithoutRounds proxy with new contract
+        L2PriceFeedWithoutRoundsV2Mock l2PriceFeedV2 = L2PriceFeedWithoutRoundsV2Mock(address(l2PriceFeed));
 
         // check if the upgrade was successful and the variables are the same
         assertEq(l2PriceFeedV2.decimals(), 8);
@@ -143,7 +138,7 @@ contract L2PriceFeedUsdtWithoutRoundsTest is Test {
         assertEq(l2PriceFeedV2.getDataFeedId(), bytes32("USDT"));
         assertEq(address(l2PriceFeedV2.getPriceFeedAdapter()), priceFeedAdapter);
 
-        // version of L2PriceFeedUsdtWithoutRounds set to v2.0.0
+        // version of L2PriceFeedWithoutRounds set to v2.0.0
         assertEq(l2PriceFeedV2.testVersion(), "v2.0.0");
 
         // new function introduced
