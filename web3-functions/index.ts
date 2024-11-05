@@ -18,7 +18,7 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
 
   const provider = multiChainProvider.default();
 
-  const oracleAddressPrimaryProd = "0x1038999DCf0A302Cc8Eed72fAeCbf0eEBfC476b0";
+  const oracleAddressPrimaryProd = "0x858B9Ba5729C599ED12513E7000f0F316b58Afb5";
   const oraclePrimaryProd = new Contract(oracleAddressPrimaryProd, ORACLE_ABI, provider);
 
   const dataFeedIdEth = formatBytes32String("ETH");
@@ -38,10 +38,10 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
   // Retrieve stored & live prices
   const decimals = BigNumber.from(8);
   const { livePrices, liveTimestamp } = await wrappedOraclePrimaryProd.getLivePrice([dataFeedIdEth, dataFeedIdUsdt]);
-  const liveEthPrice: BigNumber = livePrices[0];
-  const liveUsdtPrice: BigNumber = livePrices[1];
-  const storedEthPrice: BigNumber = await wrappedOraclePrimaryProd.getValueForDataFeed(dataFeedIdEth);
-  const storedUsdtPrice: BigNumber = await wrappedOraclePrimaryProd.getValueForDataFeed(dataFeedIdUsdt);
+  const liveEthPrice: BigNumber = livePrices === undefined ? BigNumber.from(0) : livePrices[0];
+  const liveUsdtPrice: BigNumber = livePrices === undefined ? BigNumber.from(0) : livePrices[1];
+  const storedEthPrice: BigNumber = await wrappedOraclePrimaryProd.getValueForDataFeed(dataFeedIdEth).catch(() => BigNumber.from(0));
+  const storedUsdtPrice: BigNumber = await wrappedOraclePrimaryProd.getValueForDataFeed(dataFeedIdUsdt).catch(() => BigNumber.from(0));
   console.log(`Live ETH price: ${liveEthPrice.toString()}`);
   console.log(`Live USDT price: ${liveUsdtPrice.toString()}`);
   console.log(`Stored ETH price: ${storedEthPrice.toString()}`);
