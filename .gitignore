@@ -25,3 +25,7 @@ mutation_campaign
 crytic-export/combined_solc.json
 test/fuzzing/coverage/
 test/fuzzing/covered.*
+
+# Web3 Functions
+node_modules
+.tmp
