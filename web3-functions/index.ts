@@ -37,7 +37,9 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
 
   // Retrieve stored & live prices
   const decimals = BigNumber.from(8);
-  const { livePrices, liveTimestamp } = await wrappedOraclePrimaryProd.getLivePrice([dataFeedIdEth, dataFeedIdUsdt]);
+  const { data: data1 } = await wrappedOraclePrimaryProd.populateTransaction.getLivePrice([dataFeedIdEth, dataFeedIdUsdt]);
+  console.log(`Live data: ${data1}`);
+  const { livePrices, liveTimestamp } = data1 as any;
   const liveEthPrice: BigNumber = livePrices === undefined ? BigNumber.from(0) : livePrices[0];
   const liveUsdtPrice: BigNumber = livePrices === undefined ? BigNumber.from(0) : livePrices[1];
   const storedEthPrice: BigNumber = await wrappedOraclePrimaryProd.getValueForDataFeed(dataFeedIdEth).catch(() => BigNumber.from(0));
