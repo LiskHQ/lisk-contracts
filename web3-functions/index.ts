@@ -3,64 +3,238 @@ import {
   Web3FunctionContext,
 } from "@gelatonetwork/web3-functions-sdk";
 import { BigNumber, Contract } from "ethers";
-import { formatBytes32String } from "ethers/lib/utils";
+import { arrayify, toUtf8String, formatBytes32String } from "ethers/lib/utils";
 import { WrapperBuilder } from "@redstone-finance/evm-connector";
 
 const ORACLE_ABI = [
   "function updateDataFeedsValuesPartial(bytes32[]) public",
-  "function getValueForDataFeed(bytes32) public view returns (uint256)",
-  "function getDataTimestampFromLatestUpdate(bytes32) external view returns (uint256)",
+  "function getLastUpdateDetails(bytes32) public view returns (uint256, uint256, uint256)",
   "function getLivePrice(bytes32[]) public view returns (uint256[], uint256)",
 ];
+
+const redstone = require("redstone-protocol");
+
+type DataFeed = {
+  symbol: string;
+  id: string;
+  livePrice: BigNumber;
+  timestamp: number;
+  storedPrice: BigNumber;
+  storedTimestamp: number;
+};
 
 Web3Function.onRun(async (context: Web3FunctionContext) => {
   const { userArgs, multiChainProvider } = context;
 
   const provider = multiChainProvider.default();
 
-  const oracleAddressPrimaryProd = "0x858B9Ba5729C599ED12513E7000f0F316b58Afb5";
-  const oraclePrimaryProd = new Contract(oracleAddressPrimaryProd, ORACLE_ABI, provider);
+  const dataServiceId = userArgs.dataServiceId as string;
+  const dataFeedIdsString = userArgs.symbols as string[];
+  const dataFeedIdsBytes32 = dataFeedIdsString.map((id) =>
+    formatBytes32String(id)
+  );
+  const oracleAddress = userArgs.oracleAddress as string;
 
-  const dataFeedIdEth = formatBytes32String("ETH");
-  const dataFeedIdUsdt = formatBytes32String("USDT");
+  const oracle = new Contract(oracleAddress, ORACLE_ABI, provider);
+
+  let dataFeedIds = new Map<string, DataFeed>();
+  for (const id of dataFeedIdsString) {
+    dataFeedIds.set(id, {
+      symbol: id,
+      id: formatBytes32String(id),
+      livePrice: BigNumber.from(0),
+      timestamp: 0,
+      storedPrice: BigNumber.from(0),
+      storedTimestamp: 0,
+    });
+  }
+  //console.log("Data feed ids: ", dataFeedIds);
 
   // Wrap contract with redstone data service
-  const wrappedOraclePrimaryProd = WrapperBuilder.wrap(oraclePrimaryProd).usingDataService(
-    {
-      dataServiceId: "redstone-primary-prod",
-      uniqueSignersCount: 2,
-      dataFeeds: ["ETH", "USDT"],
-      disablePayloadsDryRun: true,
-    },
-    ["https://oracle-gateway-1.a.redstone.finance"]
-  );
+  var wrappedOraclePrimaryProd;
+  switch (dataServiceId) {
+    case "redstone-primary-prod":
+      wrappedOraclePrimaryProd = WrapperBuilder.wrap(oracle).usingDataService(
+        {
+          dataServiceId: "redstone-primary-prod",
+          uniqueSignersCount: 2,
+          dataFeeds: dataFeedIdsString,
+          disablePayloadsDryRun: true,
+        },
+        ["https://oracle-gateway-1.a.redstone.finance"]
+      );
+      break;
+    case "redstone-main-demo":
+      wrappedOraclePrimaryProd = WrapperBuilder.wrap(oracle).usingDataService(
+        {
+          dataServiceId: "redstone-main-demo",
+          uniqueSignersCount: 1,
+          dataFeeds: dataFeedIdsString,
+          disablePayloadsDryRun: true,
+        },
+        ["https://d33trozg86ya9x.cloudfront.net"]
+      );
+      break;
+    default:
+      return {
+        canExec: false,
+        message: `Data service id not found: ${dataServiceId}`,
+      };
+  }
 
   // Retrieve stored & live prices
-  const decimals = BigNumber.from(8);
-  const { data: data1 } = await wrappedOraclePrimaryProd.populateTransaction.getLivePrice([dataFeedIdEth, dataFeedIdUsdt]);
-  console.log(`Live data: ${data1}`);
-  const { livePrices, liveTimestamp } = data1 as any;
-  const liveEthPrice: BigNumber = livePrices === undefined ? BigNumber.from(0) : livePrices[0];
-  const liveUsdtPrice: BigNumber = livePrices === undefined ? BigNumber.from(0) : livePrices[1];
-  const storedEthPrice: BigNumber = await wrappedOraclePrimaryProd.getValueForDataFeed(dataFeedIdEth).catch(() => BigNumber.from(0));
-  const storedUsdtPrice: BigNumber = await wrappedOraclePrimaryProd.getValueForDataFeed(dataFeedIdUsdt).catch(() => BigNumber.from(0));
-  console.log(`Live ETH price: ${liveEthPrice.toString()}`);
-  console.log(`Live USDT price: ${liveUsdtPrice.toString()}`);
-  console.log(`Stored ETH price: ${storedEthPrice.toString()}`);
-  console.log(`Stored USDT price: ${storedUsdtPrice.toString()}`);
+  var { data } =
+    await wrappedOraclePrimaryProd.populateTransaction.getLivePrice(
+      dataFeedIdsBytes32
+    );
+  const txCalldataBytes = arrayify(String(data));
+  const parsingResult = redstone.RedstonePayload.parse(txCalldataBytes);
 
-  // Check price deviation
-  const priceDeviationEth = computePriceDeviation(liveEthPrice, storedEthPrice, decimals);
-  const deviationPrct = (priceDeviationEth.toNumber() / 10 ** 8) * 100;
-  console.log(`Deviation: ${deviationPrct.toFixed(2)}%`);
+  /*console.log(
+    "Unsigned metadata: ",
+    toUtf8String(parsingResult.unsignedMetadata)
+  );
+  console.log("Data packages count: ", parsingResult.signedDataPackages.length);
+  console.log(
+    "------------------------------------------------------------------------"
+  );*/
 
-  // Check update time interval
-  const currentTimestamp = Date.now();
-  const timeElapsed = (currentTimestamp - liveTimestamp) / (1000 * 60 * 60)
+  let dataPackageIndex = 0;
+  for (const signedDataPackage of parsingResult.signedDataPackages) {
+    /*console.log(
+      "------------------------------------------------------------------------"
+    );
+    console.log(`Data package: ${dataPackageIndex}`);
+    console.log(
+      `Timestamp: ${signedDataPackage.dataPackage.timestampMilliseconds}`
+    );
+    console.log(
+      `Date and time: ${new Date(
+        signedDataPackage.dataPackage.timestampMilliseconds
+      ).toUTCString()}`
+    );
+    console.log("Signer address: ", signedDataPackage.recoverSignerAddress());
+    console.log(
+      "Data points count: ",
+      signedDataPackage.dataPackage.dataPoints.length
+    );
+    console.log(
+      "Data points symbols: ",
+      signedDataPackage.dataPackage.dataPoints.map((dp) => dp.dataFeedId)
+    );
+    console.log(
+      "Data points values: ",
+      signedDataPackage.dataPackage.dataPoints.map((dp) =>
+        BigNumber.from(dp.value).toNumber()
+      )
+    );*/
+
+    let dataFeed = dataFeedIds.get(
+      signedDataPackage.dataPackage.dataPoints[0].dataFeedId
+    );
+
+    if (
+      dataFeed != undefined &&
+      dataFeed.symbol === signedDataPackage.dataPackage.dataPoints[0].dataFeedId
+    ) {
+      if (dataFeed.timestamp === 0) {
+        dataFeed.livePrice = BigNumber.from(
+          signedDataPackage.dataPackage.dataPoints[0].value
+        );
+        dataFeed.timestamp =
+          signedDataPackage.dataPackage.timestampMilliseconds;
+      }
+    }
+    //console.log("Data feed: ", dataFeed);
+    dataPackageIndex++;
+  }
+
+  // Check if all data feeds are present
+  for (const dataFeed of dataFeedIds.values()) {
+    if (dataFeed.timestamp === 0 || dataFeed.livePrice.eq(0)) {
+      console.log("Data feed not found: ", dataFeed);
+      return {
+        canExec: false,
+        message: `Data feed not found: ${dataFeed.symbol}`,
+      };
+    }
+  }
+  console.log(
+    "------------------------------------------------------------------------"
+  );
+
+  // Get stored prices and timestamps from the blockchain
+  for (const dataFeed of dataFeedIds.values()) {
+    [dataFeed.storedTimestamp, , dataFeed.storedPrice] =
+      await wrappedOraclePrimaryProd
+        .getLastUpdateDetails(dataFeed.id)
+        .catch(() => [BigNumber.from(0), 0, 0]);
+  }
+  // And print them out
+  console.log("Stored prices and timestamps:");
+  for (const dataFeed of dataFeedIds.values()) {
+    console.log(
+      `Live ${dataFeed.symbol} price: ${dataFeed.livePrice.toString()}`
+    );
+    console.log(
+      `Stored ${dataFeed.symbol} price: ${dataFeed.storedPrice.toString()}`
+    );
+  }
+  console.log(
+    "------------------------------------------------------------------------"
+  );
+
+  // Check price deviation and create an array for price feeds which needs to be updated
+  const decimals = 8;
+  var priceFeedIdsToUpdate: string[] = [];
+  console.log("Price deviations and time elapsed since last update:");
+  console.log(
+    "------------------------------------------------------------------------"
+  );
+  for (const dataFeed of dataFeedIds.values()) {
+    const priceDeviation = computePriceDeviation(
+      dataFeed.livePrice,
+      dataFeed.storedPrice,
+      decimals
+    );
+    console.log(
+      `Price deviation for ${dataFeed.symbol}: ${priceDeviation.toString()}`
+    );
+    const deviationPrct = (priceDeviation.toNumber() / 10 ** decimals) * 100;
+    console.log(`Deviation in %: ${deviationPrct.toFixed(2)}%`);
+    console.log(
+      "------------------------------------------------------------------------"
+    );
+
+    // Check update time interval
+    const currentTimestamp = Date.now();
+    const timeElapsed =
+      (currentTimestamp - dataFeed.storedTimestamp) / (1000 * 60 * 60);
+    console.log(
+      `Current timestamp for ${dataFeed.symbol}: ${currentTimestamp}`
+    );
+    console.log(
+      `Stored timestamp for ${dataFeed.symbol}: ${dataFeed.storedTimestamp}`
+    );
+    console.log(
+      `Time elapsed since last update for ${dataFeed.symbol} in hours: ${timeElapsed}`
+    );
+    console.log(
+      "------------------------------------------------------------------------"
+    );
+
+    // Only update price if deviation is above 0.5% or last update is more than 6 hours ago
+    const minDeviation = 0.5;
+    if (deviationPrct >= minDeviation || timeElapsed > 6) {
+      priceFeedIdsToUpdate.push(dataFeed.id);
+    }
+  }
+
+  // Print out the price feeds which needs to be updated as symbols
+  console.log("Price feeds to update: ", priceFeedIdsToUpdate);
 
   // Only update price if deviation is above 0.5% or last update is more than 6 hours ago
-  const minDeviation = 0.5;
-  if (deviationPrct < minDeviation && timeElapsed <= 6) {
+  if (priceFeedIdsToUpdate.length === 0) {
     return {
       canExec: false,
       message: `No update: price deviation too small or time elapsed since last update is less than 6 hours`,
@@ -68,31 +242,38 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
   }
 
   // Craft transaction to update the price on-chain
-  console.log(`Start price update for ETH`);
-  const { data } = await wrappedOraclePrimaryProd.populateTransaction.updateDataFeedsValuesPartial(
-    [dataFeedIdEth]
-  );
-  console.log(`Stop price update`);
-  console.log(`Data: ${data}`);
+  console.log("Updating price feeds...");
+  var { data } =
+    await wrappedOraclePrimaryProd.populateTransaction.updateDataFeedsValuesPartial(
+      priceFeedIdsToUpdate
+    );
+  console.log(`Data received: ${data}`);
 
   return {
     canExec: true,
-    callData: [{ to: oracleAddressPrimaryProd, data: data as string }],
+    callData: [{ to: oracleAddress, data: data as string }],
   };
 });
 
 function computePriceDeviation(
   newPrice: BigNumber,
   oldPrice: BigNumber,
-  decimals: BigNumber
+  decimals: number
 ) {
   const zero = BigNumber.from(0);
-  const ten = BigNumber.from(10);
+  const one = BigNumber.from(1);
+
   if (zero.eq(oldPrice)) {
-    return ten.mul(decimals);
+    return one.mul(10 ** decimals);
   } else if (newPrice.gt(oldPrice)) {
-    return ((newPrice.sub(oldPrice)).mul(ten).mul(decimals)).div(oldPrice);
+    return newPrice
+      .sub(oldPrice)
+      .mul(10 ** decimals)
+      .div(oldPrice);
   } else {
-    return ((oldPrice.sub(newPrice)).mul(ten).mul(decimals)).div(oldPrice);
+    return oldPrice
+      .sub(newPrice)
+      .mul(10 ** decimals)
+      .div(oldPrice);
   }
 }

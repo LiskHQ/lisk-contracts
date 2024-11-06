@@ -4,7 +4,8 @@
   "memory": 128,
   "timeout": 30,
   "userArgs": {
-    "currency": "string",
+    "dataServiceId": "string",
+    "symbols": "string[]",
     "oracleAddress": "string"
   }
 }
