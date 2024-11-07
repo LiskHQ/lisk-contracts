@@ -96,39 +96,12 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
 
   debugLog("Unsigned metadata: ", toUtf8String(parsingResult.unsignedMetadata));
   debugLog("Data packages count: ", parsingResult.signedDataPackages.length);
-  debugLog(
-    "------------------------------------------------------------------------"
-  );
+  debugLog(getDashLine());
 
   let dataPackageIndex = 0;
   for (const signedDataPackage of parsingResult.signedDataPackages) {
-    debugLog(
-      "------------------------------------------------------------------------"
-    );
-    debugLog(`Data package: ${dataPackageIndex}`);
-    debugLog(
-      `Timestamp: ${signedDataPackage.dataPackage.timestampMilliseconds}`
-    );
-    debugLog(
-      `Date and time: ${new Date(
-        signedDataPackage.dataPackage.timestampMilliseconds
-      ).toUTCString()}`
-    );
-    debugLog("Signer address: ", signedDataPackage.recoverSignerAddress());
-    debugLog(
-      "Data points count: ",
-      signedDataPackage.dataPackage.dataPoints.length
-    );
-    debugLog(
-      "Data points symbols: ",
-      signedDataPackage.dataPackage.dataPoints.map((dp) => dp.dataFeedId)
-    );
-    debugLog(
-      "Data points values: ",
-      signedDataPackage.dataPackage.dataPoints.map((dp) =>
-        BigNumber.from(dp.value).toNumber()
-      )
-    );
+    debugLog(getDashLine());
+    printSignedDataPackage(dataPackageIndex, signedDataPackage);
 
     let dataFeed = dataFeedIds.get(
       signedDataPackage.dataPackage.dataPoints[0].dataFeedId
@@ -160,9 +133,7 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
       };
     }
   }
-  debugLog(
-    "------------------------------------------------------------------------"
-  );
+  debugLog(getDashLine());
 
   // Get stored prices and timestamps from the blockchain
   for (const dataFeed of dataFeedIds.values()) {
@@ -173,25 +144,14 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
   }
   // And print them out
   debugLog("Stored prices and timestamps:");
-  for (const dataFeed of dataFeedIds.values()) {
-    console.log(
-      `Live ${dataFeed.symbol} price: ${dataFeed.livePrice.toString()}`
-    );
-    console.log(
-      `Stored ${dataFeed.symbol} price: ${dataFeed.storedPrice.toString()}`
-    );
-  }
-  console.log(
-    "------------------------------------------------------------------------"
-  );
+  printPrices(dataFeedIds);
+  console.log(getDashLine());
 
   // Check price deviation and create an array for price feeds which needs to be updated
   const decimals = 8;
   let priceFeedIdsToUpdate: string[] = [];
   console.log("Price deviations and time elapsed since last update:");
-  console.log(
-    "------------------------------------------------------------------------"
-  );
+  console.log(getDashLine());
   for (const dataFeed of dataFeedIds.values()) {
     const priceDeviation = computePriceDeviation(
       dataFeed.livePrice,
@@ -203,26 +163,14 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
     );
     const deviationPrct = (priceDeviation.toNumber() / 10 ** decimals) * 100;
     console.log(`Deviation in %: ${deviationPrct.toFixed(2)}%`);
-    debugLog(
-      "------------------------------------------------------------------------"
-    );
+    debugLog(getDashLine());
 
     // Check update time interval
     const currentTimestamp = Date.now();
     const timeElapsed =
       (currentTimestamp - dataFeed.storedTimestamp) / (1000 * 60 * 60);
-    console.log(
-      `Current timestamp for ${dataFeed.symbol}: ${currentTimestamp}`
-    );
-    console.log(
-      `Stored timestamp for ${dataFeed.symbol}: ${dataFeed.storedTimestamp}`
-    );
-    console.log(
-      `Time elapsed since last update for ${dataFeed.symbol} in hours: ${timeElapsed}`
-    );
-    console.log(
-      "------------------------------------------------------------------------"
-    );
+    printTImestamps(dataFeed, currentTimestamp, timeElapsed);
+    console.log(getDashLine());
 
     // Only update price if deviation is above 0.5% or last update is more than 6 hours ago
     if (deviationPrct >= MIN_DEVIATION || timeElapsed > 6) {
@@ -284,4 +232,61 @@ function conditionalLog(condition: boolean) {
   return (...args: any[]): void => {
     if (condition) console.log(...args);
   };
+}
+
+function printSignedDataPackage(
+  dataPackageIndex: number,
+  signedDataPackage: redstone.SignedDataPackage
+) {
+  debugLog(`Data package: ${dataPackageIndex}`);
+  debugLog(`Timestamp: ${signedDataPackage.dataPackage.timestampMilliseconds}`);
+  debugLog(
+    `Date and time: ${new Date(
+      signedDataPackage.dataPackage.timestampMilliseconds
+    ).toUTCString()}`
+  );
+  debugLog("Signer address: ", signedDataPackage.recoverSignerAddress());
+  debugLog(
+    "Data points count: ",
+    signedDataPackage.dataPackage.dataPoints.length
+  );
+  debugLog(
+    "Data points symbols: ",
+    signedDataPackage.dataPackage.dataPoints.map((dp) => dp.dataFeedId)
+  );
+  debugLog(
+    "Data points values: ",
+    signedDataPackage.dataPackage.dataPoints.map((dp) =>
+      BigNumber.from(dp.value).toNumber()
+    )
+  );
+}
+
+function printPrices(dataFeedIds: Map<string, DataFeed>) {
+  for (const dataFeed of dataFeedIds.values()) {
+    console.log(
+      `Live ${dataFeed.symbol} price: ${dataFeed.livePrice.toString()}`
+    );
+    console.log(
+      `Stored ${dataFeed.symbol} price: ${dataFeed.storedPrice.toString()}`
+    );
+  }
+}
+
+function printTImestamps(
+  dataFeed: DataFeed,
+  currentTimestamp: number,
+  timeElapsed: number
+) {
+  console.log(`Current timestamp for ${dataFeed.symbol}: ${currentTimestamp}`);
+  console.log(
+    `Stored timestamp for ${dataFeed.symbol}: ${dataFeed.storedTimestamp}`
+  );
+  console.log(
+    `Time elapsed since last update for ${dataFeed.symbol} in hours: ${timeElapsed}`
+  );
+}
+
+function getDashLine() {
+  return "------------------------------------------------------------------------";
 }
