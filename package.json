@@ -4,8 +4,8 @@
   "description": "Smart Oracle that pushes prices online every hour or when the price difference with the last price is greater or equal than 2%",
   "scripts": {
     "clean": "rm -rf node_modules",
-    "format": "prettier --write '*/**/*.*{js,json,md,ts}'",
-    "format:check": "prettier --check '*/**/*.*{js,json,md,ts}'",
+    "format": "prettier --write 'web3-functions/**/*.{js,json,md,ts}'",
+    "format:check": "prettier --check 'web3-functions/**/*.{js,json,md,ts}'",
     "lint": "eslint --cache . && yarn lint:sol",
     "lint:ts": "eslint -c .eslintrc.json --ext \"**/*.ts\" \"**/*.test.ts\"",
     "postinstall": "yarn husky install",

@@ -2,7 +2,7 @@ name: PR CI
 
 on:
   pull_request:
-    branches: [ main, development ]
+    branches: [ main, development, LISK-1155-Set-up-RedStone-Push-Oracle-contracts ]
 
 permissions:
   contents: read
@@ -34,6 +34,32 @@ jobs:
         uses: foundry-rs/foundry-toolchain@v1
         with:
           version: nightly
+
+      - name: Use Node.js 18
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install yarn
+        run: npm install --global yarn
+      
+      - name: Install dependencies
+        shell: bash
+        run: yarn --prefer-offline
+
+      - name: Check TypeScript files
+        if: ${{ contains(matrix.system.os, 'windows') == false }}
+        run: yarn format
+
+      - name: Check formatting for TypeScript files
+        if: ${{ contains(matrix.system.os, 'windows') == false }}
+        run: |
+          if [ -z "$(git status --untracked-files=no --porcelain)" ]; then
+            echo "All files formatted"
+          else
+            echo "Running format is required"
+            exit 1
+          fi
 
       - name: Check formatting
         if: ${{ contains(matrix.system.os, 'windows') == false }}
