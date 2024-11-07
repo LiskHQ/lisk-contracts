@@ -15,8 +15,8 @@ const ORACLE_ABI = [
 
 const MIN_DEVIATION = 0.5; // 0.5%
 
-const isDebugMode = false;
-const debugLog = conditionalLog(isDebugMode);
+const DEBUG_MODE = false;
+const debugLog = conditionalLog(DEBUG_MODE);
 
 interface DataFeed {
   symbol: string;
@@ -97,7 +97,6 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
   debugLog("Unsigned metadata: ", toUtf8String(parsingResult.unsignedMetadata));
   debugLog("Data packages count: ", parsingResult.signedDataPackages.length);
   debugLog(
-    isDebugMode,
     "------------------------------------------------------------------------"
   );
 
