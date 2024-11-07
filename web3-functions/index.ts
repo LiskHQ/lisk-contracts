@@ -5,6 +5,7 @@ import {
 import { BigNumber, Contract } from "ethers";
 import { arrayify, toUtf8String, formatBytes32String } from "ethers/lib/utils";
 import { WrapperBuilder } from "@redstone-finance/evm-connector";
+import * as redstone from "redstone-protocol";
 
 const ORACLE_ABI = [
   "function updateDataFeedsValuesPartial(bytes32[]) public",
@@ -12,18 +13,19 @@ const ORACLE_ABI = [
   "function getLivePrice(bytes32[]) public view returns (uint256[], uint256)",
 ];
 
-const redstone = require("redstone-protocol");
+const MIN_DEVIATION = 0.5; // 0.5%
 
-type DataFeed = {
+const isDebugMode = false;
+const debugLog = conditionalLog(isDebugMode);
+
+interface DataFeed {
   symbol: string;
   id: string;
   livePrice: BigNumber;
   timestamp: number;
   storedPrice: BigNumber;
   storedTimestamp: number;
-};
-
-const isDebugMode = false;
+}
 
 Web3Function.onRun(async (context: Web3FunctionContext) => {
   const { userArgs, multiChainProvider } = context;
@@ -50,10 +52,10 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
       storedTimestamp: 0,
     });
   }
-  conditionalLog(isDebugMode, "Data feed ids: ", dataFeedIds);
+  debugLog("Data feed ids: ", dataFeedIds);
 
   // Wrap contract with redstone data service
-  var wrappedOraclePrimaryProd;
+  let wrappedOraclePrimaryProd;
   switch (dataServiceId) {
     case "redstone-primary-prod":
       wrappedOraclePrimaryProd = WrapperBuilder.wrap(oracle).usingDataService(
@@ -85,62 +87,44 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
   }
 
   // Retrieve stored & live prices
-  var { data } =
+  const { data: livePriceData } =
     await wrappedOraclePrimaryProd.populateTransaction.getLivePrice(
       dataFeedIdsBytes32
     );
-  const txCalldataBytes = arrayify(String(data));
+  const txCalldataBytes = arrayify(String(livePriceData));
   const parsingResult = redstone.RedstonePayload.parse(txCalldataBytes);
 
-  conditionalLog(
-    isDebugMode,
-    "Unsigned metadata: ",
-    toUtf8String(parsingResult.unsignedMetadata)
-  );
-  conditionalLog(
-    isDebugMode,
-    "Data packages count: ",
-    parsingResult.signedDataPackages.length
-  );
-  conditionalLog(
+  debugLog("Unsigned metadata: ", toUtf8String(parsingResult.unsignedMetadata));
+  debugLog("Data packages count: ", parsingResult.signedDataPackages.length);
+  debugLog(
     isDebugMode,
     "------------------------------------------------------------------------"
   );
 
   let dataPackageIndex = 0;
   for (const signedDataPackage of parsingResult.signedDataPackages) {
-    conditionalLog(
-      isDebugMode,
+    debugLog(
       "------------------------------------------------------------------------"
     );
-    conditionalLog(isDebugMode, `Data package: ${dataPackageIndex}`);
-    conditionalLog(
-      isDebugMode,
+    debugLog(`Data package: ${dataPackageIndex}`);
+    debugLog(
       `Timestamp: ${signedDataPackage.dataPackage.timestampMilliseconds}`
     );
-    conditionalLog(
-      isDebugMode,
+    debugLog(
       `Date and time: ${new Date(
         signedDataPackage.dataPackage.timestampMilliseconds
       ).toUTCString()}`
     );
-    conditionalLog(
-      isDebugMode,
-      "Signer address: ",
-      signedDataPackage.recoverSignerAddress()
-    );
-    conditionalLog(
-      isDebugMode,
+    debugLog("Signer address: ", signedDataPackage.recoverSignerAddress());
+    debugLog(
       "Data points count: ",
       signedDataPackage.dataPackage.dataPoints.length
     );
-    conditionalLog(
-      isDebugMode,
+    debugLog(
       "Data points symbols: ",
       signedDataPackage.dataPackage.dataPoints.map((dp) => dp.dataFeedId)
     );
-    conditionalLog(
-      isDebugMode,
+    debugLog(
       "Data points values: ",
       signedDataPackage.dataPackage.dataPoints.map((dp) =>
         BigNumber.from(dp.value).toNumber()
@@ -163,7 +147,7 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
           signedDataPackage.dataPackage.timestampMilliseconds;
       }
     }
-    conditionalLog(isDebugMode, "Data feed: ", dataFeed);
+    debugLog("Data feed: ", dataFeed);
     dataPackageIndex++;
   }
 
@@ -177,8 +161,7 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
       };
     }
   }
-  conditionalLog(
-    isDebugMode,
+  debugLog(
     "------------------------------------------------------------------------"
   );
 
@@ -190,7 +173,7 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
         .catch(() => [BigNumber.from(0), 0, 0]);
   }
   // And print them out
-  conditionalLog(isDebugMode, "Stored prices and timestamps:");
+  debugLog("Stored prices and timestamps:");
   for (const dataFeed of dataFeedIds.values()) {
     console.log(
       `Live ${dataFeed.symbol} price: ${dataFeed.livePrice.toString()}`
@@ -205,7 +188,7 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
 
   // Check price deviation and create an array for price feeds which needs to be updated
   const decimals = 8;
-  var priceFeedIdsToUpdate: string[] = [];
+  let priceFeedIdsToUpdate: string[] = [];
   console.log("Price deviations and time elapsed since last update:");
   console.log(
     "------------------------------------------------------------------------"
@@ -221,8 +204,7 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
     );
     const deviationPrct = (priceDeviation.toNumber() / 10 ** decimals) * 100;
     console.log(`Deviation in %: ${deviationPrct.toFixed(2)}%`);
-    conditionalLog(
-      isDebugMode,
+    debugLog(
       "------------------------------------------------------------------------"
     );
 
@@ -244,8 +226,7 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
     );
 
     // Only update price if deviation is above 0.5% or last update is more than 6 hours ago
-    const minDeviation = 0.5;
-    if (deviationPrct >= minDeviation || timeElapsed > 6) {
+    if (deviationPrct >= MIN_DEVIATION || timeElapsed > 6) {
       priceFeedIdsToUpdate.push(dataFeed.id);
     }
   }
@@ -263,15 +244,17 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
 
   // Craft transaction to update the price on-chain
   console.log("Updating price feeds...");
-  var { data } =
+  const { data: updateDataFeedsPartialData } =
     await wrappedOraclePrimaryProd.populateTransaction.updateDataFeedsValuesPartial(
       priceFeedIdsToUpdate
     );
-  console.log(`Data received: ${data}`);
+  console.log(`Data received: ${updateDataFeedsPartialData}`);
 
   return {
     canExec: true,
-    callData: [{ to: oracleAddress, data: data as string }],
+    callData: [
+      { to: oracleAddress, data: updateDataFeedsPartialData as string },
+    ],
   };
 });
 
@@ -298,8 +281,8 @@ function computePriceDeviation(
   }
 }
 
-function conditionalLog(condition: boolean, ...args: any[]): void {
-  if (condition) {
-    console.log(...args);
-  }
+function conditionalLog(condition: boolean) {
+  return (...args: any[]): void => {
+    if (condition) console.log(...args);
+  };
 }
