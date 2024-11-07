@@ -16,6 +16,8 @@ const ORACLE_ABI = [
 const MIN_DEVIATION = 0.5; // 0.5%
 const MIN_TIME_ELAPSED = 6; // 6 hours
 const DECIMALS = 8; // price feed precision
+const zero = BigNumber.from(0);
+const one = BigNumber.from(1);
 
 const DEBUG_MODE = false;
 const debugLog = conditionalLog(DEBUG_MODE);
@@ -24,7 +26,6 @@ interface DataFeed {
   symbol: string;
   id: string;
   livePrice: BigNumber;
-  timestamp: number;
   storedPrice: BigNumber;
   storedTimestamp: number;
 }
@@ -49,7 +50,6 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
       symbol: id,
       id: formatBytes32String(id),
       livePrice: BigNumber.from(0),
-      timestamp: 0,
       storedPrice: BigNumber.from(0),
       storedTimestamp: 0,
     });
@@ -113,12 +113,10 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
       dataFeed != undefined &&
       dataFeed.symbol === signedDataPackage.dataPackage.dataPoints[0].dataFeedId
     ) {
-      if (dataFeed.timestamp === 0) {
+      if (dataFeed.livePrice.eq(zero)) {
         dataFeed.livePrice = BigNumber.from(
           signedDataPackage.dataPackage.dataPoints[0].value
         );
-        dataFeed.timestamp =
-          signedDataPackage.dataPackage.timestampMilliseconds;
       }
     }
     debugLog("Data feed: ", dataFeed);
@@ -127,7 +125,7 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
 
   // Check if all data feeds are present
   for (const dataFeed of dataFeedIds.values()) {
-    if (dataFeed.timestamp === 0 || dataFeed.livePrice.eq(0)) {
+    if (dataFeed.livePrice.eq(zero)) {
       console.log("Data feed not found: ", dataFeed);
       return {
         canExec: false,
@@ -174,7 +172,7 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
     console.log(getDashLine());
 
     // Only update price if deviation is above 0.5% or last update is more than 6 hours ago
-    if (deviationPrct >= MIN_DEVIATION || timeElapsed > MIN_TIME_ELAPSED) {
+    if (deviationPrct >= MIN_DEVIATION || timeElapsed >= MIN_TIME_ELAPSED) {
       priceFeedIdsToUpdate.push(dataFeed.id);
     }
   }
@@ -211,9 +209,6 @@ function computePriceDeviation(
   oldPrice: BigNumber,
   decimals: number
 ) {
-  const zero = BigNumber.from(0);
-  const one = BigNumber.from(1);
-
   if (zero.eq(oldPrice)) {
     return one.mul(10 ** decimals);
   } else if (newPrice.gt(oldPrice)) {
