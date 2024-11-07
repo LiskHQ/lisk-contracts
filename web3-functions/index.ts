@@ -23,6 +23,8 @@ type DataFeed = {
   storedTimestamp: number;
 };
 
+const isDebugMode = false;
+
 Web3Function.onRun(async (context: Web3FunctionContext) => {
   const { userArgs, multiChainProvider } = context;
 
@@ -48,7 +50,7 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
       storedTimestamp: 0,
     });
   }
-  //console.log("Data feed ids: ", dataFeedIds);
+  conditionalLog(isDebugMode, "Data feed ids: ", dataFeedIds);
 
   // Wrap contract with redstone data service
   var wrappedOraclePrimaryProd;
@@ -90,44 +92,60 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
   const txCalldataBytes = arrayify(String(data));
   const parsingResult = redstone.RedstonePayload.parse(txCalldataBytes);
 
-  /*console.log(
+  conditionalLog(
+    isDebugMode,
     "Unsigned metadata: ",
     toUtf8String(parsingResult.unsignedMetadata)
   );
-  console.log("Data packages count: ", parsingResult.signedDataPackages.length);
-  console.log(
+  conditionalLog(
+    isDebugMode,
+    "Data packages count: ",
+    parsingResult.signedDataPackages.length
+  );
+  conditionalLog(
+    isDebugMode,
     "------------------------------------------------------------------------"
-  );*/
+  );
 
   let dataPackageIndex = 0;
   for (const signedDataPackage of parsingResult.signedDataPackages) {
-    /*console.log(
+    conditionalLog(
+      isDebugMode,
       "------------------------------------------------------------------------"
     );
-    console.log(`Data package: ${dataPackageIndex}`);
-    console.log(
+    conditionalLog(isDebugMode, `Data package: ${dataPackageIndex}`);
+    conditionalLog(
+      isDebugMode,
       `Timestamp: ${signedDataPackage.dataPackage.timestampMilliseconds}`
     );
-    console.log(
+    conditionalLog(
+      isDebugMode,
       `Date and time: ${new Date(
         signedDataPackage.dataPackage.timestampMilliseconds
       ).toUTCString()}`
     );
-    console.log("Signer address: ", signedDataPackage.recoverSignerAddress());
-    console.log(
+    conditionalLog(
+      isDebugMode,
+      "Signer address: ",
+      signedDataPackage.recoverSignerAddress()
+    );
+    conditionalLog(
+      isDebugMode,
       "Data points count: ",
       signedDataPackage.dataPackage.dataPoints.length
     );
-    console.log(
+    conditionalLog(
+      isDebugMode,
       "Data points symbols: ",
       signedDataPackage.dataPackage.dataPoints.map((dp) => dp.dataFeedId)
     );
-    console.log(
+    conditionalLog(
+      isDebugMode,
       "Data points values: ",
       signedDataPackage.dataPackage.dataPoints.map((dp) =>
         BigNumber.from(dp.value).toNumber()
       )
-    );*/
+    );
 
     let dataFeed = dataFeedIds.get(
       signedDataPackage.dataPackage.dataPoints[0].dataFeedId
@@ -145,7 +163,7 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
           signedDataPackage.dataPackage.timestampMilliseconds;
       }
     }
-    //console.log("Data feed: ", dataFeed);
+    conditionalLog(isDebugMode, "Data feed: ", dataFeed);
     dataPackageIndex++;
   }
 
@@ -159,7 +177,8 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
       };
     }
   }
-  console.log(
+  conditionalLog(
+    isDebugMode,
     "------------------------------------------------------------------------"
   );
 
@@ -171,7 +190,7 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
         .catch(() => [BigNumber.from(0), 0, 0]);
   }
   // And print them out
-  console.log("Stored prices and timestamps:");
+  conditionalLog(isDebugMode, "Stored prices and timestamps:");
   for (const dataFeed of dataFeedIds.values()) {
     console.log(
       `Live ${dataFeed.symbol} price: ${dataFeed.livePrice.toString()}`
@@ -202,7 +221,8 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
     );
     const deviationPrct = (priceDeviation.toNumber() / 10 ** decimals) * 100;
     console.log(`Deviation in %: ${deviationPrct.toFixed(2)}%`);
-    console.log(
+    conditionalLog(
+      isDebugMode,
       "------------------------------------------------------------------------"
     );
 
@@ -275,5 +295,11 @@ function computePriceDeviation(
       .sub(newPrice)
       .mul(10 ** decimals)
       .div(oldPrice);
+  }
+}
+
+function conditionalLog(condition: boolean, ...args: any[]): void {
+  if (condition) {
+    console.log(...args);
   }
 }
