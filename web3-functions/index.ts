@@ -10,7 +10,7 @@ import * as redstone from "redstone-protocol";
 const ORACLE_ABI = [
   "function updateDataFeedsValuesPartial(bytes32[]) public",
   "function getLastUpdateDetails(bytes32) public view returns (uint256, uint256, uint256)",
-  "function getLivePrice(bytes32[]) public view returns (uint256[], uint256)",
+  "function getLivePricesAndTimestamp(bytes32[]) public view returns (uint256[], uint256)",
 ];
 
 const MIN_DEVIATION = 0.5; // 0.5%
@@ -90,7 +90,7 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
 
   // Retrieve stored & live prices
   const { data: livePriceData } =
-    await wrappedOraclePrimaryProd.populateTransaction.getLivePrice(
+    await wrappedOraclePrimaryProd.populateTransaction.getLivePricesAndTimestamp(
       dataFeedIdsBytes32
     );
   const txCalldataBytes = arrayify(String(livePriceData));
