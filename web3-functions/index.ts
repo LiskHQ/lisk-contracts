@@ -14,6 +14,8 @@ const ORACLE_ABI = [
 ];
 
 const MIN_DEVIATION = 0.5; // 0.5%
+const MIN_TIME_ELAPSED = 6; // 6 hours
+const DECIMALS = 8; // price feed precision
 
 const DEBUG_MODE = false;
 const debugLog = conditionalLog(DEBUG_MODE);
@@ -148,7 +150,6 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
   console.log(getDashLine());
 
   // Check price deviation and create an array for price feeds which needs to be updated
-  const decimals = 8;
   let priceFeedIdsToUpdate: string[] = [];
   console.log("Price deviations and time elapsed since last update:");
   console.log(getDashLine());
@@ -156,12 +157,12 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
     const priceDeviation = computePriceDeviation(
       dataFeed.livePrice,
       dataFeed.storedPrice,
-      decimals
+      DECIMALS
     );
     console.log(
       `Price deviation for ${dataFeed.symbol}: ${priceDeviation.toString()}`
     );
-    const deviationPrct = (priceDeviation.toNumber() / 10 ** decimals) * 100;
+    const deviationPrct = (priceDeviation.toNumber() / 10 ** DECIMALS) * 100;
     console.log(`Deviation in %: ${deviationPrct.toFixed(2)}%`);
     debugLog(getDashLine());
 
@@ -169,11 +170,11 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
     const currentTimestamp = Date.now();
     const timeElapsed =
       (currentTimestamp - dataFeed.storedTimestamp) / (1000 * 60 * 60);
-    printTImestamps(dataFeed, currentTimestamp, timeElapsed);
+    printTimestamps(dataFeed, currentTimestamp, timeElapsed);
     console.log(getDashLine());
 
     // Only update price if deviation is above 0.5% or last update is more than 6 hours ago
-    if (deviationPrct >= MIN_DEVIATION || timeElapsed > 6) {
+    if (deviationPrct >= MIN_DEVIATION || timeElapsed > MIN_TIME_ELAPSED) {
       priceFeedIdsToUpdate.push(dataFeed.id);
     }
   }
@@ -273,7 +274,7 @@ function printPrices(dataFeedIds: Map<string, DataFeed>) {
   }
 }
 
-function printTImestamps(
+function printTimestamps(
   dataFeed: DataFeed,
   currentTimestamp: number,
   timeElapsed: number
