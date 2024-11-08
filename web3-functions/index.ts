@@ -67,7 +67,10 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
           dataFeeds: dataFeedIdsString,
           disablePayloadsDryRun: true,
         },
-        ["https://oracle-gateway-1.a.redstone.finance"]
+        [
+          "https://oracle-gateway-1.a.redstone.finance",
+          "https://oracle-gateway-2.a.redstone.finance",
+        ]
       );
       break;
     case "redstone-main-demo":
@@ -78,7 +81,10 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
           dataFeeds: dataFeedIdsString,
           disablePayloadsDryRun: true,
         },
-        ["https://d33trozg86ya9x.cloudfront.net"]
+        [
+          "https://oracle-gateway-1.b.redstone.finance",
+          "https://d33trozg86ya9x.cloudfront.net",
+        ]
       );
       break;
     default:
