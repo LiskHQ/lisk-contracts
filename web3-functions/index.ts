@@ -57,10 +57,10 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
   debugLog("Data feed ids: ", dataFeedIds);
 
   // Wrap contract with redstone data service
-  let wrappedOraclePrimaryProd;
+  let wrappedOracle;
   switch (dataServiceId) {
     case "redstone-primary-prod":
-      wrappedOraclePrimaryProd = WrapperBuilder.wrap(oracle).usingDataService(
+      wrappedOracle = WrapperBuilder.wrap(oracle).usingDataService(
         {
           dataServiceId: "redstone-primary-prod",
           uniqueSignersCount: 2,
@@ -71,7 +71,7 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
       );
       break;
     case "redstone-main-demo":
-      wrappedOraclePrimaryProd = WrapperBuilder.wrap(oracle).usingDataService(
+      wrappedOracle = WrapperBuilder.wrap(oracle).usingDataService(
         {
           dataServiceId: "redstone-main-demo",
           uniqueSignersCount: 1,
@@ -88,9 +88,9 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
       };
   }
 
-  // Retrieve stored & live prices
+  // Retrieve live prices
   const { data: livePriceData } =
-    await wrappedOraclePrimaryProd.populateTransaction.getLivePricesAndTimestamp(
+    await wrappedOracle.populateTransaction.getLivePricesAndTimestamp(
       dataFeedIdsBytes32
     );
   const txCalldataBytes = arrayify(String(livePriceData));
@@ -135,12 +135,11 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
   }
   debugLog(getDashLine());
 
-  // Get stored prices and timestamps from the blockchain
+  // Retrieve stored prices and timestamps from the blockchain
   for (const dataFeed of dataFeedIds.values()) {
-    [dataFeed.storedTimestamp, , dataFeed.storedPrice] =
-      await wrappedOraclePrimaryProd
-        .getLastUpdateDetails(dataFeed.id)
-        .catch(() => [BigNumber.from(0), 0, 0]);
+    [dataFeed.storedTimestamp, , dataFeed.storedPrice] = await wrappedOracle
+      .getLastUpdateDetails(dataFeed.id)
+      .catch(() => [BigNumber.from(0), 0, 0]);
   }
   // And print them out
   debugLog("Stored prices and timestamps:");
@@ -191,7 +190,7 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
   // Craft transaction to update the price on-chain
   console.log("Updating price feeds...");
   const { data: updateDataFeedsPartialData } =
-    await wrappedOraclePrimaryProd.populateTransaction.updateDataFeedsValuesPartial(
+    await wrappedOracle.populateTransaction.updateDataFeedsValuesPartial(
       priceFeedIdsToUpdate
     );
   console.log(`Data received: ${updateDataFeedsPartialData}`);
