@@ -44,7 +44,7 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
 
   const oracle = new Contract(oracleAddress, ORACLE_ABI, provider);
 
-  let dataFeedIds = new Map<string, DataFeed>();
+  const dataFeedIds = new Map<string, DataFeed>();
   for (const id of dataFeedIdsString) {
     dataFeedIds.set(id, {
       symbol: id,
@@ -111,13 +111,12 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
     debugLog(getDashLine());
     printSignedDataPackage(dataPackageIndex, signedDataPackage);
 
-    let dataFeed = dataFeedIds.get(
+    const dataFeed = dataFeedIds.get(
       signedDataPackage.dataPackage.dataPoints[0].dataFeedId
     );
 
     if (
-      dataFeed != undefined &&
-      dataFeed.symbol === signedDataPackage.dataPackage.dataPoints[0].dataFeedId
+      dataFeed != undefined
     ) {
       if (dataFeed.livePrice.eq(zero)) {
         dataFeed.livePrice = BigNumber.from(
@@ -153,7 +152,7 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
   console.log(getDashLine());
 
   // Check price deviation and create an array for price feeds which needs to be updated
-  let priceFeedIdsToUpdate: string[] = [];
+  const priceFeedIdsToUpdate: string[] = [];
   console.log("Price deviations and time elapsed since last update:");
   console.log(getDashLine());
   for (const dataFeed of dataFeedIds.values()) {
@@ -189,7 +188,7 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
   if (priceFeedIdsToUpdate.length === 0) {
     return {
       canExec: false,
-      message: `No update: price deviation too small or time elapsed since last update is less than 6 hours`,
+      message: `No update: price deviation less than ${MIN_DEVIATION.toFixed(2)}% or time elapsed since last update is less than ${MIN_TIME_ELAPSED} hours`,
     };
   }
 
