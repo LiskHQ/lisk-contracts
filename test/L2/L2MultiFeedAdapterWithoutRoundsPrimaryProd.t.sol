@@ -5,6 +5,7 @@ import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy
 import { OwnableUpgradeable } from "@openzeppelin-upgradeable/contracts/access/OwnableUpgradeable.sol";
 import { Test } from "forge-std/Test.sol";
 import { L2MultiFeedAdapterWithoutRoundsPrimaryProd } from "src/L2/L2MultiFeedAdapterWithoutRoundsPrimaryProd.sol";
+import { Constants } from "src/utils/Constants.sol";
 
 contract L2MultiFeedAdapterWithoutRoundsPrimaryProdV2Mock is L2MultiFeedAdapterWithoutRoundsPrimaryProd {
     string public testVersion;
@@ -18,7 +19,7 @@ contract L2MultiFeedAdapterWithoutRoundsPrimaryProdV2Mock is L2MultiFeedAdapterW
     }
 }
 
-contract L2MultiFeedAdapterWithoutRoundsPrimaryProdTest is Test {
+contract L2MultiFeedAdapterWithoutRoundsPrimaryProdTest is Test, Constants {
     L2MultiFeedAdapterWithoutRoundsPrimaryProd public l2Adapter;
     L2MultiFeedAdapterWithoutRoundsPrimaryProd public l2AdapterImplementation;
 
@@ -35,11 +36,11 @@ contract L2MultiFeedAdapterWithoutRoundsPrimaryProdTest is Test {
             )
         );
         assertEq(l2Adapter.getUniqueSignersThreshold(), 2);
-        assertEq(l2Adapter.getAuthorisedSignerIndex(0x8BB8F32Df04c8b654987DAaeD53D6B6091e3B774), 0);
-        assertEq(l2Adapter.getAuthorisedSignerIndex(0xdEB22f54738d54976C4c0fe5ce6d408E40d88499), 1);
-        assertEq(l2Adapter.getAuthorisedSignerIndex(0x51Ce04Be4b3E32572C4Ec9135221d0691Ba7d202), 2);
-        assertEq(l2Adapter.getAuthorisedSignerIndex(0xDD682daEC5A90dD295d14DA4b0bec9281017b5bE), 3);
-        assertEq(l2Adapter.getAuthorisedSignerIndex(0x9c5AE89C4Af6aA32cE58588DBaF90d18a855B6de), 4);
+        assertEq(l2Adapter.getAuthorisedSignerIndex(REDSTONE_PRIMARY_PROD_SIGNER_ADDRESS_1), 0);
+        assertEq(l2Adapter.getAuthorisedSignerIndex(REDSTONE_PRIMARY_PROD_SIGNER_ADDRESS_2), 1);
+        assertEq(l2Adapter.getAuthorisedSignerIndex(REDSTONE_PRIMARY_PROD_SIGNER_ADDRESS_3), 2);
+        assertEq(l2Adapter.getAuthorisedSignerIndex(REDSTONE_PRIMARY_PROD_SIGNER_ADDRESS_4), 3);
+        assertEq(l2Adapter.getAuthorisedSignerIndex(REDSTONE_PRIMARY_PROD_SIGNER_ADDRESS_5), 4);
     }
 
     function test_TransferOwnership() public {
@@ -122,11 +123,11 @@ contract L2MultiFeedAdapterWithoutRoundsPrimaryProdTest is Test {
 
         // signer threshold and signer index should remain the same
         assertEq(l2AdapterV2.getUniqueSignersThreshold(), 2);
-        assertEq(l2AdapterV2.getAuthorisedSignerIndex(0x8BB8F32Df04c8b654987DAaeD53D6B6091e3B774), 0);
-        assertEq(l2AdapterV2.getAuthorisedSignerIndex(0xdEB22f54738d54976C4c0fe5ce6d408E40d88499), 1);
-        assertEq(l2AdapterV2.getAuthorisedSignerIndex(0x51Ce04Be4b3E32572C4Ec9135221d0691Ba7d202), 2);
-        assertEq(l2AdapterV2.getAuthorisedSignerIndex(0xDD682daEC5A90dD295d14DA4b0bec9281017b5bE), 3);
-        assertEq(l2AdapterV2.getAuthorisedSignerIndex(0x9c5AE89C4Af6aA32cE58588DBaF90d18a855B6de), 4);
+        assertEq(l2AdapterV2.getAuthorisedSignerIndex(REDSTONE_PRIMARY_PROD_SIGNER_ADDRESS_1), 0);
+        assertEq(l2AdapterV2.getAuthorisedSignerIndex(REDSTONE_PRIMARY_PROD_SIGNER_ADDRESS_2), 1);
+        assertEq(l2AdapterV2.getAuthorisedSignerIndex(REDSTONE_PRIMARY_PROD_SIGNER_ADDRESS_3), 2);
+        assertEq(l2AdapterV2.getAuthorisedSignerIndex(REDSTONE_PRIMARY_PROD_SIGNER_ADDRESS_4), 3);
+        assertEq(l2AdapterV2.getAuthorisedSignerIndex(REDSTONE_PRIMARY_PROD_SIGNER_ADDRESS_5), 4);
 
         // version of L2MultiFeedAdapterWithoutRoundsPrimaryProd set to v2.0.0
         assertEq(l2AdapterV2.testVersion(), "v2.0.0");

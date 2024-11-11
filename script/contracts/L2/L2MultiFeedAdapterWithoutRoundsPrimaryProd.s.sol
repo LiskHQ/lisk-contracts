@@ -5,11 +5,12 @@ import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy
 import { Script, console2 } from "forge-std/Script.sol";
 import { L2MultiFeedAdapterWithoutRoundsPrimaryProd } from "src/L2/L2MultiFeedAdapterWithoutRoundsPrimaryProd.sol";
 import "script/contracts/Utils.sol";
+import "src/utils/Constants.sol";
 
 /// @title L2MultiFeedAdapterWithoutRoundsPrimaryProdScript - L2MultiFeedAdapterWithoutRoundsPrimaryProd deployment
 ///        script
 /// @notice This contract is used to deploy L2MultiFeedAdapterWithoutRoundsPrimaryProd contract.
-contract L2MultiFeedAdapterWithoutRoundsPrimaryProdScript is Script {
+contract L2MultiFeedAdapterWithoutRoundsPrimaryProdScript is Script, Constants {
     /// @notice Utils contract which provides functions to read and write JSON files containing L2 addresses.
     Utils utils;
 
@@ -60,11 +61,11 @@ contract L2MultiFeedAdapterWithoutRoundsPrimaryProdScript is Script {
         L2MultiFeedAdapterWithoutRoundsPrimaryProd l2Adapter =
             L2MultiFeedAdapterWithoutRoundsPrimaryProd(address(l2AdapterProxy));
         assert(l2Adapter.getUniqueSignersThreshold() == 2);
-        assert(l2Adapter.getAuthorisedSignerIndex(0x8BB8F32Df04c8b654987DAaeD53D6B6091e3B774) == 0);
-        assert(l2Adapter.getAuthorisedSignerIndex(0xdEB22f54738d54976C4c0fe5ce6d408E40d88499) == 1);
-        assert(l2Adapter.getAuthorisedSignerIndex(0x51Ce04Be4b3E32572C4Ec9135221d0691Ba7d202) == 2);
-        assert(l2Adapter.getAuthorisedSignerIndex(0xDD682daEC5A90dD295d14DA4b0bec9281017b5bE) == 3);
-        assert(l2Adapter.getAuthorisedSignerIndex(0x9c5AE89C4Af6aA32cE58588DBaF90d18a855B6de) == 4);
+        assert(l2Adapter.getAuthorisedSignerIndex(REDSTONE_PRIMARY_PROD_SIGNER_ADDRESS_1) == 0);
+        assert(l2Adapter.getAuthorisedSignerIndex(REDSTONE_PRIMARY_PROD_SIGNER_ADDRESS_2) == 1);
+        assert(l2Adapter.getAuthorisedSignerIndex(REDSTONE_PRIMARY_PROD_SIGNER_ADDRESS_3) == 2);
+        assert(l2Adapter.getAuthorisedSignerIndex(REDSTONE_PRIMARY_PROD_SIGNER_ADDRESS_4) == 3);
+        assert(l2Adapter.getAuthorisedSignerIndex(REDSTONE_PRIMARY_PROD_SIGNER_ADDRESS_5) == 4);
 
         // transfer ownership of L2MultiFeedAdapterWithoutRoundsPrimaryProd proxy; because of using
         // Ownable2StepUpgradeable contract, new owner has to accept ownership

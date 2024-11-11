@@ -5,11 +5,12 @@ import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy
 import { Script, console2 } from "forge-std/Script.sol";
 import { L2MultiFeedAdapterWithoutRoundsMainDemo } from "src/L2/L2MultiFeedAdapterWithoutRoundsMainDemo.sol";
 import "script/contracts/Utils.sol";
+import "src/utils/Constants.sol";
 
 /// @title L2MultiFeedAdapterWithoutRoundsMainDemoScript - L2MultiFeedAdapterWithoutRoundsMainDemo deployment
 ///        script
 /// @notice This contract is used to deploy L2MultiFeedAdapterWithoutRoundsMainDemo contract.
-contract L2MultiFeedAdapterWithoutRoundsMainDemoScript is Script {
+contract L2MultiFeedAdapterWithoutRoundsMainDemoScript is Script, Constants {
     /// @notice Utils contract which provides functions to read and write JSON files containing L2 addresses.
     Utils utils;
 
@@ -59,7 +60,7 @@ contract L2MultiFeedAdapterWithoutRoundsMainDemoScript is Script {
         L2MultiFeedAdapterWithoutRoundsMainDemo l2Adapter =
             L2MultiFeedAdapterWithoutRoundsMainDemo(address(l2AdapterProxy));
         assert(l2Adapter.getUniqueSignersThreshold() == 1);
-        assert(l2Adapter.getAuthorisedSignerIndex(0x0C39486f770B26F5527BBBf942726537986Cd7eb) == 0);
+        assert(l2Adapter.getAuthorisedSignerIndex(REDSTONE_MAIN_DEMO_SIGNER_ADDRESS) == 0);
 
         // transfer ownership of L2MultiFeedAdapterWithoutRoundsMainDemo proxy; because of using
         // Ownable2StepUpgradeable contract, new owner has to accept ownership

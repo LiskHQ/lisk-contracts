@@ -6,6 +6,7 @@ import { Ownable2StepUpgradeable } from "@openzeppelin-upgradeable/contracts/acc
 import { UUPSUpgradeable } from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
 import { MultiFeedAdapterWithoutRounds } from
     "@redstone-finance/on-chain-relayer/contracts/price-feeds/without-rounds/MultiFeedAdapterWithoutRounds.sol";
+import { Constants } from "../utils/Constants.sol";
 
 /// @title L2MultiFeedAdapterWithoutRoundsMainDemo - L2MultiFeedAdapterWithoutRoundsMainDemo contract
 /// @notice This contract represents MultiFeedAdapterWithoutRounds contract for RedStone main demo production
@@ -15,7 +16,8 @@ contract L2MultiFeedAdapterWithoutRoundsMainDemo is
     Initializable,
     Ownable2StepUpgradeable,
     UUPSUpgradeable,
-    MultiFeedAdapterWithoutRounds
+    MultiFeedAdapterWithoutRounds,
+    Constants
 {
     /// @notice The address of the Dedicated Message Sender (Gelato).
     address internal constant DEDICATED_MESSAGE_SENDER_ADDRESS = 0x57D2460f4f401F1a675A2DC282344F926797e8e7;
@@ -46,11 +48,8 @@ contract L2MultiFeedAdapterWithoutRoundsMainDemo is
     /// @param signerAddress The address of the signer.
     /// @return The index of the signer in the list of authorised signers.
     function getAuthorisedSignerIndex(address signerAddress) public view virtual override returns (uint8) {
-        if (signerAddress == 0x0C39486f770B26F5527BBBf942726537986Cd7eb) {
-            return 0;
-        } else {
-            revert SignerNotAuthorised(signerAddress);
-        }
+        if (signerAddress == REDSTONE_MAIN_DEMO_SIGNER_ADDRESS) return 0;
+        else revert SignerNotAuthorised(signerAddress);
     }
 
     /// @notice This function validates the block timestamp.

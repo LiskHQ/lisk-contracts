@@ -5,6 +5,7 @@ import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy
 import { OwnableUpgradeable } from "@openzeppelin-upgradeable/contracts/access/OwnableUpgradeable.sol";
 import { Test } from "forge-std/Test.sol";
 import { L2MultiFeedAdapterWithoutRoundsMainDemo } from "src/L2/L2MultiFeedAdapterWithoutRoundsMainDemo.sol";
+import { Constants } from "src/utils/Constants.sol";
 
 contract L2MultiFeedAdapterWithoutRoundsMainDemoV2Mock is L2MultiFeedAdapterWithoutRoundsMainDemo {
     string public testVersion;
@@ -18,7 +19,7 @@ contract L2MultiFeedAdapterWithoutRoundsMainDemoV2Mock is L2MultiFeedAdapterWith
     }
 }
 
-contract L2MultiFeedAdapterWithoutRoundsMainDemoTest is Test {
+contract L2MultiFeedAdapterWithoutRoundsMainDemoTest is Test, Constants {
     L2MultiFeedAdapterWithoutRoundsMainDemo public l2Adapter;
     L2MultiFeedAdapterWithoutRoundsMainDemo public l2AdapterImplementation;
 
@@ -35,7 +36,7 @@ contract L2MultiFeedAdapterWithoutRoundsMainDemoTest is Test {
             )
         );
         assertEq(l2Adapter.getUniqueSignersThreshold(), 1);
-        assertEq(l2Adapter.getAuthorisedSignerIndex(0x0C39486f770B26F5527BBBf942726537986Cd7eb), 0);
+        assertEq(l2Adapter.getAuthorisedSignerIndex(REDSTONE_MAIN_DEMO_SIGNER_ADDRESS), 0);
     }
 
     function test_TransferOwnership() public {
@@ -118,7 +119,7 @@ contract L2MultiFeedAdapterWithoutRoundsMainDemoTest is Test {
 
         // signer threshold and signer index should remain the same
         assertEq(l2AdapterV2.getUniqueSignersThreshold(), 1);
-        assertEq(l2AdapterV2.getAuthorisedSignerIndex(0x0C39486f770B26F5527BBBf942726537986Cd7eb), 0);
+        assertEq(l2AdapterV2.getAuthorisedSignerIndex(REDSTONE_MAIN_DEMO_SIGNER_ADDRESS), 0);
 
         // version of L2MultiFeedAdapterWithoutRoundsMainDemo set to v2.0.0
         assertEq(l2AdapterV2.testVersion(), "v2.0.0");
