@@ -19,9 +19,6 @@ contract L2MultiFeedAdapterWithoutRoundsMainDemo is
     MultiFeedAdapterWithoutRounds,
     Constants
 {
-    /// @notice The address of the Dedicated Message Sender (Gelato).
-    address internal constant DEDICATED_MESSAGE_SENDER_ADDRESS = 0x57D2460f4f401F1a675A2DC282344F926797e8e7;
-
     /// @notice Disabling initializers on implementation contract to prevent misuse.
     constructor() {
         _disableInitializers();

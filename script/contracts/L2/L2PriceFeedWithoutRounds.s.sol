@@ -14,10 +14,10 @@ contract L2PriceFeedWithoutRoundsScript is Script {
     Utils utils;
 
     /// @notice Constant for RedStone PrimaryProd data service type.
-    string SERVICE_TYPE_PRIMARY_PROD = "PrimaryProd";
+    string REDSTONE_SERVICE_TYPE_PRIMARY_PROD = "PrimaryProd";
 
     /// @notice Constant for RedStone MainDemo data service type.
-    string SERVICE_TYPE_MAIN_DEMO = "MainDemo";
+    string REDSTONE_SERVICE_TYPE_MAIN_DEMO = "MainDemo";
 
     function setUp() public {
         utils = new Utils();
@@ -48,14 +48,14 @@ contract L2PriceFeedWithoutRoundsScript is Script {
         L2PriceFeedWithoutRoundsFactory l2PriceFeedFactory =
             L2PriceFeedWithoutRoundsFactory(l2AddressesConfig.L2PriceFeedWithoutRoundsFactory);
 
-        if (keccak256(bytes(dataServiceType)) == keccak256(bytes(SERVICE_TYPE_PRIMARY_PROD))) {
+        if (keccak256(bytes(dataServiceType)) == keccak256(bytes(REDSTONE_SERVICE_TYPE_PRIMARY_PROD))) {
             // get L2MultiFeedAdapterWithoutRoundsPrimaryProd contract address
             assert(l2AddressesConfig.L2MultiFeedAdapterWithoutRoundsPrimaryProd != address(0));
             console2.log(
                 "L2 MultiFeed Adapter Without Rounds PrimaryProd address: %s",
                 l2AddressesConfig.L2MultiFeedAdapterWithoutRoundsPrimaryProd
             );
-        } else if (keccak256(bytes(dataServiceType)) == keccak256(bytes(SERVICE_TYPE_MAIN_DEMO))) {
+        } else if (keccak256(bytes(dataServiceType)) == keccak256(bytes(REDSTONE_SERVICE_TYPE_MAIN_DEMO))) {
             // get L2MultiFeedAdapterWithoutRoundsMainDemo contract address
             assert(l2AddressesConfig.L2MultiFeedAdapterWithoutRoundsMainDemo != address(0));
             console2.log(
@@ -71,7 +71,7 @@ contract L2PriceFeedWithoutRoundsScript is Script {
         L2PriceFeedWithoutRounds l2PriceFeed = L2PriceFeedWithoutRounds(
             l2PriceFeedFactory.createL2PriceFeedWithoutRounds(
                 feedId,
-                keccak256(bytes(dataServiceType)) == keccak256(bytes(SERVICE_TYPE_PRIMARY_PROD))
+                keccak256(bytes(dataServiceType)) == keccak256(bytes(REDSTONE_SERVICE_TYPE_PRIMARY_PROD))
                     ? l2AddressesConfig.L2MultiFeedAdapterWithoutRoundsPrimaryProd
                     : l2AddressesConfig.L2MultiFeedAdapterWithoutRoundsMainDemo
             )
@@ -84,7 +84,7 @@ contract L2PriceFeedWithoutRoundsScript is Script {
         assert(
             address(l2PriceFeed.getPriceFeedAdapter())
                 == (
-                    keccak256(bytes(dataServiceType)) == keccak256(bytes(SERVICE_TYPE_PRIMARY_PROD))
+                    keccak256(bytes(dataServiceType)) == keccak256(bytes(REDSTONE_SERVICE_TYPE_PRIMARY_PROD))
                         ? l2AddressesConfig.L2MultiFeedAdapterWithoutRoundsPrimaryProd
                         : l2AddressesConfig.L2MultiFeedAdapterWithoutRoundsMainDemo
                 )

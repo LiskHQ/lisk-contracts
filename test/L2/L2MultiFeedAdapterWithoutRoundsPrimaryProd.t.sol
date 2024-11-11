@@ -36,11 +36,11 @@ contract L2MultiFeedAdapterWithoutRoundsPrimaryProdTest is Test, Constants {
             )
         );
         assertEq(l2Adapter.getUniqueSignersThreshold(), 2);
-        assertEq(l2Adapter.getAuthorisedSignerIndex(REDSTONE_PRIMARY_PROD_SIGNER_ADDRESS_1), 0);
-        assertEq(l2Adapter.getAuthorisedSignerIndex(REDSTONE_PRIMARY_PROD_SIGNER_ADDRESS_2), 1);
-        assertEq(l2Adapter.getAuthorisedSignerIndex(REDSTONE_PRIMARY_PROD_SIGNER_ADDRESS_3), 2);
-        assertEq(l2Adapter.getAuthorisedSignerIndex(REDSTONE_PRIMARY_PROD_SIGNER_ADDRESS_4), 3);
-        assertEq(l2Adapter.getAuthorisedSignerIndex(REDSTONE_PRIMARY_PROD_SIGNER_ADDRESS_5), 4);
+        assertEq(l2Adapter.getAuthorisedSignerIndex(REDSTONE_PRIMARY_PROD_SIGNER_ADDRESS_0), 0);
+        assertEq(l2Adapter.getAuthorisedSignerIndex(REDSTONE_PRIMARY_PROD_SIGNER_ADDRESS_1), 1);
+        assertEq(l2Adapter.getAuthorisedSignerIndex(REDSTONE_PRIMARY_PROD_SIGNER_ADDRESS_2), 2);
+        assertEq(l2Adapter.getAuthorisedSignerIndex(REDSTONE_PRIMARY_PROD_SIGNER_ADDRESS_3), 3);
+        assertEq(l2Adapter.getAuthorisedSignerIndex(REDSTONE_PRIMARY_PROD_SIGNER_ADDRESS_4), 4);
     }
 
     function test_TransferOwnership() public {
@@ -123,11 +123,11 @@ contract L2MultiFeedAdapterWithoutRoundsPrimaryProdTest is Test, Constants {
 
         // signer threshold and signer index should remain the same
         assertEq(l2AdapterV2.getUniqueSignersThreshold(), 2);
-        assertEq(l2AdapterV2.getAuthorisedSignerIndex(REDSTONE_PRIMARY_PROD_SIGNER_ADDRESS_1), 0);
-        assertEq(l2AdapterV2.getAuthorisedSignerIndex(REDSTONE_PRIMARY_PROD_SIGNER_ADDRESS_2), 1);
-        assertEq(l2AdapterV2.getAuthorisedSignerIndex(REDSTONE_PRIMARY_PROD_SIGNER_ADDRESS_3), 2);
-        assertEq(l2AdapterV2.getAuthorisedSignerIndex(REDSTONE_PRIMARY_PROD_SIGNER_ADDRESS_4), 3);
-        assertEq(l2AdapterV2.getAuthorisedSignerIndex(REDSTONE_PRIMARY_PROD_SIGNER_ADDRESS_5), 4);
+        assertEq(l2AdapterV2.getAuthorisedSignerIndex(REDSTONE_PRIMARY_PROD_SIGNER_ADDRESS_0), 0);
+        assertEq(l2AdapterV2.getAuthorisedSignerIndex(REDSTONE_PRIMARY_PROD_SIGNER_ADDRESS_1), 1);
+        assertEq(l2AdapterV2.getAuthorisedSignerIndex(REDSTONE_PRIMARY_PROD_SIGNER_ADDRESS_2), 2);
+        assertEq(l2AdapterV2.getAuthorisedSignerIndex(REDSTONE_PRIMARY_PROD_SIGNER_ADDRESS_3), 3);
+        assertEq(l2AdapterV2.getAuthorisedSignerIndex(REDSTONE_PRIMARY_PROD_SIGNER_ADDRESS_4), 4);
 
         // version of L2MultiFeedAdapterWithoutRoundsPrimaryProd set to v2.0.0
         assertEq(l2AdapterV2.testVersion(), "v2.0.0");

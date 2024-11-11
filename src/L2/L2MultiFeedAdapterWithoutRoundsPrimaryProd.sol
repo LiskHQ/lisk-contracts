@@ -6,6 +6,7 @@ import { Ownable2StepUpgradeable } from "@openzeppelin-upgradeable/contracts/acc
 import { UUPSUpgradeable } from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
 import { MultiFeedAdapterWithoutRoundsPrimaryProd } from
     "@redstone-finance/on-chain-relayer/contracts/price-feeds/data-services/MultiFeedAdapterWithoutRoundsPrimaryProd.sol";
+import { Constants } from "../utils/Constants.sol";
 
 /// @title L2MultiFeedAdapterWithoutRoundsPrimaryProd - L2MultiFeedAdapterWithoutRoundsPrimaryProd contract
 /// @notice This contract represents MultiFeedAdapterWithoutRounds contract for RedStone primary production environment.
@@ -15,11 +16,9 @@ contract L2MultiFeedAdapterWithoutRoundsPrimaryProd is
     Initializable,
     Ownable2StepUpgradeable,
     UUPSUpgradeable,
-    MultiFeedAdapterWithoutRoundsPrimaryProd
+    MultiFeedAdapterWithoutRoundsPrimaryProd,
+    Constants
 {
-    /// @notice The address of the Dedicated Message Sender (Gelato).
-    address internal constant DEDICATED_MESSAGE_SENDER_ADDRESS = 0x57D2460f4f401F1a675A2DC282344F926797e8e7;
-
     /// @notice Disabling initializers on implementation contract to prevent misuse.
     constructor() {
         _disableInitializers();

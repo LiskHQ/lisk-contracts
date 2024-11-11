@@ -61,11 +61,11 @@ contract L2MultiFeedAdapterWithoutRoundsPrimaryProdScript is Script, Constants {
         L2MultiFeedAdapterWithoutRoundsPrimaryProd l2Adapter =
             L2MultiFeedAdapterWithoutRoundsPrimaryProd(address(l2AdapterProxy));
         assert(l2Adapter.getUniqueSignersThreshold() == 2);
-        assert(l2Adapter.getAuthorisedSignerIndex(REDSTONE_PRIMARY_PROD_SIGNER_ADDRESS_1) == 0);
-        assert(l2Adapter.getAuthorisedSignerIndex(REDSTONE_PRIMARY_PROD_SIGNER_ADDRESS_2) == 1);
-        assert(l2Adapter.getAuthorisedSignerIndex(REDSTONE_PRIMARY_PROD_SIGNER_ADDRESS_3) == 2);
-        assert(l2Adapter.getAuthorisedSignerIndex(REDSTONE_PRIMARY_PROD_SIGNER_ADDRESS_4) == 3);
-        assert(l2Adapter.getAuthorisedSignerIndex(REDSTONE_PRIMARY_PROD_SIGNER_ADDRESS_5) == 4);
+        assert(l2Adapter.getAuthorisedSignerIndex(REDSTONE_PRIMARY_PROD_SIGNER_ADDRESS_0) == 0);
+        assert(l2Adapter.getAuthorisedSignerIndex(REDSTONE_PRIMARY_PROD_SIGNER_ADDRESS_1) == 1);
+        assert(l2Adapter.getAuthorisedSignerIndex(REDSTONE_PRIMARY_PROD_SIGNER_ADDRESS_2) == 2);
+        assert(l2Adapter.getAuthorisedSignerIndex(REDSTONE_PRIMARY_PROD_SIGNER_ADDRESS_3) == 3);
+        assert(l2Adapter.getAuthorisedSignerIndex(REDSTONE_PRIMARY_PROD_SIGNER_ADDRESS_4) == 4);
 
         // transfer ownership of L2MultiFeedAdapterWithoutRoundsPrimaryProd proxy; because of using
         // Ownable2StepUpgradeable contract, new owner has to accept ownership
