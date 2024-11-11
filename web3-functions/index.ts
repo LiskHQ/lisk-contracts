@@ -115,9 +115,7 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
       signedDataPackage.dataPackage.dataPoints[0].dataFeedId
     );
 
-    if (
-      dataFeed != undefined
-    ) {
+    if (dataFeed != undefined) {
       if (dataFeed.livePrice.eq(zero)) {
         dataFeed.livePrice = BigNumber.from(
           signedDataPackage.dataPackage.dataPoints[0].value
@@ -188,7 +186,9 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
   if (priceFeedIdsToUpdate.length === 0) {
     return {
       canExec: false,
-      message: `No update: price deviation less than ${MIN_DEVIATION.toFixed(2)}% or time elapsed since last update is less than ${MIN_TIME_ELAPSED} hours`,
+      message: `No update: price deviation less than ${MIN_DEVIATION.toFixed(
+        2
+      )}% or time elapsed since last update is less than ${MIN_TIME_ELAPSED} hours`,
     };
   }
 
