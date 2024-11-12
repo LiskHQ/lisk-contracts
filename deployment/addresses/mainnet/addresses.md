@@ -60,3 +60,11 @@ Below are the addresses of the deployed smart contracts on the Ethereum and Lisk
 | -------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
 | `Tether USD (USDT)`  | [0x05D032ac25d322df992303dCa074EE7392C117b9](https://blockscout.lisk.com/address/0x05D032ac25d322df992303dCa074EE7392C117b9) |
 | `Wrapped BTC (WBTC)` | [0x03C7054BCB39f7b2e5B2c7AcB37583e32D70Cfa3](https://blockscout.lisk.com/address/0x03C7054BCB39f7b2e5B2c7AcB37583e32D70Cfa3) |
+
+### L2 RedStone PriceFeedWithoutRounds Smart Contracts
+
+| Name                  | Address                                                                                                                      |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `USDT/USD token pair` | [0xd2176Dd57D1e200c0A8ec9e575A129b511DBD3AD](https://blockscout.lisk.com/address/0xd2176Dd57D1e200c0A8ec9e575A129b511DBD3AD) |
+| `LSK/USD token pair`  | [0xa1EbA9E63ed7BA328fE0778cFD67699F05378a96](https://blockscout.lisk.com/address/0xa1EbA9E63ed7BA328fE0778cFD67699F05378a96) |
+| `ETH/USD token pair`  | [0x6b7AB4213c77A671Fc7AEe8eB23C9961fDdaB3b2](https://blockscout.lisk.com/address/0x6b7AB4213c77A671Fc7AEe8eB23C9961fDdaB3b2) |
