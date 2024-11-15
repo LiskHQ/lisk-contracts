@@ -76,8 +76,8 @@ export async function checkTokenPairPriceUpdateTime(
         console.log("Started At:", latestRoundData.startedAt.toString());
         console.log("Updated At:", latestRoundData.updatedAt.toString());
 
-        // Check if updatedAt is older than 6 hours from the current time
-        const sixHoursInSeconds = 6 * 60 * 60;
+        // Check if updatedAt is older than 6 hours from the current time (+2 minutes buffer for Web3 Actions)
+        const sixHoursInSeconds = 6 * 60 * 60 + 120;
         const updatedAt = Number(latestRoundData.updatedAt.toString());
 
         console.log("Current Time:", currentTimestamp);
