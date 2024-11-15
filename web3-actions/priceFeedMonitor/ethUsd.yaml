@@ -1,0 +1,15 @@
+account_id: ""
+actions:
+  YOUR_USERNAME/YOUR_PROJECT_SLUG:
+    runtime: v2
+    sources: tokenPairMonitor
+    specs:
+      RedStonePriceFeed_ETH-USD:
+        description: Check if token pair price for ETH/USD is updated at least each 6 hours.
+        function: ethUsd:monitorEthUsdFn
+        trigger:
+          type: periodic
+          periodic:
+            interval: 1h
+        execution_type: parallel
+project_slug: ""
