@@ -1,5 +1,5 @@
 {
-  "name": "web3-functions",
+  "name": "web3-functions-redstone",
   "version": "0.0.1",
   "description": "Smart Oracle that pushes prices online if deviation is above 0.5% or last update is more than 6 hours ago",
   "scripts": {
@@ -30,7 +30,6 @@
     "eslint": "7.32.0",
     "eslint-config-prettier": "8.3.0",
     "eslint-plugin-prettier": "4.0.0",
-    "ethers": "5.7.2",
     "husky": "8.0.3",
     "lint-staged": "11.1.2",
     "prettier": "2.8.8",
@@ -45,6 +44,7 @@
     "*.*{ts,js}": "eslint -c .eslintrc.json"
   },
   "dependencies": {
-    "@redstone-finance/evm-connector": "^0.0.22"
+    "@redstone-finance/evm-connector": "^0.0.22",
+    "ethers": "5.7.2"
   }
 }

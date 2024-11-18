@@ -83,7 +83,7 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
           dataFeeds: dataFeedIdsString,
           disablePayloadsDryRun: true,
         },
-        REDSTONE_DATA_SERVICES_URLS[REDSTONE_PRIMARY_PROD]
+        REDSTONE_DATA_SERVICES_URLS.REDSTONE_PRIMARY_PROD
       );
       break;
     case REDSTONE_MAIN_DEMO:
@@ -94,7 +94,7 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
           dataFeeds: dataFeedIdsString,
           disablePayloadsDryRun: true,
         },
-        REDSTONE_DATA_SERVICES_URLS[REDSTONE_MAIN_DEMO]
+        REDSTONE_DATA_SERVICES_URLS.REDSTONE_MAIN_DEMO
       );
       break;
     default:
