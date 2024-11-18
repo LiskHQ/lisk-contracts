@@ -11,7 +11,7 @@ const CONTRACT_ADDRESS = "0x6b7AB4213c77A671Fc7AEe8eB23C9961fDdaB3b2";
 const TOKEN_PAIR = "ETH/USD";
 
 export const monitorEthUsdFn: ActionFn = async (context: Context, event: Event) => {
-	let periodicEvent = event as PeriodicEvent;
+	const periodicEvent = event as PeriodicEvent;
 	console.log(periodicEvent);
 
 	// Get Opsgenie API key from the secrets

@@ -11,7 +11,7 @@ const CONTRACT_ADDRESS = "0xa1EbA9E63ed7BA328fE0778cFD67699F05378a96";
 const TOKEN_PAIR = "LSK/USD";
 
 export const monitorLskUsdFn: ActionFn = async (context: Context, event: Event) => {
-	let periodicEvent = event as PeriodicEvent;
+	const periodicEvent = event as PeriodicEvent;
 	console.log(periodicEvent);
 
 	// Get Opsgenie API key from the secrets

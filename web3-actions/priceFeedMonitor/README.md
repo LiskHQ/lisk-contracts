@@ -16,7 +16,7 @@ tenderly login
 Before you can build and publish/deploy the Web3 Actions, you need modify the configuration `.yaml` file for the project.
 Some configuration files inside this directory are:
 - [`lskUsd.yaml`](./lskUsd.yaml) - configuration file for the RedStone price feed monitoring for the LSK/USD token pair
-- [`ethUSD.yaml`](./ethUsd.yaml) - configuration file for the RedStone price feed monitoring for the ETH/USD token pair
+- [`ethUsd.yaml`](./ethUsd.yaml) - configuration file for the RedStone price feed monitoring for the ETH/USD token pair
 - [`usdtUsd.yaml`](./usdtUsd.yaml) - configuration file for the RedStone price feed monitoring for the USDT/USD token pair
 
 You need to provide the following information in the configuration file(s), under `actions`:
