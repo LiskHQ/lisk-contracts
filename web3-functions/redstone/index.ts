@@ -13,8 +13,24 @@ const ORACLE_ABI = [
   "function getLivePricesAndTimestamp(bytes32[]) public view returns (uint256[], uint256)",
 ];
 
+const REDSTONE_PRIMARY_PROD = "redstone-primary-prod";
+const REDSTONE_MAIN_DEMO = "redstone-primary-prod";
+// https://github.com/redstone-finance/redstone-oracles-monorepo/blob/main/packages/sdk/src/data-services-urls.ts
+const DEV_GWS = [
+  "https://oracle-gateway-1.b.redstone.finance",
+  "https://d33trozg86ya9x.cloudfront.net", // https://github.com/gelatodigital/w3f-redstone-poc-v2/blob/main/web3-functions/redstone/index.ts#L32
+];
+const PROD_GWS = [
+  "https://oracle-gateway-1.a.redstone.finance",
+  "https://oracle-gateway-2.a.redstone.finance",
+];
+const REDSTONE_DATA_SERVICES_URLS: Record<string, string[]> = {
+  REDSTONE_PRIMARY_PROD: PROD_GWS,
+  REDSTONE_MAIN_DEMO: DEV_GWS,
+};
+
 const MIN_DEVIATION = 0.5; // 0.5%
-const MIN_TIME_ELAPSED = 6; // 6 hours
+const MIN_TIME_ELAPSED_HOURS = 6; // 6 hours
 const DECIMALS = 8; // price feed precision
 const zero = BigNumber.from(0);
 const one = BigNumber.from(1);
@@ -44,9 +60,9 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
 
   const oracle = new Contract(oracleAddress, ORACLE_ABI, provider);
 
-  const dataFeedIds = new Map<string, DataFeed>();
+  const idToDataFeedMap = new Map<string, DataFeed>();
   for (const id of dataFeedIdsString) {
-    dataFeedIds.set(id, {
+    idToDataFeedMap.set(id, {
       symbol: id,
       id: formatBytes32String(id),
       livePrice: BigNumber.from(0),
@@ -54,37 +70,31 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
       storedTimestamp: 0,
     });
   }
-  debugLog("Data feed ids: ", dataFeedIds);
+  debugLog("Data feed ids: ", idToDataFeedMap);
 
   // Wrap contract with redstone data service
   let wrappedOracle;
   switch (dataServiceId) {
-    case "redstone-primary-prod":
+    case REDSTONE_PRIMARY_PROD:
       wrappedOracle = WrapperBuilder.wrap(oracle).usingDataService(
         {
-          dataServiceId: "redstone-primary-prod",
+          dataServiceId: REDSTONE_PRIMARY_PROD,
           uniqueSignersCount: 2,
           dataFeeds: dataFeedIdsString,
           disablePayloadsDryRun: true,
         },
-        [
-          "https://oracle-gateway-1.a.redstone.finance",
-          "https://oracle-gateway-2.a.redstone.finance",
-        ]
+        REDSTONE_DATA_SERVICES_URLS[REDSTONE_PRIMARY_PROD]
       );
       break;
-    case "redstone-main-demo":
+    case REDSTONE_MAIN_DEMO:
       wrappedOracle = WrapperBuilder.wrap(oracle).usingDataService(
         {
-          dataServiceId: "redstone-main-demo",
+          dataServiceId: REDSTONE_MAIN_DEMO,
           uniqueSignersCount: 1,
           dataFeeds: dataFeedIdsString,
           disablePayloadsDryRun: true,
         },
-        [
-          "https://oracle-gateway-1.b.redstone.finance",
-          "https://d33trozg86ya9x.cloudfront.net",
-        ]
+        REDSTONE_DATA_SERVICES_URLS[REDSTONE_MAIN_DEMO]
       );
       break;
     default:
@@ -100,34 +110,40 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
       dataFeedIdsBytes32
     );
   const txCalldataBytes = arrayify(String(livePriceData));
-  const parsingResult = redstone.RedstonePayload.parse(txCalldataBytes);
+
+  let parsingResult;
+  try {
+    parsingResult = redstone.RedstonePayload.parse(txCalldataBytes);
+  } catch (error) {
+    throw new Error("Unable to parse live price tx call data");
+  }
 
   debugLog("Unsigned metadata: ", toUtf8String(parsingResult.unsignedMetadata));
   debugLog("Data packages count: ", parsingResult.signedDataPackages.length);
   debugLog(getDashLine());
 
-  let dataPackageIndex = 0;
-  for (const signedDataPackage of parsingResult.signedDataPackages) {
-    debugLog(getDashLine());
-    printSignedDataPackage(dataPackageIndex, signedDataPackage);
+  parsingResult.signedDataPackages.forEach(
+    (signedDataPackage, dataPackageIndex) => {
+      debugLog(getDashLine());
+      printSignedDataPackage(dataPackageIndex, signedDataPackage);
 
-    const dataFeed = dataFeedIds.get(
-      signedDataPackage.dataPackage.dataPoints[0].dataFeedId
-    );
+      const dataFeed = idToDataFeedMap.get(
+        signedDataPackage.dataPackage.dataPoints[0].dataFeedId
+      );
 
-    if (dataFeed != undefined) {
-      if (dataFeed.livePrice.eq(zero)) {
-        dataFeed.livePrice = BigNumber.from(
-          signedDataPackage.dataPackage.dataPoints[0].value
-        );
+      if (dataFeed != undefined) {
+        if (dataFeed.livePrice.eq(zero)) {
+          dataFeed.livePrice = BigNumber.from(
+            signedDataPackage.dataPackage.dataPoints[0].value
+          );
+        }
       }
+      debugLog("Data feed: ", dataFeed);
     }
-    debugLog("Data feed: ", dataFeed);
-    dataPackageIndex++;
-  }
+  );
 
   // Check if all data feeds are present
-  for (const dataFeed of dataFeedIds.values()) {
+  for (const dataFeed of idToDataFeedMap.values()) {
     if (dataFeed.livePrice.eq(zero)) {
       console.log("Data feed not found: ", dataFeed);
       return {
@@ -139,21 +155,21 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
   debugLog(getDashLine());
 
   // Retrieve stored prices and timestamps from the blockchain
-  for (const dataFeed of dataFeedIds.values()) {
+  for (const dataFeed of idToDataFeedMap.values()) {
     [dataFeed.storedTimestamp, , dataFeed.storedPrice] = await wrappedOracle
       .getLastUpdateDetails(dataFeed.id)
       .catch(() => [BigNumber.from(0), 0, 0]);
   }
   // And print them out
   debugLog("Stored prices and timestamps:");
-  printPrices(dataFeedIds);
+  printPrices(idToDataFeedMap);
   console.log(getDashLine());
 
   // Check price deviation and create an array for price feeds which needs to be updated
   const priceFeedIdsToUpdate: string[] = [];
   console.log("Price deviations and time elapsed since last update:");
   console.log(getDashLine());
-  for (const dataFeed of dataFeedIds.values()) {
+  for (const dataFeed of idToDataFeedMap.values()) {
     const priceDeviation = computePriceDeviation(
       dataFeed.livePrice,
       dataFeed.storedPrice,
@@ -174,7 +190,10 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
     console.log(getDashLine());
 
     // Only update price if deviation is above 0.5% or last update is more than 6 hours ago
-    if (deviationPrct >= MIN_DEVIATION || timeElapsed >= MIN_TIME_ELAPSED) {
+    if (
+      deviationPrct >= MIN_DEVIATION ||
+      timeElapsed >= MIN_TIME_ELAPSED_HOURS
+    ) {
       priceFeedIdsToUpdate.push(dataFeed.id);
     }
   }
@@ -188,7 +207,7 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
       canExec: false,
       message: `No update: price deviation less than ${MIN_DEVIATION.toFixed(
         2
-      )}% or time elapsed since last update is less than ${MIN_TIME_ELAPSED} hours`,
+      )}% or time elapsed since last update is less than ${MIN_TIME_ELAPSED_HOURS} hours`,
     };
   }
 
@@ -262,8 +281,8 @@ function printSignedDataPackage(
   );
 }
 
-function printPrices(dataFeedIds: Map<string, DataFeed>) {
-  for (const dataFeed of dataFeedIds.values()) {
+function printPrices(idToDataFeedMap: Map<string, DataFeed>) {
+  for (const dataFeed of idToDataFeedMap.values()) {
     console.log(
       `Live ${dataFeed.symbol} price: ${dataFeed.livePrice.toString()}`
     );

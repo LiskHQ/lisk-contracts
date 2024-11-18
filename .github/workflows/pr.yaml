@@ -35,10 +35,10 @@ jobs:
         with:
           version: nightly
 
-      - name: Use Node.js 18
-        uses: actions/setup-node@v3
+      - name: Use Node.js latest
+        uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: latest
 
       - name: Install yarn
         run: npm install --global yarn
@@ -48,11 +48,11 @@ jobs:
         run: yarn --prefer-offline
 
       - name: Check TypeScript files
-        if: ${{ contains(matrix.system.os, 'windows') == false }}
+        if: ${{ contains(matrix.system.os, 'ubuntu') == true }}
         run: yarn format
 
       - name: Check formatting for TypeScript files
-        if: ${{ contains(matrix.system.os, 'windows') == false }}
+        if: ${{ contains(matrix.system.os, 'ubuntu') == true }}
         run: |
           if [ -z "$(git status --untracked-files=no --porcelain)" ]; then
             echo "All files formatted"
@@ -62,7 +62,7 @@ jobs:
           fi
 
       - name: Check formatting
-        if: ${{ contains(matrix.system.os, 'windows') == false }}
+        if: ${{ contains(matrix.system.os, 'ubuntu') == true }}
         run: |
           forge fmt --check
         id: formatting
