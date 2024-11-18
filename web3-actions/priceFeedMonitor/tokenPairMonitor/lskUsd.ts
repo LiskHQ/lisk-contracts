@@ -4,7 +4,7 @@ import {
 	Event,
 	PeriodicEvent,
 } from '@tenderly/actions';
-import { checkTokenPairPriceUpdateTime } from './commonCode';
+import { checkTokenPairPriceUpdateTime } from './validate';
 
 // Define the contract address and token pair
 const CONTRACT_ADDRESS = "0xa1EbA9E63ed7BA328fE0778cFD67699F05378a96";

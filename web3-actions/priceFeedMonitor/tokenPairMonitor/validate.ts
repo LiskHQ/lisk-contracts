@@ -21,7 +21,10 @@ const CONTRACT_ABI = [
 // Define the RPC URL
 const RPC_URL = "https://rpc.api.lisk.com";
 
-// Function to send an alert to the Opsgenie
+// Define Opsgenie API URL
+const OPSGENIE_API_URL = "https://api.opsgenie.com";
+
+// Function to send an alert to Opsgenie
 async function sendOpsgenieAlert(
     tokenPair: string,
     apiKey: string
@@ -42,11 +45,11 @@ async function sendOpsgenieAlert(
                 type: "team"
             }
         ],
-        priority: "P1"
+        priority: "P2"
     };
 
     opsgenie.configure({
-        host: 'https://api.opsgenie.com',
+        host: OPSGENIE_API_URL,
         api_key: apiKey
     });
 
@@ -76,15 +79,15 @@ export async function checkTokenPairPriceUpdateTime(
         console.log("Started At:", latestRoundData.startedAt.toString());
         console.log("Updated At:", latestRoundData.updatedAt.toString());
 
-        // Check if updatedAt is older than 6 hours from the current time (+2 minutes buffer for Web3 Actions)
-        const sixHoursInSeconds = 6 * 60 * 60 + 120;
+        // Check if updatedAt is older than 6 hours from the current time
+        const sixHoursInSeconds = 6 * 60 * 60;
         const updatedAt = Number(latestRoundData.updatedAt.toString());
 
         console.log("Current Time:", currentTimestamp);
 
-        if (currentTimestamp - updatedAt > sixHoursInSeconds) {
+        if ((currentTimestamp) - updatedAt > sixHoursInSeconds) {
             console.warn("Warning: The latest data for", tokenPair, "token pair is older than 6 hours.");
-            // Send alert to the Opsgenie
+            // Send alert to Opsgenie
             await sendOpsgenieAlert(tokenPair, apiKey);
         } else {
             console.log("The latest data for", tokenPair, "token pair is up-to-date.");
