@@ -46,10 +46,12 @@ jobs:
       - name: Install dependencies
         shell: bash
         run: yarn --prefer-offline
+        working-directory: web3-functions/redstone
 
       - name: Check TypeScript files
         if: ${{ contains(matrix.system.os, 'ubuntu') == true }}
         run: yarn format
+        working-directory: web3-functions/redstone
 
       - name: Check formatting for TypeScript files
         if: ${{ contains(matrix.system.os, 'ubuntu') == true }}
@@ -60,6 +62,7 @@ jobs:
             echo "Running format is required"
             exit 1
           fi
+        working-directory: web3-functions/redstone
 
       - name: Check formatting
         if: ${{ contains(matrix.system.os, 'ubuntu') == true }}
