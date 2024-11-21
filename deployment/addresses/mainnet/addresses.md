@@ -68,3 +68,5 @@ Below are the addresses of the deployed smart contracts on the Ethereum and Lisk
 | `USDT/USD token pair` | [0xd2176Dd57D1e200c0A8ec9e575A129b511DBD3AD](https://blockscout.lisk.com/address/0xd2176Dd57D1e200c0A8ec9e575A129b511DBD3AD) |
 | `LSK/USD token pair`  | [0xa1EbA9E63ed7BA328fE0778cFD67699F05378a96](https://blockscout.lisk.com/address/0xa1EbA9E63ed7BA328fE0778cFD67699F05378a96) |
 | `ETH/USD token pair`  | [0x6b7AB4213c77A671Fc7AEe8eB23C9961fDdaB3b2](https://blockscout.lisk.com/address/0x6b7AB4213c77A671Fc7AEe8eB23C9961fDdaB3b2) |
+| `USDC/USD token pair` | [0xb4e6A7861067674AC398a26DD73A3c524C602184](https://blockscout.lisk.com/address/0xb4e6A7861067674AC398a26DD73A3c524C602184) |
+| `WBTC/USD token pair` | [0x13da43eA89fB692bdB6666F053FeE70aC61A53cd](https://blockscout.lisk.com/address/0x13da43eA89fB692bdB6666F053FeE70aC61A53cd) |
