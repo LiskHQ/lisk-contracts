@@ -1,0 +1,13 @@
+actions:
+  YOUR_ACCOUNT_SLUG/YOUR_PROJECT_SLUG:
+    runtime: v2
+    sources: tokenPairMonitor
+    specs:
+      RedStonePriceFeed_USDC-USD:
+        description: Check if token pair price for USDC/USD is updated at least once every 6 hours.
+        function: usdcUsd:monitorUsdcUsdFn
+        trigger:
+          type: periodic
+          periodic:
+            interval: 1h
+        execution_type: parallel

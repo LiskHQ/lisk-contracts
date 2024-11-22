@@ -18,6 +18,8 @@ Some configuration files inside this directory are:
 - [`lskUsd.yaml`](./lskUsd.yaml) - configuration file for the RedStone price feed monitoring for the LSK/USD token pair
 - [`ethUsd.yaml`](./ethUsd.yaml) - configuration file for the RedStone price feed monitoring for the ETH/USD token pair
 - [`usdtUsd.yaml`](./usdtUsd.yaml) - configuration file for the RedStone price feed monitoring for the USDT/USD token pair
+- [`usdcUsd.yaml`](./usdcUsd.yaml) - configuration file for the RedStone price feed monitoring for the USDC/USD token pair
+- [`wbtcUsd.yaml`](./wbtcUsd.yaml) - configuration file for the RedStone price feed monitoring for the WBTC/USD token pair
 
 You need to provide the following information in the configuration file(s), under `actions`:
 - `YOUR_ACCOUNT_SLUG` - your Tenderly account

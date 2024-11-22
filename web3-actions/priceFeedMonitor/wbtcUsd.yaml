@@ -1,0 +1,13 @@
+actions:
+  YOUR_ACCOUNT_SLUG/YOUR_PROJECT_SLUG:
+    runtime: v2
+    sources: tokenPairMonitor
+    specs:
+      RedStonePriceFeed_WBTC-USD:
+        description: Check if token pair price for WBTC/USD is updated at least once every 6 hours.
+        function: wbtcUsd:monitorWbtcUsdFn
+        trigger:
+          type: periodic
+          periodic:
+            interval: 1h
+        execution_type: parallel
