@@ -14,7 +14,7 @@ const ORACLE_ABI = [
 ];
 
 const REDSTONE_PRIMARY_PROD = "redstone-primary-prod";
-const REDSTONE_MAIN_DEMO = "redstone-primary-prod";
+const REDSTONE_MAIN_DEMO = "redstone-main-demo";
 // https://github.com/redstone-finance/redstone-oracles-monorepo/blob/main/packages/sdk/src/data-services-urls.ts
 const DEV_GWS = [
   "https://oracle-gateway-1.b.redstone.finance",
