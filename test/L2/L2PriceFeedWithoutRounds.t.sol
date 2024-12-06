@@ -3,27 +3,17 @@ pragma solidity 0.8.23;
 
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import { OwnableUpgradeable } from "@openzeppelin-upgradeable/contracts/access/OwnableUpgradeable.sol";
-import { Test } from "forge-std/Test.sol";
+import { Test, console } from "forge-std/Test.sol";
 import { L2PriceFeedWithoutRoundsFactory } from "src/L2/L2PriceFeedWithoutRoundsFactory.sol";
 import { L2PriceFeedWithoutRounds } from "src/L2/L2PriceFeedWithoutRounds.sol";
-
-contract L2PriceFeedWithoutRoundsV2Mock is L2PriceFeedWithoutRounds {
-    string public testVersion;
-
-    function initializeV2(string memory _version) public reinitializer(2) {
-        testVersion = _version;
-    }
-
-    function onlyV2() public pure returns (string memory) {
-        return "Hello from V2";
-    }
-}
+import { L2PriceFeedWithoutRoundsV2 } from "src/L2/upgraded/L2PriceFeedWithoutRoundsV2.sol";
 
 contract L2PriceFeedWithoutRoundsTest is Test {
     L2PriceFeedWithoutRounds public l2PriceFeed;
     L2PriceFeedWithoutRounds public l2PriceFeedImplementation;
 
     address public priceFeedAdapter = 0x1038999DCf0A302Cc8Eed72fAeCbf0eEBfC476b0;
+    address public newPriceFeedAdapter = 0x2038999Dcf0A302cc8eeD72fAECbF0EebFc476b1;
 
     function setUp() public {
         // deploy L2PriceFeedWithoutRoundsFactory Implementation contract
@@ -42,11 +32,11 @@ contract L2PriceFeedWithoutRoundsTest is Test {
 
         // create L2PriceFeedWithoutRounds contract
         l2PriceFeed =
-            L2PriceFeedWithoutRounds(l2PriceFeedFactory.createL2PriceFeedWithoutRounds("USDT", priceFeedAdapter));
+            L2PriceFeedWithoutRounds(l2PriceFeedFactory.createL2PriceFeedWithoutRounds("LSK", priceFeedAdapter));
         assert(address(l2PriceFeed) != address(0));
         assertEq(l2PriceFeed.decimals(), 8);
         assertEq(keccak256(bytes(l2PriceFeed.description())), keccak256(bytes("Redstone Price Feed")));
-        assertEq(l2PriceFeed.getDataFeedId(), bytes32("USDT"));
+        assertEq(l2PriceFeed.getDataFeedId(), bytes32("LSK"));
         assertEq(address(l2PriceFeed.getPriceFeedAdapter()), priceFeedAdapter);
 
         // accept ownership
@@ -54,7 +44,7 @@ contract L2PriceFeedWithoutRoundsTest is Test {
 
         // check L2PriceFeedWithoutRoundsFactory variables
         assertEq(l2PriceFeedFactory.l2PriceFeedWithoutRoundsContracts(0), address(l2PriceFeed));
-        assertEq(l2PriceFeedFactory.l2PriceFeedWithoutRoundsDataFeedIds(address(l2PriceFeed), 0), "USDT");
+        assertEq(l2PriceFeedFactory.l2PriceFeedWithoutRoundsDataFeedIds(address(l2PriceFeed), 0), "LSK");
     }
 
     function test_TransferOwnership() public {
@@ -105,8 +95,8 @@ contract L2PriceFeedWithoutRoundsTest is Test {
     }
 
     function testFuzz_UpgradeToAndCall_RevertWhenNotOwner(uint256 _addressSeed) public {
-        // deploy L2PriceFeedWithoutRoundsV2Mock implementation contract
-        L2PriceFeedWithoutRoundsV2Mock l2PriceFeedV2Implementation = new L2PriceFeedWithoutRoundsV2Mock();
+        // deploy L2PriceFeedWithoutRoundsV2 implementation contract
+        L2PriceFeedWithoutRoundsV2 l2PriceFeedV2Implementation = new L2PriceFeedWithoutRoundsV2();
         _addressSeed = bound(_addressSeed, 1, type(uint160).max);
         address nobody = vm.addr(_addressSeed);
 
@@ -119,33 +109,39 @@ contract L2PriceFeedWithoutRoundsTest is Test {
         l2PriceFeed.upgradeToAndCall(address(l2PriceFeedV2Implementation), "");
     }
 
-    function test_UpgradeToAndCall_SuccessUpgrade() public {
-        // deploy L2PriceFeedWithoutRoundsV2Mock implementation contract
-        L2PriceFeedWithoutRoundsV2Mock l2PriceFeedV2Implementation = new L2PriceFeedWithoutRoundsV2Mock();
+    function test_UpgradeToAndCall_ZeroAdapterAddress() public {
+        // deploy L2PriceFeedWithoutRoundsV2 implementation contract
+        L2PriceFeedWithoutRoundsV2 l2PriceFeedV2Implementation = new L2PriceFeedWithoutRoundsV2();
 
-        // upgrade contract, and also change some variables by reinitialize
+        // try to upgrade to L2PriceFeedWithoutRoundsV2 implementation contract with zero adapter address
+        vm.expectRevert("L2PriceFeedWithoutRoundsV2: new adapter contract address can not be zero");
         l2PriceFeed.upgradeToAndCall(
             address(l2PriceFeedV2Implementation),
-            abi.encodeWithSelector(l2PriceFeedV2Implementation.initializeV2.selector, "v2.0.0")
+            abi.encodeWithSelector(l2PriceFeedV2Implementation.initializeV2.selector, 0x0)
+        );
+    }
+
+    function test_UpgradeToAndCall_SuccessUpgrade() public {
+        // deploy L2PriceFeedWithoutRoundsV2 implementation contract
+        L2PriceFeedWithoutRoundsV2 l2PriceFeedV2Implementation = new L2PriceFeedWithoutRoundsV2();
+
+        // upgrade contract, and also change priceFeedAdapter address
+        l2PriceFeed.upgradeToAndCall(
+            address(l2PriceFeedV2Implementation),
+            abi.encodeWithSelector(l2PriceFeedV2Implementation.initializeV2.selector, newPriceFeedAdapter)
         );
 
         // wrap L2PriceFeedWithoutRounds proxy with new contract
-        L2PriceFeedWithoutRoundsV2Mock l2PriceFeedV2 = L2PriceFeedWithoutRoundsV2Mock(address(l2PriceFeed));
+        L2PriceFeedWithoutRoundsV2 l2PriceFeedV2 = L2PriceFeedWithoutRoundsV2(address(l2PriceFeed));
 
-        // check if the upgrade was successful and the variables are the same
+        // check if the upgrade was successful and the new priceFeedAdapter address is set
         assertEq(l2PriceFeedV2.decimals(), 8);
         assertEq(keccak256(bytes(l2PriceFeedV2.description())), keccak256(bytes("Redstone Price Feed")));
-        assertEq(l2PriceFeedV2.getDataFeedId(), bytes32("USDT"));
-        assertEq(address(l2PriceFeedV2.getPriceFeedAdapter()), priceFeedAdapter);
-
-        // version of L2PriceFeedWithoutRounds set to v2.0.0
-        assertEq(l2PriceFeedV2.testVersion(), "v2.0.0");
-
-        // new function introduced
-        assertEq(l2PriceFeedV2.onlyV2(), "Hello from V2");
+        assertEq(l2PriceFeedV2.getDataFeedId(), bytes32("LSK"));
+        assertEq(address(l2PriceFeedV2.getPriceFeedAdapter()), newPriceFeedAdapter);
 
         // assure cannot re-reinitialize
         vm.expectRevert();
-        l2PriceFeedV2.initializeV2("v3.0.0");
+        l2PriceFeedV2.initializeV2(newPriceFeedAdapter);
     }
 }
