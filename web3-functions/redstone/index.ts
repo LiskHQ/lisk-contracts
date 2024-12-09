@@ -17,10 +17,12 @@ const REDSTONE_PRIMARY_PROD = "redstone-primary-prod";
 const REDSTONE_MAIN_DEMO = "redstone-main-demo";
 // https://github.com/redstone-finance/redstone-oracles-monorepo/blob/main/packages/sdk/src/data-services-urls.ts
 const DEV_GWS = [
+  "https://oracle-gateway-1.b.redstone.vip",
   "https://oracle-gateway-1.b.redstone.finance",
   "https://d33trozg86ya9x.cloudfront.net", // https://github.com/gelatodigital/w3f-redstone-poc-v2/blob/main/web3-functions/redstone/index.ts#L32
 ];
 const PROD_GWS = [
+  "https://oracle-gateway-1.a.redstone.vip",
   "https://oracle-gateway-1.a.redstone.finance",
   "https://oracle-gateway-2.a.redstone.finance",
 ];
