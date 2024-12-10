@@ -12,17 +12,17 @@ echo "Setting environment variables..."
 source .env
 echo "Done."
 
-echo "Creating $NETWORK directory inside deployment directory..."
+echo "Creating $NETWORK directory inside deployment/artifacts/contracts directory..."
 if [ -z "$NETWORK" ]
 then
       echo "NETWORK variable inside .env file is not set. Please set NETWORK environment variable."
       exit 1
 else
-      if [ -d "deployment/$NETWORK" ]
+      if [ -d "deployment/artifacts/contracts/$NETWORK" ]
       then
-            echo "Directory deployment/$NETWORK already exists."
+            echo "Directory deployment/artifacts/contracts/$NETWORK already exists."
       else
-            mkdir deployment/$NETWORK
+            mkdir deployment/artifacts/contracts/$NETWORK
       fi
 fi
 echo "Done."

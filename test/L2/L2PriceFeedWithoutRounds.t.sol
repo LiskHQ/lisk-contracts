@@ -12,8 +12,8 @@ contract L2PriceFeedWithoutRoundsTest is Test {
     L2PriceFeedWithoutRounds public l2PriceFeed;
     L2PriceFeedWithoutRounds public l2PriceFeedImplementation;
 
-    address public priceFeedAdapter = 0x1038999DCf0A302Cc8Eed72fAeCbf0eEBfC476b0;
-    address public newPriceFeedAdapter = 0x2038999Dcf0A302cc8eeD72fAECbF0EebFc476b1;
+    address public priceFeedAdapter = vm.addr(uint256(bytes32("priceFeedAdapter")));
+    address public newPriceFeedAdapter = vm.addr(uint256(bytes32("newPriceFeedAdapter")));
 
     function setUp() public {
         // deploy L2PriceFeedWithoutRoundsFactory Implementation contract
