@@ -54,7 +54,7 @@ Additionally, it also includes various deployment scripts that are integral for 
 
 ## Installation
 
-In order to build, test and deploy the smart contracts a [Foundry](https://github.com/foundry-rs/foundry) toolchain needs to be installed. The easiest way is to use `Foundryup` by below command:
+In order to build, test and deploy the smart contracts a [Foundry](https://github.com/foundry-rs/foundry) toolchain needs to be installed. The easiest way is to use `Foundryup` by the command below:
 
 ```shell
 curl -L https://foundry.paradigm.xyz | bash
