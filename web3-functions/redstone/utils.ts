@@ -125,7 +125,9 @@ export class TimeUtils {
   ): number {
     try {
       if (endTimestampInMs < startTimestampInMs) {
-        throw new Error(`expected endTimestampInMs (${endTimestampInMs}) to be greater than or equal to startTimestampInMs (${startTimestampInMs})`);
+        throw new Error(
+          `expected endTimestampInMs (${endTimestampInMs}) to be greater than or equal to startTimestampInMs (${startTimestampInMs})`,
+        );
       }
 
       const HOUR_IN_MS = 1000 * 60 * 60;
