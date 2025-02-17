@@ -28,6 +28,11 @@
   "dependencies": {
     "@gelatonetwork/web3-functions-sdk": "^2.4.4",
     "@redstone-finance/evm-connector": "^0.7.2",
-    "ethers": "^5.7.2"
+    "ethers": "^5.7.2",
+    "elliptic": "^6.6.1",
+    "path-to-regexp": "^0.1.12",
+    "ws": "^7.5.10",
+    "@openzeppelin/contracts": "^4.9.3",
+    "esbuild": "^0.25.0"
   }
 }
