@@ -3,7 +3,6 @@ import { WrapperBuilder } from "@redstone-finance/evm-connector";
 import * as redstone from "@redstone-finance/protocol";
 import { DataFeed, DataServiceConfig } from "./types";
 import { Constants } from "./constants";
-import { assert } from "@redstone-finance/protocol/dist/src/common/utils";
 
 export class PriceUtils {
   static computePriceDeviation(
@@ -125,10 +124,11 @@ export class TimeUtils {
     startTimestampInMs: Readonly<number>,
   ): number {
     try {
-      assert(
-        endTimestampInMs >= startTimestampInMs,
-        `expected endTimestampInMs (${endTimestampInMs}) to be greater than or equal to startTimestampInMs (${startTimestampInMs})`,
-      );
+      if (endTimestampInMs < startTimestampInMs) {
+        throw new Error(
+          `expected endTimestampInMs (${endTimestampInMs}) to be greater than or equal to startTimestampInMs (${startTimestampInMs})`,
+        );
+      }
 
       const HOUR_IN_MS = 1000 * 60 * 60;
       return (endTimestampInMs - startTimestampInMs) / HOUR_IN_MS;
