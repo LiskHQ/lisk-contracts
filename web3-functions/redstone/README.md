@@ -15,6 +15,7 @@ Do not use `npm install` or regular `yarn install` as this may override the care
 ## Overview
 
 This project implements Web3 Function that interacts with RedStone price feed smart contracts to:
+
 - Fetch live price data for specified assets from RedStone data services
 - Compare with stored prices
 - Update onchain prices when deviation thresholds are met
@@ -23,5 +24,6 @@ This project implements Web3 Function that interacts with RedStone price feed sm
 ## Development
 
 After installing dependencies, you can:
+
 1. Run tests: `yarn w3f:test`
 2. Deploy function: `yarn w3f:deploy`
