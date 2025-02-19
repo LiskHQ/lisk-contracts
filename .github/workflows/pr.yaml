@@ -45,7 +45,7 @@ jobs:
       
       - name: Install dependencies
         shell: bash
-        run: yarn --prefer-offline
+        run: yarn --pure-lockfile
         working-directory: web3-functions/redstone
 
       - name: Check TypeScript files
