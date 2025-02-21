@@ -19,7 +19,7 @@ const CONTRACT_ABI = [
 ];
 
 // Define the RPC URL
-const RPC_URL = "https://rpc.api.lisk.com";
+const RPC_URL_DEFAULT = "https://rpc.api.lisk.com";
 
 // Define Opsgenie API URL
 const OPSGENIE_API_URL = "https://api.opsgenie.com";
@@ -59,11 +59,12 @@ async function sendOpsgenieAlert(tokenPair: string, apiKey: string): Promise<voi
 export async function checkTokenPairPriceUpdateTime(
 	contractAddress: string,
 	tokenPair: string,
-	apiKey: string,
 	currentTimestamp: number,
+	rpcHttpEndpoint: string,
+	opsgenieApiKey: string,
 ) {
 	// Initialize the provider
-	const provider = new ethers.JsonRpcProvider(RPC_URL);
+	const provider = new ethers.JsonRpcProvider(rpcHttpEndpoint || RPC_URL_DEFAULT);
 
 	// Create a contract instance
 	const contract = new ethers.Contract(contractAddress, CONTRACT_ABI, provider);
@@ -87,7 +88,7 @@ export async function checkTokenPairPriceUpdateTime(
 		if (currentTimestamp - updatedAt > sixHoursInSeconds) {
 			console.warn("Warning: The latest data for", tokenPair, "token pair is older than 6 hours.");
 			// Send alert to Opsgenie
-			await sendOpsgenieAlert(tokenPair, apiKey);
+			await sendOpsgenieAlert(tokenPair, opsgenieApiKey);
 		} else {
 			console.log("The latest data for", tokenPair, "token pair is up-to-date.");
 		}
