@@ -128,6 +128,11 @@ opsgenie-sdk@^0.5.1:
   dependencies:
     requestretry "^7.0.0"
 
+prettier@^3.5.1:
+  version "3.5.1"
+  resolved "https://registry.yarnpkg.com/prettier/-/prettier-3.5.1.tgz#22fac9d0b18c0b92055ac8fb619ac1c7bef02fb7"
+  integrity sha512-hPpFQvHwL3Qv5AdRvBFMhnKo4tYxp0ReXiPn2bxkiohEX6mBeBwEpBSQTkD458RaaDKQMYSp4hX4UtfUTA5wDw==
+
 requestretry@^7.0.0:
   version "7.1.0"
   resolved "https://registry.yarnpkg.com/requestretry/-/requestretry-7.1.0.tgz#d16a1a57a95295211147841550603f3dc527541e"
