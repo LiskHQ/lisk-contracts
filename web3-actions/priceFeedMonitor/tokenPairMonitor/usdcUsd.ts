@@ -1,10 +1,5 @@
-import {
-	ActionFn,
-	Context,
-	Event,
-	PeriodicEvent,
-} from '@tenderly/actions';
-import { checkTokenPairPriceUpdateTime } from './validate';
+import { ActionFn, Context, Event, PeriodicEvent } from "@tenderly/actions";
+import { checkTokenPairPriceUpdateTime } from "./validate";
 
 // Define the contract address and token pair
 const CONTRACT_ADDRESS = "0xb4e6A7861067674AC398a26DD73A3c524C602184";
@@ -21,4 +16,4 @@ export const monitorUsdcUsdFn: ActionFn = async (context: Context, event: Event)
 	const currentTimestamp = Math.floor(periodicEvent.time.getTime() / 1000);
 
 	await checkTokenPairPriceUpdateTime(CONTRACT_ADDRESS, TOKEN_PAIR, apiKey, currentTimestamp);
-}
+};
