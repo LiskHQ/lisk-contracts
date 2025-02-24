@@ -1,0 +1,13 @@
+# Files
+.gitkeep
+
+## ignore files
+.*ignore
+*.tsbuildinfo
+*.lock
+
+# project specific paths
+node_modules/
+build/
+dist/
+out/
