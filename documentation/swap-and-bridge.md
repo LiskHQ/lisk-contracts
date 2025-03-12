@@ -43,7 +43,7 @@ The `SwapAndBridge` contract exposes the following public/external functions:
 
 - `receive() external payable`: Convenience function allowing users to interact with the contract just by sending ETH. It redirects to `swapAndBridgeTo(msg.sender)`;
 - `swapAndBridgeTo(address recipient) public payable`: Convenience function to swap ETH for LST without specifying the minimum amount of LST to be received. It redirects to `swapAndBridgeToWithMinimumAmount(recipient, 0)`;
-- `swapAndBridgeToWithMinimumAmount(address recipient, uint256 minL1Tokens) public payable`: The core function performing boht ETH-->LST conversion (by sending ETH to the LST contract) and the L1 LST-->L2 LST bridging (by calling the bridge contract `depositERC20To` function). Several checks are included to ensure that the conversion is succesfull. It is possible to specify a `uint256 minL1Tokens` value larger than 0, in which case the contract will also check that swap resulted in an amount of LST larger than the specified minimum. A value of 0 passed to this function skips this check, allowing for any (non-zero) value to be accepted.
+- `swapAndBridgeToWithMinimumAmount(address recipient, uint256 minL1Tokens) public payable`: The core function performing boht ETH-->LST conversion (by sending ETH to the LST contract) and the L1 LST-->L2 LST bridging (by calling the bridge contract `depositERC20To` function). Several checks are included to ensure that the conversion is successful. It is possible to specify a `uint256 minL1Tokens` value larger than 0, in which case the contract will also check that swap resulted in an amount of LST larger than the specified minimum. A value of 0 passed to this function skips this check, allowing for any (non-zero) value to be accepted.
 
 ## Integrations
 
