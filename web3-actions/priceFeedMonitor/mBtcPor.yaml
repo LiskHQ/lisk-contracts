@@ -1,0 +1,13 @@
+actions:
+  YOUR_ACCOUNT_SLUG/YOUR_PROJECT_SLUG:
+    runtime: v2
+    sources: tokenPairMonitor
+    specs:
+      RedStonePriceFeed_mBTC-POR:
+        description: Check if the proof-of-reserve data for mBTC is updated at least once every 6 hours.
+        function: mBtcPor:monitormBtcPorFn
+        trigger:
+          type: periodic
+          periodic:
+            interval: 1h
+        execution_type: parallel
