@@ -46,15 +46,15 @@ echo "Done."
 echo "Deploying and if enabled verifying L2PriceFeedWithoutRounds smart contract for mBTC/POR..."
 if [ -z "$CONTRACT_VERIFIER" ]
 then
-      forge script --rpc-url="$L2_RPC_URL" --broadcast -vvvv --sig "run(string,string)" script/contracts/L2/L2PriceFeedWithoutRounds.s.sol:L2PriceFeedWithoutRoundsScript "mBTC/POR" "PrimaryProd"
+      forge script --rpc-url="$L2_RPC_URL" --broadcast -vvvv --sig "run(string,string)" script/contracts/L2/L2PriceFeedWithoutRounds.s.sol:L2PriceFeedWithoutRoundsScript "mBTC_POR" "PrimaryProd"
 else
       if [ $CONTRACT_VERIFIER = "blockscout" ]
       then
-            forge script --rpc-url="$L2_RPC_URL" --broadcast --verify --verifier blockscout --verifier-url $L2_VERIFIER_URL -vvvv --sig "run(string,string)" script/contracts/L2/L2PriceFeedWithoutRounds.s.sol:L2PriceFeedWithoutRoundsScript "mBTC/POR" "PrimaryProd"
+            forge script --rpc-url="$L2_RPC_URL" --broadcast --verify --verifier blockscout --verifier-url $L2_VERIFIER_URL -vvvv --sig "run(string,string)" script/contracts/L2/L2PriceFeedWithoutRounds.s.sol:L2PriceFeedWithoutRoundsScript "mBTC_POR" "PrimaryProd"
       fi
       if [ $CONTRACT_VERIFIER = "etherscan" ]
       then        
-            forge script --rpc-url="$L2_RPC_URL" --broadcast --verify --verifier etherscan --etherscan-api-key="$L2_ETHERSCAN_API_KEY" -vvvv --sig "run(string,string)" script/contracts/L2/L2PriceFeedWithoutRounds.s.sol:L2PriceFeedWithoutRoundsScript "mBTC/POR" "PrimaryProd"
+            forge script --rpc-url="$L2_RPC_URL" --broadcast --verify --verifier etherscan --etherscan-api-key="$L2_ETHERSCAN_API_KEY" -vvvv --sig "run(string,string)" script/contracts/L2/L2PriceFeedWithoutRounds.s.sol:L2PriceFeedWithoutRoundsScript "mBTC_POR" "PrimaryProd"
       fi
 fi
 echo "Done."

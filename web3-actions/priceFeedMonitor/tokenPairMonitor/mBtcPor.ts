@@ -3,7 +3,7 @@ import { checkTokenPairPriceUpdateTime } from "./validate";
 
 // Define the contract address and token pair
 const CONTRACT_ADDRESS = "0xb4e6A7861067674AC398a26DD73A3c524C602184";
-const TOKEN_PAIR = "mBTC/POR";
+const TOKEN_PAIR = "mBTC_POR";
 
 export const monitormBtcPorFn: ActionFn = async (context: Context, event: Event) => {
 	const periodicEvent = event as PeriodicEvent;
