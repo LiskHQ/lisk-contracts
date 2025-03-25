@@ -2,7 +2,7 @@ import { ActionFn, Context, Event, PeriodicEvent } from "@tenderly/actions";
 import { checkTokenPairPriceUpdateTime } from "./validate";
 
 // Define the contract address and token pair
-const CONTRACT_ADDRESS = "0xb4e6A7861067674AC398a26DD73A3c524C602184";
+const CONTRACT_ADDRESS = "0x239Cb6b32a87f2679d5b9F1aa4a9b000c766aD79";
 const TOKEN_PAIR = "mBTC_POR";
 
 export const monitormBtcPorFn: ActionFn = async (context: Context, event: Event) => {
