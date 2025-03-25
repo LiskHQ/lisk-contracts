@@ -23,7 +23,7 @@ Some configuration files inside this directory are:
 - [`usdcUsd.yaml`](./usdcUsd.yaml) - configuration file for the RedStone price feed monitoring for the USDC/USD token pair
 - [`wbtcUsd.yaml`](./wbtcUsd.yaml) - configuration file for the RedStone price feed monitoring for the WBTC/USD token pair
 - [`btcUsd.yaml`](./btcUsd.yaml) - configuration file for the RedStone price feed monitoring for the BTC/USD token pair
-- [`mBtcPor.yaml`](./mBtcPor.yaml) - configuration file for the RedStone price feed monitoring for the mBTC/POR token pair
+- [`mBtcPor.yaml`](./mBtcPor.yaml) - configuration file for the RedStone price feed monitoring for the mBTC_POR (mBTC/BTC reserve ratio)
 
 You need to provide the following information in the configuration file(s), under `actions`:
 

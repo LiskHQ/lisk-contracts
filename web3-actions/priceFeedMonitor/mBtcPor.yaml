@@ -4,7 +4,7 @@ actions:
     sources: tokenPairMonitor
     specs:
       RedStonePriceFeed_mBTC-POR:
-        description: Check if token pair price for mBTC/POR is updated at least once every 6 hours.
+        description: Check if the proof-of-reserve data for mBTC is updated at least once every 6 hours.
         function: mBtcPor:monitormBtcPorFn
         trigger:
           type: periodic
