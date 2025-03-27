@@ -2,7 +2,7 @@ import {
   Web3Function,
   Web3FunctionContext,
 } from "@gelatonetwork/web3-functions-sdk";
-import { BigNumber, Contract } from "ethers";
+import { BigNumber, Contract, utils } from "ethers";
 import {
   arrayify,
   formatBytes32String,
@@ -11,6 +11,14 @@ import {
 import { DataFeed } from "./types";
 import { ORACLE_ABI, Constants } from "./constants";
 import { PriceUtils, RedstoneUtils, LogUtils, TimeUtils } from "./utils";
+
+// Multicall3 address (same on all chains)
+const MULTICALL3_ADDRESS = "0xcA11bde05977b3631167028862bE2a173976CA11";
+
+// Minimal Multicall3 ABI we need
+const MULTICALL3_ABI = [
+  "function aggregate3(tuple(address target, bool allowFailure, bytes callData)[] calls) external payable returns (tuple(bool success, bytes returnData)[] returnData)",
+];
 
 Web3Function.onRun(async (context: Web3FunctionContext) => {
   try {
@@ -23,6 +31,11 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
     const oracleAddress = userArgs.oracleAddress as string;
 
     const oracle = new Contract(oracleAddress, ORACLE_ABI, provider);
+    const multicall3 = new Contract(
+      MULTICALL3_ADDRESS,
+      MULTICALL3_ABI,
+      provider,
+    );
 
     // Initialize data feeds map
     const idToDataFeedMap = new Map<string, DataFeed>();
@@ -81,17 +94,48 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
       }
     }
 
-    // Get stored prices and timestamps
-    for (const dataFeed of idToDataFeedMap.values()) {
-      [dataFeed.storedTimestamp, , dataFeed.storedPrice] = await wrappedOracle
-        .getLastUpdateDetails(dataFeed.id)
-        .catch(() => {
-          LogUtils.debug(
-            `No stored price found for ${dataFeed.symbol}, using defaults`,
+    // Get stored prices and timestamps using multicall3
+    // Create calls array for multicall3
+    const calls = Array.from(idToDataFeedMap.values()).map((dataFeed) => {
+      // Encode each getLastUpdateDetails call
+      const callData = wrappedOracle.interface.encodeFunctionData(
+        "getLastUpdateDetails",
+        [dataFeed.id],
+      );
+
+      return {
+        target: wrappedOracle.address,
+        allowFailure: true, // Continue execution even if one call fails
+        callData,
+      };
+    });
+
+    // Make a single multicall3 request instead of multiple RPC calls
+    const callResults = await multicall3.callStatic.aggregate3(calls);
+
+    // Process the results
+    const dataFeeds = Array.from(idToDataFeedMap.values());
+    callResults.forEach((result, index) => {
+      const dataFeed = dataFeeds[index];
+
+      if (result.success) {
+        // Decode the result
+        const [timestamp, , price] =
+          wrappedOracle.interface.decodeFunctionResult(
+            "getLastUpdateDetails",
+            result.returnData,
           );
-          return [BigNumber.from(0), BigNumber.from(0), BigNumber.from(0)];
-        });
-    }
+
+        dataFeed.storedTimestamp = timestamp.toNumber();
+        dataFeed.storedPrice = price;
+      } else {
+        LogUtils.debug(
+          `No stored price found for ${dataFeed.symbol}, using defaults`,
+        );
+        dataFeed.storedTimestamp = 0;
+        dataFeed.storedPrice = BigNumber.from(0);
+      }
+    });
 
     LogUtils.debug("Stored prices and timestamps:");
     PriceUtils.printPrices(idToDataFeedMap);
