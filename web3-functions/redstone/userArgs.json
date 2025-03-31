@@ -1,5 +1,14 @@
 {
   "dataServiceId": "redstone-primary-prod",
-  "symbols": ["ETH", "LSK", "USDT", "USDC", "WBTC", "BTC", "mBTC_POR"],
+  "symbols": [
+    "ETH",
+    "LSK",
+    "USDT",
+    "USDC",
+    "WBTC",
+    "BTC",
+    "mBTC_POR",
+    "wstETH/ETH"
+  ],
   "oracleAddress": "0x858B9Ba5729C599ED12513E7000f0F316b58Afb5"
 }
