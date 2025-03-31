@@ -2,7 +2,7 @@ import { ActionFn, Context, Event, PeriodicEvent } from "@tenderly/actions";
 import { checkTokenPairPriceUpdateTime } from "./validate";
 
 // Define the contract address and token pair
-const CONTRACT_ADDRESS = "0x0x731f330542734B4059334ca8e1Da30AF358b41b2";
+const CONTRACT_ADDRESS = "0x731f330542734B4059334ca8e1Da30AF358b41b2";
 const TOKEN_PAIR = "wstETH/ETH";
 
 export const monitorWstEthEthFn: ActionFn = async (context: Context, event: Event) => {
