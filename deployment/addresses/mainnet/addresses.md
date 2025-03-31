@@ -72,3 +72,4 @@ Below are the addresses of the deployed smart contracts on the Ethereum and Lisk
 | `WBTC/USD token pair`       | [0x13da43eA89fB692bdB6666F053FeE70aC61A53cd](https://blockscout.lisk.com/address/0x13da43eA89fB692bdB6666F053FeE70aC61A53cd) |
 | `BTC/USD token pair`        | [0xd50f47a9173d67c3CfCb6a28CA8d60230bE0f5f0](https://blockscout.lisk.com/address/0xd50f47a9173d67c3CfCb6a28CA8d60230bE0f5f0) |
 | `mBTC/BTC proof-of-reserve` | [0x239Cb6b32a87f2679d5b9F1aa4a9b000c766aD79](https://blockscout.lisk.com/address/0x239Cb6b32a87f2679d5b9F1aa4a9b000c766aD79) |
+| `wstETH/ETH token pair`     | [0x731f330542734B4059334ca8e1Da30AF358b41b2](https://blockscout.lisk.com/address/0x731f330542734B4059334ca8e1Da30AF358b41b2) |
