@@ -24,6 +24,7 @@ Some configuration files inside this directory are:
 - [`wbtcUsd.yaml`](./wbtcUsd.yaml) - configuration file for the RedStone price feed monitoring for the WBTC/USD token pair
 - [`btcUsd.yaml`](./btcUsd.yaml) - configuration file for the RedStone price feed monitoring for the BTC/USD token pair
 - [`mBtcPor.yaml`](./mBtcPor.yaml) - configuration file for the RedStone price feed monitoring for the mBTC_POR (mBTC/BTC reserve ratio)
+- [`wstEthEth.yaml`](./wstEthEth.yaml) - configuration file for the RedStone price feed monitoring for the wstETH/ETH token pair
 
 You need to provide the following information in the configuration file(s), under `actions`:
 
