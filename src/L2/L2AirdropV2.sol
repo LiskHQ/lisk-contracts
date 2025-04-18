@@ -25,7 +25,7 @@ import { IL2VotingPower } from "../interfaces/L2/IL2VotingPower.sol";
 ///         Any remaining amount left in the contract will be moved to the Ecosystem Fund.
 contract L2AirdropV2 is Ownable2Step {
     /// @notice The total amount of LSK tokens to be given away in the migration airdrop.
-    uint256 public constant MIGRATION_AIRDROP_AMOUNT = 3000000000000000000000000;
+    uint256 public constant MIGRATION_AIRDROP_AMOUNT = 3000000 * 10 ** 18;
 
     /// @notice The total amount of LSK tokens still unclaimed.
     uint256 public constant MIGRATION_AIRDROP_UNCLAIMED_AMOUNT = 1375134441061135000000000;
@@ -125,8 +125,8 @@ contract L2AirdropV2 is Ownable2Step {
         view
         returns (bool)
     {
-        require(recipient != address(0), "L2Airdrop: recipient is the zero address");
-        require(airdropAmount > 0, "L2Airdrop: airdrop amount is zero");
+        require(recipient != address(0), "L2AirdropV2: recipient is the zero address");
+        require(airdropAmount > 0, "L2AirdropV2: airdrop amount is zero");
 
         // get all locking positions of the recipient
         IL2LockingPosition l2LockingPosition = IL2LockingPosition(l2LockingPositionAddress);
