@@ -9,6 +9,7 @@ import { L2Claim } from "src/L2/L2Claim.sol";
 import { L2LockingPosition } from "src/L2/L2LockingPosition.sol";
 import { L2LiskToken } from "src/L2/L2LiskToken.sol";
 import { L2Staking } from "src/L2/L2Staking.sol";
+import { L2VotingPower } from "src/L2/L2VotingPower.sol";
 import { Utils } from "script/contracts/Utils.sol";
 
 contract L2AirdropV2Test is Test {
@@ -20,6 +21,8 @@ contract L2AirdropV2Test is Test {
     L2Claim public l2Claim;
     L2Staking public l2Staking;
     L2Staking public l2StakingImplementation;
+    L2VotingPower public l2VotingPower;
+    L2VotingPower public l2VotingPowerImplementation;
     L2LockingPosition public l2LockingPosition;
     L2LockingPosition public l2LockingPositionImplementation;
     L2AirdropV2 public l2AirdropV2;
@@ -80,6 +83,25 @@ contract L2AirdropV2Test is Test {
         );
         assert(address(l2LockingPosition) != address(0x0));
         assert(l2LockingPosition.stakingContract() == address(l2Staking));
+
+        // deploy L2VotingPower implementation contract
+        l2VotingPowerImplementation = new L2VotingPower();
+
+        // deploy L2VotingPower contract via proxy and initialize it at the same time
+        l2VotingPower = L2VotingPower(
+            address(
+                new ERC1967Proxy(
+                    address(l2VotingPowerImplementation),
+                    abi.encodeWithSelector(l2VotingPower.initialize.selector, address(l2LockingPosition))
+                )
+            )
+        );
+        assert(address(l2VotingPower) != address(0x0));
+        assert(l2VotingPower.lockingPositionAddress() == address(l2LockingPosition));
+
+        // initialize VotingPower contract inside L2LockingPosition contract
+        l2LockingPosition.initializeVotingPower(address(l2VotingPower));
+        assertEq(l2LockingPosition.votingPowerContract(), address(l2VotingPower));
 
         // initialize LockingPosition contract inside L2Staking contract
         l2Staking.initializeLockingPosition(address(l2LockingPosition));
@@ -237,5 +259,153 @@ contract L2AirdropV2Test is Test {
         vm.prank(alice);
         vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, alice));
         l2AirdropV2.sendLSKToEcosystemWallet();
+    }
+
+    function aliceSatifiesStakingTier1() internal {
+        // alice stakes 30 and 50 L2LiskToken for minimum and minumum plus 1 days respectively in two positions
+        vm.startPrank(alice);
+        l2Staking.lockAmount(alice, 30 * 10 ** 18, l2AirdropV2.MIN_STAKING_DURATION_TIER_1());
+        l2Staking.lockAmount(alice, 50 * 10 ** 18, l2AirdropV2.MIN_STAKING_DURATION_TIER_1() + 1);
+        vm.stopPrank();
+
+        // maximum staking tier 1 airdrop amount for alice is 80 L2LiskToken
+        assertEq(l2AirdropV2.satisfiesStakingTier1(alice, 80 * 10 ** 18), true);
+
+        // check that bigger amount than 80 L2LiskToken does not satisfy staking tier 1
+        assertEq(l2AirdropV2.satisfiesStakingTier1(alice, (80 * 10 ** 18) + 1), false);
+    }
+
+    function test_SatisfiesStakingTier1() public {
+        // check that alice satisfies staking tier 1
+        aliceSatifiesStakingTier1();
+    }
+
+    function test_SatisfiesStakingTier1_AllLockingPositionsSatisfy_PausedPositions() public {
+        // alice stakes 30 L2LiskToken for minimum days in one position
+        vm.startPrank(alice);
+        l2Staking.lockAmount(alice, 30 * 10 ** 18, l2AirdropV2.MIN_STAKING_DURATION_TIER_1());
+        // and 50 L2LiskToken for minimum plus 1 days in another position
+        l2Staking.lockAmount(alice, 50 * 10 ** 18, l2AirdropV2.MIN_STAKING_DURATION_TIER_1() + 1);
+        vm.stopPrank();
+        assertEq(l2LockingPosition.balanceOf(alice), 2);
+        assertEq(l2VotingPower.balanceOf(alice), 80 * 10 ** 18);
+
+        // pause both locking positions
+        vm.startPrank(alice);
+        l2Staking.pauseRemainingLockingDuration(1);
+        l2Staking.pauseRemainingLockingDuration(2);
+        vm.stopPrank();
+        assertEq(l2LockingPosition.getLockingPosition(1).pausedLockingDuration, 90);
+        assertEq(l2LockingPosition.getLockingPosition(2).pausedLockingDuration, 91);
+
+        // proceed time to MIN_STAKING_DURATION_TIER_1 + 100 days so that both positions would not satisfy staking tier
+        // 1 if positions were not paused
+        vm.warp((l2AirdropV2.MIN_STAKING_DURATION_TIER_1() + 100) * 1 days);
+
+        // check that alice satisfy staking tier 1 because both positions are paused
+        assertEq(l2AirdropV2.satisfiesStakingTier1(alice, 80 * 10 ** 18), true);
+    }
+
+    function test_SatisfiesStakingTier1_NotAllLockingPositionsSatisfy_TooSmallDuration() public {
+        // alice stakes 30 L2LiskToken for minimum days in one position
+        vm.startPrank(alice);
+        l2Staking.lockAmount(alice, 30 * 10 ** 18, l2AirdropV2.MIN_STAKING_DURATION_TIER_1());
+        // and 50 L2LiskToken for less than minimum staking duration in another position
+        l2Staking.lockAmount(alice, 50 * 10 ** 18, l2AirdropV2.MIN_STAKING_DURATION_TIER_1() - 1);
+        vm.stopPrank();
+        assertEq(l2LockingPosition.balanceOf(alice), 2);
+        assertEq(l2VotingPower.balanceOf(alice), 80 * 10 ** 18);
+
+        // check that alice does not satisfy staking tier 1 because second position is not staked for
+        // MIN_STAKING_DURATION_TIER_1 days or more
+        assertEq(l2AirdropV2.satisfiesStakingTier1(alice, 80 * 10 ** 18), false);
+    }
+
+    function test_SatisfiesStakingTier1_NotAllLockingPositionsSatisfy_PositionExpired() public {
+        // alice stakes 30 L2LiskToken for minimum + 20 days in one position
+        vm.startPrank(alice);
+        l2Staking.lockAmount(alice, 30 * 10 ** 18, l2AirdropV2.MIN_STAKING_DURATION_TIER_1() + 20);
+        // and 50 L2LiskToken for minimum + 40 days in another position
+        l2Staking.lockAmount(alice, 50 * 10 ** 18, l2AirdropV2.MIN_STAKING_DURATION_TIER_1() + 40);
+        vm.stopPrank();
+        assertEq(l2LockingPosition.balanceOf(alice), 2);
+        assertEq(l2VotingPower.balanceOf(alice), 80 * 10 ** 18);
+
+        // proceed time to MIN_STAKING_DURATION_TIER_1 + 30 days so that first position does not satisfy staking tier 1
+        vm.warp((l2AirdropV2.MIN_STAKING_DURATION_TIER_1() + 30) * 1 days);
+
+        // check that alice does not satisfy staking tier 1 because first position already expired
+        assertEq(l2AirdropV2.satisfiesStakingTier1(alice, 80 * 10 ** 18), false);
+    }
+
+    function test_SatisfiesStakingTier1_ZeroRecipientAddress() public {
+        vm.expectRevert("L2AirdropV2: recipient is the zero address");
+        l2AirdropV2.satisfiesStakingTier1(address(0x0), 0);
+    }
+
+    function test_SatisfiesStakingTier1_ZeroAmount() public {
+        vm.expectRevert("L2AirdropV2: airdrop amount is zero");
+        l2AirdropV2.satisfiesStakingTier1(alice, 0);
+    }
+
+    function aliceSatifiesStakingTier2() internal {
+        // alice stakes 30 and 50 L2LiskToken for minimum and minumum plus 1 days respectively in two positions
+        vm.startPrank(alice);
+        l2Staking.lockAmount(alice, 30 * 10 ** 18, l2AirdropV2.MIN_STAKING_DURATION_TIER_2());
+        l2Staking.lockAmount(alice, 50 * 10 ** 18, l2AirdropV2.MIN_STAKING_DURATION_TIER_2() + 1);
+        vm.stopPrank();
+
+        // maximum staking tier 2 airdrop amount for alice is 80 L2LiskToken
+        assertEq(l2AirdropV2.satisfiesStakingTier2(alice, 80 * 10 ** 18), true);
+
+        // check that bigger amount than 80 L2LiskToken does not satisfy staking tier 2
+        assertEq(l2AirdropV2.satisfiesStakingTier2(alice, (80 * 10 ** 18) + 1), false);
+    }
+
+    function test_SatisfiesStakingTier2() public {
+        // check that alice satisfies staking tier 2
+        aliceSatifiesStakingTier2();
+    }
+
+    function test_SatisfiesStakingTier2_NotAllLockingPositionsSatisfy_TooSmallDuration() public {
+        // alice stakes 30 L2LiskToken for minimum days in one position
+        vm.startPrank(alice);
+        l2Staking.lockAmount(alice, 30 * 10 ** 18, l2AirdropV2.MIN_STAKING_DURATION_TIER_2());
+        // and 50 L2LiskToken for less than minimum staking duration in another position
+        l2Staking.lockAmount(alice, 50 * 10 ** 18, l2AirdropV2.MIN_STAKING_DURATION_TIER_2() - 1);
+        vm.stopPrank();
+        assertEq(l2LockingPosition.balanceOf(alice), 2);
+        assertEq(l2VotingPower.balanceOf(alice), 80 * 10 ** 18);
+
+        // check that alice does not satisfy staking tier 2 because second position is not staked for
+        // MIN_STAKING_DURATION_TIER_2 days or more
+        assertEq(l2AirdropV2.satisfiesStakingTier2(alice, 80 * 10 ** 18), false);
+    }
+
+    function test_SatisfiesStakingTier2_NotAllLockingPositionsSatisfy_PositionExpired() public {
+        // alice stakes 30 L2LiskToken for minimum + 20 days in one position
+        vm.startPrank(alice);
+        l2Staking.lockAmount(alice, 30 * 10 ** 18, l2AirdropV2.MIN_STAKING_DURATION_TIER_2() + 20);
+        // and 50 L2LiskToken for minimum + 40 days in another position
+        l2Staking.lockAmount(alice, 50 * 10 ** 18, l2AirdropV2.MIN_STAKING_DURATION_TIER_2() + 40);
+        vm.stopPrank();
+        assertEq(l2LockingPosition.balanceOf(alice), 2);
+        assertEq(l2VotingPower.balanceOf(alice), 80 * 10 ** 18);
+
+        // proceed time to MIN_STAKING_DURATION_TIER_2 + 30 days so that first position does not satisfy staking tier 2
+        vm.warp((l2AirdropV2.MIN_STAKING_DURATION_TIER_2() + 30) * 1 days);
+
+        // check that alice does not satisfy staking tier 2 because first position already expired
+        assertEq(l2AirdropV2.satisfiesStakingTier2(alice, 80 * 10 ** 18), false);
+    }
+
+    function test_SatisfiesStakingTier2_ZeroRecipientAddress() public {
+        vm.expectRevert("L2AirdropV2: recipient is the zero address");
+        l2AirdropV2.satisfiesStakingTier2(address(0x0), 0);
+    }
+
+    function test_SatisfiesStakingTier2_ZeroAmount() public {
+        vm.expectRevert("L2AirdropV2: airdrop amount is zero");
+        l2AirdropV2.satisfiesStakingTier2(alice, 0);
     }
 }
