@@ -10,15 +10,16 @@ import { IL2Claim } from "../interfaces/L2/IL2Claim.sol";
 import { IL2VotingPower } from "../interfaces/L2/IL2VotingPower.sol";
 
 /// @title L2AirdropV2
-/// @notice L2AirdropV2 is an implementation of the Lisk v4 migration airdrop on L2 version 2. It is responsible for the
-/// airdrop
-///         computation and distribution of LSK tokens to the recipient's accounts that have migrated to L2. The airdrop
+/// @notice L2AirdropV2 is an implementation of the Lisk v4 migration airdropV2 on L2 version 2.
+///         It is responsible for the airdropV2
+///         The claim amount for each user is equal to their share in the remaining unclaimed balance of
+///         the L2Airdrop contract,
+///         where their share is calculated proportionately to the amount they already claimed.
 ///         computation is based on the following conditions:
 ///         1. Staking Tier 1: A user is required to stake the same amount they received
 ///                            in the Hodlerdrop for a period of time (3 months).
-///         2. Staking Tier 2: This condition is analogous to the previous,
-///                            but a user is required to stake the same amount for a twice longer period of time (6
-/// months).
+///         2. Staking Tier 2: This condition is analogous to the previous, but a user is required
+///                            to stake the same amount for a twice longer period of time (6months).
 ///         The airdrop amount is distributed to the recipient's address in L2LiskToken contract. The airdrop status for
 ///         each recipient is stored in a mapping. The airdrop status includes the status of each of the airdrop
 ///         conditions.
@@ -41,18 +42,18 @@ contract L2AirdropV2 is Ownable2Step {
     uint32 public constant MIN_STAKING_DURATION_TIER_2 = 180; // 6 months
 
     /// @notice The period of time starting from the setting of the Merkle root, during which the airdrop can be
-    /// claimed.
+    ///         claimed.
     ///         All LSK tokens should be transferable to the Lisk Ecosystem funds afterwards.
     uint32 public constant HODLER_AIRDROPV2_DURATION = 180; // 6 months
 
     /// @notice Merkle root for the airdrop process.
     bytes32 public merkleRoot;
 
-    /// @notice Start time of the migration airdrop. Airdrop is considered started once the Merkle root is set.
+    /// @notice Start time of the migration airdrop. AirdropV2 is considered started once the Merkle root is set.
     uint256 public airdropStartTime;
 
-    /// @notice Mapping of the airdrop status for each Lisk v4 address. In particular, for each of the airdrop
-    ///         conditions (min ETH, delegating, staking tier 1, staking tier 2).
+    /// @notice Mapping of the airdropV2 status for each Lisk v4 address. In particular, for each of the airdrop
+    ///         conditions (staking tier 1, staking tier 2).
     mapping(bytes20 => uint8) public airdropStatus;
 
     // Airdrop status bits
@@ -73,7 +74,7 @@ contract L2AirdropV2 is Ownable2Step {
     address public immutable l2LockingPositionAddress;
 
     /// @notice Address of the Ecosystem Fund wallet where the remaining LSK tokens are sent to after the airdrop is
-    /// completed.
+    ///         completed.
     address public immutable ecosystemFundAddress;
 
     /// @notice Emitted when the Merkle root is set.
@@ -85,7 +86,7 @@ contract L2AirdropV2 is Ownable2Step {
     /// @notice Emitted when the airdrop is (partially) claimed for the recipient.
     event AirdropClaimed(bytes20 indexed liskAddress, uint256 amount, address indexed recipient, uint8 airdropStatus);
 
-    /// @notice Constructs the L2Airdrop contract.
+    /// @notice Constructs the L2AirdropV2 contract.
     /// @param _l2LiskTokenAddress Address of the L2LiskToken contract.
     /// @param _l2ClaimAddress Address of the L2Claim contract.
     /// @param _l2LockingPositionAddress Address of the L2LockingPosition contract.
