@@ -61,7 +61,7 @@ contract L2AirdropV2 is Ownable2Step {
     // bit 1: staking tier 2
     uint8 public constant STAKING_TIER_2_BIT = 0x02;
     // full airdrop claimed
-    uint8 public constant FULL_AIRDROP_CLAIMED = 0x0F;
+    uint8 public constant FULL_AIRDROP_CLAIMED = 0x03;
 
     /// @notice Address of the L2LiskToken contract.
     address public immutable l2LiskTokenAddress;
@@ -224,27 +224,27 @@ contract L2AirdropV2 is Ownable2Step {
     /// @param amount The amount of LSK tokens to claim the airdrop for.
     /// @param merkleProof The Merkle proof for the liskAddress and amount against the stored merkleRoot.
     function claimAirdrop(bytes20 liskAddress, uint256 amount, bytes32[] memory merkleProof) public {
-        require(merkleRoot != 0, "L2Airdrop: airdrop has not started yet");
+        require(merkleRoot != 0, "L2AirdropV2: airdrop has not started yet");
         require(
             block.timestamp <= airdropStartTime + (HODLER_AIRDROPV2_DURATION * 1 days),
-            "L2Airdrop: airdrop period is over"
+            "L2AirdropV2: airdrop period is over"
         );
         require(
             IL2Claim(l2ClaimAddress).claimedTo(liskAddress) != address(0),
-            "L2Airdrop: tokens were not claimed yet from this Lisk address"
+            "L2AirdropV2: tokens were not claimed yet from this Lisk address"
         );
-        require(amount > 0, "L2Airdrop: amount is zero");
-        require(merkleProof.length > 0, "L2Airdrop: Merkle proof is empty");
+        require(amount > 0, "L2AirdropV2: amount is zero");
+        require(merkleProof.length > 0, "L2AirdropV2: Merkle proof is empty");
         // require merkleProof be a correct proof for liskv4Address and amount against stored merkleRoot
         require(
             MerkleProof.verify(
                 merkleProof, merkleRoot, keccak256(bytes.concat(keccak256(abi.encode(liskAddress, amount))))
             ),
-            "L2Airdrop: invalid Merkle proof"
+            "L2AirdropV2: invalid Merkle proof"
         );
         require(
             (airdropStatus[liskAddress] & FULL_AIRDROP_CLAIMED) != FULL_AIRDROP_CLAIMED,
-            "L2Airdrop: full airdrop claimed"
+            "L2AirdropV2: full airdrop claimed"
         );
 
         address recipient = IL2Claim(l2ClaimAddress).claimedTo(liskAddress);
@@ -273,7 +273,7 @@ contract L2AirdropV2 is Ownable2Step {
             // slither-disable-next-line reentrancy-no-eth
             // slither-disable-next-line reentrancy-events
             bool status = IL2LiskToken(l2LiskTokenAddress).transfer(recipient, airdropAmount);
-            require(status, "L2Airdrop: L2LiskToken transfer failed");
+            require(status, "L2AirdropV2: L2LiskToken transfer failed");
 
             emit AirdropClaimed(liskAddress, airdropAmount, recipient, claimStatus);
         }
