@@ -123,7 +123,7 @@ contract L2AirdropV2Test is Test {
         assertEq(l2AirdropV2.ecosystemFundAddress(), ecosystemFundWalletAddress);
 
         // set merkle root for L2Airdrop contract
-        bytes32 merkleRoot = bytes32(0xba12d808fc6dfcb9f649bd8aba43c8ed5f58d0c3c2fce0e904b4a85f4b805c98);
+        bytes32 merkleRoot = bytes32(0x316c2913f708e37fde39213df4870754d85af50c5ee5670b6f1e97cd3cfdcac5);
         l2AirdropV2.setMerkleRoot(merkleRoot);
         assertEq(l2AirdropV2.merkleRoot(), merkleRoot);
 
@@ -407,5 +407,54 @@ contract L2AirdropV2Test is Test {
     function test_SatisfiesStakingTier2_ZeroAmount() public {
         vm.expectRevert("L2AirdropV2: airdrop amount is zero");
         l2AirdropV2.satisfiesStakingTier2(alice, 0);
+    }
+
+    function aliceClaimAirdropForStakingTier1() internal {
+        // alice satisfies staking tier 1 condition
+        aliceSatifiesStakingTier1();
+
+        // alice did not claim airdrop for staking tier 1 condition
+        assertEq(l2AirdropV2.claimedStakingTier1(aliceLSKAddress), false);
+
+        // claim airdrop for alice (only staking tier 1 condition is satisfied)
+        uint256 aliceBalanceBefore = l2LiskToken.balanceOf(alice);
+        bytes32[] memory merkleProof = new bytes32[](1);
+        merkleProof[0] = bytes32(0xf0df3dcda05b4fbd9c655cde3d5ceb211e019e72ec816e127a59e7195f2cd7f5);
+        l2AirdropV2.claimAirdrop(aliceLSKAddress, 80 * 10 ** 18, merkleProof);
+        assertEq(l2LiskToken.balanceOf(alice), aliceBalanceBefore + 40 * 10 ** 18); // 4 L2LiskToken airdrop
+
+        // check that alice has claimed airdrop for staking tier 1 condition
+        assertEq(l2AirdropV2.claimedStakingTier1(aliceLSKAddress), true);
+    }
+
+    function test_ClaimAirdrop_StakingTier1() public {
+        // check that alice can claim airdrop for staking tier 1 condition
+        aliceClaimAirdropForStakingTier1();
+    }
+
+    function aliceClaimAirdropForStakingTier2() internal {
+        // alice satisfies staking tier 2 condition
+        aliceSatifiesStakingTier2();
+
+        // alice did not claim airdrop for staking tier 2 condition
+        assertEq(l2AirdropV2.claimedStakingTier2(aliceLSKAddress), false);
+
+        // claim airdrop for alice (only staking tier 2 condition is satisfied)
+        uint256 aliceBalanceBefore = l2LiskToken.balanceOf(alice);
+        bytes32[] memory merkleProof = new bytes32[](1);
+        merkleProof[0] = bytes32(0xf0df3dcda05b4fbd9c655cde3d5ceb211e019e72ec816e127a59e7195f2cd7f5);
+        l2AirdropV2.claimAirdrop(aliceLSKAddress, 80 * 10 ** 18, merkleProof);
+        assertEq(l2LiskToken.balanceOf(alice), aliceBalanceBefore + 40 * 10 ** 18); // 4 L2LiskToken airdrop
+
+        // check that alice has claimed airdrop for staking tier 2 condition
+        assertEq(l2AirdropV2.claimedStakingTier2(aliceLSKAddress), true);
+    }
+
+    function test_ClaimAirdrop_StakingTier2() public {
+        // first alice will claim airdrop for staking tier 1 condition that only staking tier 2 condition will be left
+        aliceClaimAirdropForStakingTier1();
+
+        // check that alice can claim airdrop for staking tier 2 condition
+        aliceClaimAirdropForStakingTier2();
     }
 }
