@@ -122,7 +122,7 @@ contract L2AirdropV2Test is Test {
         assertEq(l2AirdropV2.l2LockingPositionAddress(), address(l2LockingPosition));
         assertEq(l2AirdropV2.ecosystemFundAddress(), ecosystemFundWalletAddress);
 
-        // set merkle root for L2Airdrop contract
+        // set merkle root for L2AirdropV2 contract
         bytes32 merkleRoot = bytes32(0x316c2913f708e37fde39213df4870754d85af50c5ee5670b6f1e97cd3cfdcac5);
         l2AirdropV2.setMerkleRoot(merkleRoot);
         assertEq(l2AirdropV2.merkleRoot(), merkleRoot);
@@ -456,5 +456,129 @@ contract L2AirdropV2Test is Test {
 
         // check that alice can claim airdrop for staking tier 2 condition
         aliceClaimAirdropForStakingTier2();
+    }
+
+    function test_ClaimAirdrop_StakingTier1_StakingTier2() public {
+        // alice satisfies staking tier 1 condition
+        aliceSatifiesStakingTier1();
+
+        // alice satisfies staking tier 2 condition
+        aliceSatifiesStakingTier2();
+
+        uint256 aliceBalanceBefore = l2LiskToken.balanceOf(alice);
+        bytes32[] memory merkleProof = new bytes32[](1);
+        merkleProof[0] = bytes32(0xf0df3dcda05b4fbd9c655cde3d5ceb211e019e72ec816e127a59e7195f2cd7f5);
+        l2AirdropV2.claimAirdrop(aliceLSKAddress, 80 * 10 ** 18, merkleProof);
+        assertEq(l2LiskToken.balanceOf(alice), aliceBalanceBefore + 80 * 10 ** 18); // 80 L2LiskToken airdrop
+
+        // check airdrop claim status for alice
+        assertEq(l2AirdropV2.claimedStakingTier1(bytes20(alice)), true);
+        assertEq(l2AirdropV2.claimedStakingTier2(bytes20(alice)), true);
+    }
+
+    function test_ClaimAirdrop_FullAirdrop() public {
+        // alice satisfies staking tier 1 condition
+        aliceSatifiesStakingTier1();
+
+        // alice satisfies staking tier 2 condition
+        aliceSatifiesStakingTier2();
+
+        uint256 aliceBalanceBefore = l2LiskToken.balanceOf(alice);
+        bytes32[] memory merkleProof = new bytes32[](1);
+        merkleProof[0] = bytes32(0xf0df3dcda05b4fbd9c655cde3d5ceb211e019e72ec816e127a59e7195f2cd7f5);
+
+        // check that the AirdropClaimed event is emitted for all conditions
+        vm.expectEmit(true, true, true, true);
+        emit L2AirdropV2.AirdropClaimed(
+            aliceLSKAddress, 80 * 10 ** 18, alice, l2AirdropV2.STAKING_TIER_1_BIT() | l2AirdropV2.STAKING_TIER_2_BIT()
+        );
+
+        l2AirdropV2.claimAirdrop(aliceLSKAddress, 80 * 10 ** 18, merkleProof);
+        assertEq(l2LiskToken.balanceOf(alice), aliceBalanceBefore + 80 * 10 ** 18); // 16 L2LiskToken airdrop
+
+        // check airdrop claim status for alice
+        assertEq(l2AirdropV2.claimedStakingTier1(bytes20(alice)), true);
+        assertEq(l2AirdropV2.claimedStakingTier2(bytes20(alice)), true);
+        assertEq(l2AirdropV2.claimedFullAirdrop(bytes20(alice)), true);
+
+        // check that alice cannot claim airdrop again
+        vm.expectRevert("L2AirdropV2: full airdrop claimed");
+        l2AirdropV2.claimAirdrop(bytes20(alice), 80 * 10 ** 18, merkleProof);
+    }
+
+    function test_ClaimAirdrop_NotStartedYet() public {
+        // re-deploy L2AirdropV2 contract because merkle root is already set in setup
+        l2AirdropV2 = new L2AirdropV2(
+            address(l2LiskToken), address(l2Claim), address(l2LockingPosition), ecosystemFundWalletAddress
+        );
+
+        bytes32[] memory merkleProof = new bytes32[](1);
+        vm.expectRevert("L2AirdropV2: airdrop has not started yet");
+        l2AirdropV2.claimAirdrop(bytes20(alice), 20 * 10 ** 18, merkleProof);
+    }
+
+    function test_ClaimAirdrop_AirdropOver() public {
+        // proceed time to HODLER_AIRDROPV2_DURATION + 1 so that airdrop period is over
+        vm.warp(block.timestamp + l2AirdropV2.HODLER_AIRDROPV2_DURATION() * 1 days + 1);
+
+        bytes32[] memory merkleProof = new bytes32[](1);
+        vm.expectRevert("L2AirdropV2: airdrop period is over");
+        l2AirdropV2.claimAirdrop(bytes20(alice), 20 * 10 ** 18, merkleProof);
+    }
+
+    function test_ClaimAirdrop_AmountIsZero() public {
+        bytes32[] memory merkleProof = new bytes32[](1);
+        vm.expectRevert("L2AirdropV2: amount is zero");
+        l2AirdropV2.claimAirdrop(bytes20(alice), 0, merkleProof);
+    }
+
+    function test_ClaimAirdrop_ZeroProofLength() public {
+        bytes32[] memory merkleProof = new bytes32[](0);
+        vm.expectRevert("L2AirdropV2: Merkle proof is empty");
+        l2AirdropV2.claimAirdrop(bytes20(alice), 20 * 10 ** 18, merkleProof);
+    }
+
+    function test_ClaimAirdrop_ZeroRecipientAddress() public {
+        bytes32[] memory merkleProof = new bytes32[](1);
+        vm.expectRevert("L2AirdropV2: tokens were not claimed yet from this Lisk address");
+        // bob did not claim tokens in the Claim contract
+        l2AirdropV2.claimAirdrop(bytes20(bob), 20 * 10 ** 18, merkleProof);
+    }
+
+    function test_TransferOwnership() public {
+        address newOwner = vm.addr(1);
+
+        l2AirdropV2.transferOwnership(newOwner);
+        assertEq(l2AirdropV2.owner(), address(this));
+
+        vm.prank(newOwner);
+        l2AirdropV2.acceptOwnership();
+        assertEq(l2AirdropV2.owner(), newOwner);
+    }
+
+    function test_TransferOwnership_RevertWhenNotCalledByOwner() public {
+        address newOwner = vm.addr(1);
+        address nobody = vm.addr(2);
+
+        // owner is this contract
+        assertEq(l2AirdropV2.owner(), address(this));
+
+        // address nobody is not the owner so it cannot call transferOwnership
+        vm.startPrank(nobody);
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, nobody));
+        l2AirdropV2.transferOwnership(newOwner);
+        vm.stopPrank();
+    }
+
+    function test_TransferOwnership_RevertWhenNotCalledByPendingOwner() public {
+        address newOwner = vm.addr(1);
+
+        l2AirdropV2.transferOwnership(newOwner);
+        assertEq(l2AirdropV2.owner(), address(this));
+
+        address nobody = vm.addr(2);
+        vm.prank(nobody);
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, nobody));
+        l2AirdropV2.acceptOwnership();
     }
 }
