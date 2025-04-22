@@ -10,12 +10,11 @@ import { IL2Claim } from "../interfaces/L2/IL2Claim.sol";
 import { IL2VotingPower } from "../interfaces/L2/IL2VotingPower.sol";
 
 /// @title L2AirdropV2
-/// @notice L2AirdropV2 is an implementation of the Lisk v4 migration airdropV2 on L2 version 2.
-///         It is responsible for the airdropV2
-///         The claim amount for each user is equal to their share in the remaining unclaimed balance of
-///         the L2Airdrop contract,
-///         where their share is calculated proportionately to the amount they already claimed.
-///         computation is based on the following conditions:
+/// @notice L2AirdropV2 is an implementation of the Lisk v4 migration airdrop on L2 version 2.
+///         It distributes LSK tokens to eligible users based on their previous claims in L2Airdrop.
+///         Each user's claim amount is proportional to their share of the total claimed amount in L2Airdrop,
+///         applied to the remaining unclaimed balance. The distribution eligibility is determined by the
+///         following staking conditions:
 ///         1. Staking Tier 1: A user is required to stake the same amount they received
 ///                            in the Hodlerdrop for a period of time (3 months).
 ///         2. Staking Tier 2: This condition is analogous to the previous, but a user is required
@@ -106,8 +105,8 @@ contract L2AirdropV2 is Ownable2Step {
         );
         require(_ecosystemFundAddress != address(0), "L2AirdropV2: Ecosystem Fund wallet address can not be zero");
         l2LiskTokenAddress = _l2LiskTokenAddress;
-        l2LockingPositionAddress = _l2LockingPositionAddress;
         l2ClaimAddress = _l2ClaimAddress;
+        l2LockingPositionAddress = _l2LockingPositionAddress;
         ecosystemFundAddress = _ecosystemFundAddress;
     }
 

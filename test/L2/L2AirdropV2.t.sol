@@ -167,6 +167,16 @@ contract L2AirdropV2Test is Test {
         assertEq(l2Claim.claimedTo(aliceLSKAddress), alice);
     }
 
+    function test_MigrationConstants() public view {
+        // verify the migration constants are correctly set
+        assertEq(l2AirdropV2.MIGRATION_AIRDROP_AMOUNT(), 3000000 * 10 ** 18);
+        assertEq(l2AirdropV2.MIGRATION_AIRDROP_UNCLAIMED_AMOUNT(), 1375134441061135000000000);
+        assertEq(
+            l2AirdropV2.MIGRATION_AIRDROP_CLAIMED_AMOUNT(),
+            l2AirdropV2.MIGRATION_AIRDROP_AMOUNT() - l2AirdropV2.MIGRATION_AIRDROP_UNCLAIMED_AMOUNT()
+        );
+    }
+
     function test_Constructor_ZeroL2LiskTokenAddress() public {
         vm.expectRevert("L2AirdropV2: L2 Lisk Token contract address can not be zero");
         new L2AirdropV2(address(0x0), address(l2Claim), address(l2LockingPosition), ecosystemFundWalletAddress);
