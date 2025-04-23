@@ -4,7 +4,7 @@ pragma solidity 0.8.23;
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { Test, console2, stdStorage, StdStorage } from "forge-std/Test.sol";
-import { L2AirdropV2 } from "src/L2/L2AirdropV2.sol";
+import { L2AirdropV2 } from "src/L2/L2HodlerdropRedistribution.sol";
 import { L2Claim } from "src/L2/L2Claim.sol";
 import { L2LockingPosition } from "src/L2/L2LockingPosition.sol";
 import { L2LiskToken } from "src/L2/L2LiskToken.sol";
@@ -18,7 +18,6 @@ contract L2AirdropV2Test is Test {
     L2LiskToken public l2LiskToken;
     address public remoteToken;
     address public bridge;
-    L2Claim public l2Claim;
     L2Staking public l2Staking;
     L2Staking public l2StakingImplementation;
     L2VotingPower public l2VotingPower;
@@ -29,14 +28,12 @@ contract L2AirdropV2Test is Test {
 
     address ecosystemFundWalletAddress;
     address alice;
-    bytes20 aliceLSKAddress;
     address bob;
     address charlie;
 
     function setUp() public {
         ecosystemFundWalletAddress = address(0xDeaDbeefdEAdbeefdEadbEEFdeadbeEFdEaDbeeF);
         alice = address(0x1);
-        aliceLSKAddress = bytes20(alice);
         bob = address(0x2);
         charlie = address(0x3);
 
@@ -50,9 +47,6 @@ contract L2AirdropV2Test is Test {
         l2LiskToken.initialize(bridge);
         vm.stopPrank();
         assert(address(l2LiskToken) != address(0x0));
-
-        // deploy L2Claim contract
-        l2Claim = new L2Claim();
 
         // deploy L2Staking implementation contract
         l2StakingImplementation = new L2Staking();
@@ -107,23 +101,15 @@ contract L2AirdropV2Test is Test {
         l2Staking.initializeLockingPosition(address(l2LockingPosition));
         assert(l2Staking.lockingPositionContract() == address(l2LockingPosition));
 
-        // TODO make sure we dont need this part
-        // initialize Lisk DAO Treasury contract inside L2Staking contract
-        //l2Staking.initializeDaoTreasury(ecosystemFundWalletAddress);
-        //assert(l2Staking.daoTreasury() == ecosystemFundWalletAddress);
-
         // deploy L2AirdropV2 contract
-        l2AirdropV2 = new L2AirdropV2(
-            address(l2LiskToken), address(l2Claim), address(l2LockingPosition), ecosystemFundWalletAddress
-        );
+        l2AirdropV2 = new L2AirdropV2(address(l2LiskToken), address(l2LockingPosition), ecosystemFundWalletAddress);
         assert(address(l2AirdropV2) != address(0x0));
         assertEq(l2AirdropV2.l2LiskTokenAddress(), address(l2LiskToken));
-        assertEq(l2AirdropV2.l2ClaimAddress(), address(l2Claim));
         assertEq(l2AirdropV2.l2LockingPositionAddress(), address(l2LockingPosition));
         assertEq(l2AirdropV2.ecosystemFundAddress(), ecosystemFundWalletAddress);
 
         // set merkle root for L2AirdropV2 contract
-        bytes32 merkleRoot = bytes32(0x316c2913f708e37fde39213df4870754d85af50c5ee5670b6f1e97cd3cfdcac5);
+        bytes32 merkleRoot = bytes32(0x05da2740a58e38dd8375b42c4a501bc32d90ba14ebc98da356c822cd24ec9a3a);
         l2AirdropV2.setMerkleRoot(merkleRoot);
         assertEq(l2AirdropV2.merkleRoot(), merkleRoot);
 
@@ -161,49 +147,28 @@ contract L2AirdropV2Test is Test {
         vm.prank(charlie);
         l2LiskToken.approve(address(l2Staking), 100 * 10 ** 18);
         assertEq(l2LiskToken.allowance(charlie, address(l2Staking)), 100 * 10 ** 18);
-
-        // alice has already claimed LSK tokens
-        stdstore.target(address(l2Claim)).sig("claimedTo(bytes20)").with_key(aliceLSKAddress).checked_write(alice);
-        assertEq(l2Claim.claimedTo(aliceLSKAddress), alice);
-    }
-
-    function test_MigrationConstants() public view {
-        // verify the migration constants are correctly set
-        assertEq(l2AirdropV2.MIGRATION_AIRDROP_AMOUNT(), 3000000 * 10 ** 18);
-        assertEq(l2AirdropV2.MIGRATION_AIRDROP_UNCLAIMED_AMOUNT(), 1375134441061135000000000);
-        assertEq(
-            l2AirdropV2.MIGRATION_AIRDROP_CLAIMED_AMOUNT(),
-            l2AirdropV2.MIGRATION_AIRDROP_AMOUNT() - l2AirdropV2.MIGRATION_AIRDROP_UNCLAIMED_AMOUNT()
-        );
     }
 
     function test_Constructor_ZeroL2LiskTokenAddress() public {
         vm.expectRevert("L2AirdropV2: L2 Lisk Token contract address can not be zero");
-        new L2AirdropV2(address(0x0), address(l2Claim), address(l2LockingPosition), ecosystemFundWalletAddress);
-    }
-
-    function test_Constructor_ZeroL2ClaimAddress() public {
-        vm.expectRevert("L2AirdropV2: L2 Claim contract address can not be zero");
-        new L2AirdropV2(address(l2LiskToken), address(0x0), address(l2LockingPosition), ecosystemFundWalletAddress);
+        new L2AirdropV2(address(0x0), address(l2LockingPosition), ecosystemFundWalletAddress);
     }
 
     function test_Constructor_ZeroL2LockingPositionAddress() public {
         vm.expectRevert("L2AirdropV2: L2 Locking Position contract address can not be zero");
-        new L2AirdropV2(address(l2LiskToken), address(l2Claim), address(0x0), ecosystemFundWalletAddress);
+        new L2AirdropV2(address(l2LiskToken), address(0x0), ecosystemFundWalletAddress);
     }
 
     function test_Constructor_ZeroEcosystemFundWalletAddress() public {
         vm.expectRevert("L2AirdropV2: Ecosystem Fund wallet address can not be zero");
-        new L2AirdropV2(address(l2LiskToken), address(l2Claim), address(l2LockingPosition), address(0x0));
+        new L2AirdropV2(address(l2LiskToken), address(l2LockingPosition), address(0x0));
     }
 
     function test_SetMerkleRoot() public {
         bytes32 merkleRoot = bytes32(0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef);
 
         // re-deploy L2AirdropV2 contract because merkle root is already set in setup
-        l2AirdropV2 = new L2AirdropV2(
-            address(l2LiskToken), address(l2Claim), address(l2LockingPosition), ecosystemFundWalletAddress
-        );
+        l2AirdropV2 = new L2AirdropV2(address(l2LiskToken), address(l2LockingPosition), ecosystemFundWalletAddress);
 
         // check that the MerkleRootSet event is emitted
         vm.expectEmit(true, true, true, true);
@@ -232,8 +197,8 @@ contract L2AirdropV2Test is Test {
     }
 
     function test_SendLSKToEcosystemFundWallet() public {
-        // proceed time to HODLER_AIRDROPV2_DURATION + 1 so that airdrop period is over
-        vm.warp(block.timestamp + l2AirdropV2.HODLER_AIRDROPV2_DURATION() * 1 days + 1);
+        // proceed time to HODLERDROP_REDISTRIBUTION_DURATION + 1 so that airdrop period is over
+        vm.warp(block.timestamp + l2AirdropV2.HODLERDROP_REDISTRIBUTION_DURATION() * 1 days + 1);
 
         // check that the LSKSentToEcosystemWallet event is emitted
         vm.expectEmit(true, true, true, true);
@@ -247,9 +212,7 @@ contract L2AirdropV2Test is Test {
 
     function test_SendLSKToEcosystemFundWallet_AirdropV2HasNotStarted() public {
         // re-deploy L2AirdropV2 contract because merkle root is already set in setup
-        l2AirdropV2 = new L2AirdropV2(
-            address(l2LiskToken), address(l2Claim), address(l2LockingPosition), ecosystemFundWalletAddress
-        );
+        l2AirdropV2 = new L2AirdropV2(address(l2LiskToken), address(l2LockingPosition), ecosystemFundWalletAddress);
 
         // Merkle root is not set so airdrop has not started yet
         vm.expectRevert("L2AirdropV2: airdrop has not started yet");
@@ -257,8 +220,8 @@ contract L2AirdropV2Test is Test {
     }
 
     function test_SendLSKToEcosystemFundWallet_AirdropV2PeriodNotOver() public {
-        // proceed time to HODLER_AIRDROPV2_DURATION so that airdrop period is not over
-        vm.warp(block.timestamp + l2AirdropV2.HODLER_AIRDROPV2_DURATION() * 1 days);
+        // proceed time to HODLERDROP_REDISTRIBUTION_DURATION so that airdrop period is not over
+        vm.warp(block.timestamp + l2AirdropV2.HODLERDROP_REDISTRIBUTION_DURATION() * 1 days);
 
         vm.expectRevert("L2AirdropV2: airdrop is not over yet");
         l2AirdropV2.sendLSKToEcosystemWallet();
@@ -424,17 +387,17 @@ contract L2AirdropV2Test is Test {
         aliceSatifiesStakingTier1();
 
         // alice did not claim airdrop for staking tier 1 condition
-        assertEq(l2AirdropV2.claimedStakingTier1(aliceLSKAddress), false);
+        assertEq(l2AirdropV2.claimedStakingTier1(alice), false);
 
         // claim airdrop for alice (only staking tier 1 condition is satisfied)
         uint256 aliceBalanceBefore = l2LiskToken.balanceOf(alice);
         bytes32[] memory merkleProof = new bytes32[](1);
         merkleProof[0] = bytes32(0xf0df3dcda05b4fbd9c655cde3d5ceb211e019e72ec816e127a59e7195f2cd7f5);
-        l2AirdropV2.claimAirdrop(aliceLSKAddress, 80 * 10 ** 18, merkleProof);
+        l2AirdropV2.claimAirdrop(alice, 80 * 10 ** 18, merkleProof);
         assertEq(l2LiskToken.balanceOf(alice), aliceBalanceBefore + 40 * 10 ** 18); // 4 L2LiskToken airdrop
 
         // check that alice has claimed airdrop for staking tier 1 condition
-        assertEq(l2AirdropV2.claimedStakingTier1(aliceLSKAddress), true);
+        assertEq(l2AirdropV2.claimedStakingTier1(alice), true);
     }
 
     function test_ClaimAirdrop_StakingTier1() public {
@@ -447,17 +410,17 @@ contract L2AirdropV2Test is Test {
         aliceSatifiesStakingTier2();
 
         // alice did not claim airdrop for staking tier 2 condition
-        assertEq(l2AirdropV2.claimedStakingTier2(aliceLSKAddress), false);
+        assertEq(l2AirdropV2.claimedStakingTier2(alice), false);
 
         // claim airdrop for alice (only staking tier 2 condition is satisfied)
         uint256 aliceBalanceBefore = l2LiskToken.balanceOf(alice);
         bytes32[] memory merkleProof = new bytes32[](1);
         merkleProof[0] = bytes32(0xf0df3dcda05b4fbd9c655cde3d5ceb211e019e72ec816e127a59e7195f2cd7f5);
-        l2AirdropV2.claimAirdrop(aliceLSKAddress, 80 * 10 ** 18, merkleProof);
+        l2AirdropV2.claimAirdrop(alice, 80 * 10 ** 18, merkleProof);
         assertEq(l2LiskToken.balanceOf(alice), aliceBalanceBefore + 40 * 10 ** 18); // 4 L2LiskToken airdrop
 
         // check that alice has claimed airdrop for staking tier 2 condition
-        assertEq(l2AirdropV2.claimedStakingTier2(aliceLSKAddress), true);
+        assertEq(l2AirdropV2.claimedStakingTier2(alice), true);
     }
 
     function test_ClaimAirdrop_StakingTier2() public {
@@ -478,12 +441,12 @@ contract L2AirdropV2Test is Test {
         uint256 aliceBalanceBefore = l2LiskToken.balanceOf(alice);
         bytes32[] memory merkleProof = new bytes32[](1);
         merkleProof[0] = bytes32(0xf0df3dcda05b4fbd9c655cde3d5ceb211e019e72ec816e127a59e7195f2cd7f5);
-        l2AirdropV2.claimAirdrop(aliceLSKAddress, 80 * 10 ** 18, merkleProof);
+        l2AirdropV2.claimAirdrop(alice, 80 * 10 ** 18, merkleProof);
         assertEq(l2LiskToken.balanceOf(alice), aliceBalanceBefore + 80 * 10 ** 18); // 80 L2LiskToken airdrop
 
         // check airdrop claim status for alice
-        assertEq(l2AirdropV2.claimedStakingTier1(bytes20(alice)), true);
-        assertEq(l2AirdropV2.claimedStakingTier2(bytes20(alice)), true);
+        assertEq(l2AirdropV2.claimedStakingTier1(alice), true);
+        assertEq(l2AirdropV2.claimedStakingTier2(alice), true);
     }
 
     function test_ClaimAirdrop_FullAirdrop() public {
@@ -500,59 +463,57 @@ contract L2AirdropV2Test is Test {
         // check that the AirdropClaimed event is emitted for all conditions
         vm.expectEmit(true, true, true, true);
         emit L2AirdropV2.AirdropClaimed(
-            aliceLSKAddress, 80 * 10 ** 18, alice, l2AirdropV2.STAKING_TIER_1_BIT() | l2AirdropV2.STAKING_TIER_2_BIT()
+            80 * 10 ** 18, alice, l2AirdropV2.STAKING_TIER_1_BIT() | l2AirdropV2.STAKING_TIER_2_BIT()
         );
 
-        l2AirdropV2.claimAirdrop(aliceLSKAddress, 80 * 10 ** 18, merkleProof);
-        assertEq(l2LiskToken.balanceOf(alice), aliceBalanceBefore + 80 * 10 ** 18); // 16 L2LiskToken airdrop
+        l2AirdropV2.claimAirdrop(alice, 80 * 10 ** 18, merkleProof);
+        assertEq(l2LiskToken.balanceOf(alice), aliceBalanceBefore + 80 * 10 ** 18); // 80 L2LiskToken airdrop
 
         // check airdrop claim status for alice
-        assertEq(l2AirdropV2.claimedStakingTier1(bytes20(alice)), true);
-        assertEq(l2AirdropV2.claimedStakingTier2(bytes20(alice)), true);
-        assertEq(l2AirdropV2.claimedFullAirdrop(bytes20(alice)), true);
+        assertEq(l2AirdropV2.claimedStakingTier1(alice), true);
+        assertEq(l2AirdropV2.claimedStakingTier2(alice), true);
+        assertEq(l2AirdropV2.claimedFullAirdrop(alice), true);
 
         // check that alice cannot claim airdrop again
         vm.expectRevert("L2AirdropV2: full airdrop claimed");
-        l2AirdropV2.claimAirdrop(bytes20(alice), 80 * 10 ** 18, merkleProof);
+        l2AirdropV2.claimAirdrop(alice, 80 * 10 ** 18, merkleProof);
     }
 
     function test_ClaimAirdrop_NotStartedYet() public {
         // re-deploy L2AirdropV2 contract because merkle root is already set in setup
-        l2AirdropV2 = new L2AirdropV2(
-            address(l2LiskToken), address(l2Claim), address(l2LockingPosition), ecosystemFundWalletAddress
-        );
+        l2AirdropV2 = new L2AirdropV2(address(l2LiskToken), address(l2LockingPosition), ecosystemFundWalletAddress);
 
         bytes32[] memory merkleProof = new bytes32[](1);
         vm.expectRevert("L2AirdropV2: airdrop has not started yet");
-        l2AirdropV2.claimAirdrop(bytes20(alice), 20 * 10 ** 18, merkleProof);
+        l2AirdropV2.claimAirdrop(alice, 20 * 10 ** 18, merkleProof);
     }
 
     function test_ClaimAirdrop_AirdropOver() public {
-        // proceed time to HODLER_AIRDROPV2_DURATION + 1 so that airdrop period is over
-        vm.warp(block.timestamp + l2AirdropV2.HODLER_AIRDROPV2_DURATION() * 1 days + 1);
+        // proceed time to HODLERDROP_REDISTRIBUTION_DURATION + 1 so that airdrop period is over
+        vm.warp(block.timestamp + l2AirdropV2.HODLERDROP_REDISTRIBUTION_DURATION() * 1 days + 1);
 
         bytes32[] memory merkleProof = new bytes32[](1);
         vm.expectRevert("L2AirdropV2: airdrop period is over");
-        l2AirdropV2.claimAirdrop(bytes20(alice), 20 * 10 ** 18, merkleProof);
+        l2AirdropV2.claimAirdrop(alice, 20 * 10 ** 18, merkleProof);
     }
 
     function test_ClaimAirdrop_AmountIsZero() public {
         bytes32[] memory merkleProof = new bytes32[](1);
         vm.expectRevert("L2AirdropV2: amount is zero");
-        l2AirdropV2.claimAirdrop(bytes20(alice), 0, merkleProof);
+        l2AirdropV2.claimAirdrop(alice, 0, merkleProof);
     }
 
     function test_ClaimAirdrop_ZeroProofLength() public {
         bytes32[] memory merkleProof = new bytes32[](0);
         vm.expectRevert("L2AirdropV2: Merkle proof is empty");
-        l2AirdropV2.claimAirdrop(bytes20(alice), 20 * 10 ** 18, merkleProof);
+        l2AirdropV2.claimAirdrop(alice, 20 * 10 ** 18, merkleProof);
     }
 
     function test_ClaimAirdrop_ZeroRecipientAddress() public {
         bytes32[] memory merkleProof = new bytes32[](1);
-        vm.expectRevert("L2AirdropV2: tokens were not claimed yet from this Lisk address");
+        vm.expectRevert("L2AirdropV2: recipient is the zero address");
         // bob did not claim tokens in the Claim contract
-        l2AirdropV2.claimAirdrop(bytes20(bob), 20 * 10 ** 18, merkleProof);
+        l2AirdropV2.claimAirdrop(address(0x0), 20 * 10 ** 18, merkleProof);
     }
 
     function test_TransferOwnership() public {
