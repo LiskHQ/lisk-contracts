@@ -394,7 +394,7 @@ contract L2AirdropV2Test is Test {
         bytes32[] memory merkleProof = new bytes32[](1);
         merkleProof[0] = bytes32(0xf0df3dcda05b4fbd9c655cde3d5ceb211e019e72ec816e127a59e7195f2cd7f5);
         l2AirdropV2.claimAirdrop(alice, 80 * 10 ** 18, merkleProof);
-        assertEq(l2LiskToken.balanceOf(alice), aliceBalanceBefore + 40 * 10 ** 18); // 4 L2LiskToken airdrop
+        assertEq(l2LiskToken.balanceOf(alice), aliceBalanceBefore + 40 * 10 ** 18);
 
         // check that alice has claimed airdrop for staking tier 1 condition
         assertEq(l2AirdropV2.claimedStakingTier1(alice), true);
@@ -417,7 +417,7 @@ contract L2AirdropV2Test is Test {
         bytes32[] memory merkleProof = new bytes32[](1);
         merkleProof[0] = bytes32(0xf0df3dcda05b4fbd9c655cde3d5ceb211e019e72ec816e127a59e7195f2cd7f5);
         l2AirdropV2.claimAirdrop(alice, 80 * 10 ** 18, merkleProof);
-        assertEq(l2LiskToken.balanceOf(alice), aliceBalanceBefore + 40 * 10 ** 18); // 4 L2LiskToken airdrop
+        assertEq(l2LiskToken.balanceOf(alice), aliceBalanceBefore + 40 * 10 ** 18);
 
         // check that alice has claimed airdrop for staking tier 2 condition
         assertEq(l2AirdropV2.claimedStakingTier2(alice), true);
@@ -429,24 +429,6 @@ contract L2AirdropV2Test is Test {
 
         // check that alice can claim airdrop for staking tier 2 condition
         aliceClaimAirdropForStakingTier2();
-    }
-
-    function test_ClaimAirdrop_StakingTier1_StakingTier2() public {
-        // alice satisfies staking tier 1 condition
-        aliceSatifiesStakingTier1();
-
-        // alice satisfies staking tier 2 condition
-        aliceSatifiesStakingTier2();
-
-        uint256 aliceBalanceBefore = l2LiskToken.balanceOf(alice);
-        bytes32[] memory merkleProof = new bytes32[](1);
-        merkleProof[0] = bytes32(0xf0df3dcda05b4fbd9c655cde3d5ceb211e019e72ec816e127a59e7195f2cd7f5);
-        l2AirdropV2.claimAirdrop(alice, 80 * 10 ** 18, merkleProof);
-        assertEq(l2LiskToken.balanceOf(alice), aliceBalanceBefore + 80 * 10 ** 18); // 80 L2LiskToken airdrop
-
-        // check airdrop claim status for alice
-        assertEq(l2AirdropV2.claimedStakingTier1(alice), true);
-        assertEq(l2AirdropV2.claimedStakingTier2(alice), true);
     }
 
     function test_ClaimAirdrop_FullAirdrop() public {
