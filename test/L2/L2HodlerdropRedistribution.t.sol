@@ -129,10 +129,10 @@ contract L2HodlerdropRedistributionTest is Test {
         l2LiskToken.mint(bob, 100 * 10 ** 18);
         assertEq(l2LiskToken.balanceOf(bob), 100 * 10 ** 18);
 
-        // fund charlie with 100 L2LiskToken
+        // fund charlie with 410 L2LiskToken
         vm.prank(bridge);
-        l2LiskToken.mint(charlie, 100 * 10 ** 18);
-        assertEq(l2LiskToken.balanceOf(charlie), 100 * 10 ** 18);
+        l2LiskToken.mint(charlie, 410 * 10 ** 18);
+        assertEq(l2LiskToken.balanceOf(charlie), 410 * 10 ** 18);
 
         // approve L2Staking to spend alice's 200 L2LiskToken
         vm.prank(alice);
@@ -144,10 +144,10 @@ contract L2HodlerdropRedistributionTest is Test {
         l2LiskToken.approve(address(l2Staking), 100 * 10 ** 18);
         assertEq(l2LiskToken.allowance(bob, address(l2Staking)), 100 * 10 ** 18);
 
-        // approve L2Staking to spend charlie's 410 L2LiskToken
+        // approve L2Staking to spend charlie's 400 L2LiskToken
         vm.prank(charlie);
-        l2LiskToken.approve(address(l2Staking), 410 * 10 ** 18);
-        assertEq(l2LiskToken.allowance(charlie, address(l2Staking)), 410 * 10 ** 18);
+        l2LiskToken.approve(address(l2Staking), 400 * 10 ** 18);
+        assertEq(l2LiskToken.allowance(charlie, address(l2Staking)), 400 * 10 ** 18);
     }
 
     function test_Constructor_ZeroL2LiskTokenAddress() public {
@@ -256,16 +256,17 @@ contract L2HodlerdropRedistributionTest is Test {
         aliceSatifiesStakingTier1();
     }
 
-    /*function test_positions() public {
+    function test_charlieSatifiesStakingTier1With400LockingPositions() public {
         vm.startPrank(charlie);
+        // charlie stakes 1 L2LiskToken for minimum days in 400 positions
         for (uint256 index = 0; index < 400; index++) {
-    l2Staking.lockAmount(charlie, 1 * 10 ** 18, l2HodlerdropRedistribution.MIN_STAKING_DURATION_TIER_1() + 1);
+            l2Staking.lockAmount(charlie, 1 * 10 ** 18, l2HodlerdropRedistribution.MIN_STAKING_DURATION_TIER_1());
         }
         vm.stopPrank();
 
-        // maximum staking tier 1 hodlerdrop amount for alice is 400 L2LiskToken
-        assertEq(l2HodlerdropRedistribution.satisfiesStakingTier1(alice, 400 * 10 ** 18), true);
-    }*/
+        // maximum staking tier 1 hodlerdrop amount for charlie is 400 L2LiskToken
+        assertEq(l2HodlerdropRedistribution.satisfiesStakingTier1(charlie, 400 * 10 ** 18), true);
+    }
 
     function test_SatisfiesStakingTier1_AllLockingPositionsSatisfy_PausedPositions() public {
         // alice stakes 30 L2LiskToken for minimum days in one position
