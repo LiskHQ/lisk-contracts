@@ -23,6 +23,8 @@ contract Utils is Script {
     struct L2AddressesConfig {
         /// @notice L2 Airdrop address.
         address L2Airdrop;
+        /// @notice L2 Hodlerdrop Redistribution address.
+        address L2HodlerdropRedistribution;
         /// @notice L2 Claim contract (in Proxy), which users interact with.
         address L2ClaimContract;
         /// @notice The Current implementation of L2 Claim Contract.
@@ -198,6 +200,11 @@ contract Utils is Script {
             l2AddressesConfig.L2Airdrop = l2Airdrop;
         } catch { }
 
+        try vm.parseJsonAddress(addressJson, ".L2HodlerdropRedistribution") returns (address l2HodlerdropRedistribution)
+        {
+            l2AddressesConfig.L2HodlerdropRedistribution = l2HodlerdropRedistribution;
+        } catch { }
+
         try vm.parseJsonAddress(addressJson, ".L2ClaimContract") returns (address l2ClaimContract) {
             l2AddressesConfig.L2ClaimContract = l2ClaimContract;
         } catch { }
@@ -335,6 +342,7 @@ contract Utils is Script {
     function writeL2AddressesFile(L2AddressesConfig memory cfg, string memory filePath) external {
         string memory json = "";
         vm.serializeAddress(json, "L2Airdrop", cfg.L2Airdrop);
+        vm.serializeAddress(json, "L2HodlerdropRedistribution", cfg.L2HodlerdropRedistribution);
         vm.serializeAddress(json, "L2ClaimContract", cfg.L2ClaimContract);
         vm.serializeAddress(json, "L2ClaimImplementation", cfg.L2ClaimImplementation);
         vm.serializeAddress(json, "L2ClaimPaused", cfg.L2ClaimPaused);
