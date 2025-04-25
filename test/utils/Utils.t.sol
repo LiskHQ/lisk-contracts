@@ -38,13 +38,13 @@ contract UtilsTest is Test {
         uint160 index = 1;
         Utils.L2AddressesConfig memory config = Utils.L2AddressesConfig({
             L2Airdrop: address(index++),
-            L2HodlerdropRedistribution: address(index++),
             L2ClaimContract: address(index++),
             L2ClaimImplementation: address(index++),
             L2ClaimPaused: address(index++),
             L2Governor: address(index++),
             L2GovernorImplementation: address(index++),
             L2GovernorPaused: address(index++),
+            L2HodlerdropRedistribution: address(index++),
             L2LiskToken: address(index++),
             L2LockingPosition: address(index++),
             L2LockingPositionImplementation: address(index++),

@@ -23,8 +23,6 @@ contract Utils is Script {
     struct L2AddressesConfig {
         /// @notice L2 Airdrop address.
         address L2Airdrop;
-        /// @notice L2 Hodlerdrop Redistribution address.
-        address L2HodlerdropRedistribution;
         /// @notice L2 Claim contract (in Proxy), which users interact with.
         address L2ClaimContract;
         /// @notice The Current implementation of L2 Claim Contract.
@@ -37,6 +35,8 @@ contract Utils is Script {
         address L2GovernorImplementation;
         /// @notice The Current implementation of L2GovernorPaused Contract.
         address L2GovernorPaused;
+        /// @notice L2 Hodlerdrop Redistribution address.
+        address L2HodlerdropRedistribution;
         /// @notice L2 Lisk token address.
         address L2LiskToken;
         /// @notice L2 Locking Position contract (in Proxy), which users interact with.
