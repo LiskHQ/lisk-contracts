@@ -257,22 +257,24 @@ contract L2HodlerdropRedistributionTest is Test {
 
     function test_charlieSatifiesStakingTier1With1000LockingPositionsAndClaim() public {
         vm.startPrank(charlie);
-        // charlie stakes 1 L2LiskToken for minimum days in 400 positions
+        // charlie stakes 1 L2LiskToken for minimum days in 1000 positions
         for (uint256 index = 0; index < 1000; index++) {
             l2Staking.lockAmount(charlie, 1 * 10 ** 18, l2HodlerdropRedistribution.MIN_STAKING_DURATION_TIER_1());
         }
         vm.stopPrank();
 
-        // maximum staking tier 1 hodlerdrop-redistribution amount for charlie is 400 L2LiskToken
+        // maximum staking tier 1 hodlerdrop-redistribution amount for charlie is 1000 L2LiskToken
         assertEq(l2HodlerdropRedistribution.satisfiesStakingTier1(charlie, 1000 * 10 ** 18), true);
 
         uint256 charlieBalanceBefore = l2LiskToken.balanceOf(charlie);
         bytes32[] memory merkleProof = new bytes32[](2);
         merkleProof[0] = bytes32(0x2d5b63a817daa1152c66e8b254400766fac6b7958a2f8afff1dea8e35e84f013);
         merkleProof[1] = bytes32(0xf0df3dcda05b4fbd9c655cde3d5ceb211e019e72ec816e127a59e7195f2cd7f5);
+        uint256 startGas = gasleft();
         l2HodlerdropRedistribution.claimHodlerdrop(charlie, 1000 * 10 ** 18, merkleProof);
+        uint256 endGas = gasleft();
+        assertLe(startGas - endGas, 30000000);
         assertEq(l2LiskToken.balanceOf(charlie), charlieBalanceBefore + 500 * 10 ** 18);
-        assertGe(gasleft(), 1 * 10 ** 18);
     }
 
     function test_SatisfiesStakingTier1_AllLockingPositionsSatisfy_PausedPositions() public {
