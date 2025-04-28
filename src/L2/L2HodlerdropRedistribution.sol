@@ -18,9 +18,9 @@ import { IL2VotingPower } from "../interfaces/L2/IL2VotingPower.sol";
 ///                            in the Hodlerdrop for a period of time (3 months).
 ///         2. Staking Tier 2: This condition is analogous to the previous, but a user is required
 ///                            to stake the same amount for twice as long (6months).
-///         The airdrop amount is distributed to the recipient's address in L2LiskToken contract. The hodlerdrop status
-///         for each recipient is stored in a mapping. The hodlerdrop status includes the status of each of the
-///         hodlerdrop conditions.
+///         The hodlerdrop-redistribution amount is distributed to the recipient's address in L2LiskToken contract. The
+///         hodlerdrop-redistribution status for each recipient is stored in a mapping. The hodlerdrop-redistribution
+///         status includes the status of each of the hodlerdrop-redistribution conditions.
 ///         Any remaining amount left in the contract will be moved to the Ecosystem Fund.
 contract L2HodlerdropRedistribution is Ownable2Step {
     /// @notice Minimal staking duration to satisfy the staking requirement of tier 1.
@@ -29,28 +29,28 @@ contract L2HodlerdropRedistribution is Ownable2Step {
     /// @notice Minimal staking duration to satisfy the staking requirement of tier 2.
     uint32 public constant MIN_STAKING_DURATION_TIER_2 = 180; // 6 months
 
-    /// @notice The period of time starting from the setting of the Merkle root, during which the hodlerdrop can be
-    ///         claimed.
+    /// @notice The period of time starting from the setting of the Merkle root, during which the
+    ///         hodlerdrop-redistribution can be claimed.
     ///         All LSK tokens should be transferable to the Lisk Ecosystem funds afterwards.
     uint32 public constant HODLERDROP_REDISTRIBUTION_DURATION = 180; // 6 months
 
-    /// @notice Merkle root for the hodlerdrop process.
+    /// @notice Merkle root for the hodlerdrop-redistribution process.
     bytes32 public merkleRoot;
 
-    /// @notice Start time of the hodlerdrop. L2HodlerdropRedistribution is considered started once the Merkle root is
-    ///         set.
+    /// @notice Start time of the hodlerdrop-redistribution. L2HodlerdropRedistribution is considered started once the
+    ///         Merkle root is set.
     uint256 public hodlerdropStartTime;
 
-    /// @notice Mapping of the hodlerdrop status for each recipient address. In particular, for each of the hodlerdrop
-    ///         conditions (staking tier 1, staking tier 2).
+    /// @notice Mapping of the hodlerdrop-redistribution status for each recipient address. In particular, for each of
+    ///         the hodlerdrop-redistribution conditions (staking tier 1, staking tier 2).
     mapping(address => uint8) public hodlerdropStatus;
 
-    // Hodlerdrop status bits
+    // Hodlerdrop-redistribution status bits
     // bit 0: staking tier 1
     uint8 public constant STAKING_TIER_1_BIT = 0x01;
     // bit 1: staking tier 2
     uint8 public constant STAKING_TIER_2_BIT = 0x02;
-    // full hodlerdrop claimed
+    // full hodlerdrop-redistribution claimed
     uint8 public constant FULL_HODLERDROP_CLAIMED = 0x03;
 
     /// @notice Address of the L2LiskToken contract.
@@ -59,8 +59,8 @@ contract L2HodlerdropRedistribution is Ownable2Step {
     /// @notice Address of the L2LockingPosition contract.
     address public immutable l2LockingPositionAddress;
 
-    /// @notice Address of the Ecosystem Fund wallet where the remaining LSK tokens are sent to after the hodlerdrop is
-    ///         completed.
+    /// @notice Address of the Ecosystem Fund wallet where the remaining LSK tokens are sent to after the
+    ///         hodlerdrop-redistribution is completed.
     address public immutable ecosystemFundAddress;
 
     /// @notice Emitted when the Merkle root is set.
@@ -69,7 +69,7 @@ contract L2HodlerdropRedistribution is Ownable2Step {
     /// @notice Emitted when the remaining LSK tokens are sent to the Ecosystem Fund wallet.
     event LSKSentToEcosystemWallet(address indexed ecosystemWalletAddress, uint256 amount);
 
-    /// @notice Emitted when the Hodlerdrop is (partially) claimed for the recipient.
+    /// @notice Emitted when the Hodlerdrop-redistribution is (partially) claimed for the recipient.
     event HodlerdropClaimed(uint256 amount, address indexed recipient, uint8 hodlerdropStatus);
 
     /// @notice Constructs the L2HodlerdropRedistribution contract.
@@ -102,7 +102,7 @@ contract L2HodlerdropRedistribution is Ownable2Step {
 
     /// @notice Check if the recipient satisfies the staking requirement of the provided tier.
     /// @param recipient The recipient address to check if it satisfies the staking requirement of the provided tier.
-    /// @param hodlerdropAmount The amount of LSK tokens to claim the hodlerdrop for.
+    /// @param hodlerdropAmount The amount of LSK tokens to claim the hodlerdrop-redistribution for.
     /// @param tierDuration The duration of the staking requirement for the provided tier.
     /// @return True if recipient has staked at least hodlerdropAmount for at least MIN_STAKING_DURATION_TIER_1 or
     ///         MIN_STAKING_DURATION_TIER_2 (depending on the tier), False otherwise.
@@ -116,7 +116,7 @@ contract L2HodlerdropRedistribution is Ownable2Step {
         returns (bool)
     {
         require(recipient != address(0), "L2HodlerdropRedistribution: recipient is the zero address");
-        require(hodlerdropAmount > 0, "L2HodlerdropRedistribution: hodlerdrop amount is zero");
+        require(hodlerdropAmount > 0, "L2HodlerdropRedistribution: hodlerdrop-redistribution amount is zero");
 
         // get all locking positions of the recipient
         IL2LockingPosition l2LockingPosition = IL2LockingPosition(l2LockingPositionAddress);
@@ -144,8 +144,8 @@ contract L2HodlerdropRedistribution is Ownable2Step {
         return totalStakedAmount >= hodlerdropAmount;
     }
 
-    /// @notice Set Merkle root for the hodlerdrop process.
-    /// @param _merkleRoot Merkle root for the hodlerdrop process.
+    /// @notice Set Merkle root for the hodlerdrop-redistribution process.
+    /// @param _merkleRoot Merkle root for the hodlerdrop-redistribution process.
     /// @dev Only the owner can set the Merkle root.
     function setMerkleRoot(bytes32 _merkleRoot) public onlyOwner {
         require(_merkleRoot != 0, "L2HodlerdropRedistribution: Merkle root can not be zero");
@@ -158,10 +158,10 @@ contract L2HodlerdropRedistribution is Ownable2Step {
     /// @notice Send the remaining LSK tokens to the Ecosystem Fund wallet.
     /// @dev Only the owner can send the remaining LSK tokens to the Ecosystem Fund wallet.
     function sendLSKToEcosystemWallet() public onlyOwner {
-        require(merkleRoot != 0, "L2HodlerdropRedistribution: hodlerdrop has not started yet");
+        require(merkleRoot != 0, "L2HodlerdropRedistribution: hodlerdrop-redistribution has not started yet");
         require(
             hodlerdropStartTime + (HODLERDROP_REDISTRIBUTION_DURATION * 1 days) < block.timestamp,
-            "L2HodlerdropRedistribution: hodlerdrop is not over yet"
+            "L2HodlerdropRedistribution: hodlerdrop-redistribution is not over yet"
         );
         uint256 balance = IL2LiskToken(l2LiskTokenAddress).balanceOf(address(this));
         // reentrancy won't be an issue here because the L2 Lisk Token contract is trusted and managed by the team
@@ -172,30 +172,32 @@ contract L2HodlerdropRedistribution is Ownable2Step {
         emit LSKSentToEcosystemWallet(ecosystemFundAddress, balance);
     }
 
-    /// @notice Check if the address has claimed the hodlerdrop for staking tier 1.
-    /// @param recipient The address to check if it has claimed the hodlerdrop for staking tier 1.
-    /// @return True if the address has claimed the hodlerdrop for staking tier 1, False otherwise.
+    /// @notice Check if the recipient address has claimed the hodlerdrop-redistribution for staking tier 1.
+    /// @param recipient The address to check if it has claimed the hodlerdrop-redistribution for staking tier 1.
+    /// @return True if the recipient address has claimed the hodlerdrop-redistribution for staking tier 1, False
+    ///         otherwise.
     function claimedStakingTier1(address recipient) public view returns (bool) {
         return (hodlerdropStatus[recipient] & STAKING_TIER_1_BIT) != 0;
     }
 
-    /// @notice Check if the address has claimed the hodlerdrop for staking tier 2.
-    /// @param recipient The address to check if it has claimed the hodlerdrop for staking tier 2.
-    /// @return True if the address has claimed the hodlerdrop for staking tier 2, False otherwise.
+    /// @notice Check if the recipient address has claimed the hodlerdrop-redistribution for staking tier 2.
+    /// @param recipient The address to check if it has claimed the hodlerdrop-redistribution for staking tier 2.
+    /// @return True if the recipient address has claimed the hodlerdrop-redistribution for staking tier 2, False
+    ///         otherwise.
     function claimedStakingTier2(address recipient) public view returns (bool) {
         return (hodlerdropStatus[recipient] & STAKING_TIER_2_BIT) != 0;
     }
 
-    /// @notice Check if the address has claimed the full hodlerdrop.
-    /// @param recipient The address to check if it has claimed the full hodlerdrop.
-    /// @return True if the address has claimed the full hodlerdrop, False otherwise.
+    /// @notice Check if the recipient address has claimed the full hodlerdrop-redistribution.
+    /// @param recipient The address to check if it has claimed the full hodlerdrop-redistribution.
+    /// @return True if the recipient address has claimed the full hodlerdrop-redistribution, False otherwise.
     function claimedFullHodlerdrop(address recipient) public view returns (bool) {
         return (hodlerdropStatus[recipient] & FULL_HODLERDROP_CLAIMED) == FULL_HODLERDROP_CLAIMED;
     }
 
     /// @notice Check if the recipient satisfies the staking requirement of tier 1.
     /// @param recipient The recipient address to check if it satisfies the staking requirement of tier 1.
-    /// @param hodlerdropAmount The amount of LSK tokens to claim the hodlerdrop for.
+    /// @param hodlerdropAmount The amount of LSK tokens to claim the hodlerdrop-redistribution for.
     /// @return True if recipient has staked at least hodlerdropAmount for at least MIN_STAKING_DURATION_TIER_1, False
     ///         otherwise.
     function satisfiesStakingTier1(address recipient, uint256 hodlerdropAmount) public view returns (bool) {
@@ -204,7 +206,7 @@ contract L2HodlerdropRedistribution is Ownable2Step {
 
     /// @notice Check if the recipient satisfies the staking requirement of tier 2.
     /// @param recipient The recipient address to check if it satisfies the staking requirement of tier 2.
-    /// @param hodlerdropAmount The amount of LSK tokens to claim the hodlerdrop for.
+    /// @param hodlerdropAmount The amount of LSK tokens to claim the hodlerdrop-redistribution for.
     /// @return True if recipient has staked at least hodlerdropAmount for at least MIN_STAKING_DURATION_TIER_2, False
     ///         otherwise.
     function satisfiesStakingTier2(address recipient, uint256 hodlerdropAmount) public view returns (bool) {
@@ -212,19 +214,19 @@ contract L2HodlerdropRedistribution is Ownable2Step {
     }
 
     /// @notice Claim the Hodlerdrop for the recipient.
-    /// @param recipient The recipient address to claim the hodlerdrop for.
-    /// @param amount The amount of LSK tokens to claim the hodlerdrop for.
-    /// @param merkleProof The Merkle proof for the address and the amount against the stored merkleRoot.
+    /// @param recipient The recipient address to claim the hodlerdrop-redistribution for.
+    /// @param amount The amount of LSK tokens to claim the hodlerdrop-redistribution for.
+    /// @param merkleProof The Merkle proof for the recipient address and the amount against the stored merkleRoot.
     function claimHodlerdrop(address recipient, uint256 amount, bytes32[] memory merkleProof) public {
-        require(merkleRoot != 0, "L2HodlerdropRedistribution: hodlerdrop has not started yet");
+        require(merkleRoot != 0, "L2HodlerdropRedistribution: hodlerdrop-redistribution has not started yet");
         require(
             block.timestamp <= hodlerdropStartTime + (HODLERDROP_REDISTRIBUTION_DURATION * 1 days),
-            "L2HodlerdropRedistribution: hodlerdrop period is over"
+            "L2HodlerdropRedistribution: hodlerdrop-redistribution period is over"
         );
         require(recipient != address(0), "L2HodlerdropRedistribution: recipient is the zero address");
         require(amount > 0, "L2HodlerdropRedistribution: amount is zero");
         require(merkleProof.length > 0, "L2HodlerdropRedistribution: Merkle proof is empty");
-        // require merkleProof be a correct proof for address and amount against stored merkleRoot
+        // require merkleProof be a correct proof for the recipient address and amount against stored merkleRoot
         require(
             MerkleProof.verify(
                 merkleProof, merkleRoot, keccak256(bytes.concat(keccak256(abi.encode(recipient, amount))))
@@ -233,7 +235,7 @@ contract L2HodlerdropRedistribution is Ownable2Step {
         );
         require(
             (hodlerdropStatus[recipient] & FULL_HODLERDROP_CLAIMED) != FULL_HODLERDROP_CLAIMED,
-            "L2HodlerdropRedistribution: full hodlerdrop claimed"
+            "L2HodlerdropRedistribution: full hodlerdrop-redistribution claimed"
         );
 
         uint256 hodlerdropAmount = 0;

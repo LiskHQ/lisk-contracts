@@ -5,7 +5,6 @@ import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { Test, console2, stdStorage, StdStorage } from "forge-std/Test.sol";
 import { L2HodlerdropRedistribution } from "src/L2/L2HodlerdropRedistribution.sol";
-import { L2Claim } from "src/L2/L2Claim.sol";
 import { L2LockingPosition } from "src/L2/L2LockingPosition.sol";
 import { L2LiskToken } from "src/L2/L2LiskToken.sol";
 import { L2Staking } from "src/L2/L2Staking.sol";
@@ -199,7 +198,7 @@ contract L2HodlerdropRedistributionTest is Test {
     }
 
     function test_SendLSKToEcosystemFundWallet() public {
-        // proceed time to HODLERDROP_REDISTRIBUTION_DURATION + 1 so that hodlerdrop period is over
+        // proceed time to HODLERDROP_REDISTRIBUTION_DURATION + 1 so that hodlerdrop-redistribution period is over
         vm.warp(block.timestamp + l2HodlerdropRedistribution.HODLERDROP_REDISTRIBUTION_DURATION() * 1 days + 1);
 
         // check that the LSKSentToEcosystemWallet event is emitted
@@ -217,16 +216,16 @@ contract L2HodlerdropRedistributionTest is Test {
         l2HodlerdropRedistribution =
             new L2HodlerdropRedistribution(address(l2LiskToken), address(l2LockingPosition), ecosystemFundWalletAddress);
 
-        // Merkle root is not set so hodlerdrop has not started yet
-        vm.expectRevert("L2HodlerdropRedistribution: hodlerdrop has not started yet");
+        // Merkle root is not set so hodlerdrop-redistribution has not started yet
+        vm.expectRevert("L2HodlerdropRedistribution: hodlerdrop-redistribution has not started yet");
         l2HodlerdropRedistribution.sendLSKToEcosystemWallet();
     }
 
     function test_SendLSKToEcosystemFundWallet_AirdropV2PeriodNotOver() public {
-        // proceed time to HODLERDROP_REDISTRIBUTION_DURATION so that hodlerdrop period is not over
+        // proceed time to HODLERDROP_REDISTRIBUTION_DURATION so that hodlerdrop-redistribution period is not over
         vm.warp(block.timestamp + l2HodlerdropRedistribution.HODLERDROP_REDISTRIBUTION_DURATION() * 1 days);
 
-        vm.expectRevert("L2HodlerdropRedistribution: hodlerdrop is not over yet");
+        vm.expectRevert("L2HodlerdropRedistribution: hodlerdrop-redistribution is not over yet");
         l2HodlerdropRedistribution.sendLSKToEcosystemWallet();
     }
 
@@ -244,7 +243,7 @@ contract L2HodlerdropRedistributionTest is Test {
         l2Staking.lockAmount(alice, 50 * 10 ** 18, l2HodlerdropRedistribution.MIN_STAKING_DURATION_TIER_1() + 1);
         vm.stopPrank();
 
-        // maximum staking tier 1 hodlerdrop amount for alice is 80 L2LiskToken
+        // maximum staking tier 1 hodlerdrop-redistribution amount for alice is 80 L2LiskToken
         assertEq(l2HodlerdropRedistribution.satisfiesStakingTier1(alice, 80 * 10 ** 18), true);
 
         // check that bigger amount than 80 L2LiskToken does not satisfy staking tier 1
@@ -264,7 +263,7 @@ contract L2HodlerdropRedistributionTest is Test {
         }
         vm.stopPrank();
 
-        // maximum staking tier 1 hodlerdrop amount for charlie is 400 L2LiskToken
+        // maximum staking tier 1 hodlerdrop-redistribution amount for charlie is 400 L2LiskToken
         assertEq(l2HodlerdropRedistribution.satisfiesStakingTier1(charlie, 400 * 10 ** 18), true);
     }
 
@@ -332,7 +331,7 @@ contract L2HodlerdropRedistributionTest is Test {
     }
 
     function test_SatisfiesStakingTier1_ZeroAmount() public {
-        vm.expectRevert("L2HodlerdropRedistribution: hodlerdrop amount is zero");
+        vm.expectRevert("L2HodlerdropRedistribution: hodlerdrop-redistribution amount is zero");
         l2HodlerdropRedistribution.satisfiesStakingTier1(alice, 0);
     }
 
@@ -343,7 +342,7 @@ contract L2HodlerdropRedistributionTest is Test {
         l2Staking.lockAmount(alice, 50 * 10 ** 18, l2HodlerdropRedistribution.MIN_STAKING_DURATION_TIER_2() + 1);
         vm.stopPrank();
 
-        // maximum staking tier 2 hodlerdrop amount for alice is 80 L2LiskToken
+        // maximum staking tier 2 hodlerdrop-redistribution amount for alice is 80 L2LiskToken
         assertEq(l2HodlerdropRedistribution.satisfiesStakingTier2(alice, 80 * 10 ** 18), true);
 
         // check that bigger amount than 80 L2LiskToken does not satisfy staking tier 2
@@ -393,7 +392,7 @@ contract L2HodlerdropRedistributionTest is Test {
     }
 
     function test_SatisfiesStakingTier2_ZeroAmount() public {
-        vm.expectRevert("L2HodlerdropRedistribution: hodlerdrop amount is zero");
+        vm.expectRevert("L2HodlerdropRedistribution: hodlerdrop-redistribution amount is zero");
         l2HodlerdropRedistribution.satisfiesStakingTier2(alice, 0);
     }
 
@@ -401,22 +400,22 @@ contract L2HodlerdropRedistributionTest is Test {
         // alice satisfies staking tier 1 condition
         aliceSatifiesStakingTier1();
 
-        // alice did not claim hodlerdrop for staking tier 1 condition
+        // alice did not claim hodlerdrop-redistribution for staking tier 1 condition
         assertEq(l2HodlerdropRedistribution.claimedStakingTier1(alice), false);
 
-        // claim hodlerdrop for alice (only staking tier 1 condition is satisfied)
+        // claim hodlerdrop-redistribution for alice (only staking tier 1 condition is satisfied)
         uint256 aliceBalanceBefore = l2LiskToken.balanceOf(alice);
         bytes32[] memory merkleProof = new bytes32[](1);
         merkleProof[0] = bytes32(0xf0df3dcda05b4fbd9c655cde3d5ceb211e019e72ec816e127a59e7195f2cd7f5);
         l2HodlerdropRedistribution.claimHodlerdrop(alice, 80 * 10 ** 18, merkleProof);
         assertEq(l2LiskToken.balanceOf(alice), aliceBalanceBefore + 40 * 10 ** 18);
 
-        // check that alice has claimed hodlerdrop for staking tier 1 condition
+        // check that alice has claimed hodlerdrop-redistribution for staking tier 1 condition
         assertEq(l2HodlerdropRedistribution.claimedStakingTier1(alice), true);
     }
 
     function test_ClaimAirdrop_StakingTier1() public {
-        // check that alice can claim hodlerdrop for staking tier 1 condition
+        // check that alice can claim hodlerdrop-redistribution for staking tier 1 condition
         aliceClaimAirdropForStakingTier1();
     }
 
@@ -424,26 +423,27 @@ contract L2HodlerdropRedistributionTest is Test {
         // alice satisfies staking tier 2 condition
         aliceSatifiesStakingTier2();
 
-        // alice did not claim hodlerdrop for staking tier 2 condition
+        // alice did not claim hodlerdrop-redistribution for staking tier 2 condition
         assertEq(l2HodlerdropRedistribution.claimedStakingTier2(alice), false);
 
-        // claim hodlerdrop for alice (only staking tier 2 condition is satisfied)
+        // claim hodlerdrop-redistribution for alice (only staking tier 2 condition is satisfied)
         uint256 aliceBalanceBefore = l2LiskToken.balanceOf(alice);
         bytes32[] memory merkleProof = new bytes32[](1);
         merkleProof[0] = bytes32(0xf0df3dcda05b4fbd9c655cde3d5ceb211e019e72ec816e127a59e7195f2cd7f5);
         l2HodlerdropRedistribution.claimHodlerdrop(alice, 80 * 10 ** 18, merkleProof);
         assertEq(l2LiskToken.balanceOf(alice), aliceBalanceBefore + 40 * 10 ** 18);
 
-        // check that alice has claimed hodlerdrop for staking tier 2 condition
+        // check that alice has claimed hodlerdrop-redistribution for staking tier 2 condition
         assertEq(l2HodlerdropRedistribution.claimedStakingTier2(alice), true);
     }
 
     function test_ClaimAirdrop_StakingTier2() public {
-        // first alice will claim hodlerdrop for staking tier 1 condition that only staking tier 2 condition will be
+        // first alice will claim hodlerdrop-redistribution for staking tier 1 condition that only staking tier 2
+        // condition will be
         // left
         aliceClaimAirdropForStakingTier1();
 
-        // check that alice can claim hodlerdrop for staking tier 2 condition
+        // check that alice can claim hodlerdrop-redistribution for staking tier 2 condition
         aliceClaimAirdropForStakingTier2();
     }
 
@@ -469,13 +469,13 @@ contract L2HodlerdropRedistributionTest is Test {
         l2HodlerdropRedistribution.claimHodlerdrop(alice, 80 * 10 ** 18, merkleProof);
         assertEq(l2LiskToken.balanceOf(alice), aliceBalanceBefore + 80 * 10 ** 18);
 
-        // check hodlerdrop claim status for alice
+        // check hodlerdrop-redistribution claim status for alice
         assertEq(l2HodlerdropRedistribution.claimedStakingTier1(alice), true);
         assertEq(l2HodlerdropRedistribution.claimedStakingTier2(alice), true);
         assertEq(l2HodlerdropRedistribution.claimedFullHodlerdrop(alice), true);
 
-        // check that alice cannot claim hodlerdrop again
-        vm.expectRevert("L2HodlerdropRedistribution: full hodlerdrop claimed");
+        // check that alice cannot claim hodlerdrop-redistribution again
+        vm.expectRevert("L2HodlerdropRedistribution: full hodlerdrop-redistribution claimed");
         l2HodlerdropRedistribution.claimHodlerdrop(alice, 80 * 10 ** 18, merkleProof);
     }
 
@@ -485,16 +485,16 @@ contract L2HodlerdropRedistributionTest is Test {
             new L2HodlerdropRedistribution(address(l2LiskToken), address(l2LockingPosition), ecosystemFundWalletAddress);
 
         bytes32[] memory merkleProof = new bytes32[](1);
-        vm.expectRevert("L2HodlerdropRedistribution: hodlerdrop has not started yet");
+        vm.expectRevert("L2HodlerdropRedistribution: hodlerdrop-redistribution has not started yet");
         l2HodlerdropRedistribution.claimHodlerdrop(alice, 20 * 10 ** 18, merkleProof);
     }
 
     function test_ClaimAirdrop_AirdropOver() public {
-        // proceed time to HODLERDROP_REDISTRIBUTION_DURATION + 1 so that hodlerdrop period is over
+        // proceed time to HODLERDROP_REDISTRIBUTION_DURATION + 1 so that hodlerdrop-redistribution period is over
         vm.warp(block.timestamp + l2HodlerdropRedistribution.HODLERDROP_REDISTRIBUTION_DURATION() * 1 days + 1);
 
         bytes32[] memory merkleProof = new bytes32[](1);
-        vm.expectRevert("L2HodlerdropRedistribution: hodlerdrop period is over");
+        vm.expectRevert("L2HodlerdropRedistribution: hodlerdrop-redistribution period is over");
         l2HodlerdropRedistribution.claimHodlerdrop(alice, 20 * 10 ** 18, merkleProof);
     }
 

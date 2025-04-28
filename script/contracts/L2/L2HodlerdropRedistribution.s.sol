@@ -5,9 +5,9 @@ import { Script, console2 } from "forge-std/Script.sol";
 import { L2HodlerdropRedistribution } from "src/L2/L2HodlerdropRedistribution.sol";
 import "script/contracts/Utils.sol";
 
-/// @title L2AirdropScript - L2 Hodlerdrop Redistribution deployment script
+/// @title L2HodlerdropRedistributionScript - L2 Hodlerdrop Redistribution deployment script
 /// @notice This contract is used to deploy L2 HodlerdropRedistribution contract.
-contract L2AirdropScript is Script {
+contract L2HodlerdropRedistributionScript is Script {
     /// @notice Utils contract which provides functions to read and write JSON files containing L2 addresses.
     Utils utils;
 
@@ -29,7 +29,8 @@ contract L2AirdropScript is Script {
             "L2 HodlerdropRedistribution owner address: %s (after ownership will be accepted)", newOwnerAddress
         );
 
-        // get L2 Ecosystem Fund wallet address where LSK tokens will be transferred after Hodlerdrop period is over
+        // get L2 Ecosystem Fund wallet address where LSK tokens will be transferred to after Hodlerdrop redistribution
+        // period is over
         address ecosystemFundWalletAddress = vm.envAddress("L2_ECOSYSTEM_FUND_WALLET_ADDRESS");
         assert(ecosystemFundWalletAddress != address(0));
         console2.log("L2 Ecosystem Fund wallet address: %s", ecosystemFundWalletAddress);
@@ -44,7 +45,7 @@ contract L2AirdropScript is Script {
         console2.log("L2 Locking Position address: %s", l2AddressesConfig.L2LockingPosition);
 
         // get Merkle root
-        Utils.MerkleRoot memory merkleRoot = utils.readMerkleRootFile("hodlerdrop-merkle-root.json");
+        Utils.MerkleRoot memory merkleRoot = utils.readMerkleRootFile("hodlerdrop-redistribution-merkle-root.json");
         assert(merkleRoot.merkleRoot != bytes32(0));
         console2.log("Merkle root: %s", vm.toString(merkleRoot.merkleRoot));
 

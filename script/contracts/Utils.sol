@@ -200,11 +200,6 @@ contract Utils is Script {
             l2AddressesConfig.L2Airdrop = l2Airdrop;
         } catch { }
 
-        try vm.parseJsonAddress(addressJson, ".L2HodlerdropRedistribution") returns (address l2HodlerdropRedistribution)
-        {
-            l2AddressesConfig.L2HodlerdropRedistribution = l2HodlerdropRedistribution;
-        } catch { }
-
         try vm.parseJsonAddress(addressJson, ".L2ClaimContract") returns (address l2ClaimContract) {
             l2AddressesConfig.L2ClaimContract = l2ClaimContract;
         } catch { }
@@ -227,6 +222,11 @@ contract Utils is Script {
 
         try vm.parseJsonAddress(addressJson, ".L2GovernorPaused") returns (address l2GovernorPaused) {
             l2AddressesConfig.L2GovernorPaused = l2GovernorPaused;
+        } catch { }
+
+        try vm.parseJsonAddress(addressJson, ".L2HodlerdropRedistribution") returns (address l2HodlerdropRedistribution)
+        {
+            l2AddressesConfig.L2HodlerdropRedistribution = l2HodlerdropRedistribution;
         } catch { }
 
         try vm.parseJsonAddress(addressJson, ".L2LiskToken") returns (address l2LiskToken) {
@@ -342,13 +342,13 @@ contract Utils is Script {
     function writeL2AddressesFile(L2AddressesConfig memory cfg, string memory filePath) external {
         string memory json = "";
         vm.serializeAddress(json, "L2Airdrop", cfg.L2Airdrop);
-        vm.serializeAddress(json, "L2HodlerdropRedistribution", cfg.L2HodlerdropRedistribution);
         vm.serializeAddress(json, "L2ClaimContract", cfg.L2ClaimContract);
         vm.serializeAddress(json, "L2ClaimImplementation", cfg.L2ClaimImplementation);
         vm.serializeAddress(json, "L2ClaimPaused", cfg.L2ClaimPaused);
         vm.serializeAddress(json, "L2Governor", cfg.L2Governor);
         vm.serializeAddress(json, "L2GovernorImplementation", cfg.L2GovernorImplementation);
         vm.serializeAddress(json, "L2GovernorPaused", cfg.L2GovernorPaused);
+        vm.serializeAddress(json, "L2HodlerdropRedistribution", cfg.L2HodlerdropRedistribution);
         vm.serializeAddress(json, "L2LiskToken", cfg.L2LiskToken);
         vm.serializeAddress(json, "L2LockingPosition", cfg.L2LockingPosition);
         vm.serializeAddress(json, "L2LockingPositionImplementation", cfg.L2LockingPositionImplementation);
