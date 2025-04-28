@@ -109,7 +109,7 @@ contract L2HodlerdropRedistributionTest is Test {
         assertEq(l2HodlerdropRedistribution.ecosystemFundAddress(), ecosystemFundWalletAddress);
 
         // set merkle root for L2HodlerdropRedistribution contract
-        bytes32 merkleRoot = bytes32(0x05da2740a58e38dd8375b42c4a501bc32d90ba14ebc98da356c822cd24ec9a3a);
+        bytes32 merkleRoot = bytes32(0xf7f027f0750bdbd1e69c41f7b39f69da4f7ef35a7f5bc892946eb0780f5f54d2);
         l2HodlerdropRedistribution.setMerkleRoot(merkleRoot);
         assertEq(l2HodlerdropRedistribution.merkleRoot(), merkleRoot);
 
@@ -128,10 +128,10 @@ contract L2HodlerdropRedistributionTest is Test {
         l2LiskToken.mint(bob, 100 * 10 ** 18);
         assertEq(l2LiskToken.balanceOf(bob), 100 * 10 ** 18);
 
-        // fund charlie with 410 L2LiskToken
+        // fund charlie with 1010 L2LiskToken
         vm.prank(bridge);
-        l2LiskToken.mint(charlie, 410 * 10 ** 18);
-        assertEq(l2LiskToken.balanceOf(charlie), 410 * 10 ** 18);
+        l2LiskToken.mint(charlie, 1010 * 10 ** 18);
+        assertEq(l2LiskToken.balanceOf(charlie), 1010 * 10 ** 18);
 
         // approve L2Staking to spend alice's 200 L2LiskToken
         vm.prank(alice);
@@ -143,10 +143,10 @@ contract L2HodlerdropRedistributionTest is Test {
         l2LiskToken.approve(address(l2Staking), 100 * 10 ** 18);
         assertEq(l2LiskToken.allowance(bob, address(l2Staking)), 100 * 10 ** 18);
 
-        // approve L2Staking to spend charlie's 400 L2LiskToken
+        // approve L2Staking to spend charlie's 1000 L2LiskToken
         vm.prank(charlie);
-        l2LiskToken.approve(address(l2Staking), 400 * 10 ** 18);
-        assertEq(l2LiskToken.allowance(charlie, address(l2Staking)), 400 * 10 ** 18);
+        l2LiskToken.approve(address(l2Staking), 1000 * 10 ** 18);
+        assertEq(l2LiskToken.allowance(charlie, address(l2Staking)), 1000 * 10 ** 18);
     }
 
     function test_Constructor_ZeroL2LiskTokenAddress() public {
@@ -255,16 +255,24 @@ contract L2HodlerdropRedistributionTest is Test {
         aliceSatifiesStakingTier1();
     }
 
-    function test_charlieSatifiesStakingTier1With400LockingPositions() public {
+    function test_charlieSatifiesStakingTier1With1000LockingPositionsAndClaim() public {
         vm.startPrank(charlie);
         // charlie stakes 1 L2LiskToken for minimum days in 400 positions
-        for (uint256 index = 0; index < 400; index++) {
+        for (uint256 index = 0; index < 1000; index++) {
             l2Staking.lockAmount(charlie, 1 * 10 ** 18, l2HodlerdropRedistribution.MIN_STAKING_DURATION_TIER_1());
         }
         vm.stopPrank();
 
         // maximum staking tier 1 hodlerdrop-redistribution amount for charlie is 400 L2LiskToken
-        assertEq(l2HodlerdropRedistribution.satisfiesStakingTier1(charlie, 400 * 10 ** 18), true);
+        assertEq(l2HodlerdropRedistribution.satisfiesStakingTier1(charlie, 1000 * 10 ** 18), true);
+
+        uint256 charlieBalanceBefore = l2LiskToken.balanceOf(charlie);
+        bytes32[] memory merkleProof = new bytes32[](2);
+        merkleProof[0] = bytes32(0x2d5b63a817daa1152c66e8b254400766fac6b7958a2f8afff1dea8e35e84f013);
+        merkleProof[1] = bytes32(0xf0df3dcda05b4fbd9c655cde3d5ceb211e019e72ec816e127a59e7195f2cd7f5);
+        l2HodlerdropRedistribution.claimHodlerdrop(charlie, 1000 * 10 ** 18, merkleProof);
+        assertEq(l2LiskToken.balanceOf(charlie), charlieBalanceBefore + 500 * 10 ** 18);
+        assertGe(gasleft(), 1 * 10 ** 18);
     }
 
     function test_SatisfiesStakingTier1_AllLockingPositionsSatisfy_PausedPositions() public {
@@ -405,8 +413,9 @@ contract L2HodlerdropRedistributionTest is Test {
 
         // claim hodlerdrop-redistribution for alice (only staking tier 1 condition is satisfied)
         uint256 aliceBalanceBefore = l2LiskToken.balanceOf(alice);
-        bytes32[] memory merkleProof = new bytes32[](1);
-        merkleProof[0] = bytes32(0xf0df3dcda05b4fbd9c655cde3d5ceb211e019e72ec816e127a59e7195f2cd7f5);
+        bytes32[] memory merkleProof = new bytes32[](2);
+        merkleProof[0] = bytes32(0xa840fc41b720079e7bce186d116e4412058ec6b29d3a5722a1f377be1e0d0992);
+        merkleProof[1] = bytes32(0xf0df3dcda05b4fbd9c655cde3d5ceb211e019e72ec816e127a59e7195f2cd7f5);
         l2HodlerdropRedistribution.claimHodlerdrop(alice, 80 * 10 ** 18, merkleProof);
         assertEq(l2LiskToken.balanceOf(alice), aliceBalanceBefore + 40 * 10 ** 18);
 
@@ -428,8 +437,9 @@ contract L2HodlerdropRedistributionTest is Test {
 
         // claim hodlerdrop-redistribution for alice (only staking tier 2 condition is satisfied)
         uint256 aliceBalanceBefore = l2LiskToken.balanceOf(alice);
-        bytes32[] memory merkleProof = new bytes32[](1);
-        merkleProof[0] = bytes32(0xf0df3dcda05b4fbd9c655cde3d5ceb211e019e72ec816e127a59e7195f2cd7f5);
+        bytes32[] memory merkleProof = new bytes32[](2);
+        merkleProof[0] = bytes32(0xa840fc41b720079e7bce186d116e4412058ec6b29d3a5722a1f377be1e0d0992);
+        merkleProof[1] = bytes32(0xf0df3dcda05b4fbd9c655cde3d5ceb211e019e72ec816e127a59e7195f2cd7f5);
         l2HodlerdropRedistribution.claimHodlerdrop(alice, 80 * 10 ** 18, merkleProof);
         assertEq(l2LiskToken.balanceOf(alice), aliceBalanceBefore + 40 * 10 ** 18);
 
@@ -439,8 +449,7 @@ contract L2HodlerdropRedistributionTest is Test {
 
     function test_ClaimAirdrop_StakingTier2() public {
         // first alice will claim hodlerdrop-redistribution for staking tier 1 condition that only staking tier 2
-        // condition will be
-        // left
+        // condition will be left
         aliceClaimAirdropForStakingTier1();
 
         // check that alice can claim hodlerdrop-redistribution for staking tier 2 condition
@@ -455,8 +464,9 @@ contract L2HodlerdropRedistributionTest is Test {
         aliceSatifiesStakingTier2();
 
         uint256 aliceBalanceBefore = l2LiskToken.balanceOf(alice);
-        bytes32[] memory merkleProof = new bytes32[](1);
-        merkleProof[0] = bytes32(0xf0df3dcda05b4fbd9c655cde3d5ceb211e019e72ec816e127a59e7195f2cd7f5);
+        bytes32[] memory merkleProof = new bytes32[](2);
+        merkleProof[0] = bytes32(0xa840fc41b720079e7bce186d116e4412058ec6b29d3a5722a1f377be1e0d0992);
+        merkleProof[1] = bytes32(0xf0df3dcda05b4fbd9c655cde3d5ceb211e019e72ec816e127a59e7195f2cd7f5);
 
         // check that the HodlerdropClaimed event is emitted for all conditions
         vm.expectEmit(true, true, true, true);
@@ -489,7 +499,7 @@ contract L2HodlerdropRedistributionTest is Test {
         l2HodlerdropRedistribution.claimHodlerdrop(alice, 20 * 10 ** 18, merkleProof);
     }
 
-    function test_ClaimAirdrop_AirdropOver() public {
+    function test_ClaimAirdrop_HodlerdropRedistributionOver() public {
         // proceed time to HODLERDROP_REDISTRIBUTION_DURATION + 1 so that hodlerdrop-redistribution period is over
         vm.warp(block.timestamp + l2HodlerdropRedistribution.HODLERDROP_REDISTRIBUTION_DURATION() * 1 days + 1);
 
