@@ -39,11 +39,11 @@ contract L2HodlerdropRedistribution is Ownable2Step {
 
     /// @notice Start time of the hodlerdrop-redistribution. L2HodlerdropRedistribution is considered started once the
     ///         Merkle root is set.
-    uint256 public hodlerdropStartTime;
+    uint256 public startTime;
 
     /// @notice Mapping of the hodlerdrop-redistribution status for each recipient address. In particular, for each of
     ///         the hodlerdrop-redistribution conditions (staking tier 1, staking tier 2).
-    mapping(address => uint8) public hodlerdropStatus;
+    mapping(address => uint8) public status;
 
     // Hodlerdrop-redistribution status bits
     // bit 0: staking tier 1
@@ -51,7 +51,7 @@ contract L2HodlerdropRedistribution is Ownable2Step {
     // bit 1: staking tier 2
     uint8 public constant STAKING_TIER_2_BIT = 0x02;
     // full hodlerdrop-redistribution claimed
-    uint8 public constant FULL_HODLERDROP_CLAIMED = 0x03;
+    uint8 public constant FULL_HODLERDROP_REDISTRIBUTION_CLAIMED = 0x03;
 
     /// @notice Address of the L2LiskToken contract.
     address public immutable l2LiskTokenAddress;
@@ -70,7 +70,7 @@ contract L2HodlerdropRedistribution is Ownable2Step {
     event LSKSentToEcosystemWallet(address indexed ecosystemWalletAddress, uint256 amount);
 
     /// @notice Emitted when the Hodlerdrop-redistribution is (partially) claimed for the recipient.
-    event HodlerdropClaimed(uint256 amount, address indexed recipient, uint8 hodlerdropStatus);
+    event HodlerdropRedistributionClaimed(uint256 amount, address indexed recipient, uint8 status);
 
     /// @notice Constructs the L2HodlerdropRedistribution contract.
     /// @param _l2LiskTokenAddress Address of the L2LiskToken contract.
@@ -102,13 +102,13 @@ contract L2HodlerdropRedistribution is Ownable2Step {
 
     /// @notice Check if the recipient satisfies the staking requirement of the provided tier.
     /// @param recipient The recipient address to check if it satisfies the staking requirement of the provided tier.
-    /// @param hodlerdropAmount The amount of LSK tokens to claim the hodlerdrop-redistribution for.
+    /// @param claimableAmount The amount of LSK tokens to claim the hodlerdrop-redistribution for.
     /// @param tierDuration The duration of the staking requirement for the provided tier.
-    /// @return True if recipient has staked at least hodlerdropAmount for at least MIN_STAKING_DURATION_TIER_1 or
+    /// @return True if recipient has staked at least claimableAmount for at least MIN_STAKING_DURATION_TIER_1 or
     ///         MIN_STAKING_DURATION_TIER_2 (depending on the tier), False otherwise.
     function satisfiesStakingTier(
         address recipient,
-        uint256 hodlerdropAmount,
+        uint256 claimableAmount,
         uint32 tierDuration
     )
         private
@@ -116,14 +116,14 @@ contract L2HodlerdropRedistribution is Ownable2Step {
         returns (bool)
     {
         require(recipient != address(0), "L2HodlerdropRedistribution: recipient is the zero address");
-        require(hodlerdropAmount > 0, "L2HodlerdropRedistribution: hodlerdrop-redistribution amount is zero");
+        require(claimableAmount > 0, "L2HodlerdropRedistribution: claimable amount is zero");
 
         // get all locking positions of the recipient
         IL2LockingPosition l2LockingPosition = IL2LockingPosition(l2LockingPositionAddress);
         IL2LockingPosition.LockingPosition[] memory lockingPositions =
             l2LockingPosition.getAllLockingPositionsByOwner(recipient);
 
-        // check if the recipient has staked at least hodlerdropAmount for at least tierDuration
+        // check if the recipient has staked at least claimableAmount for at least tierDuration
         uint256 totalStakedAmount = 0;
         for (uint256 i = 0; i < lockingPositions.length; i++) {
             IL2LockingPosition.LockingPosition memory lockingPosition = lockingPositions[i];
@@ -141,7 +141,7 @@ contract L2HodlerdropRedistribution is Ownable2Step {
             }
         }
 
-        return totalStakedAmount >= hodlerdropAmount;
+        return totalStakedAmount >= claimableAmount;
     }
 
     /// @notice Set Merkle root for the hodlerdrop-redistribution process.
@@ -151,7 +151,7 @@ contract L2HodlerdropRedistribution is Ownable2Step {
         require(_merkleRoot != 0, "L2HodlerdropRedistribution: Merkle root can not be zero");
         require(merkleRoot == 0, "L2HodlerdropRedistribution: Merkle root already set");
         merkleRoot = _merkleRoot;
-        hodlerdropStartTime = block.timestamp;
+        startTime = block.timestamp;
         emit MerkleRootSet(merkleRoot);
     }
 
@@ -160,15 +160,15 @@ contract L2HodlerdropRedistribution is Ownable2Step {
     function sendLSKToEcosystemWallet() public onlyOwner {
         require(merkleRoot != 0, "L2HodlerdropRedistribution: hodlerdrop-redistribution has not started yet");
         require(
-            hodlerdropStartTime + (HODLERDROP_REDISTRIBUTION_DURATION * 1 days) < block.timestamp,
+            startTime + (HODLERDROP_REDISTRIBUTION_DURATION * 1 days) < block.timestamp,
             "L2HodlerdropRedistribution: hodlerdrop-redistribution is not over yet"
         );
         uint256 balance = IL2LiskToken(l2LiskTokenAddress).balanceOf(address(this));
         // reentrancy won't be an issue here because the L2 Lisk Token contract is trusted and managed by the team
         // slither-disable-next-line reentrancy-no-eth
         // slither-disable-next-line reentrancy-events
-        bool status = IL2LiskToken(l2LiskTokenAddress).transfer(ecosystemFundAddress, balance);
-        require(status, "L2HodlerdropRedistribution: LSK token transfer to the Ecosystem Fund wallet failed");
+        bool transferStatus = IL2LiskToken(l2LiskTokenAddress).transfer(ecosystemFundAddress, balance);
+        require(transferStatus, "L2HodlerdropRedistribution: LSK token transfer to the Ecosystem Fund wallet failed");
         emit LSKSentToEcosystemWallet(ecosystemFundAddress, balance);
     }
 
@@ -177,7 +177,7 @@ contract L2HodlerdropRedistribution is Ownable2Step {
     /// @return True if the recipient address has claimed the hodlerdrop-redistribution for staking tier 1, False
     ///         otherwise.
     function claimedStakingTier1(address recipient) public view returns (bool) {
-        return (hodlerdropStatus[recipient] & STAKING_TIER_1_BIT) != 0;
+        return (status[recipient] & STAKING_TIER_1_BIT) != 0;
     }
 
     /// @notice Check if the recipient address has claimed the hodlerdrop-redistribution for staking tier 2.
@@ -185,42 +185,42 @@ contract L2HodlerdropRedistribution is Ownable2Step {
     /// @return True if the recipient address has claimed the hodlerdrop-redistribution for staking tier 2, False
     ///         otherwise.
     function claimedStakingTier2(address recipient) public view returns (bool) {
-        return (hodlerdropStatus[recipient] & STAKING_TIER_2_BIT) != 0;
+        return (status[recipient] & STAKING_TIER_2_BIT) != 0;
     }
 
     /// @notice Check if the recipient address has claimed the full hodlerdrop-redistribution.
     /// @param recipient The address to check if it has claimed the full hodlerdrop-redistribution.
     /// @return True if the recipient address has claimed the full hodlerdrop-redistribution, False otherwise.
-    function claimedFullHodlerdrop(address recipient) public view returns (bool) {
-        return (hodlerdropStatus[recipient] & FULL_HODLERDROP_CLAIMED) == FULL_HODLERDROP_CLAIMED;
+    function claimedFullHodlerdropRedistribution(address recipient) public view returns (bool) {
+        return (status[recipient] & FULL_HODLERDROP_REDISTRIBUTION_CLAIMED) == FULL_HODLERDROP_REDISTRIBUTION_CLAIMED;
     }
 
     /// @notice Check if the recipient satisfies the staking requirement of tier 1.
     /// @param recipient The recipient address to check if it satisfies the staking requirement of tier 1.
-    /// @param hodlerdropAmount The amount of LSK tokens to claim the hodlerdrop-redistribution for.
-    /// @return True if recipient has staked at least hodlerdropAmount for at least MIN_STAKING_DURATION_TIER_1, False
+    /// @param claimableAmount The amount of LSK tokens to claim the hodlerdrop-redistribution for.
+    /// @return True if recipient has staked at least claimableAmount for at least MIN_STAKING_DURATION_TIER_1, False
     ///         otherwise.
-    function satisfiesStakingTier1(address recipient, uint256 hodlerdropAmount) public view returns (bool) {
-        return satisfiesStakingTier(recipient, hodlerdropAmount, MIN_STAKING_DURATION_TIER_1);
+    function satisfiesStakingTier1(address recipient, uint256 claimableAmount) public view returns (bool) {
+        return satisfiesStakingTier(recipient, claimableAmount, MIN_STAKING_DURATION_TIER_1);
     }
 
     /// @notice Check if the recipient satisfies the staking requirement of tier 2.
     /// @param recipient The recipient address to check if it satisfies the staking requirement of tier 2.
-    /// @param hodlerdropAmount The amount of LSK tokens to claim the hodlerdrop-redistribution for.
-    /// @return True if recipient has staked at least hodlerdropAmount for at least MIN_STAKING_DURATION_TIER_2, False
+    /// @param claimableAmount The amount of LSK tokens to claim the hodlerdrop-redistribution for.
+    /// @return True if recipient has staked at least claimableAmount for at least MIN_STAKING_DURATION_TIER_2, False
     ///         otherwise.
-    function satisfiesStakingTier2(address recipient, uint256 hodlerdropAmount) public view returns (bool) {
-        return satisfiesStakingTier(recipient, hodlerdropAmount, MIN_STAKING_DURATION_TIER_2);
+    function satisfiesStakingTier2(address recipient, uint256 claimableAmount) public view returns (bool) {
+        return satisfiesStakingTier(recipient, claimableAmount, MIN_STAKING_DURATION_TIER_2);
     }
 
-    /// @notice Claim the Hodlerdrop for the recipient.
+    /// @notice Claim the Hodlerdrop redistribution for the recipient.
     /// @param recipient The recipient address to claim the hodlerdrop-redistribution for.
     /// @param amount The amount of LSK tokens to claim the hodlerdrop-redistribution for.
     /// @param merkleProof The Merkle proof for the recipient address and the amount against the stored merkleRoot.
-    function claimHodlerdrop(address recipient, uint256 amount, bytes32[] memory merkleProof) public {
+    function claimHodlerdropRedistribution(address recipient, uint256 amount, bytes32[] memory merkleProof) public {
         require(merkleRoot != 0, "L2HodlerdropRedistribution: hodlerdrop-redistribution has not started yet");
         require(
-            block.timestamp <= hodlerdropStartTime + (HODLERDROP_REDISTRIBUTION_DURATION * 1 days),
+            block.timestamp <= startTime + (HODLERDROP_REDISTRIBUTION_DURATION * 1 days),
             "L2HodlerdropRedistribution: hodlerdrop-redistribution period is over"
         );
         require(recipient != address(0), "L2HodlerdropRedistribution: recipient is the zero address");
@@ -234,38 +234,38 @@ contract L2HodlerdropRedistribution is Ownable2Step {
             "L2HodlerdropRedistribution: invalid Merkle proof"
         );
         require(
-            (hodlerdropStatus[recipient] & FULL_HODLERDROP_CLAIMED) != FULL_HODLERDROP_CLAIMED,
+            (status[recipient] & FULL_HODLERDROP_REDISTRIBUTION_CLAIMED) != FULL_HODLERDROP_REDISTRIBUTION_CLAIMED,
             "L2HodlerdropRedistribution: full hodlerdrop-redistribution claimed"
         );
 
-        uint256 hodlerdropAmount = 0;
+        uint256 claimableAmount = 0;
         uint8 claimStatus = 0;
 
         if (claimedStakingTier1(recipient) == false) {
             if (satisfiesStakingTier1(recipient, amount)) {
-                hodlerdropAmount += amount / 2;
-                hodlerdropStatus[recipient] |= STAKING_TIER_1_BIT;
+                claimableAmount += amount / 2;
+                status[recipient] |= STAKING_TIER_1_BIT;
                 claimStatus |= STAKING_TIER_1_BIT;
             }
         }
 
         if (claimedStakingTier2(recipient) == false) {
             if (satisfiesStakingTier2(recipient, amount)) {
-                hodlerdropAmount += amount / 2;
-                hodlerdropStatus[recipient] |= STAKING_TIER_2_BIT;
+                claimableAmount += amount / 2;
+                status[recipient] |= STAKING_TIER_2_BIT;
                 claimStatus |= STAKING_TIER_2_BIT;
             }
         }
 
         if (claimStatus != 0) {
-            // transfer hodlerdropAmount of LSK to recipient
+            // transfer claimableAmount of LSK to recipient
             // reentrancy won't be an issue here because the L2 Lisk Token contract is trusted and managed by the team
             // slither-disable-next-line reentrancy-no-eth
             // slither-disable-next-line reentrancy-events
-            bool status = IL2LiskToken(l2LiskTokenAddress).transfer(recipient, hodlerdropAmount);
-            require(status, "L2HodlerdropRedistribution: L2LiskToken transfer failed");
+            bool transferStatus = IL2LiskToken(l2LiskTokenAddress).transfer(recipient, claimableAmount);
+            require(transferStatus, "L2HodlerdropRedistribution: L2LiskToken transfer failed");
 
-            emit HodlerdropClaimed(hodlerdropAmount, recipient, claimStatus);
+            emit HodlerdropRedistributionClaimed(claimableAmount, recipient, claimStatus);
         }
     }
 }

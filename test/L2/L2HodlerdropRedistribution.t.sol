@@ -271,7 +271,7 @@ contract L2HodlerdropRedistributionTest is Test {
         merkleProof[0] = bytes32(0x2d5b63a817daa1152c66e8b254400766fac6b7958a2f8afff1dea8e35e84f013);
         merkleProof[1] = bytes32(0xf0df3dcda05b4fbd9c655cde3d5ceb211e019e72ec816e127a59e7195f2cd7f5);
         uint256 startGas = gasleft();
-        l2HodlerdropRedistribution.claimHodlerdrop(charlie, 1000 * 10 ** 18, merkleProof);
+        l2HodlerdropRedistribution.claimHodlerdropRedistribution(charlie, 1000 * 10 ** 18, merkleProof);
         uint256 endGas = gasleft();
         assertLe(startGas - endGas, 30000000);
         assertEq(l2LiskToken.balanceOf(charlie), charlieBalanceBefore + 500 * 10 ** 18);
@@ -341,7 +341,7 @@ contract L2HodlerdropRedistributionTest is Test {
     }
 
     function test_SatisfiesStakingTier1_ZeroAmount() public {
-        vm.expectRevert("L2HodlerdropRedistribution: hodlerdrop-redistribution amount is zero");
+        vm.expectRevert("L2HodlerdropRedistribution: claimable amount is zero");
         l2HodlerdropRedistribution.satisfiesStakingTier1(alice, 0);
     }
 
@@ -402,7 +402,7 @@ contract L2HodlerdropRedistributionTest is Test {
     }
 
     function test_SatisfiesStakingTier2_ZeroAmount() public {
-        vm.expectRevert("L2HodlerdropRedistribution: hodlerdrop-redistribution amount is zero");
+        vm.expectRevert("L2HodlerdropRedistribution: claimable amount is zero");
         l2HodlerdropRedistribution.satisfiesStakingTier2(alice, 0);
     }
 
@@ -418,7 +418,7 @@ contract L2HodlerdropRedistributionTest is Test {
         bytes32[] memory merkleProof = new bytes32[](2);
         merkleProof[0] = bytes32(0xa840fc41b720079e7bce186d116e4412058ec6b29d3a5722a1f377be1e0d0992);
         merkleProof[1] = bytes32(0xf0df3dcda05b4fbd9c655cde3d5ceb211e019e72ec816e127a59e7195f2cd7f5);
-        l2HodlerdropRedistribution.claimHodlerdrop(alice, 80 * 10 ** 18, merkleProof);
+        l2HodlerdropRedistribution.claimHodlerdropRedistribution(alice, 80 * 10 ** 18, merkleProof);
         assertEq(l2LiskToken.balanceOf(alice), aliceBalanceBefore + 40 * 10 ** 18);
 
         // check that alice has claimed hodlerdrop-redistribution for staking tier 1 condition
@@ -442,7 +442,7 @@ contract L2HodlerdropRedistributionTest is Test {
         bytes32[] memory merkleProof = new bytes32[](2);
         merkleProof[0] = bytes32(0xa840fc41b720079e7bce186d116e4412058ec6b29d3a5722a1f377be1e0d0992);
         merkleProof[1] = bytes32(0xf0df3dcda05b4fbd9c655cde3d5ceb211e019e72ec816e127a59e7195f2cd7f5);
-        l2HodlerdropRedistribution.claimHodlerdrop(alice, 80 * 10 ** 18, merkleProof);
+        l2HodlerdropRedistribution.claimHodlerdropRedistribution(alice, 80 * 10 ** 18, merkleProof);
         assertEq(l2LiskToken.balanceOf(alice), aliceBalanceBefore + 40 * 10 ** 18);
 
         // check that alice has claimed hodlerdrop-redistribution for staking tier 2 condition
@@ -470,25 +470,25 @@ contract L2HodlerdropRedistributionTest is Test {
         merkleProof[0] = bytes32(0xa840fc41b720079e7bce186d116e4412058ec6b29d3a5722a1f377be1e0d0992);
         merkleProof[1] = bytes32(0xf0df3dcda05b4fbd9c655cde3d5ceb211e019e72ec816e127a59e7195f2cd7f5);
 
-        // check that the HodlerdropClaimed event is emitted for all conditions
+        // check that the HodlerdropRedistributionClaimed event is emitted for all conditions
         vm.expectEmit(true, true, true, true);
-        emit L2HodlerdropRedistribution.HodlerdropClaimed(
+        emit L2HodlerdropRedistribution.HodlerdropRedistributionClaimed(
             80 * 10 ** 18,
             alice,
             l2HodlerdropRedistribution.STAKING_TIER_1_BIT() | l2HodlerdropRedistribution.STAKING_TIER_2_BIT()
         );
 
-        l2HodlerdropRedistribution.claimHodlerdrop(alice, 80 * 10 ** 18, merkleProof);
+        l2HodlerdropRedistribution.claimHodlerdropRedistribution(alice, 80 * 10 ** 18, merkleProof);
         assertEq(l2LiskToken.balanceOf(alice), aliceBalanceBefore + 80 * 10 ** 18);
 
         // check hodlerdrop-redistribution claim status for alice
         assertEq(l2HodlerdropRedistribution.claimedStakingTier1(alice), true);
         assertEq(l2HodlerdropRedistribution.claimedStakingTier2(alice), true);
-        assertEq(l2HodlerdropRedistribution.claimedFullHodlerdrop(alice), true);
+        assertEq(l2HodlerdropRedistribution.claimedFullHodlerdropRedistribution(alice), true);
 
         // check that alice cannot claim hodlerdrop-redistribution again
         vm.expectRevert("L2HodlerdropRedistribution: full hodlerdrop-redistribution claimed");
-        l2HodlerdropRedistribution.claimHodlerdrop(alice, 80 * 10 ** 18, merkleProof);
+        l2HodlerdropRedistribution.claimHodlerdropRedistribution(alice, 80 * 10 ** 18, merkleProof);
     }
 
     function test_ClaimAirdrop_NotStartedYet() public {
@@ -498,7 +498,7 @@ contract L2HodlerdropRedistributionTest is Test {
 
         bytes32[] memory merkleProof = new bytes32[](1);
         vm.expectRevert("L2HodlerdropRedistribution: hodlerdrop-redistribution has not started yet");
-        l2HodlerdropRedistribution.claimHodlerdrop(alice, 20 * 10 ** 18, merkleProof);
+        l2HodlerdropRedistribution.claimHodlerdropRedistribution(alice, 20 * 10 ** 18, merkleProof);
     }
 
     function test_ClaimAirdrop_HodlerdropRedistributionOver() public {
@@ -507,26 +507,26 @@ contract L2HodlerdropRedistributionTest is Test {
 
         bytes32[] memory merkleProof = new bytes32[](1);
         vm.expectRevert("L2HodlerdropRedistribution: hodlerdrop-redistribution period is over");
-        l2HodlerdropRedistribution.claimHodlerdrop(alice, 20 * 10 ** 18, merkleProof);
+        l2HodlerdropRedistribution.claimHodlerdropRedistribution(alice, 20 * 10 ** 18, merkleProof);
     }
 
     function test_ClaimAirdrop_AmountIsZero() public {
         bytes32[] memory merkleProof = new bytes32[](1);
         vm.expectRevert("L2HodlerdropRedistribution: amount is zero");
-        l2HodlerdropRedistribution.claimHodlerdrop(alice, 0, merkleProof);
+        l2HodlerdropRedistribution.claimHodlerdropRedistribution(alice, 0, merkleProof);
     }
 
     function test_ClaimAirdrop_ZeroProofLength() public {
         bytes32[] memory merkleProof = new bytes32[](0);
         vm.expectRevert("L2HodlerdropRedistribution: Merkle proof is empty");
-        l2HodlerdropRedistribution.claimHodlerdrop(alice, 20 * 10 ** 18, merkleProof);
+        l2HodlerdropRedistribution.claimHodlerdropRedistribution(alice, 20 * 10 ** 18, merkleProof);
     }
 
     function test_ClaimAirdrop_ZeroRecipientAddress() public {
         bytes32[] memory merkleProof = new bytes32[](1);
         vm.expectRevert("L2HodlerdropRedistribution: recipient is the zero address");
         // bob did not claim tokens in the Claim contract
-        l2HodlerdropRedistribution.claimHodlerdrop(address(0x0), 20 * 10 ** 18, merkleProof);
+        l2HodlerdropRedistribution.claimHodlerdropRedistribution(address(0x0), 20 * 10 ** 18, merkleProof);
     }
 
     function test_TransferOwnership() public {
