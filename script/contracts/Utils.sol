@@ -35,6 +35,8 @@ contract Utils is Script {
         address L2GovernorImplementation;
         /// @notice The Current implementation of L2GovernorPaused Contract.
         address L2GovernorPaused;
+        /// @notice L2 Hodlerdrop Redistribution address.
+        address L2HodlerdropRedistribution;
         /// @notice L2 Lisk token address.
         address L2LiskToken;
         /// @notice L2 Locking Position contract (in Proxy), which users interact with.
@@ -222,6 +224,11 @@ contract Utils is Script {
             l2AddressesConfig.L2GovernorPaused = l2GovernorPaused;
         } catch { }
 
+        try vm.parseJsonAddress(addressJson, ".L2HodlerdropRedistribution") returns (address l2HodlerdropRedistribution)
+        {
+            l2AddressesConfig.L2HodlerdropRedistribution = l2HodlerdropRedistribution;
+        } catch { }
+
         try vm.parseJsonAddress(addressJson, ".L2LiskToken") returns (address l2LiskToken) {
             l2AddressesConfig.L2LiskToken = l2LiskToken;
         } catch { }
@@ -341,6 +348,7 @@ contract Utils is Script {
         vm.serializeAddress(json, "L2Governor", cfg.L2Governor);
         vm.serializeAddress(json, "L2GovernorImplementation", cfg.L2GovernorImplementation);
         vm.serializeAddress(json, "L2GovernorPaused", cfg.L2GovernorPaused);
+        vm.serializeAddress(json, "L2HodlerdropRedistribution", cfg.L2HodlerdropRedistribution);
         vm.serializeAddress(json, "L2LiskToken", cfg.L2LiskToken);
         vm.serializeAddress(json, "L2LockingPosition", cfg.L2LockingPosition);
         vm.serializeAddress(json, "L2LockingPositionImplementation", cfg.L2LockingPositionImplementation);

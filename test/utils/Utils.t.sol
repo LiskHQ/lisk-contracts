@@ -44,6 +44,7 @@ contract UtilsTest is Test {
             L2Governor: address(index++),
             L2GovernorImplementation: address(index++),
             L2GovernorPaused: address(index++),
+            L2HodlerdropRedistribution: address(index++),
             L2LiskToken: address(index++),
             L2LockingPosition: address(index++),
             L2LockingPositionImplementation: address(index++),
