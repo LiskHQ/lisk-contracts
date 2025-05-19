@@ -14,8 +14,8 @@ import { IL2VotingPower } from "../interfaces/L2/IL2VotingPower.sol";
 ///         Each user's claim amount is proportional to their share of the total claimed amount in L2Airdrop,
 ///         applied to the remaining unclaimed balance. The distribution eligibility is determined by the
 ///         following staking conditions:
-///         1. Staking Tier 1: A user is required to stake the same amount that can be claimed here for a period of time
-///                            (3 months).
+///         1. Staking Tier 1: A user is required to stake at least the same amount that can be claimed here for a
+///                            period of time (3 months).
 ///         2. Staking Tier 2: This condition is analogous to the previous, but a user is required
 ///                            to stake the same amount for twice as long (6months).
 ///         The hodlerdrop-redistribution amount is distributed to the recipient's address in L2LiskToken contract. The
