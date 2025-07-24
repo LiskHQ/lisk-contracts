@@ -12,32 +12,34 @@ echo "Setting environment variables..."
 source .env
 echo "Done."
 
-echo "Creating $NETWORK directory inside deployment/artifacts/contracts directory..."
-if [ -z "$NETWORK" ]
-then
-      echo "NETWORK variable inside .env file is not set. Please set NETWORK environment variable."
-      exit 1
-else
-      if [ ! -f "deployment/artifacts/contracts/$NETWORK/l1addresses.json" ]
-      then
-        echo "deployment/artifacts/contracts/$NETWORK/l1addresses.json must exist with L1 token information."
-        exit 1
-      fi
-fi
-echo "Done."
+# Canonical CREATE2 deployer
+FACTORY="0x4e59b44847b379578588920ca78fbf26c0b4956c"
 
-echo "Deploying and if enabled verifying L2LiskToken smart contract..."
-if [ -z "$CONTRACT_VERIFIER" ]
-then
-      forge script --rpc-url="$L2_RPC_URL" --broadcast -vvvv script/contracts/L2/L2LiskToken.s.sol:L2LiskTokenScript
+# Address to use for initialize()
+INIT_TARGET="0x4200000000000000000000000000000000000010"
+
+# ==============================================
+
+echo "📦 Deploying contract via CREATE2 to Base Sepolia..."
+# Send transaction to CREATE2 factory with the init code as raw data
+cast send $FACTORY "$LISK_LSK_INIT_CODE" \
+    --private-key $PRIVATE_KEY \
+    --rpc-url $L2_RPC_URL \
+    -vvvv
+
+echo "✅ Deployment transaction sent."
+
+if [ "$(cast code $LISK_LSK_ADDRESS --rpc-url $L2_RPC_URL)" == "0x" ]; then
+  echo "❌ Contract not deployed yet at $LISK_LSK_ADDRESS"
+  exit 1
 else
-      if [ $CONTRACT_VERIFIER = "blockscout" ]
-      then
-            forge script --rpc-url="$L2_RPC_URL" --broadcast --verify --verifier blockscout --verifier-url $L2_VERIFIER_URL -vvvv script/contracts/L2/L2LiskToken.s.sol:L2LiskTokenScript
-      fi
-      if [ $CONTRACT_VERIFIER = "etherscan" ]
-      then
-            forge script --rpc-url="$L2_RPC_URL" --broadcast --verify --verifier etherscan --verifier-url $L2_VERIFIER_URL --etherscan-api-key="$L2_ETHERSCAN_API_KEY" -vvvv script/contracts/L2/L2LiskToken.s.sol:L2LiskTokenScript
-      fi
+  echo "✅ Contract deployed at: $LISK_LSK_ADDRESS"
 fi
-echo "Done."
+
+echo "⏳ Waiting... Then calling initialize()..."
+cast send $LISK_LSK_ADDRESS "initialize(address)" $INIT_TARGET \
+    --private-key $PRIVATE_KEY \
+    -vvvv \
+    --rpc-url $L2_RPC_URL
+
+echo "🎉 Done! Contract deployed at: $LISK_LSK_ADDRESS"
