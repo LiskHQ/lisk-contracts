@@ -127,15 +127,24 @@ contract L2HodlerdropRedistribution is Ownable2Step {
         uint256 totalStakedAmount = 0;
         for (uint256 i = 0; i < lockingPositions.length; i++) {
             IL2LockingPosition.LockingPosition memory lockingPosition = lockingPositions[i];
-            if (lockingPosition.pausedLockingDuration > 0 /* locking position is paused */ ) {
-                if (lockingPosition.pausedLockingDuration >= tierDuration /* satisfies duration */ ) {
+            if (
+                lockingPosition.pausedLockingDuration > 0 /* locking position is paused */
+            ) {
+                if (
+                    lockingPosition.pausedLockingDuration >= tierDuration /* satisfies duration */
+                ) {
                     totalStakedAmount += lockingPosition.amount;
                 }
-            } /* locking position is not paused */ else {
-                if (lockingPosition.expDate < (block.timestamp / 1 days) /* position expired */ ) {
+            } /* locking position is not paused */
+            else {
+                if (
+                    lockingPosition.expDate < (block.timestamp / 1 days) /* position expired */
+                ) {
                     continue; /* needed to prevent underflow in the next lines */
                 }
-                if (lockingPosition.expDate - (block.timestamp / 1 days) >= tierDuration /* satisfies duration */ ) {
+                if (
+                    lockingPosition.expDate - (block.timestamp / 1 days) >= tierDuration /* satisfies duration */
+                ) {
                     totalStakedAmount += lockingPosition.amount;
                 }
             }
@@ -217,7 +226,13 @@ contract L2HodlerdropRedistribution is Ownable2Step {
     /// @param recipient The recipient address to claim the hodlerdrop-redistribution for.
     /// @param amount The amount of LSK tokens to claim the hodlerdrop-redistribution for.
     /// @param merkleProof The Merkle proof for the recipient address and the amount against the stored merkleRoot.
-    function claimHodlerdropRedistribution(address recipient, uint256 amount, bytes32[] memory merkleProof) public {
+    function claimHodlerdropRedistribution(
+        address recipient,
+        uint256 amount,
+        bytes32[] memory merkleProof
+    )
+        public
+    {
         require(merkleRoot != 0, "L2HodlerdropRedistribution: hodlerdrop-redistribution has not started yet");
         require(
             block.timestamp <= startTime + (HODLERDROP_REDISTRIBUTION_DURATION * 1 days),

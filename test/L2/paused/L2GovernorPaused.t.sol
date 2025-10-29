@@ -5,8 +5,9 @@ import { IVotes } from "@openzeppelin-upgradeable/contracts/governance/extension
 import { OwnableUpgradeable } from "@openzeppelin-upgradeable/contracts/access/OwnableUpgradeable.sol";
 import { TimelockController } from "@openzeppelin/contracts/governance/TimelockController.sol";
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
-import { TimelockControllerUpgradeable } from
-    "@openzeppelin-upgradeable/contracts/governance/extensions/GovernorTimelockControlUpgradeable.sol";
+import {
+    TimelockControllerUpgradeable
+} from "@openzeppelin-upgradeable/contracts/governance/extensions/GovernorTimelockControlUpgradeable.sol";
 import { ERC1155Holder } from "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
 import { ERC721Holder } from "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
 import { Test, console } from "forge-std/Test.sol";
@@ -59,14 +60,12 @@ contract L2GovernorPausedTest is Test, ERC1155Holder, ERC721Holder {
 
         // deploy L2Governor contract via proxy and initialize it at the same time
         l2Governor = L2Governor(
-            payable(
-                address(
+            payable(address(
                     new ERC1967Proxy(
                         address(l2GovernorImplementation),
                         abi.encodeWithSelector(l2Governor.initialize.selector, votingPower, timelock, initialOwner)
                     )
-                )
-            )
+                ))
         );
 
         assertInitParamsEq();

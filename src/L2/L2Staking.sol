@@ -286,9 +286,8 @@ contract L2Staking is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, I
         bool success = IERC20(l2LiskTokenContract).transferFrom(msg.sender, address(this), amount);
         require(success, "L2Staking: LSK token transfer from owner or creator to Staking contract failed");
 
-        uint256 lockId = (IL2LockingPosition(lockingPositionContract)).createLockingPosition(
-            creator, lockOwner, amount, lockingDuration
-        );
+        uint256 lockId = (IL2LockingPosition(lockingPositionContract))
+        .createLockingPosition(creator, lockOwner, amount, lockingDuration);
 
         emit AmountLocked(lockId, lockOwner, amount, lockingDuration);
 
@@ -373,9 +372,8 @@ contract L2Staking is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, I
         require(success, "L2Staking: LSK token transfer from owner or creator to Staking contract failed");
 
         // update locking position
-        (IL2LockingPosition(lockingPositionContract)).modifyLockingPosition(
-            lockId, lock.amount + amountIncrease, lock.expDate, lock.pausedLockingDuration
-        );
+        (IL2LockingPosition(lockingPositionContract))
+        .modifyLockingPosition(lockId, lock.amount + amountIncrease, lock.expDate, lock.pausedLockingDuration);
 
         emit LockingAmountIncreased(lockId, amountIncrease);
     }
@@ -403,9 +401,8 @@ contract L2Staking is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, I
         }
 
         // update locking position
-        (IL2LockingPosition(lockingPositionContract)).modifyLockingPosition(
-            lockId, lock.amount, lock.expDate, lock.pausedLockingDuration
-        );
+        (IL2LockingPosition(lockingPositionContract))
+        .modifyLockingPosition(lockId, lock.amount, lock.expDate, lock.pausedLockingDuration);
 
         emit LockingDurationExtended(lockId, extendDays);
     }
@@ -424,9 +421,8 @@ contract L2Staking is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, I
 
         // update locking position
         lock.pausedLockingDuration = lock.expDate - today;
-        (IL2LockingPosition(lockingPositionContract)).modifyLockingPosition(
-            lockId, lock.amount, lock.expDate, lock.pausedLockingDuration
-        );
+        (IL2LockingPosition(lockingPositionContract))
+        .modifyLockingPosition(lockId, lock.amount, lock.expDate, lock.pausedLockingDuration);
 
         emit RemainingLockingDurationPaused(lockId);
     }
@@ -443,9 +439,8 @@ contract L2Staking is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, I
         // update locking position
         lock.expDate = todayDay() + lock.pausedLockingDuration;
         lock.pausedLockingDuration = 0;
-        (IL2LockingPosition(lockingPositionContract)).modifyLockingPosition(
-            lockId, lock.amount, lock.expDate, lock.pausedLockingDuration
-        );
+        (IL2LockingPosition(lockingPositionContract))
+        .modifyLockingPosition(lockId, lock.amount, lock.expDate, lock.pausedLockingDuration);
 
         emit CountdownResumed(lockId);
     }

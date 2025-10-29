@@ -368,10 +368,7 @@ contract L2StakingTest is Test {
 
         // create a locking position with pausedLockingDuration set to zero
         IL2LockingPosition.LockingPosition memory lock = IL2LockingPosition.LockingPosition({
-            creator: address(0x1),
-            amount: 100 * 10 ** 18,
-            expDate: 365,
-            pausedLockingDuration: 0
+            creator: address(0x1), amount: 100 * 10 ** 18, expDate: 365, pausedLockingDuration: 0
         });
         assertEq(lock.pausedLockingDuration, 0);
 
@@ -388,10 +385,7 @@ contract L2StakingTest is Test {
 
         // create a locking position with pausedLockingDuration set to 100
         IL2LockingPosition.LockingPosition memory lock = IL2LockingPosition.LockingPosition({
-            creator: address(0x1),
-            amount: 100 * 10 ** 18,
-            expDate: 365,
-            pausedLockingDuration: 100
+            creator: address(0x1), amount: 100 * 10 ** 18, expDate: 365, pausedLockingDuration: 100
         });
         assertEq(lock.pausedLockingDuration, 100);
 
@@ -408,10 +402,7 @@ contract L2StakingTest is Test {
 
         // create a locking position with expDate set to 365
         IL2LockingPosition.LockingPosition memory lock = IL2LockingPosition.LockingPosition({
-            creator: address(0x1),
-            amount: 100 * 10 ** 18,
-            expDate: 365,
-            pausedLockingDuration: 0
+            creator: address(0x1), amount: 100 * 10 ** 18, expDate: 365, pausedLockingDuration: 0
         });
         assertEq(lock.expDate, 365);
 

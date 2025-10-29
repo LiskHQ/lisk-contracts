@@ -11,7 +11,16 @@ contract MockStandardBridgeBuggyDeposit {
     using SafeERC20 for IERC20;
 
     /// @notice Mock the standard bridge depositERC20To function.
-    function depositERC20To(address _l1Token, address, address, uint256 _amount, uint32, bytes calldata) public {
+    function depositERC20To(
+        address _l1Token,
+        address,
+        address,
+        uint256 _amount,
+        uint32,
+        bytes calldata
+    )
+        public
+    {
         IERC20(_l1Token).safeTransferFrom(msg.sender, address(this), _amount - 1);
     }
 }

@@ -101,8 +101,9 @@ contract L2HodlerdropRedistributionTest is Test {
         assert(l2Staking.lockingPositionContract() == address(l2LockingPosition));
 
         // deploy L2HodlerdropRedistribution contract
-        l2HodlerdropRedistribution =
-            new L2HodlerdropRedistribution(address(l2LiskToken), address(l2LockingPosition), ecosystemFundWalletAddress);
+        l2HodlerdropRedistribution = new L2HodlerdropRedistribution(
+            address(l2LiskToken), address(l2LockingPosition), ecosystemFundWalletAddress
+        );
         assert(address(l2HodlerdropRedistribution) != address(0x0));
         assertEq(l2HodlerdropRedistribution.l2LiskTokenAddress(), address(l2LiskToken));
         assertEq(l2HodlerdropRedistribution.l2LockingPositionAddress(), address(l2LockingPosition));
@@ -168,8 +169,9 @@ contract L2HodlerdropRedistributionTest is Test {
         bytes32 merkleRoot = bytes32(0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef);
 
         // re-deploy L2HodlerdropRedistribution contract because merkle root is already set in setup
-        l2HodlerdropRedistribution =
-            new L2HodlerdropRedistribution(address(l2LiskToken), address(l2LockingPosition), ecosystemFundWalletAddress);
+        l2HodlerdropRedistribution = new L2HodlerdropRedistribution(
+            address(l2LiskToken), address(l2LockingPosition), ecosystemFundWalletAddress
+        );
 
         // check that the MerkleRootSet event is emitted
         vm.expectEmit(true, true, true, true);
@@ -213,8 +215,9 @@ contract L2HodlerdropRedistributionTest is Test {
 
     function test_SendLSKToEcosystemFundWallet_AirdropV2HasNotStarted() public {
         // re-deploy L2HodlerdropRedistribution contract because merkle root is already set in setup
-        l2HodlerdropRedistribution =
-            new L2HodlerdropRedistribution(address(l2LiskToken), address(l2LockingPosition), ecosystemFundWalletAddress);
+        l2HodlerdropRedistribution = new L2HodlerdropRedistribution(
+            address(l2LiskToken), address(l2LockingPosition), ecosystemFundWalletAddress
+        );
 
         // Merkle root is not set so hodlerdrop-redistribution has not started yet
         vm.expectRevert("L2HodlerdropRedistribution: hodlerdrop-redistribution has not started yet");
@@ -493,8 +496,9 @@ contract L2HodlerdropRedistributionTest is Test {
 
     function test_ClaimAirdrop_NotStartedYet() public {
         // re-deploy L2HodlerdropRedistribution contract because merkle root is already set in setup
-        l2HodlerdropRedistribution =
-            new L2HodlerdropRedistribution(address(l2LiskToken), address(l2LockingPosition), ecosystemFundWalletAddress);
+        l2HodlerdropRedistribution = new L2HodlerdropRedistribution(
+            address(l2LiskToken), address(l2LockingPosition), ecosystemFundWalletAddress
+        );
 
         bytes32[] memory merkleProof = new bytes32[](1);
         vm.expectRevert("L2HodlerdropRedistribution: hodlerdrop-redistribution has not started yet");

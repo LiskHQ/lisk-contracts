@@ -4,8 +4,9 @@ pragma solidity 0.8.23;
 import { Initializable } from "@openzeppelin-upgradeable/contracts/proxy/utils/Initializable.sol";
 import { Ownable2StepUpgradeable } from "@openzeppelin-upgradeable/contracts/access/Ownable2StepUpgradeable.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
-import { MultiFeedAdapterWithoutRounds } from
-    "@redstone-finance/on-chain-relayer/contracts/price-feeds/without-rounds/MultiFeedAdapterWithoutRounds.sol";
+import {
+    MultiFeedAdapterWithoutRounds
+} from "@redstone-finance/on-chain-relayer/contracts/price-feeds/without-rounds/MultiFeedAdapterWithoutRounds.sol";
 import { Constants } from "../utils/Constants.sol";
 
 /// @title L2MultiFeedAdapterWithoutRoundsMainDemo - L2MultiFeedAdapterWithoutRoundsMainDemo contract

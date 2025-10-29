@@ -332,11 +332,7 @@ contract L2LiskTokenTest is Test {
 
     function test_Permit() public {
         SigUtils.Permit memory permit = SigUtils.Permit({
-            owner: alice,
-            spender: bob,
-            value: 100 * 10 ** 18,
-            nonce: l2LiskToken.nonces(alice),
-            deadline: 1 days
+            owner: alice, spender: bob, value: 100 * 10 ** 18, nonce: l2LiskToken.nonces(alice), deadline: 1 days
         });
 
         bytes32 digest = sigUtils.getTypedDataHash(permit);
@@ -350,11 +346,7 @@ contract L2LiskTokenTest is Test {
 
     function test_PermitFail_ExpiredPermit() public {
         SigUtils.Permit memory permit = SigUtils.Permit({
-            owner: alice,
-            spender: bob,
-            value: 100 * 10 ** 18,
-            nonce: l2LiskToken.nonces(alice),
-            deadline: 1 days
+            owner: alice, spender: bob, value: 100 * 10 ** 18, nonce: l2LiskToken.nonces(alice), deadline: 1 days
         });
 
         bytes32 digest = sigUtils.getTypedDataHash(permit);
@@ -368,11 +360,7 @@ contract L2LiskTokenTest is Test {
 
     function test_PermitFail_InvalidSigner() public {
         SigUtils.Permit memory permit = SigUtils.Permit({
-            owner: alice,
-            spender: bob,
-            value: 100 * 10 ** 18,
-            nonce: l2LiskToken.nonces(alice),
-            deadline: 1 days
+            owner: alice, spender: bob, value: 100 * 10 ** 18, nonce: l2LiskToken.nonces(alice), deadline: 1 days
         });
 
         bytes32 digest = sigUtils.getTypedDataHash(permit);
@@ -400,11 +388,7 @@ contract L2LiskTokenTest is Test {
 
     function test_PermitFail_SignatureReplay() public {
         SigUtils.Permit memory permit = SigUtils.Permit({
-            owner: alice,
-            spender: bob,
-            value: 100 * 10 ** 18,
-            nonce: l2LiskToken.nonces(alice),
-            deadline: 1 days
+            owner: alice, spender: bob, value: 100 * 10 ** 18, nonce: l2LiskToken.nonces(alice), deadline: 1 days
         });
 
         bytes32 digest = sigUtils.getTypedDataHash(permit);
@@ -421,11 +405,7 @@ contract L2LiskTokenTest is Test {
         l2LiskToken.mint(alice, 100 * 10 ** 18);
 
         SigUtils.Permit memory permit = SigUtils.Permit({
-            owner: alice,
-            spender: bob,
-            value: 100 * 10 ** 18,
-            nonce: l2LiskToken.nonces(alice),
-            deadline: 1 days
+            owner: alice, spender: bob, value: 100 * 10 ** 18, nonce: l2LiskToken.nonces(alice), deadline: 1 days
         });
 
         bytes32 digest = sigUtils.getTypedDataHash(permit);
@@ -446,11 +426,7 @@ contract L2LiskTokenTest is Test {
         l2LiskToken.mint(alice, 100 * 10 ** 18);
 
         SigUtils.Permit memory permit = SigUtils.Permit({
-            owner: alice,
-            spender: bob,
-            value: type(uint256).max,
-            nonce: l2LiskToken.nonces(alice),
-            deadline: 1 days
+            owner: alice, spender: bob, value: type(uint256).max, nonce: l2LiskToken.nonces(alice), deadline: 1 days
         });
 
         bytes32 digest = sigUtils.getTypedDataHash(permit);
