@@ -32,8 +32,7 @@ contract L1VestingWalletPausedTest is Test {
 
         // deploy L1VestingWallet contract via proxy and initialize it at the same time
         l1VestingWallet = L1VestingWallet(
-            payable(
-                address(
+            payable(address(
                     new ERC1967Proxy(
                         address(l1VestingWalletImplementation),
                         abi.encodeWithSelector(
@@ -45,8 +44,7 @@ contract L1VestingWalletPausedTest is Test {
                             contractAdmin
                         )
                     )
-                )
-            )
+                ))
         );
         assert(address(l1VestingWallet) != address(0x0));
 

@@ -92,7 +92,13 @@ interface IL2Governor {
     )
         external
         returns (uint256);
-    function castVoteWithReason(uint256 proposalId, uint8 support, string memory reason) external returns (uint256);
+    function castVoteWithReason(
+        uint256 proposalId,
+        uint8 support,
+        string memory reason
+    )
+        external
+        returns (uint256);
     function castVoteWithReasonAndParams(
         uint256 proposalId,
         uint8 support,

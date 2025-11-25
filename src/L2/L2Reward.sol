@@ -260,8 +260,9 @@ contract L2Reward is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, IS
         if (lockingPositionBeforeInitiatingFastUnlock.pausedLockingDuration == 0) {
             // removing previous expiration date
             remainingDuration = lockingPositionBeforeInitiatingFastUnlock.expDate - today;
-            dailyUnlockedAmounts[lockingPositionBeforeInitiatingFastUnlock.expDate] -=
-                lockingPositionBeforeInitiatingFastUnlock.amount;
+            dailyUnlockedAmounts[
+                lockingPositionBeforeInitiatingFastUnlock.expDate
+            ] -= lockingPositionBeforeInitiatingFastUnlock.amount;
             pendingUnlockAmount -= lockingPositionBeforeInitiatingFastUnlock.amount;
         } else {
             remainingDuration = lockingPositionBeforeInitiatingFastUnlock.pausedLockingDuration;

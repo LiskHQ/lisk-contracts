@@ -2,10 +2,12 @@
 pragma solidity 0.8.23;
 
 import { GovernorUpgradeable } from "@openzeppelin-upgradeable/contracts/governance/GovernorUpgradeable.sol";
-import { GovernorSettingsUpgradeable } from
-    "@openzeppelin-upgradeable/contracts/governance/extensions/GovernorSettingsUpgradeable.sol";
-import { GovernorCountingSimpleUpgradeable } from
-    "@openzeppelin-upgradeable/contracts/governance/extensions/GovernorCountingSimpleUpgradeable.sol";
+import {
+    GovernorSettingsUpgradeable
+} from "@openzeppelin-upgradeable/contracts/governance/extensions/GovernorSettingsUpgradeable.sol";
+import {
+    GovernorCountingSimpleUpgradeable
+} from "@openzeppelin-upgradeable/contracts/governance/extensions/GovernorCountingSimpleUpgradeable.sol";
 import {
     IVotes,
     GovernorVotesUpgradeable

@@ -401,10 +401,10 @@ library Ed25519 {
                 uint256 w2 = (uint256(m1) & 0xffffffff_ffffffff_00000000_00000000_00000000_00000000_ffffffff_ffffffff)
                     | ((uint256(m1) & 0xffffffff_ffffffff_00000000_00000000_00000000_00000000) >> 64)
                     | ((uint256(m1) & 0xffffffff_ffffffff_00000000_00000000) << 64);
-                uint256 w3 = (
-                    uint256(bytes32(m2)) & 0xffffffff_ffffffff_00000000_00000000_00000000_00000000_00000000_00000000
-                ) | ((uint256(bytes32(m2)) & 0xffffffff_ffffffff_00000000_00000000_00000000_00000000) >> 64)
-                    | 0x800000_00000000_00000000_00000348;
+                uint256 w3 =
+                    (uint256(bytes32(m2)) & 0xffffffff_ffffffff_00000000_00000000_00000000_00000000_00000000_00000000)
+                        | ((uint256(bytes32(m2)) & 0xffffffff_ffffffff_00000000_00000000_00000000_00000000) >> 64)
+                        | 0x800000_00000000_00000000_00000348;
                 uint256 a = 0x6a09e667_f3bcc908;
                 uint256 b = 0xbb67ae85_84caa73b;
                 uint256 c = 0x3c6ef372_fe94f82b;
@@ -1084,11 +1084,12 @@ library Ed25519 {
                     0x7fffffff_ffffffff_ffffffff_ffffffff_ffffffff_ffffffff_ffffffff_ffffffec,
                     0x7fffffff_ffffffff_ffffffff_ffffffff_ffffffff_ffffffff_ffffffff_ffffffed
                 );
-                uint256 v = mulmod(
-                    ky2,
-                    0x52036cee_2b6ffe73_8cc74079_7779e898_00700a4d_4141d8ab_75eb4dca_135978a3,
-                    0x7fffffff_ffffffff_ffffffff_ffffffff_ffffffff_ffffffff_ffffffff_ffffffed
-                ) + 1;
+                uint256 v =
+                    mulmod(
+                            ky2,
+                            0x52036cee_2b6ffe73_8cc74079_7779e898_00700a4d_4141d8ab_75eb4dca_135978a3,
+                            0x7fffffff_ffffffff_ffffffff_ffffffff_ffffffff_ffffffff_ffffffff_ffffffed
+                        ) + 1;
                 uint256 t = mulmod(u, v, 0x7fffffff_ffffffff_ffffffff_ffffffff_ffffffff_ffffffff_ffffffff_ffffffed);
                 (kx,) = pow22501(t);
                 kx = mulmod(kx, kx, 0x7fffffff_ffffffff_ffffffff_ffffffff_ffffffff_ffffffff_ffffffff_ffffffed);

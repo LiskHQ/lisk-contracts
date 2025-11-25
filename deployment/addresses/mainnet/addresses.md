@@ -74,3 +74,12 @@ Below are the addresses of the deployed smart contracts on the Ethereum and Lisk
 | `BTC/USD token pair`        | [0xd50f47a9173d67c3CfCb6a28CA8d60230bE0f5f0](https://blockscout.lisk.com/address/0xd50f47a9173d67c3CfCb6a28CA8d60230bE0f5f0) |
 | `mBTC/BTC proof-of-reserve` | [0x239Cb6b32a87f2679d5b9F1aa4a9b000c766aD79](https://blockscout.lisk.com/address/0x239Cb6b32a87f2679d5b9F1aa4a9b000c766aD79) |
 | `wstETH/ETH token pair`     | [0x731f330542734B4059334ca8e1Da30AF358b41b2](https://blockscout.lisk.com/address/0x731f330542734B4059334ca8e1Da30AF358b41b2) |
+
+
+## L2 Base Mainnet Addresses
+
+### L2 Smart Contracts
+
+| Name                                             | Address                                                                                                             |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
+| [`L2LiskToken`](../../../src/L2/L2LiskToken.sol) | [0xac485391EB2d7D88253a7F1eF18C37f4242D1A24](https://basescan.org/token/0xac485391EB2d7D88253a7F1eF18C37f4242D1A24) |

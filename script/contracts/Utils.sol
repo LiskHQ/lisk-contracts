@@ -224,8 +224,9 @@ contract Utils is Script {
             l2AddressesConfig.L2GovernorPaused = l2GovernorPaused;
         } catch { }
 
-        try vm.parseJsonAddress(addressJson, ".L2HodlerdropRedistribution") returns (address l2HodlerdropRedistribution)
-        {
+        try vm.parseJsonAddress(addressJson, ".L2HodlerdropRedistribution") returns (
+            address l2HodlerdropRedistribution
+        ) {
             l2AddressesConfig.L2HodlerdropRedistribution = l2HodlerdropRedistribution;
         } catch { }
 
@@ -257,7 +258,7 @@ contract Utils is Script {
             address l2MultiFeedAdapterWithoutRoundsMainDemoImplementation
         ) {
             l2AddressesConfig.L2MultiFeedAdapterWithoutRoundsMainDemoImplementation =
-                l2MultiFeedAdapterWithoutRoundsMainDemoImplementation;
+            l2MultiFeedAdapterWithoutRoundsMainDemoImplementation;
         } catch { }
 
         try vm.parseJsonAddress(addressJson, ".L2MultiFeedAdapterWithoutRoundsPrimaryProd") returns (
@@ -270,7 +271,7 @@ contract Utils is Script {
             address l2MultiFeedAdapterWithoutRoundsPrimaryProdImplementation
         ) {
             l2AddressesConfig.L2MultiFeedAdapterWithoutRoundsPrimaryProdImplementation =
-                l2MultiFeedAdapterWithoutRoundsPrimaryProdImplementation;
+            l2MultiFeedAdapterWithoutRoundsPrimaryProdImplementation;
         } catch { }
 
         try vm.parseJsonAddress(addressJson, ".L2PriceFeedWithoutRoundsFactory") returns (
@@ -283,7 +284,7 @@ contract Utils is Script {
             address l2PriceFeedWithoutRoundsFactoryImplementation
         ) {
             l2AddressesConfig.L2PriceFeedWithoutRoundsFactoryImplementation =
-                l2PriceFeedWithoutRoundsFactoryImplementation;
+            l2PriceFeedWithoutRoundsFactoryImplementation;
         } catch { }
 
         try vm.parseJsonAddress(addressJson, ".L2RewardImplementation") returns (address l2RewardImplementation) {

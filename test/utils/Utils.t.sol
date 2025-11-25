@@ -19,9 +19,7 @@ contract UtilsTest is Test {
 
     function test_readAndWriteL1AddressesFile() public {
         Utils.L1AddressesConfig memory config = Utils.L1AddressesConfig({
-            L1LiskToken: address(0x1),
-            L1VestingWalletImplementation: address(0x2),
-            L1VestingWalletPaused: address(0x3)
+            L1LiskToken: address(0x1), L1VestingWalletImplementation: address(0x2), L1VestingWalletPaused: address(0x3)
         });
 
         utils.writeL1AddressesFile(config, "./l1Addresses.json");

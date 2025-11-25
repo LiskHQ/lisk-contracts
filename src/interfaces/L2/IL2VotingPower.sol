@@ -65,7 +65,15 @@ interface IL2VotingPower {
     function clock() external view returns (uint48);
     function decimals() external view returns (uint8);
     function delegate(address delegatee) external;
-    function delegateBySig(address delegatee, uint256 nonce, uint256 expiry, uint8 v, bytes32 r, bytes32 s) external;
+    function delegateBySig(
+        address delegatee,
+        uint256 nonce,
+        uint256 expiry,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    )
+        external;
     function delegates(address account) external view returns (address);
     function eip712Domain()
         external

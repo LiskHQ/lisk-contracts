@@ -6,8 +6,9 @@ import { Initializable } from "@openzeppelin-upgradeable/contracts/proxy/utils/I
 import { Ownable2StepUpgradeable } from "@openzeppelin-upgradeable/contracts/access/Ownable2StepUpgradeable.sol";
 import { UUPSUpgradeable } from "@openzeppelin-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
 import { ERC721Upgradeable } from "@openzeppelin-upgradeable/contracts/token/ERC721/ERC721Upgradeable.sol";
-import { ERC721EnumerableUpgradeable } from
-    "@openzeppelin-upgradeable/contracts/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
+import {
+    ERC721EnumerableUpgradeable
+} from "@openzeppelin-upgradeable/contracts/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
 import { IL2LockingPosition } from "../interfaces/L2/IL2LockingPosition.sol";
 import { IL2VotingPower } from "../interfaces/L2/IL2VotingPower.sol";
 
@@ -132,14 +133,12 @@ contract L2LockingPosition is Initializable, Ownable2StepUpgradeable, UUPSUpgrad
         super.transferFrom(from, to, tokenId);
 
         // remove voting power for an old owner
-        IL2VotingPower(votingPowerContract).adjustVotingPower(
-            from, lockingPositions[tokenId], IL2LockingPosition.LockingPosition(address(0), 0, 0, 0)
-        );
+        IL2VotingPower(votingPowerContract)
+            .adjustVotingPower(from, lockingPositions[tokenId], IL2LockingPosition.LockingPosition(address(0), 0, 0, 0));
 
         // add voting power to a new owner
-        IL2VotingPower(votingPowerContract).adjustVotingPower(
-            to, IL2LockingPosition.LockingPosition(address(0), 0, 0, 0), lockingPositions[tokenId]
-        );
+        IL2VotingPower(votingPowerContract)
+            .adjustVotingPower(to, IL2LockingPosition.LockingPosition(address(0), 0, 0, 0), lockingPositions[tokenId]);
     }
 
     /// @notice Creates a new locking position.
@@ -169,18 +168,16 @@ contract L2LockingPosition is Initializable, Ownable2StepUpgradeable, UUPSUpgrad
 
         // create entry for this locking position
         lockingPositions[nextId] = IL2LockingPosition.LockingPosition({
-            creator: creator,
-            amount: amount,
-            expDate: todayDay() + lockingDuration,
-            pausedLockingDuration: 0
+            creator: creator, amount: amount, expDate: todayDay() + lockingDuration, pausedLockingDuration: 0
         });
 
         // call Voting Power contract to set voting power
         // reentrancy won't be an issue here because the Voting Power contract is trusted and managed by the team
         // slither-disable-next-line reentrancy-no-eth
-        IL2VotingPower(votingPowerContract).adjustVotingPower(
-            lockOwner, IL2LockingPosition.LockingPosition(address(0), 0, 0, 0), lockingPositions[nextId]
-        );
+        IL2VotingPower(votingPowerContract)
+            .adjustVotingPower(
+                lockOwner, IL2LockingPosition.LockingPosition(address(0), 0, 0, 0), lockingPositions[nextId]
+            );
 
         // emit event
         emit LockingPositionCreated(nextId, creator, lockOwner, amount, lockingDuration);
@@ -220,16 +217,12 @@ contract L2LockingPosition is Initializable, Ownable2StepUpgradeable, UUPSUpgrad
 
         IL2LockingPosition.LockingPosition memory oldPosition = lockingPositions[positionId];
         lockingPositions[positionId] = IL2LockingPosition.LockingPosition({
-            creator: oldPosition.creator,
-            amount: amount,
-            expDate: expDate,
-            pausedLockingDuration: pausedLockingDuration
+            creator: oldPosition.creator, amount: amount, expDate: expDate, pausedLockingDuration: pausedLockingDuration
         });
 
         // call Voting Power contract to update voting power
-        IL2VotingPower(votingPowerContract).adjustVotingPower(
-            ownerOf(positionId), oldPosition, lockingPositions[positionId]
-        );
+        IL2VotingPower(votingPowerContract)
+            .adjustVotingPower(ownerOf(positionId), oldPosition, lockingPositions[positionId]);
 
         // emit event
         emit LockingPositionModified(positionId, amount, expDate, pausedLockingDuration);
@@ -245,9 +238,12 @@ contract L2LockingPosition is Initializable, Ownable2StepUpgradeable, UUPSUpgrad
         // inform Voting Power contract
         // reentrancy won't be an issue here because the Voting Power contract is trusted and managed by the team
         // slither-disable-next-line reentrancy-no-eth
-        IL2VotingPower(votingPowerContract).adjustVotingPower(
-            ownerOf(positionId), lockingPositions[positionId], IL2LockingPosition.LockingPosition(address(0), 0, 0, 0)
-        );
+        IL2VotingPower(votingPowerContract)
+            .adjustVotingPower(
+                ownerOf(positionId),
+                lockingPositions[positionId],
+                IL2LockingPosition.LockingPosition(address(0), 0, 0, 0)
+            );
 
         // burn the NFT token
         // reentrancy won't be an issue here because the ERC721Upgradable contract is trusted

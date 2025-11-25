@@ -5,8 +5,9 @@ import { Ownable2StepUpgradeable } from "@openzeppelin-upgradeable/contracts/acc
 import { OwnableUpgradeable } from "@openzeppelin-upgradeable/contracts/access/OwnableUpgradeable.sol";
 import { UUPSUpgradeable } from "@openzeppelin-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
 import { VestingWalletUpgradeable } from "@openzeppelin-upgradeable/contracts/finance/VestingWalletUpgradeable.sol";
-import { AccessControlEnumerableUpgradeable } from
-    "@openzeppelin-upgradeable/contracts/access/extensions/AccessControlEnumerableUpgradeable.sol";
+import {
+    AccessControlEnumerableUpgradeable
+} from "@openzeppelin-upgradeable/contracts/access/extensions/AccessControlEnumerableUpgradeable.sol";
 import { ISemver } from "../utils/ISemver.sol";
 
 /// @title L2VestingWallet

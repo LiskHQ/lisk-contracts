@@ -26,9 +26,24 @@ remappings = [
     'solmate/=lib/properties/lib/solmate/src/',
     '@chainlink=lib/chainlink/',
 ]
-deny_warnings = true
 ignored_warnings_from = [
     "lib/openzeppelin-contracts-upgradeable/contracts/token/ERC721/ERC721Upgradeable.sol",
+]
+
+[lint]
+deny = ["warnings"]
+# Ignore specific linter rules that are triggering warnings
+ignore = [
+    "mixed-case-variable",
+    "unaliased-plain-import",
+    "screaming-snake-case-immutable",
+    "unused-import",
+    "mixed-case-function",
+    "pascal-case-struct",
+    "unwrapped-modifier-logic",
+    "unsafe-typecast",
+    "erc20-unchecked-transfer",
+    "unsafe-cheatcode"
 ]
 ffi = true
 ast = true

@@ -1946,8 +1946,7 @@ contract L2RewardTest is Test {
         l2Reward.increaseLockingAmount(increasingAmounts);
     }
 
-    function test_increaseLockingAmount_forActivePositionIncreasesLockedAmountAndWeightByRemainingDurationAndClaimsRewards(
-    )
+    function test_increaseLockingAmount_forActivePositionIncreasesLockedAmountAndWeightByRemainingDurationAndClaimsRewards()
         public
     {
         address staker = address(0x1);
@@ -2463,8 +2462,7 @@ contract L2RewardTest is Test {
         l2Reward.initiateFastUnlock(lockIDs);
     }
 
-    function test_initiateFastUnlock_forActivePositionAddsPenaltyAsRewardAlsoUpdatesGlobalsAndClaimRewardsAlsoReducesStakedAmountByPenalty(
-    )
+    function test_initiateFastUnlock_forActivePositionAddsPenaltyAsRewardAlsoUpdatesGlobalsAndClaimRewardsAlsoReducesStakedAmountByPenalty()
         public
     {
         address staker = address(0x1);
@@ -2518,8 +2516,7 @@ contract L2RewardTest is Test {
         assertEq(l2LockingPosition.getLockingPosition(lockIDs[0]).amount, amount - penalty);
     }
 
-    function test_initiateFastUnlock_forPausedPositionAddsPenaltyAsRewardAlsoUpdatesGlobalsAndClaimRewardsAlsoReducesStakedAmountByPenalty(
-    )
+    function test_initiateFastUnlock_forPausedPositionAddsPenaltyAsRewardAlsoUpdatesGlobalsAndClaimRewardsAlsoReducesStakedAmountByPenalty()
         public
     {
         address staker = address(0x1);
@@ -2882,8 +2879,8 @@ contract L2RewardTest is Test {
         uint256 sumOfRewards;
         for (uint8 i = 0; i < stakers.length; i++) {
             // expected reward is current balance + amount staked - initial balance
-            sumOfRewards +=
-                (l2LiskToken.balanceOf(stakers[i]) + (convertLiskToSmallestDenomination(37) * (i + 1))) - balance;
+            sumOfRewards += (l2LiskToken.balanceOf(stakers[i]) + (convertLiskToSmallestDenomination(37) * (i + 1)))
+            - balance;
         }
 
         // balance of the l2Reward is almost zero

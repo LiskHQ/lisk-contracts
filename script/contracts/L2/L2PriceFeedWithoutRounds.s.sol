@@ -83,11 +83,9 @@ contract L2PriceFeedWithoutRoundsScript is Script {
         assert(l2PriceFeed.getDataFeedId() == bytes32(abi.encodePacked(feedId)));
         assert(
             address(l2PriceFeed.getPriceFeedAdapter())
-                == (
-                    keccak256(bytes(dataServiceType)) == keccak256(bytes(REDSTONE_SERVICE_TYPE_PRIMARY_PROD))
+                == (keccak256(bytes(dataServiceType)) == keccak256(bytes(REDSTONE_SERVICE_TYPE_PRIMARY_PROD))
                         ? l2AddressesConfig.L2MultiFeedAdapterWithoutRoundsPrimaryProd
-                        : l2AddressesConfig.L2MultiFeedAdapterWithoutRoundsMainDemo
-                )
+                        : l2AddressesConfig.L2MultiFeedAdapterWithoutRoundsMainDemo)
         );
 
         // accept ownership and transfer ownership of L2PriceFeedWithoutRounds proxy; because of using

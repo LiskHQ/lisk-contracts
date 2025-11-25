@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.23;
 
-import { TimelockControllerUpgradeable } from
-    "@openzeppelin-upgradeable/contracts/governance/extensions/GovernorTimelockControlUpgradeable.sol";
+import {
+    TimelockControllerUpgradeable
+} from "@openzeppelin-upgradeable/contracts/governance/extensions/GovernorTimelockControlUpgradeable.sol";
 import { L2Governor } from "../L2Governor.sol";
 
 contract L2GovernorPaused is L2Governor {
@@ -111,13 +112,7 @@ contract L2GovernorPaused is L2Governor {
     }
 
     /// @notice Override the onERC1155Received function to pause Governor interactions.
-    function onERC1155Received(
-        address,
-        address,
-        uint256,
-        uint256,
-        bytes memory
-    )
+    function onERC1155Received(address, address, uint256, uint256, bytes memory)
         public
         virtual
         override
@@ -147,12 +142,7 @@ contract L2GovernorPaused is L2Governor {
     }
 
     /// @notice Override the queue function to pause Governor interactions.
-    function queue(
-        address[] memory,
-        uint256[] memory,
-        bytes[] memory,
-        bytes32
-    )
+    function queue(address[] memory, uint256[] memory, bytes[] memory, bytes32)
         public
         virtual
         override
