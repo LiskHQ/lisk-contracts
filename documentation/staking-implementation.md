@@ -1,6 +1,6 @@
 # Staking Implementation
 
-Implementation of L2 staking functionality is separated into,
+Implementation of L2 staking functionality is separated into.
 
 - `L2LockingPosition` contract maintains locking positions and allows owner to manipulate their positions. The contract is an implementation of ERC721 based NFT and interacts with L2VotingPower contract to adjust the voting power of the owner of the locking position when consumed by `L2Staking` contract.
 
