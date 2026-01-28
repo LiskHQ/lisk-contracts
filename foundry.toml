@@ -34,6 +34,13 @@ ignored_warnings_from = [
     "lib/openzeppelin-contracts-upgradeable/contracts/token/ERC721/ERC721Upgradeable.sol",
 ]
 
+[profile.ci]
+inherits = "default"
+ffi = false
+ast = false
+build_info = false
+extra_output = []
+
 [lint]
 deny = ["warnings"]
 # Ignore specific linter rules that are triggering warnings
