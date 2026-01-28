@@ -291,13 +291,7 @@ contract L2RewardTest is Test {
         delete scenario.lockIDs[stakerIndex];
     }
 
-    function stakerExtendsPositionBy(
-        uint256 stakerIndex,
-        uint256 durationExtension,
-        Scenario memory scenario
-    )
-        private
-    {
+    function stakerExtendsPositionBy(uint256 stakerIndex, uint256 durationExtension, Scenario memory scenario) private {
         L2Reward.ExtendedDuration[] memory durationExtensions = new L2Reward.ExtendedDuration[](1);
         durationExtensions[0].lockID = scenario.lockIDs[stakerIndex];
         durationExtensions[0].durationExtension = durationExtension;
@@ -2880,7 +2874,7 @@ contract L2RewardTest is Test {
         for (uint8 i = 0; i < stakers.length; i++) {
             // expected reward is current balance + amount staked - initial balance
             sumOfRewards += (l2LiskToken.balanceOf(stakers[i]) + (convertLiskToSmallestDenomination(37) * (i + 1)))
-            - balance;
+                - balance;
         }
 
         // balance of the l2Reward is almost zero

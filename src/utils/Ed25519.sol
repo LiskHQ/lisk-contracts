@@ -890,19 +890,19 @@ library Ed25519 {
                         {
                             uint256 n1 = t0 & 0xffffffff_ffffffff_00000000_00000000_ffffffff_ffffffff_00000000_00000000;
                             n1 += ((t2 & 0xffffffff_ffffffff_00000000_00000000) << 128)
-                                | ((t2 & 0xffffffff_ffffffff_00000000_00000000_00000000_00000000) >> 64);
+                                    | ((t2 & 0xffffffff_ffffffff_00000000_00000000_00000000_00000000) >> 64);
                             {
                                 uint256 u1 = ((t0 & 0xffffffff_ffffffff_00000000_00000000) << 64)
                                     | ((t0 & 0xffffffff_ffffffff_00000000_00000000_00000000_00000000) >> 128);
                                 uint256 uu1 = u1 | (u1 << 64);
                                 n1 += ((uu1 << 63) ^ (uu1 << 56) ^ (u1 << 57))
-                                    & 0xffffffff_ffffffff_00000000_00000000_ffffffff_ffffffff_00000000_00000000;
+                                        & 0xffffffff_ffffffff_00000000_00000000_ffffffff_ffffffff_00000000_00000000;
                             }
                             {
                                 uint256 v1 = t3 & 0xffffffff_ffffffff_00000000_00000000_ffffffff_ffffffff;
                                 uint256 vv1 = v1 | (v1 << 64);
                                 n1 += ((vv1 << 45) ^ (vv1 << 3) ^ (v1 << 58))
-                                    & 0xffffffff_ffffffff_00000000_00000000_ffffffff_ffffffff_00000000_00000000;
+                                        & 0xffffffff_ffffffff_00000000_00000000_ffffffff_ffffffff_00000000_00000000;
                             }
                             n1 &= 0xffffffff_ffffffff_00000000_00000000_ffffffff_ffffffff_00000000_00000000;
                             uint256 n2 = t0 & 0xffffffff_ffffffff_00000000_00000000_ffffffff_ffffffff;
@@ -911,12 +911,12 @@ library Ed25519 {
                                 uint256 u2 = ((t0 & 0xffffffff_ffffffff) << 128) | (t1 >> 192);
                                 uint256 uu2 = u2 | (u2 << 64);
                                 n2 += ((uu2 >> 1) ^ (uu2 >> 8) ^ (u2 >> 7))
-                                    & 0xffffffff_ffffffff_00000000_00000000_ffffffff_ffffffff;
+                                        & 0xffffffff_ffffffff_00000000_00000000_ffffffff_ffffffff;
                             }
                             {
                                 uint256 vv2 = n1 | (n1 >> 64);
                                 n2 += ((vv2 >> 19) ^ (vv2 >> 61) ^ (n1 >> 70))
-                                    & 0xffffffff_ffffffff_00000000_00000000_ffffffff_ffffffff;
+                                        & 0xffffffff_ffffffff_00000000_00000000_ffffffff_ffffffff;
                             }
                             n2 &= 0xffffffff_ffffffff_00000000_00000000_ffffffff_ffffffff;
                             t0 = n1 | n2;
@@ -924,19 +924,19 @@ library Ed25519 {
                         {
                             uint256 n1 = t1 & 0xffffffff_ffffffff_00000000_00000000_ffffffff_ffffffff_00000000_00000000;
                             n1 += ((t3 & 0xffffffff_ffffffff_00000000_00000000) << 128)
-                                | ((t3 & 0xffffffff_ffffffff_00000000_00000000_00000000_00000000) >> 64);
+                                    | ((t3 & 0xffffffff_ffffffff_00000000_00000000_00000000_00000000) >> 64);
                             {
                                 uint256 u1 = ((t1 & 0xffffffff_ffffffff_00000000_00000000) << 64)
                                     | ((t1 & 0xffffffff_ffffffff_00000000_00000000_00000000_00000000) >> 128);
                                 uint256 uu1 = u1 | (u1 << 64);
                                 n1 += ((uu1 << 63) ^ (uu1 << 56) ^ (u1 << 57))
-                                    & 0xffffffff_ffffffff_00000000_00000000_ffffffff_ffffffff_00000000_00000000;
+                                        & 0xffffffff_ffffffff_00000000_00000000_ffffffff_ffffffff_00000000_00000000;
                             }
                             {
                                 uint256 v1 = t0 & 0xffffffff_ffffffff_00000000_00000000_ffffffff_ffffffff;
                                 uint256 vv1 = v1 | (v1 << 64);
                                 n1 += ((vv1 << 45) ^ (vv1 << 3) ^ (v1 << 58))
-                                    & 0xffffffff_ffffffff_00000000_00000000_ffffffff_ffffffff_00000000_00000000;
+                                        & 0xffffffff_ffffffff_00000000_00000000_ffffffff_ffffffff_00000000_00000000;
                             }
                             n1 &= 0xffffffff_ffffffff_00000000_00000000_ffffffff_ffffffff_00000000_00000000;
                             uint256 n2 = t1 & 0xffffffff_ffffffff_00000000_00000000_ffffffff_ffffffff;
@@ -945,12 +945,12 @@ library Ed25519 {
                                 uint256 u2 = ((t1 & 0xffffffff_ffffffff) << 128) | (t2 >> 192);
                                 uint256 uu2 = u2 | (u2 << 64);
                                 n2 += ((uu2 >> 1) ^ (uu2 >> 8) ^ (u2 >> 7))
-                                    & 0xffffffff_ffffffff_00000000_00000000_ffffffff_ffffffff;
+                                        & 0xffffffff_ffffffff_00000000_00000000_ffffffff_ffffffff;
                             }
                             {
                                 uint256 vv2 = n1 | (n1 >> 64);
                                 n2 += ((vv2 >> 19) ^ (vv2 >> 61) ^ (n1 >> 70))
-                                    & 0xffffffff_ffffffff_00000000_00000000_ffffffff_ffffffff;
+                                        & 0xffffffff_ffffffff_00000000_00000000_ffffffff_ffffffff;
                             }
                             n2 &= 0xffffffff_ffffffff_00000000_00000000_ffffffff_ffffffff;
                             t1 = n1 | n2;
@@ -958,19 +958,19 @@ library Ed25519 {
                         {
                             uint256 n1 = t2 & 0xffffffff_ffffffff_00000000_00000000_ffffffff_ffffffff_00000000_00000000;
                             n1 += ((t0 & 0xffffffff_ffffffff_00000000_00000000) << 128)
-                                | ((t0 & 0xffffffff_ffffffff_00000000_00000000_00000000_00000000) >> 64);
+                                    | ((t0 & 0xffffffff_ffffffff_00000000_00000000_00000000_00000000) >> 64);
                             {
                                 uint256 u1 = ((t2 & 0xffffffff_ffffffff_00000000_00000000) << 64)
                                     | ((t2 & 0xffffffff_ffffffff_00000000_00000000_00000000_00000000) >> 128);
                                 uint256 uu1 = u1 | (u1 << 64);
                                 n1 += ((uu1 << 63) ^ (uu1 << 56) ^ (u1 << 57))
-                                    & 0xffffffff_ffffffff_00000000_00000000_ffffffff_ffffffff_00000000_00000000;
+                                        & 0xffffffff_ffffffff_00000000_00000000_ffffffff_ffffffff_00000000_00000000;
                             }
                             {
                                 uint256 v1 = t1 & 0xffffffff_ffffffff_00000000_00000000_ffffffff_ffffffff;
                                 uint256 vv1 = v1 | (v1 << 64);
                                 n1 += ((vv1 << 45) ^ (vv1 << 3) ^ (v1 << 58))
-                                    & 0xffffffff_ffffffff_00000000_00000000_ffffffff_ffffffff_00000000_00000000;
+                                        & 0xffffffff_ffffffff_00000000_00000000_ffffffff_ffffffff_00000000_00000000;
                             }
                             n1 &= 0xffffffff_ffffffff_00000000_00000000_ffffffff_ffffffff_00000000_00000000;
                             uint256 n2 = t2 & 0xffffffff_ffffffff_00000000_00000000_ffffffff_ffffffff;
@@ -979,12 +979,12 @@ library Ed25519 {
                                 uint256 u2 = ((t2 & 0xffffffff_ffffffff) << 128) | (t3 >> 192);
                                 uint256 uu2 = u2 | (u2 << 64);
                                 n2 += ((uu2 >> 1) ^ (uu2 >> 8) ^ (u2 >> 7))
-                                    & 0xffffffff_ffffffff_00000000_00000000_ffffffff_ffffffff;
+                                        & 0xffffffff_ffffffff_00000000_00000000_ffffffff_ffffffff;
                             }
                             {
                                 uint256 vv2 = n1 | (n1 >> 64);
                                 n2 += ((vv2 >> 19) ^ (vv2 >> 61) ^ (n1 >> 70))
-                                    & 0xffffffff_ffffffff_00000000_00000000_ffffffff_ffffffff;
+                                        & 0xffffffff_ffffffff_00000000_00000000_ffffffff_ffffffff;
                             }
                             n2 &= 0xffffffff_ffffffff_00000000_00000000_ffffffff_ffffffff;
                             t2 = n1 | n2;
@@ -992,19 +992,19 @@ library Ed25519 {
                         {
                             uint256 n1 = t3 & 0xffffffff_ffffffff_00000000_00000000_ffffffff_ffffffff_00000000_00000000;
                             n1 += ((t1 & 0xffffffff_ffffffff_00000000_00000000) << 128)
-                                | ((t1 & 0xffffffff_ffffffff_00000000_00000000_00000000_00000000) >> 64);
+                                    | ((t1 & 0xffffffff_ffffffff_00000000_00000000_00000000_00000000) >> 64);
                             {
                                 uint256 u1 = ((t3 & 0xffffffff_ffffffff_00000000_00000000) << 64)
                                     | ((t3 & 0xffffffff_ffffffff_00000000_00000000_00000000_00000000) >> 128);
                                 uint256 uu1 = u1 | (u1 << 64);
                                 n1 += ((uu1 << 63) ^ (uu1 << 56) ^ (u1 << 57))
-                                    & 0xffffffff_ffffffff_00000000_00000000_ffffffff_ffffffff_00000000_00000000;
+                                        & 0xffffffff_ffffffff_00000000_00000000_ffffffff_ffffffff_00000000_00000000;
                             }
                             {
                                 uint256 v1 = t2 & 0xffffffff_ffffffff_00000000_00000000_ffffffff_ffffffff;
                                 uint256 vv1 = v1 | (v1 << 64);
                                 n1 += ((vv1 << 45) ^ (vv1 << 3) ^ (v1 << 58))
-                                    & 0xffffffff_ffffffff_00000000_00000000_ffffffff_ffffffff_00000000_00000000;
+                                        & 0xffffffff_ffffffff_00000000_00000000_ffffffff_ffffffff_00000000_00000000;
                             }
                             n1 &= 0xffffffff_ffffffff_00000000_00000000_ffffffff_ffffffff_00000000_00000000;
                             uint256 n2 = t3 & 0xffffffff_ffffffff_00000000_00000000_ffffffff_ffffffff;
@@ -1013,12 +1013,12 @@ library Ed25519 {
                                 uint256 u2 = ((t3 & 0xffffffff_ffffffff) << 128) | (t0 >> 192);
                                 uint256 uu2 = u2 | (u2 << 64);
                                 n2 += ((uu2 >> 1) ^ (uu2 >> 8) ^ (u2 >> 7))
-                                    & 0xffffffff_ffffffff_00000000_00000000_ffffffff_ffffffff;
+                                        & 0xffffffff_ffffffff_00000000_00000000_ffffffff_ffffffff;
                             }
                             {
                                 uint256 vv2 = n1 | (n1 >> 64);
                                 n2 += ((vv2 >> 19) ^ (vv2 >> 61) ^ (n1 >> 70))
-                                    & 0xffffffff_ffffffff_00000000_00000000_ffffffff_ffffffff;
+                                        & 0xffffffff_ffffffff_00000000_00000000_ffffffff_ffffffff;
                             }
                             n2 &= 0xffffffff_ffffffff_00000000_00000000_ffffffff_ffffffff;
                             t3 = n1 | n2;
@@ -1084,12 +1084,11 @@ library Ed25519 {
                     0x7fffffff_ffffffff_ffffffff_ffffffff_ffffffff_ffffffff_ffffffff_ffffffec,
                     0x7fffffff_ffffffff_ffffffff_ffffffff_ffffffff_ffffffff_ffffffff_ffffffed
                 );
-                uint256 v =
-                    mulmod(
-                            ky2,
-                            0x52036cee_2b6ffe73_8cc74079_7779e898_00700a4d_4141d8ab_75eb4dca_135978a3,
-                            0x7fffffff_ffffffff_ffffffff_ffffffff_ffffffff_ffffffff_ffffffff_ffffffed
-                        ) + 1;
+                uint256 v = mulmod(
+                    ky2,
+                    0x52036cee_2b6ffe73_8cc74079_7779e898_00700a4d_4141d8ab_75eb4dca_135978a3,
+                    0x7fffffff_ffffffff_ffffffff_ffffffff_ffffffff_ffffffff_ffffffff_ffffffed
+                ) + 1;
                 uint256 t = mulmod(u, v, 0x7fffffff_ffffffff_ffffffff_ffffffff_ffffffff_ffffffff_ffffffff_ffffffed);
                 (kx,) = pow22501(t);
                 kx = mulmod(kx, kx, 0x7fffffff_ffffffff_ffffffff_ffffffff_ffffffff_ffffffff_ffffffff_ffffffed);

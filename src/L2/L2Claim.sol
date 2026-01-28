@@ -67,14 +67,7 @@ contract L2Claim is Initializable, Ownable2StepUpgradeable, UUPSUpgradeable, ISe
     /// @param  _l2LiskToken            The address of the L2 LSK Token contract.
     /// @param  _merkleRoot             The root of the Merkle Tree for claims.
     /// @param  _recoverPeriodTimestamp The timestamp after which unclaimed LSK can be recovered.
-    function initialize(
-        address _l2LiskToken,
-        bytes32 _merkleRoot,
-        uint256 _recoverPeriodTimestamp
-    )
-        public
-        initializer
-    {
+    function initialize(address _l2LiskToken, bytes32 _merkleRoot, uint256 _recoverPeriodTimestamp) public initializer {
         require(_l2LiskToken != address(0), "L2Claim: L2 Lisk Token address cannot be zero");
         require(_merkleRoot != bytes32(0), "L2Claim: Merkle Root cannot be zero");
         require(_recoverPeriodTimestamp >= block.timestamp, "L2Claim: recover period must be in the future");

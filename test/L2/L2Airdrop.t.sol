@@ -770,7 +770,7 @@ contract L2AirdropTest is Test {
         assertEq(l2Airdrop.claimedStakingTier1(bytes20(alice)), true);
         assertEq(l2Airdrop.claimedStakingTier2(bytes20(alice)), true);
         assertEq(l2Airdrop.claimedFullAirdrop(bytes20(alice)), true); // full airdrop claimed because also staking tier
-            // 1 condition was satisfied before
+        // 1 condition was satisfied before
     }
 
     function test_ClaimAirdrop_FullAirdrop() public {

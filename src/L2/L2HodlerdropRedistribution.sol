@@ -226,13 +226,7 @@ contract L2HodlerdropRedistribution is Ownable2Step {
     /// @param recipient The recipient address to claim the hodlerdrop-redistribution for.
     /// @param amount The amount of LSK tokens to claim the hodlerdrop-redistribution for.
     /// @param merkleProof The Merkle proof for the recipient address and the amount against the stored merkleRoot.
-    function claimHodlerdropRedistribution(
-        address recipient,
-        uint256 amount,
-        bytes32[] memory merkleProof
-    )
-        public
-    {
+    function claimHodlerdropRedistribution(address recipient, uint256 amount, bytes32[] memory merkleProof) public {
         require(merkleRoot != 0, "L2HodlerdropRedistribution: hodlerdrop-redistribution has not started yet");
         require(
             block.timestamp <= startTime + (HODLERDROP_REDISTRIBUTION_DURATION * 1 days),

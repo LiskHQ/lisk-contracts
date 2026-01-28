@@ -92,13 +92,7 @@ interface IL2Governor {
     )
         external
         returns (uint256);
-    function castVoteWithReason(
-        uint256 proposalId,
-        uint8 support,
-        string memory reason
-    )
-        external
-        returns (uint256);
+    function castVoteWithReason(uint256 proposalId, uint8 support, string memory reason) external returns (uint256);
     function castVoteWithReasonAndParams(
         uint256 proposalId,
         uint8 support,
@@ -140,14 +134,7 @@ interface IL2Governor {
         payable
         returns (uint256);
     function getVotes(address account, uint256 timepoint) external view returns (uint256);
-    function getVotesWithParams(
-        address account,
-        uint256 timepoint,
-        bytes memory params
-    )
-        external
-        view
-        returns (uint256);
+    function getVotesWithParams(address account, uint256 timepoint, bytes memory params) external view returns (uint256);
     function hasVoted(uint256 proposalId, address account) external view returns (bool);
     function hashProposal(
         address[] memory targets,

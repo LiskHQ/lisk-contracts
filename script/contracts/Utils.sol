@@ -439,10 +439,7 @@ contract Utils is Script {
     /// @param _vestingAddressTag Identifier of the Vesting Address
     /// @param _layer Network layer of the running script, either be "L1" or "L2"
     /// @return Vesting Address corresponding to vestingAddressTag.
-    function readVestingAddress(
-        string memory _vestingAddressTag,
-        string memory _layer
-    )
+    function readVestingAddress(string memory _vestingAddressTag, string memory _layer)
         external
         view
         returns (address)
