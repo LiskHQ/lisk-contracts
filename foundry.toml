@@ -7,6 +7,10 @@ fs_permissions = [{ access = "read-write", path = "./" }]
 solc_version = "0.8.23"
 optimizer = true
 optimizer_runs = 200
+ffi = true
+ast = true
+build_info = true
+extra_output = ["storageLayout"]
 remappings = [
     '@openzeppelin/contracts-upgradeable/proxy/=lib/openzeppelin-contracts-upgradeable/contracts/proxy/',
     '@openzeppelin/=lib/openzeppelin-contracts/',
@@ -45,10 +49,6 @@ ignore = [
     "erc20-unchecked-transfer",
     "unsafe-cheatcode"
 ]
-ffi = true
-ast = true
-build_info = true
-extra_output = ["storageLayout"]
 
 [fmt]
 line_length = 120
