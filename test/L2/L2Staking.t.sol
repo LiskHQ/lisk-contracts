@@ -290,7 +290,7 @@ contract L2StakingTest is Test {
         // call the function as owner
         vm.prank(alice);
         assertEq(l2StakingHarness.exposedCanLockingPositionBeModified(1, lock), false); // alice can not directly call
-            // the function
+        // the function
 
         // call the function as creator
         vm.prank(rewardsContract);
@@ -911,7 +911,7 @@ contract L2StakingTest is Test {
         assertEq(l2LockingPosition.totalSupply(), 1);
         assertEq(l2LockingPosition.balanceOf(alice), 1);
         assertEq(l2LockingPosition.getLockingPosition(1).amount, 100 * 10 ** 18 - 17945205479452054794); // 100 LSK
-            // tokens - penalty
+        // tokens - penalty
         assertEq(l2LockingPosition.getLockingPosition(1).expDate, 103); // 100 + 3 days
         assertEq(l2LockingPosition.getLockingPosition(1).pausedLockingDuration, 0);
 
@@ -958,7 +958,7 @@ contract L2StakingTest is Test {
         assertEq(l2LockingPosition.totalSupply(), 1);
         assertEq(l2LockingPosition.balanceOf(alice), 1);
         assertEq(l2LockingPosition.getLockingPosition(1).amount, 100 * 10 ** 18 - 17945205479452054794); // 100 LSK
-            // tokens - penalty
+        // tokens - penalty
         assertEq(l2LockingPosition.getLockingPosition(1).expDate, 133); // 130 + 3 days
         assertEq(l2LockingPosition.getLockingPosition(1).pausedLockingDuration, 0);
 
@@ -1014,7 +1014,7 @@ contract L2StakingTest is Test {
         assertEq(l2LockingPosition.totalSupply(), 1);
         assertEq(l2LockingPosition.balanceOf(alice), 1);
         assertEq(l2LockingPosition.getLockingPosition(1).amount, 100 * 10 ** 18 - 17945205479452054794); // 100 LSK
-            // tokens - penalty
+        // tokens - penalty
         assertEq(l2LockingPosition.getLockingPosition(1).expDate, 103); // 100 + 3 days
         assertEq(l2LockingPosition.getLockingPosition(1).pausedLockingDuration, 0);
 
@@ -1397,7 +1397,7 @@ contract L2StakingTest is Test {
         assertEq(l2LockingPosition.getLockingPosition(1).amount, 100 * 10 ** 18);
         assertEq(l2LockingPosition.getLockingPosition(1).expDate, 365);
         assertEq(l2LockingPosition.getLockingPosition(1).pausedLockingDuration, 315); // 265 + 50 days
-            // (pausedLockingDuration + extendDays)
+        // (pausedLockingDuration + extendDays)
 
         assertEq(l2VotingPower.totalSupply(), 186301369863013698630);
         assertEq(l2VotingPower.balanceOf(alice), 186301369863013698630);

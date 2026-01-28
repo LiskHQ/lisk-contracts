@@ -7,6 +7,7 @@ import { Test, console } from "forge-std/Test.sol";
 import { L2PriceFeedWithoutRoundsFactory } from "src/L2/L2PriceFeedWithoutRoundsFactory.sol";
 import { L2PriceFeedWithoutRounds } from "src/L2/L2PriceFeedWithoutRounds.sol";
 import { L2PriceFeedWithoutRoundsV2 } from "src/L2/upgraded/L2PriceFeedWithoutRoundsV2.sol";
+import { L2PriceFeedWithoutRoundsV3 } from "src/L2/upgraded/L2PriceFeedWithoutRoundsV3.sol";
 
 contract L2PriceFeedWithoutRoundsTest is Test {
     L2PriceFeedWithoutRounds public l2PriceFeed;
@@ -143,5 +144,56 @@ contract L2PriceFeedWithoutRoundsTest is Test {
         // assure cannot re-reinitialize
         vm.expectRevert();
         l2PriceFeedV2.initializeV2(newPriceFeedAdapter);
+    }
+
+    function testFuzz_UpgradeToV3AndCall_RevertWhenNotOwner(uint256 _addressSeed) public {
+        // deploy L2PriceFeedWithoutRoundsV3 implementation contract
+        L2PriceFeedWithoutRoundsV3 l2PriceFeedV3Implementation = new L2PriceFeedWithoutRoundsV3();
+        _addressSeed = bound(_addressSeed, 1, type(uint160).max);
+        address nobody = vm.addr(_addressSeed);
+
+        if (nobody == address(this)) {
+            return;
+        }
+
+        vm.prank(nobody);
+        vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, nobody));
+        l2PriceFeed.upgradeToAndCall(address(l2PriceFeedV3Implementation), "");
+    }
+
+    function test_UpgradeToV3AndCall_EmptyFeedId() public {
+        // deploy L2PriceFeedWithoutRoundsV3 implementation contract
+        L2PriceFeedWithoutRoundsV3 l2PriceFeedV3Implementation = new L2PriceFeedWithoutRoundsV3();
+
+        // try to upgrade to L2PriceFeedWithoutRoundsV3 implementation contract with empty feed ID
+        vm.expectRevert("L2PriceFeedWithoutRoundsV3: data feed ID can not be empty");
+        l2PriceFeed.upgradeToAndCall(
+            address(l2PriceFeedV3Implementation),
+            abi.encodeWithSelector(l2PriceFeedV3Implementation.initializeV3.selector, "")
+        );
+    }
+
+    function test_UpgradeToV3AndCall_SuccessUpgrade() public {
+        // deploy L2PriceFeedWithoutRoundsV3 implementation contract
+        L2PriceFeedWithoutRoundsV3 l2PriceFeedV3Implementation = new L2PriceFeedWithoutRoundsV3();
+
+        // upgrade contract and change dataFeedId from "LSK" to "BTC"
+        l2PriceFeed.upgradeToAndCall(
+            address(l2PriceFeedV3Implementation),
+            abi.encodeWithSelector(l2PriceFeedV3Implementation.initializeV3.selector, "BTC")
+        );
+
+        // wrap L2PriceFeedWithoutRounds proxy with new contract
+        L2PriceFeedWithoutRoundsV3 l2PriceFeedV3 = L2PriceFeedWithoutRoundsV3(address(l2PriceFeed));
+
+        // check if the upgrade was successful and the new dataFeedId is set
+        assertEq(l2PriceFeedV3.decimals(), 8);
+        assertEq(keccak256(bytes(l2PriceFeedV3.description())), keccak256(bytes("Redstone Price Feed")));
+        assertEq(l2PriceFeedV3.getDataFeedId(), bytes32("BTC"));
+        assertEq(address(l2PriceFeedV3.getPriceFeedAdapter()), priceFeedAdapter);
+
+        // assure cannot re-reinitialize
+        vm.expectRevert();
+        l2PriceFeedV3.initializeV3("ETH");
     }
 }
