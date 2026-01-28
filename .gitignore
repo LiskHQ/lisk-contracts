@@ -29,3 +29,6 @@ test/fuzzing/covered.*
 # Web3 Functions
 node_modules
 .tmp
+
+# Logs
+logs/
