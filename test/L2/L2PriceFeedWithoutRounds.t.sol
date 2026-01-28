@@ -8,6 +8,7 @@ import { L2PriceFeedWithoutRoundsFactory } from "src/L2/L2PriceFeedWithoutRounds
 import { L2PriceFeedWithoutRounds } from "src/L2/L2PriceFeedWithoutRounds.sol";
 import { L2PriceFeedWithoutRoundsV2 } from "src/L2/upgraded/L2PriceFeedWithoutRoundsV2.sol";
 import { L2PriceFeedWithoutRoundsV3 } from "src/L2/upgraded/L2PriceFeedWithoutRoundsV3.sol";
+import { L2PriceFeedWithoutRoundsV4 } from "src/L2/upgraded/L2PriceFeedWithoutRoundsV4.sol";
 
 contract L2PriceFeedWithoutRoundsTest is Test {
     L2PriceFeedWithoutRounds public l2PriceFeed;
@@ -195,5 +196,111 @@ contract L2PriceFeedWithoutRoundsTest is Test {
         // assure cannot re-reinitialize
         vm.expectRevert();
         l2PriceFeedV3.initializeV3("ETH");
+    }
+
+    function testFuzz_UpgradeToV4AndCall_RevertWhenNotOwner(uint256 _addressSeed) public {
+        // deploy L2PriceFeedWithoutRoundsV4 implementation contract
+        L2PriceFeedWithoutRoundsV4 l2PriceFeedV4Implementation = new L2PriceFeedWithoutRoundsV4();
+        _addressSeed = bound(_addressSeed, 1, type(uint160).max);
+        address nobody = vm.addr(_addressSeed);
+
+        if (nobody == address(this)) {
+            return;
+        }
+
+        vm.prank(nobody);
+        vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, nobody));
+        l2PriceFeed.upgradeToAndCall(address(l2PriceFeedV4Implementation), "");
+    }
+
+    function test_UpgradeToV4AndCall_SuccessUpgrade() public {
+        // deploy L2PriceFeedWithoutRoundsV4 implementation contract
+        L2PriceFeedWithoutRoundsV4 l2PriceFeedV4Implementation = new L2PriceFeedWithoutRoundsV4();
+
+        // upgrade contract
+        l2PriceFeed.upgradeToAndCall(
+            address(l2PriceFeedV4Implementation),
+            abi.encodeWithSelector(l2PriceFeedV4Implementation.initializeV4.selector)
+        );
+
+        // wrap L2PriceFeedWithoutRounds proxy with new contract
+        L2PriceFeedWithoutRoundsV4 l2PriceFeedV4 = L2PriceFeedWithoutRoundsV4(address(l2PriceFeed));
+
+        // check if the upgrade was successful
+        assertEq(l2PriceFeedV4.decimals(), 8);
+        assertEq(keccak256(bytes(l2PriceFeedV4.description())), keccak256(bytes("Redstone Price Feed")));
+        assertEq(l2PriceFeedV4.getDataFeedId(), bytes32("LSK"));
+        assertEq(address(l2PriceFeedV4.getPriceFeedAdapter()), priceFeedAdapter);
+
+        // assure cannot re-reinitialize
+        vm.expectRevert();
+        l2PriceFeedV4.initializeV4();
+    }
+
+    function test_V4_LatestAnswer_ReturnsFixedValue() public {
+        // deploy and upgrade to V4
+        L2PriceFeedWithoutRoundsV4 l2PriceFeedV4Implementation = new L2PriceFeedWithoutRoundsV4();
+        l2PriceFeed.upgradeToAndCall(
+            address(l2PriceFeedV4Implementation),
+            abi.encodeWithSelector(l2PriceFeedV4Implementation.initializeV4.selector)
+        );
+        L2PriceFeedWithoutRoundsV4 l2PriceFeedV4 = L2PriceFeedWithoutRoundsV4(address(l2PriceFeed));
+
+        // check latestAnswer returns fixed value
+        assertEq(l2PriceFeedV4.latestAnswer(), 100000000);
+    }
+
+    function test_V4_LatestRoundData_ReturnsFixedValue() public {
+        // deploy and upgrade to V4
+        L2PriceFeedWithoutRoundsV4 l2PriceFeedV4Implementation = new L2PriceFeedWithoutRoundsV4();
+        l2PriceFeed.upgradeToAndCall(
+            address(l2PriceFeedV4Implementation),
+            abi.encodeWithSelector(l2PriceFeedV4Implementation.initializeV4.selector)
+        );
+        L2PriceFeedWithoutRoundsV4 l2PriceFeedV4 = L2PriceFeedWithoutRoundsV4(address(l2PriceFeed));
+
+        // check latestRoundData returns correct values
+        (uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound) =
+            l2PriceFeedV4.latestRoundData();
+
+        assertEq(roundId, 1);
+        assertEq(answer, 100000000);
+        assertEq(startedAt, block.timestamp);
+        assertEq(updatedAt, block.timestamp);
+        assertEq(answeredInRound, 1);
+    }
+
+    function test_V4_GetRoundData_ReturnsFixedValue() public {
+        // deploy and upgrade to V4
+        L2PriceFeedWithoutRoundsV4 l2PriceFeedV4Implementation = new L2PriceFeedWithoutRoundsV4();
+        l2PriceFeed.upgradeToAndCall(
+            address(l2PriceFeedV4Implementation),
+            abi.encodeWithSelector(l2PriceFeedV4Implementation.initializeV4.selector)
+        );
+        L2PriceFeedWithoutRoundsV4 l2PriceFeedV4 = L2PriceFeedWithoutRoundsV4(address(l2PriceFeed));
+
+        // check getRoundData(1) returns correct values
+        (uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound) =
+            l2PriceFeedV4.getRoundData(1);
+
+        assertEq(roundId, 1);
+        assertEq(answer, 100000000);
+        assertEq(startedAt, block.timestamp);
+        assertEq(updatedAt, block.timestamp);
+        assertEq(answeredInRound, 1);
+    }
+
+    function test_V4_GetRoundData_RevertsForInvalidRound() public {
+        // deploy and upgrade to V4
+        L2PriceFeedWithoutRoundsV4 l2PriceFeedV4Implementation = new L2PriceFeedWithoutRoundsV4();
+        l2PriceFeed.upgradeToAndCall(
+            address(l2PriceFeedV4Implementation),
+            abi.encodeWithSelector(l2PriceFeedV4Implementation.initializeV4.selector)
+        );
+        L2PriceFeedWithoutRoundsV4 l2PriceFeedV4 = L2PriceFeedWithoutRoundsV4(address(l2PriceFeed));
+
+        // check getRoundData(2) reverts
+        vm.expectRevert();
+        l2PriceFeedV4.getRoundData(2);
     }
 }
