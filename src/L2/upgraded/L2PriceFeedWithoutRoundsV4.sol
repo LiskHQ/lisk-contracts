@@ -36,5 +36,4 @@ contract L2PriceFeedWithoutRoundsV4 is L2PriceFeedWithoutRoundsV3 {
         updatedAt = block.timestamp;
         answeredInRound = 1;
     }
-
 }
