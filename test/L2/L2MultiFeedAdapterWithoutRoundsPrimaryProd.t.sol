@@ -35,7 +35,7 @@ contract L2MultiFeedAdapterWithoutRoundsPrimaryProdTest is Test, Constants {
                 )
             )
         );
-        assertEq(l2Adapter.getUniqueSignersThreshold(), 2);
+        assertEq(l2Adapter.getUniqueSignersThreshold(), 3);
         assertEq(l2Adapter.getAuthorisedSignerIndex(REDSTONE_PRIMARY_PROD_SIGNER_ADDRESS_0), 0);
         assertEq(l2Adapter.getAuthorisedSignerIndex(REDSTONE_PRIMARY_PROD_SIGNER_ADDRESS_1), 1);
         assertEq(l2Adapter.getAuthorisedSignerIndex(REDSTONE_PRIMARY_PROD_SIGNER_ADDRESS_2), 2);
@@ -122,7 +122,7 @@ contract L2MultiFeedAdapterWithoutRoundsPrimaryProdTest is Test, Constants {
             L2MultiFeedAdapterWithoutRoundsPrimaryProdV2Mock(address(l2Adapter));
 
         // signer threshold and signer index should remain the same
-        assertEq(l2AdapterV2.getUniqueSignersThreshold(), 2);
+        assertEq(l2AdapterV2.getUniqueSignersThreshold(), 3);
         assertEq(l2AdapterV2.getAuthorisedSignerIndex(REDSTONE_PRIMARY_PROD_SIGNER_ADDRESS_0), 0);
         assertEq(l2AdapterV2.getAuthorisedSignerIndex(REDSTONE_PRIMARY_PROD_SIGNER_ADDRESS_1), 1);
         assertEq(l2AdapterV2.getAuthorisedSignerIndex(REDSTONE_PRIMARY_PROD_SIGNER_ADDRESS_2), 2);

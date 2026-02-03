@@ -1,0 +1,39 @@
+# Example: Call the reusable interactive Claude workflow
+# Copy this file to your repo's .github/workflows/ directory
+
+name: Claude Code Interactive
+
+on:
+  issue_comment:
+    types: [created]
+
+# Prevent multiple simultaneous runs
+# Include actor in group so bot comments don't cancel user workflows
+concurrency:
+  group: claude-interactive-${{ github.event.issue.number }}-${{ github.actor }}
+  cancel-in-progress: true
+
+jobs:
+  check-trigger:
+    # Only run when @claude is mentioned in issue/PR comments and not by bots
+    if: |
+      github.actor != 'dependabot[bot]' &&
+      github.actor != 'renovate[bot]' &&
+      github.actor != 'claude[bot]' &&
+      github.actor != 'github-actions[bot]' &&
+      contains(github.event.comment.body, '@claude')
+    runs-on: ubuntu-latest
+    outputs:
+      should_run: ${{ steps.check.outputs.result }}
+    steps:
+      - name: Check conditions
+        id: check
+        run: echo "result=true" >> $GITHUB_OUTPUT
+
+  claude:
+    needs: check-trigger
+    uses: LiskHQ/workflows/.github/workflows/claude.yml@main  # Update org/repo name
+    with:
+      track_progress: false  # Optional: set to false to disable progress updates
+    secrets:
+      claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
