@@ -1,0 +1,29 @@
+# Example: Call the reusable PR summary workflow
+# Copy this file to your repo's .github/workflows/ directory
+
+name: Claude PR Summary
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+# Prevent multiple runs for the same PR
+concurrency:
+  group: claude-summary-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  summary:
+    # Skip bot PRs (dependabot, renovate, claude, etc.)
+    if: |
+      !github.event.pull_request.draft &&
+      github.event.pull_request.user.login != 'dependabot[bot]' &&
+      github.event.pull_request.user.login != 'renovate[bot]' &&
+      github.event.pull_request.user.login != 'claude[bot]' &&
+      github.event.pull_request.user.login != 'github-actions[bot]'
+    uses: LiskHQ/workflows/.github/workflows/claude-pr-summary.yml@main  # Update org/repo name
+    with:
+      pr_number: ${{ github.event.pull_request.number }}
+      repository: ${{ github.repository }}
+    secrets:
+      claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
